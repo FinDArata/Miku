@@ -1,4 +1,4 @@
-// The two local WhatsApp gateways Coucou can talk to (port of WhatsAppProvider.swift). Each call
+// The two local WhatsApp gateways Kanon can talk to (port of WhatsAppProvider.swift). Each call
 // goes to the URL set in Settings (127.0.0.1 by default) and nowhere else: no redirect, no proxy,
 // no cookie, every answer read with a ceiling. Nothing of a message is logged.
 
@@ -162,10 +162,10 @@ impl Provider {
             *slot.lock().await = Some(id.clone());
             return Ok((id, status));
         }
-        let (made, made_code) = http.call(Method::POST, "/devices", &[], Some(json!({"device_id": "coucou"})), Duration::from_secs(10)).await?;
+        let (made, made_code) = http.call(Method::POST, "/devices", &[], Some(json!({"device_id": "kanon"})), Duration::from_secs(10)).await?;
         Self::gowa_check(&made, made_code)?;
-        *slot.lock().await = Some("coucou".into());
-        Ok(("coucou".into(), Status { link: Link::NeedsQr, me: None }))
+        *slot.lock().await = Some("kanon".into());
+        Ok(("kanon".into(), Status { link: Link::NeedsQr, me: None }))
     }
 
     async fn gowa_id(http: &Http, slot: &tokio::sync::Mutex<Option<String>>) -> Result<String, WaError> {
@@ -211,7 +211,7 @@ impl Provider {
             .iter()
             .find(|s| s.status == "ready")
             .or_else(|| all.iter().find(|s| Some(&s.id) == known.as_ref()))
-            .or_else(|| all.iter().find(|s| s.name == "coucou"))
+            .or_else(|| all.iter().find(|s| s.name == "kanon"))
             .or(all.first())
             .cloned();
         if let Some(s) = pick {
@@ -221,7 +221,7 @@ impl Provider {
             }
             return Ok(s);
         }
-        let (made, made_code) = http.call(Method::POST, "/api/sessions", &[], Some(json!({"name": "coucou"})), Duration::from_secs(10)).await?;
+        let (made, made_code) = http.call(Method::POST, "/api/sessions", &[], Some(json!({"name": "kanon"})), Duration::from_secs(10)).await?;
         Self::openwa_check(&made, made_code)?;
         let s = serde_json::from_slice::<Value>(&made)
             .ok()
@@ -289,7 +289,7 @@ impl Provider {
         }
     }
 
-    /// Tells the gateway to post new messages to Coucou's local webhook, signed with `secret`.
+    /// Tells the gateway to post new messages to Kanon's local webhook, signed with `secret`.
     pub async fn register_webhook(&self, url: &str, secret: &str) -> Result<(), WaError> {
         match self {
             Provider::Gowa { http, device } => {

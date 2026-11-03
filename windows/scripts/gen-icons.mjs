@@ -1,6 +1,7 @@
-// Draws Mochi into the PNG/ICO set Tauri needs. No dependencies: the icons are
-// rasterised here and encoded with node:zlib, so the app icon stays "drawn in
-// code" like the character itself.
+// Draws Kanon (花音) — the chibi inspired by Mai Kawasumi — into the PNG/ICO set
+// Tauri needs. No dependencies: the icons are rasterised here and encoded with
+// node:zlib, so the app icon stays "drawn in code" like the character itself.
+// Geometry matches design/prototype/kanon.html v4.3 (head-form, 216-unit box).
 //
 //   node scripts/gen-icons.mjs
 
@@ -11,98 +12,162 @@ import { fileURLToPath } from "node:url";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src-tauri", "icons");
 
-// ── Mochi ─────────────────────────────────────────────────────────────────────
+// ── Kanon palette (K_* in engine.ts) ──────────────────────────────────────────
 
-const BASE_TOP = [255, 250, 245]; // #FFFAF5
-const BASE_BOTTOM = [221, 204, 191]; // #DDCCBF
-const INK = [26, 20, 18]; // #1A1412
-const RIM = [0, 0, 0];
+const HAIR = [58, 70, 104];     // #3A4668
+const HAIR_D = [42, 51, 80];    // #2A3350
+const HAIR_SHINE = [86, 102, 144];
+const BOW = [154, 162, 224];    // #9AA2E0
+const BOW_D = [123, 131, 200];  // #7B83C8
+const SKIN = [255, 233, 220];   // #FFE9DC
+const EYE_G1 = [87, 217, 154];  // #57D99A
+const EYE_G2 = [13, 122, 82];   // #0D7A52
+const EYE_INK = [28, 43, 38];   // #1C2B26
+const SAKURA = [244, 114, 182]; // #F472B6
+const BLUSH = [244, 167, 185];
+const RIM = [16, 19, 26];
 
 const SS = 4; // supersampling factor
 
-/** Superellipse (exponent 2.7) test in body-local coordinates. */
-function insideBody(x, y, rx, ry) {
-  const n = 2.7;
-  return Math.pow(Math.abs(x / rx), n) + Math.pow(Math.abs(y / ry), n) <= 1;
+// ── shape tests (prototype 0..300 coordinates) ───────────────────────────────
+
+const inEll = (x, y, cx, cy, rx, ry, rot = 0) => {
+  const c = Math.cos(-rot), s = Math.sin(-rot);
+  const dx = x - cx, dy = y - cy;
+  const lx = dx * c - dy * s, ly = dx * s + dy * c;
+  return (lx / rx) ** 2 + (ly / ry) ** 2 <= 1;
+};
+const inRR = (x, y, cx, cy, w, h, r) => {
+  const hw = w / 2, hh = h / 2;
+  if (Math.abs(x - cx) > hw || Math.abs(y - cy) > hh) return false;
+  const qx = Math.max(-hw + r, Math.min(hw - r, x - cx));
+  const qy = Math.max(-hh + r, Math.min(hh - r, y - cy));
+  return (x - cx - qx) ** 2 + (y - cy - qy) ** 2 <= r * r;
+};
+// distance to a quadratic bezier, sampled
+const distQuad = (px, py, p0, p1, p2) => {
+  let best = 1e9;
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24, m = 1 - t;
+    const bx = m * m * p0[0] + 2 * m * t * p1[0] + t * t * p2[0];
+    const by = m * m * p0[1] + 2 * m * t * p1[1] + t * t * p2[1];
+    const d = (px - bx) ** 2 + (py - by) ** 2;
+    if (d < best) best = d;
+  }
+  return Math.sqrt(best);
+};
+
+/** Returns [r,g,b,a] 0..255 for one point in the 0..300 prototype box. */
+function kanonAt(px, py) {
+  // back hair + curtain (rim = hair expanded)
+  const inHairTop = inEll(px, py, 150, 64, 88, 80);
+  const inCurtain = inRR(px, py, 150, 132, 160, 90, 40);
+  const inHair = inHairTop || inCurtain;
+  const inHairRim = inEll(px, py, 150, 64, 90, 82) || inRR(px, py, 150, 132, 164, 94, 42);
+
+  // face, locks, bangs
+  const inFace = inEll(px, py, 150, 76, 64, 60);
+  let inBangs = false;
+  for (let i = -2; i <= 2; i++) {
+    if (inEll(px, py, 150 + i * 28, 38 + Math.abs(i) * 3, 24, 27, i * 0.05)) { inBangs = true; break; }
+  }
+  const inLocks = inEll(px, py, 84, 96, 13, 52, 0.08) || inEll(px, py, 216, 96, 13, 52, -0.08);
+
+  // eyes at (120/180, 88), iris 13x19, lid covers top 62%
+  let eyeCol = null;
+  for (const sd of [-1, 1]) {
+    const ex = 150 + sd * 30, ey = 88;
+    if (inEll(px, py, ex, ey, 13, 19)) {
+      const lidY = ey - 19 * 0.38;
+      if (py <= lidY - 1.2) { eyeCol = SKIN; }                       // kelopak
+      else if (py <= lidY + 1.3) { eyeCol = EYE_INK; }               // garis kelopak
+      else {
+        const g = Math.min(1, Math.max(0, (py - (ey - 10)) / 26));
+        eyeCol = [0, 1, 2].map((i) => EYE_G1[i] + (EYE_G2[i] - EYE_G1[i]) * g);
+        if (inEll(px, py, ex - 3, ey + 2.5, 2.5, 3.2)) eyeCol = [255, 255, 255];
+        if (inEll(px, py, ex + 4, ey + 7.5, 1.4, 1.8)) eyeCol = [255, 255, 255];
+        const nearEdge =
+          Math.abs(Math.sqrt(((px - ex) / 13) ** 2 + ((py - ey) / 19) ** 2) - 1) < 0.09;
+        if (nearEdge) eyeCol = EYE_INK;
+      }
+    }
+  }
+
+  // pita belakang: loop mengintip dua sisi (rotated ellipse) + jepit not di kiri
+  const inLoop = inEll(px, py, 64, 92, 30, 12, -0.55) || inEll(px, py, 236, 92, 30, 12, 0.55);
+  const inTail = inEll(px, py, 150 - 70, 135, 9, 34, 0.12) || inEll(px, py, 150 + 70, 135, 9, 34, -0.12);
+
+  // jepit not ♪ di loop kiri
+  let inNote = false;
+  {
+    const c = Math.cos(0.2), s = Math.sin(0.2), s0 = 16;
+    const dx = px - 54, dy = py - 90;
+    const lx = dx * c + dy * s, ly = -dx * s + dy * c;
+    if (inEll(lx, ly, 0, s0 * 0.32, s0 * 0.36, s0 * 0.26, -0.3)) inNote = true;
+    if (lx >= s0 * 0.3 && lx <= s0 * 0.43 && ly >= -s0 * 0.95 && ly <= s0 * 0.32) inNote = true;
+    if (lx >= s0 * 0.43 && lx <= s0 * 0.9 && ly >= -s0 * 0.95 && ly <= -s0 * 0.42) inNote = true;
+  }
+
+  // ahoge (dua segmen kuadratik, stroke 3.2)
+  const ahoge =
+    distQuad(px, py, [150, 12], [153, -2], [160, -6]) < 1.7 ||
+    distQuad(px, py, [160, -6], [169, -6], [163, 5]) < 1.7;
+
+  // mouth
+  const inMouth = px >= 146.5 && px <= 153.5 && py >= 119.6 && py <= 121.4;
+  const inBlush = inEll(px, py, 98, 106, 9, 5) || inEll(px, py, 202, 106, 9, 5);
+
+  // painter's algorithm — terakhir menang
+  if (inHairRim) {
+    if (ahoge) return [...SAKURA, 255];
+    if (inHair) {
+      if (inNote) return [...SAKURA, 255];
+      if (inLoop || inTail) return [...BOW, 255];
+      const g = Math.min(1, Math.max(0, (py - 0) / 240));
+      const col = [0, 1, 2].map((i) => HAIR[i] + (HAIR_D[i] - HAIR[i]) * g);
+      if (inEll(px, py, 116, 26, 6, 15, 0.25) || inEll(px, py, 182, 24, 5.5, 14, -0.2)) return [...HAIR_SHINE, 255];
+      if (inFace) {
+        if (inMouth) return [...EYE_INK, 255];
+        if (inBlush) return [...BLUSH, 255];
+        if (eyeCol) return [...eyeCol, 255];
+        if (inBangs) {
+          if (inEll(px, py, 116, 26, 6, 15, 0.25) || inEll(px, py, 182, 24, 5.5, 14, -0.2)) return [...HAIR_SHINE, 255];
+          return [...col, 255];
+        }
+        return [...SKIN, 255];
+      }
+      if (inLocks || inBangs) return [...HAIR_D, 255];
+      return [...col, 255];
+    }
+    return [...RIM, 255];
+  }
+  if (inLoop && inNote) return [...SAKURA, 255];  // not di ujung loop
+  return [0, 0, 0, 0];
 }
 
-function insidePill(x, y, w, h) {
-  const hw = w / 2;
-  const hh = h / 2;
-  const r = Math.min(hw, hh);
-  const cx = Math.max(-hw + r, Math.min(hw - r, x));
-  const cy = Math.max(-hh + r, Math.min(hh - r, y));
-  return (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
-}
-
-function renderMochi(size) {
+function renderKanon(size) {
   const px = new Uint8Array(size * size * 4);
-  const R = size * 0.34;
-  const rx = R * 1.14;
-  const ry = R * 0.88;
-  const cx = size / 2;
-  const cy = size / 2 + R * 0.06;
-  const rim = R * 0.055; // dark outline so the tray icon reads on light themes
-
-  // Eyes — same geometry as BotEngine (yaw ±0.37, pitch −0.12)
-  const eyeYaw = 0.37;
-  const eyePitch = -0.12;
-  const cp = Math.cos(eyePitch);
-  const ex = Math.sin(eyeYaw) * cp * rx;
-  const ey = -Math.sin(eyePitch) * ry;
-  const fx = Math.max(0.18, Math.cos(eyeYaw));
-  const fy = Math.max(0.18, cp);
-  const ew = R * 0.25 * fx;
-  const eh = R * 0.27 * fy;
-
+  // konten proto x[32..268] (236) × y[-16..200] (216) di canvas persegi, dipusatkan
+  const k = size / 236;
+  const ox = 32, oy = -26;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      let bodyHits = 0;
-      let rimHits = 0;
-      let eyeHits = 0;
+      let r = 0, g = 0, b = 0, a = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
-          const px0 = x + (sx + 0.5) / SS - cx;
-          const py0 = y + (sy + 0.5) / SS - cy;
-          if (!insideBody(px0, py0, rx + rim, ry + rim)) continue;
-          rimHits++;
-          if (!insideBody(px0, py0, rx, ry)) continue;
-          bodyHits++;
-          if (
-            insidePill(px0 + ex, py0 - ey, ew, eh) ||
-            insidePill(px0 - ex, py0 - ey, ew, eh)
-          ) {
-            eyeHits++;
-          }
+          const jx = (x + (sx + 0.5) / SS) / k + ox;
+          const jy = (y + (sy + 0.5) / SS) / k + oy;
+          const c = kanonAt(jx, jy);
+          r += c[0] * (c[3] / 255); g += c[1] * (c[3] / 255); b += c[2] * (c[3] / 255);
+          a += c[3];
         }
       }
-      if (rimHits === 0) continue;
-
-      const total = SS * SS;
-      const rimA = rimHits / total;
-      const bodyA = bodyHits / total;
-      const eyeA = eyeHits / total;
-
-      // Body gradient: top-right → bottom-left, like the Canvas gradient.
-      const t = Math.min(1, Math.max(0, ((x - cx) * -0.6 + (y - cy) * 0.8) / (2 * ry) + 0.5));
-      const body = [0, 1, 2].map((i) => BASE_TOP[i] + (BASE_BOTTOM[i] - BASE_TOP[i]) * t);
-
-      // rim under body, body over rim, eyes over body
-      let col = RIM.slice();
-      let alpha = rimA;
-      if (bodyA > 0) {
-        col = col.map((c, i) => c * (1 - bodyA / rimA) + body[i] * (bodyA / rimA));
-        alpha = rimA;
-      }
-      if (eyeA > 0) {
-        col = col.map((c, i) => c * (1 - eyeA) + INK[i] * eyeA);
-      }
-
+      const n = SS * SS;
       const o = (y * size + x) * 4;
-      px[o] = Math.round(col[0]);
-      px[o + 1] = Math.round(col[1]);
-      px[o + 2] = Math.round(col[2]);
-      px[o + 3] = Math.round(Math.min(1, alpha) * 255);
+      px[o] = Math.round(r / n);
+      px[o + 1] = Math.round(g / n);
+      px[o + 2] = Math.round(b / n);
+      px[o + 3] = Math.round(a / n);
     }
   }
   return px;
@@ -182,7 +247,7 @@ function encodeICO(entries) {
 
 mkdirSync(OUT, { recursive: true });
 
-const png = (size) => encodePNG(size, renderMochi(size));
+const png = (size) => encodePNG(size, renderKanon(size));
 
 const files = {
   "32x32.png": png(32),

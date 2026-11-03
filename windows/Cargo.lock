@@ -803,7 +803,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "coucou"
+name = "kanon"
 version = "0.5.9"
 dependencies = [
  "arboard",
@@ -840,7 +840,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "coucou-hook"
+name = "kanon-hook"
 version = "0.5.9"
 dependencies = [
  "libc",

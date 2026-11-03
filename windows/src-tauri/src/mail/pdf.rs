@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn a_pdf_is_cut_into_pages_with_their_text() {
-        let dir = std::env::temp_dir().join(format!("coucou-pdf-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("kanon-pdf-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let source = dir.join("plans.pdf");

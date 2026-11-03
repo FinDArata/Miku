@@ -1,5 +1,5 @@
 // The Mail pill on Windows (classic Outlook, src-tauri/src/mail): the types the island and
-// the Coucou window read, and the calls to Rust. Port of MailController / MailTriageStore /
+// the Kanon window read, and the calls to Rust. Port of MailController / MailTriageStore /
 // MailAgent's shapes; the wording is the Mac's (MailViews.swift, MailHubPages.swift).
 
 import { invoke } from "@tauri-apps/api/core";
@@ -132,7 +132,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[coucou] ${cmd} failed`, err);
+    console.error(`[kanon] ${cmd} failed`, err);
     return null;
   }
 }
@@ -222,9 +222,9 @@ export function reasonLine(r: MailReason): string {
   }
 }
 
-/** The answer without its ```coucou-mail block, and whether it held one (mail/plan.rs). */
+/** The answer without its ```kanon-mail block, and whether it held one (mail/plan.rs). */
 export function splitPlan(text: string): { prose: string; plan: boolean } {
-  const fence = "```coucou-mail";
+  const fence = "```kanon-mail";
   const start = text.indexOf(fence);
   if (start < 0) return { prose: text, plan: false };
   const after = text.slice(start + fence.length);

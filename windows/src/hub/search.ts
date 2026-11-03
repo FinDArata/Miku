@@ -1,4 +1,4 @@
-// Settings search in the Coucou window: matches every setting of Flow,
+// Settings search in the Kanon window: matches every setting of Flow,
 // Notch and Mail in the app's language, whatever the accents and case.
 // Port of SettingsSearch.swift and SettingsSearchMatch.swift.
 
@@ -111,7 +111,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   { id: "general.startup", page: "general", title: "Startup", terms: ["Launch at Mac startup"] },
   { id: "general.update", page: "general", title: "update.settings.title", terms: [] },
   { id: "general.recap", page: "general", title: "Weekly recap", terms: ["Keep a history of my coding sessions", "Hide project names in shared images", "Clear history"] },
-  { id: "general.language", page: "general", title: "Language", terms: ["Restart Coucou"] },
+  { id: "general.language", page: "general", title: "Language", terms: ["Restart Kanon"] },
 
   // Notch → Pills, Agents, Chat, Integrations, Phone, Voice, Shortcuts
   { id: "pills.main", page: "pills", title: "settings.main-pill", terms: ["Active pills"] },
@@ -140,7 +140,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
     ],
   },
   { id: "phone.android", page: "phone", title: "phone.title", terms: ["phone.status", "phone.pairing", "phone.approvals"] },
-  { id: "voice.wake", page: "voice", title: "«\u202FOK Coucou\u202F» — voice wake word", terms: ["Enable voice command", "Request permissions"] },
+  { id: "voice.wake", page: "voice", title: "«\u202FOK Kanon\u202F» — voice wake word", terms: ["Enable voice command", "Request permissions"] },
   { id: "voice.language", page: "voice", title: "Language", terms: ["voice.listen-language", "voice.language"] },
   { id: "voice.tts", page: "voice", title: "voice.tts-engine", terms: ["voice.tts-gender", "voice.tts-test"] },
   { id: "voice.history", page: "voice", title: "voice.history-title", terms: [] },

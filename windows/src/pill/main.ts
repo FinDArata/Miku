@@ -163,7 +163,7 @@ function content(l: Look): HTMLElement {
         m,
         pillButton("mic", t("Dictate · {0}", { 0: key }), () => void FlowBridge.pillAction("dictate")),
         pillButton("record", t("Record a call"), () => void FlowBridge.pillAction("note")),
-        pillButton("window", t("Open Coucou"), () => void FlowBridge.pillAction("hub")),
+        pillButton("window", t("Open Kanon"), () => void FlowBridge.pillAction("hub")),
       );
       break;
     }
@@ -372,7 +372,7 @@ function animating(): boolean {
   return visible && look() !== "resting";
 }
 
-/** Where dot `i` goes: the voice, a slow wave while thinking, a lively one while Coucou speaks. */
+/** Where dot `i` goes: the voice, a slow wave while thinking, a lively one while Kanon speaks. */
 function dotGoal(now: number, i: number): number {
   if (state.phase === "thinking") return 0.25 + 0.25 * Math.sin(now / 160 - i * 0.7);
   if (state.phase === "listening" || state.phase === "locked") return target[i];
@@ -436,7 +436,7 @@ function wake() {
   }
 }
 
-// ── « OK Coucou » speaks ──────────────────────────────────────────────────────
+// ── « OK Kanon » speaks ──────────────────────────────────────────────────────
 
 interface Say {
   id: number;

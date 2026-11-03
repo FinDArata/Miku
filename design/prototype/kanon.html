@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Kanon (カノン) — prototype v4 · chibi ala Mai Kawasumi</title>
+<style>
+  :root { --bg:#0b0b10; --card:#141420; --line:#26263a; --txt:#e8e6f0; --dim:#8a88a0; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px; background:var(--bg); color:var(--txt);
+         font:15px/1.6 system-ui, "Segoe UI", sans-serif; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:15px; margin:28px 0 8px; color:#8b93d6; }
+  .sub { color:var(--dim); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:4px; }
+  canvas { display:block; width:100%; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  .row .card { flex:1 1 260px; }
+  .swatches { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .sw { width:64px; border-radius:10px; padding:6px 4px; text-align:center; font-size:11px; color:#0b0b10; }
+  .hint { color:var(--dim); font-size:13px; margin:6px 0 0; }
+  .light { background:#f4f2f7; }
+</style>
+</head>
+<body>
+<h1>Kanon <span style="color:#8b93d6">カノン</span> — v4 · chibi ala Mai Kawasumi</h1>
+<p class="sub">homage orisinal: rambut navy panjang + ekor kuda pita lavender · mata hijau zamrud · cape putih + gaun marun · katana · jepit not ♪ di pita (merek Kanon) · klik chibi: ganti state · mouse: matanya mengikuti</p>
+
+<h2>1 · Chibi penuh — klik untuk ganti state</h2>
+<div class="card"><canvas id="demo" height="360"></canvas>
+<p class="hint" id="stateLabel">state: idle — dia pegang katana; state working: katana disimpan, laptop + kacamata keluar</p></div>
+
+<h2>2 · Semua state berdampingan</h2>
+<div class="row" id="states"></div>
+
+<h2>3 · Bentuk kepala (form island/mini/widget) — tangga ukuran</h2>
+<div class="card"><canvas id="ladder" height="230"></canvas></div>
+
+<h2>4 · Varian mini (warna pill)</h2>
+<div class="card"><canvas id="minis" height="130"></canvas></div>
+
+<h2>5 · Kontras di latar terang</h2>
+<div class="card light"><canvas id="light" height="150"></canvas></div>
+
+<h2>6 · Palet</h2>
+<div class="card">
+  <div class="swatches">
+    <div class="sw" style="background:#ffe9dc">kulit #FFE9DC</div>
+    <div class="sw" style="background:#3a4668">rambut #3A4668</div>
+    <div class="sw" style="background:#2a3350">rambut-dlm #2A3350</div>
+    <div class="sw" style="background:#9aa2e0">pita #9AA2E0</div>
+    <div class="sw" style="background:#57d99a">mata #57D99A</div>
+    <div class="sw" style="background:#0d7a52">mata-dlm #0D7A52</div>
+    <div class="sw" style="background:#93394a">gaun #93394A</div>
+    <div class="sw" style="background:#f4f4f8">cape #F4F4F8</div>
+  </div>
+</div>
+
+<script>
+const SKIN="#ffe9dc", SKIN_SH="#f6d3c2",
+      HAIR="#3a4668", HAIR_D="#2a3350", HAIR_HI="#5c6c96",
+      BOW="#9aa2e0", BOW_D="#7b83c8",
+      EYE_G1="#57d99a", EYE_G2="#0d7a52", EYE="#1c2b26",
+      DRESS="#93394a", DRESS_D="#7a2c3c", CAPE="#f4f4f8", TRIM="#8b93d6",
+      SAKURA="#f472b6", GOLD="#f5c86e", INK="#20242e";
+
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function ell(c,x,y,rx,ry,rot=0){ c.beginPath(); c.ellipse(x,y,rx,ry,rot,0,7); c.fill(); }
+function arcUp(c,x,y,r,col,w){ c.strokeStyle=col; c.lineWidth=w; c.lineCap="round";
+  c.beginPath(); c.arc(x,y+r*0.55,r,1.15*Math.PI,1.85*Math.PI); c.stroke(); }
+function crossE(c,x,y,r,col,w){ c.strokeStyle=col; c.lineWidth=w; c.lineCap="round";
+  c.beginPath(); c.moveTo(x-r,y-r); c.lineTo(x+r,y+r); c.moveTo(x+r,y-r); c.lineTo(x-r,y+r); c.stroke(); }
+function star4(c,x,y,s,col,a){ c.save(); c.globalAlpha=a; c.fillStyle=col;
+  c.translate(x,y); c.beginPath();
+  c.moveTo(0,-s); c.quadraticCurveTo(s*0.18,-s*0.18,s,0); c.quadraticCurveTo(s*0.18,s*0.18,0,s);
+  c.quadraticCurveTo(-s*0.18,s*0.18,-s,0); c.quadraticCurveTo(-s*0.18,-s*0.18,0,-s);
+  c.closePath(); c.fill(); c.restore(); }
+function noteClip(c,x,y,s,col,rot=-0.3){         // jepit not ♪ (merek Kanon)
+  c.save(); c.translate(x,y); c.rotate(rot); c.fillStyle=col;
+  ell(c,0,s*0.32,s*0.36,s*0.26,-0.3);
+  c.fillRect(s*0.3,-s*0.95,s*0.13,s*1.27);
+  c.beginPath(); c.moveTo(s*0.43,-s*0.95); c.quadraticCurveTo(s*0.95,-s*0.82,s*0.9,-s*0.3);
+  c.quadraticCurveTo(s*0.66,-s*0.52,s*0.43,-s*0.42); c.closePath(); c.fill();
+  c.restore();
+}
+
+// ---- rambut belakang panjang (digambar paling awal, di belakang badan) -----
+function drawBackHair(c, u, t, state){
+  const sway = state==="dancing" ? Math.sin(t*6)*6*u : state==="dizzy" ? Math.sin(t*9)*5*u : Math.sin(t*1.6)*1.8*u;
+  const g=c.createLinearGradient(0,20*u,0,270*u);
+  g.addColorStop(0,HAIR); g.addColorStop(1,HAIR_D);
+  c.fillStyle=g;
+  ell(c, 0, 64*u, 88*u, 80*u);                       // massa atas
+  rr(c, -80*u, 90*u, 160*u, 150*u, 40*u); c.fill();  // tirai panjang ke bawah
+  // ekor kuda rendah (di sisi kanan belakang)
+  c.save(); c.translate(56*u, 108*u); c.rotate(0.12+sway*0.02);
+  c.fillStyle=HAIR_D;
+  c.beginPath(); c.moveTo(-16*u,0);
+  c.quadraticCurveTo(30*u,60*u,10*u,150*u);
+  c.quadraticCurveTo(-6*u,158*u,-18*u,148*u);
+  c.quadraticCurveTo(2*u,70*u,-34*u,10*u); c.closePath(); c.fill();
+  c.restore();
+}
+
+// ---- pita besar di belakang kepala (khas Mai: loop mengintip dua sisi) -----
+function drawBackBow(c, u, tint){
+  const A = tint || SAKURA;
+  // ekor pita menggantung, terlihat di samping tirai rambut
+  c.fillStyle = BOW_D;
+  for (const s of [-1,1]){
+    c.beginPath();
+    c.moveTo(s*66*u, 100*u);
+    c.quadraticCurveTo(s*82*u, 132*u, s*70*u, 170*u);
+    c.quadraticCurveTo(s*62*u, 165*u, s*57*u, 150*u);
+    c.quadraticCurveTo(s*63*u, 122*u, s*56*u, 104*u);
+    c.closePath(); c.fill();
+  }
+  // loop besar mengintip di kedua sisi kepala
+  c.fillStyle = BOW;
+  for (const s of [-1,1]){
+    c.save(); c.translate(s*86*u, 92*u); c.rotate(s*0.55);
+    c.beginPath(); c.moveTo(0,0);
+    c.quadraticCurveTo(s*26*u,-20*u, s*32*u,0);
+    c.quadraticCurveTo(s*26*u,16*u, 0,8*u);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  noteClip(c, -96*u, 90*u, 16*u, A, 0.2);   // jepit not ♪ pada loop kiri (merek)
+}
+
+// ---- pita leher seragam (biru, di atas cape) --------------------------------
+function drawNeckBow(c, u){
+  c.fillStyle = DRESS;                                   // pita kerah merah di baliknya
+  rr(c, -15*u, 136*u, 30*u, 9*u, 3*u); c.fill();
+  c.fillStyle = "#6b83d9";
+  c.beginPath(); c.moveTo(0,150*u); c.quadraticCurveTo(-24*u,139*u,-31*u,150*u);
+  c.quadraticCurveTo(-24*u,163*u,0,159*u); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(0,150*u); c.quadraticCurveTo(24*u,139*u,31*u,150*u);
+  c.quadraticCurveTo(24*u,163*u,0,159*u); c.closePath(); c.fill();
+  ell(c, 0, 152*u, 6.5*u, 5*u);
+  c.fillStyle = "#5a72c4";
+  c.beginPath(); c.moveTo(-3*u,157*u); c.quadraticCurveTo(-9*u,172*u,-15*u,181*u);
+  c.lineTo(-6*u,179*u); c.quadraticCurveTo(-1*u,166*u,3*u,157*u); c.closePath(); c.fill();
+}
+
+// ---- kepala -----------------------------------------------------------------
+function drawHead(c, u, t, state, look, tint){
+  const A = tint || SAKURA;
+  const closed = state==="sleeping";
+  const blink = !closed && state==="idle" && (t%4.2)>4.0;   // Mai jarang kedip
+  const lx=(look?look.x:0)*6*u, ly=(look?look.y:0)*5*u + 2*u;   // tatapan sedikit turun — pemalu
+
+  // wajah
+  c.fillStyle = SKIN; ell(c, 0, 76*u, 64*u, 60*u);
+
+  // poni lurus sampai alis (khas Mai)
+  c.fillStyle = HAIR;
+  for (let i=-2;i<=2;i++){
+    const px=i*28*u;
+    c.save(); c.translate(px, 38*u); c.rotate(i*0.05);
+    ell(c, 0, 0, 24*u, 27*u); c.restore();
+  }
+  c.fillStyle = HAIR_HI; c.globalAlpha=.55;               // highlight helai lurus
+  ell(c, -36*u, 26*u, 6*u, 15*u, 0.25); ell(c, 32*u, 24*u, 5.5*u, 14*u, -0.2);
+  c.globalAlpha=1;
+  // side strand panjang ke pinggang (depan bahu)
+  c.fillStyle = HAIR_D;
+  ell(c, -66*u, 96*u, 13*u, 52*u, 0.08); ell(c, 66*u, 96*u, 13*u, 52*u, -0.08);
+
+  // ahoge kecil
+  const sway = state==="dizzy" ? Math.sin(t*9)*8*u
+             : state==="dancing" ? Math.sin(t*6)*11*u : Math.sin(t*1.8)*2*u;   // tenang, hemat gerak
+  c.strokeStyle = A; c.lineWidth = 3*u; c.lineCap="round";
+  c.beginPath(); c.moveTo(0, 12*u);
+  c.quadraticCurveTo(3*u, -2*u, 10*u+sway, -6*u);
+  c.quadraticCurveTo(19*u+sway*1.5, -6*u, 13*u+sway*1.5, 5*u); c.stroke();
+
+  // alis
+  c.strokeStyle = INK; c.lineWidth = 2.2*u; c.lineCap="round";
+  const browLift = (state==="happy"||state==="dancing") ? -2.5*u : 0;
+  for (const s of [-1,1]){ c.beginPath();
+    c.moveTo(s*30*u - s*8*u, 59.5*u+browLift); c.quadraticCurveTo(s*30*u, 61.5*u+browLift, s*30*u + s*8*u, 61*u+browLift);
+    c.stroke(); }   // alis rata dengan ujung dalam sedikit naik — meek, bukan semangat
+
+  // mata — hijau zamrud gradien, kilau ganda, bulu mata (tatapan tenang khas Mai)
+  const EW=13*u, EH=19*u;
+  for (const s of [-1,1]){
+    const ex=s*30*u+lx, ey=88*u+ly;
+    if (state==="dizzy"){ crossE(c, ex, ey, 9*u, EYE, 3.4*u); continue; }
+    if (state==="happy"||state==="dancing"){ arcUp(c, ex, ey, 10*u, EYE, 3.6*u); continue; }
+    if (closed||blink){
+      c.strokeStyle=EYE; c.lineWidth=3*u;
+      c.beginPath(); c.moveTo(ex-8*u,ey); c.quadraticCurveTo(ex,ey+4.5*u,ex+8*u,ey); c.stroke();
+      continue;
+    }
+    const iris=c.createLinearGradient(0,ey-EH,0,ey+EH);
+    iris.addColorStop(0,EYE_G1); iris.addColorStop(1,EYE_G2);
+    c.fillStyle=iris; ell(c, ex, ey, EW, EH);
+    c.strokeStyle=EYE; c.lineWidth=1.9*u; ell(c, ex, ey, EW, EH); c.stroke();
+    // kelopak atas turun menutup ~1/3 iris — tatapan tenang & pendiam khas Mai
+    c.fillStyle = SKIN;
+    c.fillRect(ex-EW-3*u, ey-EH-6*u, (EW+3*u)*2, EH*0.62);
+    c.strokeStyle = EYE; c.lineWidth = 3.4*u;                     // garis kelopak di batas lid
+    c.beginPath(); c.moveTo(ex-EW, ey-EH*0.30); c.quadraticCurveTo(ex, ey-EH*0.46, ex+EW, ey-EH*0.30); c.stroke();
+    c.fillStyle="#fff";
+    ell(c, ex-3*u, ey+2.5*u, 2.5*u, 3.2*u);                       // kilau kecil — bukan sparkle genki
+    ell(c, ex+4*u, ey+7.5*u, 1.4*u, 1.8*u);
+    c.strokeStyle=EYE; c.lineWidth=2.4*u;                         // bulu mata mengikuti kelopak
+    c.beginPath(); c.moveTo(s*11*u, ey-6*u); c.lineTo(s*18*u, ey-11*u); c.stroke();
+    c.beginPath(); c.moveTo(s*12*u, ey-1*u); c.lineTo(s*20*u, ey-3*u); c.stroke();
+  }
+
+  // kacamata bulat (state kerja)
+  if (state==="working"){
+    c.strokeStyle=CYAN_STROKE(); c.lineWidth=3*u; c.globalAlpha=.92;
+    for (const s of [-1,1]){ c.beginPath(); c.arc(s*30*u+lx, 88*u, 19*u, 0, 7); c.stroke(); }
+    c.beginPath(); c.moveTo(-11*u,88*u); c.quadraticCurveTo(0,84*u,11*u,88*u); c.stroke();
+    c.beginPath(); c.moveTo(-49*u,88*u); c.lineTo(-64*u,83*u); c.stroke();
+    c.beginPath(); c.moveTo(49*u,88*u); c.lineTo(64*u,83*u); c.stroke();
+    c.globalAlpha=1;
+  }
+
+  // blush
+  c.globalAlpha=.5; c.fillStyle="#f4a7b9";
+  ell(c, -52*u, 106*u, 9*u, 5*u); ell(c, 52*u, 106*u, 9*u, 5*u);
+  c.globalAlpha=1;
+
+  // mulut — Mai pendiam: omega kecil
+  c.strokeStyle=EYE; c.lineWidth=2.6*u; c.lineCap="round";
+  if (state==="happy"||state==="dancing"){ c.beginPath(); c.arc(0,120*u,9*u,0.15*Math.PI,0.85*Math.PI); c.stroke(); }
+  else if (state==="sleeping"){ c.beginPath(); c.moveTo(-5*u,121*u); c.quadraticCurveTo(0,125*u,5*u,121*u); c.stroke(); }
+  else if (state==="dizzy"){ c.beginPath();
+    for(let i=0;i<=10;i++){ const x=-10*u+i*2*u, y=120*u+(i%2?-1.8:1.8)*u; i?c.lineTo(x,y):c.moveTo(x,y); }
+    c.stroke(); }
+  else { c.beginPath(); c.moveTo(-3.5*u,120.5*u); c.lineTo(3.5*u,120.5*u); c.stroke(); }   // mulut kecil netral — pendiam
+}
+function CYAN_STROKE(){ return "#22d3ee"; }
+
+// ---- chibi penuh -------------------------------------------------------------
+function drawChibi(c, size, cx, cy, t, state, look, tint){
+  const A = tint || SAKURA;
+  const u = size/300;
+  const bounce=(state==="happy"||state==="dancing")?Math.abs(Math.sin(t*6))*9*u:0;
+  const rot=(state==="dizzy")?Math.sin(t*9)*0.2:(state==="dancing")?Math.sin(t*6)*0.1:0;
+  c.save(); c.translate(cx, cy+bounce); c.rotate(rot);
+  c.scale(1, state==="idle" ? 1+0.012*Math.sin(t*1.6) : 1);   // napas pelan — tenang
+
+  drawBackHair(c, u, t, state);                 // 1. rambut belakang panjang
+  drawBackBow(c, u, tint);                      // 2. pita belakang (loop mengintip dua sisi)
+
+  // 2. gaun marun
+  const dg=c.createLinearGradient(0,120*u,0,258*u);
+  dg.addColorStop(0,DRESS); dg.addColorStop(1,DRESS_D);
+  c.fillStyle=dg;
+  c.beginPath(); c.moveTo(-46*u,124*u);
+  c.quadraticCurveTo(-62*u,200*u,-54*u,248*u);
+  c.quadraticCurveTo(0,260*u,54*u,248*u);
+  c.quadraticCurveTo(62*u,200*u,46*u,124*u); c.closePath(); c.fill();
+  c.strokeStyle="#fff"; c.lineWidth=3*u; c.globalAlpha=.85;   // trim putih hem
+  c.beginPath(); c.moveTo(-52*u,244*u); c.quadraticCurveTo(0,256*u,52*u,244*u); c.stroke();
+  c.globalAlpha=1;
+
+  // 3. lengan (idle: kanan meraih gagang di sisi; working: dua tangan ke laptop)
+  if (state!=="working"){
+    c.fillStyle=DRESS;
+    ell(c, -34*u, 168*u, 17*u, 34*u, 0.35);
+    ell(c, 50*u, 172*u, 15*u, 30*u, -0.5);
+  } else {
+    c.fillStyle=DRESS;
+    ell(c, -30*u, 172*u, 16*u, 30*u, 0.4); ell(c, 30*u, 172*u, 16*u, 30*u, -0.4);
+    c.fillStyle="#fff"; ell(c, -14*u, 198*u, 9*u, 8*u); ell(c, 14*u, 198*u, 9*u, 8*u);
+    c.fillStyle=SKIN; ell(c, 0, 204*u, 12*u, 6*u);
+    // laptop di pelukan
+    c.fillStyle=INK; rr(c,-40*u,186*u,80*u,44*u,8*u); c.fill();
+    c.fillStyle=CYAN_STROKE(); c.globalAlpha=.8;
+    for(let i=0;i<3;i++) c.fillRect(-32*u,198*u+i*9*u,44*u,4*u);
+    c.globalAlpha=1;
+    const on=(t%1.2)<0.5; c.fillStyle=on?"#fde047":"#f5d90a";
+    c.beginPath(); c.moveTo(60*u,146*u); c.lineTo(48*u,194*u); c.lineTo(60*u,194*u);
+    c.lineTo(48*u,240*u); c.lineTo(76*u,184*u); c.lineTo(61*u,184*u); c.lineTo(73*u,146*u);
+    c.closePath(); c.fill();
+  }
+
+  // 4. cape putih di bahu (trim ungu)
+  const cg=c.createLinearGradient(0,118*u,0,176*u);
+  cg.addColorStop(0,CAPE); cg.addColorStop(1,"#e2e3f0");
+  c.fillStyle=cg;
+  c.beginPath(); c.moveTo(-58*u,120*u);
+  c.quadraticCurveTo(-66*u,168*u,-44*u,176*u);
+  c.lineTo(44*u,176*u);
+  c.quadraticCurveTo(66*u,168*u,58*u,120*u);
+  c.quadraticCurveTo(0,136*u,-58*u,120*u); c.closePath(); c.fill();
+  c.strokeStyle=TRIM; c.lineWidth=3*u; c.globalAlpha=.9;
+  c.beginPath(); c.moveTo(-60*u,128*u); c.quadraticCurveTo(-64*u,164*u,-44*u,174*u);
+  c.lineTo(44*u,174*u); c.quadraticCurveTo(64*u,164*u,60*u,128*u); c.stroke();
+  c.globalAlpha=1;
+
+  // 5. pita leher seragam (di atas cape, di bawah dagu)
+  drawNeckBow(c, u);
+
+  // 6. kepala di atas semuanya
+  drawHead(c, u, t, state, look, tint);
+
+  // 7. katana di lapisan paling depan (objek pegangan di depan rambut)
+  if (state!=="working"){
+    c.save(); c.translate(74*u, 8*u); c.rotate(0.09);
+    c.fillStyle="#c9ccd8"; c.beginPath();                    // bilah
+    c.moveTo(-4*u, 190*u); c.lineTo(4*u, 190*u); c.lineTo(3*u, 42*u); c.lineTo(0, 32*u);
+    c.lineTo(-3*u, 42*u); c.closePath(); c.fill();
+    c.fillStyle=GOLD; rr(c, -9*u, 190*u, 18*u, 6*u, 2*u); c.fill();  // tsuba
+    c.fillStyle=INK; rr(c, -4*u, 196*u, 8*u, 28*u, 3*u); c.fill();   // gagang
+    c.restore();
+    c.fillStyle="#fff"; ell(c, 62*u, 199*u, 9*u, 8*u);       // manset
+    c.fillStyle=SKIN; ell(c, 74*u, 206*u, 7.5*u, 6.5*u);     // tangan di gagang
+  }
+
+  c.restore();
+}
+
+// ---- bentuk kepala saja --------------------------------------------------------
+function drawHeadForm(c, size, cx, cy, t, state, look, tint){
+  const u = size/216;                            // kepala + rambut (~216u) memenuhi frame
+  c.save(); c.translate(cx, cy - 92*u);          // pusat konten ke cy
+  const rot=(state==="dizzy")?Math.sin(t*9)*0.18:0; c.rotate(rot);
+  // siluet rambut belakang yang mulus — identik dengan chibi penuh
+  const g=c.createLinearGradient(0,10*u,0,175*u);
+  g.addColorStop(0,HAIR); g.addColorStop(1,HAIR_D);
+  c.fillStyle=g;
+  ell(c, 0, 64*u, 88*u, 80*u);                   // massa atas
+  rr(c, -80*u, 90*u, 160*u, 85*u, 40*u); c.fill(); // tirai membulat di bawah
+  // ujung ekor kuda di kanan bawah
+  c.fillStyle=HAIR_D;
+  c.beginPath(); c.moveTo(30*u, 150*u);
+  c.quadraticCurveTo(46*u, 182*u, 36*u, 202*u);
+  c.quadraticCurveTo(24*u, 194*u, 16*u, 160*u); c.closePath(); c.fill();
+  drawHead(c, u, t, state, look, tint);
+  // loop pita mengintip kecil di kedua sisi (tanpa ekor — bersih)
+  c.fillStyle=BOW;
+  for (const s of [-1,1]){
+    c.save(); c.translate(s*86*u, 92*u); c.rotate(s*0.55);
+    c.beginPath(); c.moveTo(0,0);
+    c.quadraticCurveTo(s*26*u,-20*u, s*32*u,0);
+    c.quadraticCurveTo(s*26*u,16*u, 0,8*u);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  noteClip(c, -96*u, 90*u, 14*u, tint || SAKURA, 0.2);
+  c.restore();
+}
+
+// ---- partikel -------------------------------------------------------------------
+const bits=[];
+function spawnBit(x,y,music){ bits.push({x:x+(Math.random()*80-40), y, a:1, s:Math.random()*6+8, m:music}); }
+function drawBits(c,dt){
+  for (const b of bits){ b.y-=42*dt; b.a-=0.45*dt; if(b.a<=0) continue;
+    if (b.m){ c.save(); c.globalAlpha=b.a; c.fillStyle=CYAN_STROKE(); c.translate(b.x,b.y); c.rotate(-0.2);
+      c.beginPath(); c.ellipse(0,0,b.s*0.55,b.s*0.4,-0.3,0,7); c.fill();
+      c.fillRect(b.s*0.4,-b.s*1.7,b.s*0.22,b.s*1.7); c.restore(); }
+    else star4(c, b.x, b.y, b.s*0.8, "#fff", b.a); }
+  while(bits.length && bits[0].a<=0) bits.shift();
+}
+
+// ---- kanvas ------------------------------------------------------------------------
+const canv={};
+for (const id of ["demo","ladder","minis","light"]) canv[id]=document.getElementById(id).getContext("2d");
+const LOOK={x:0,y:0};
+addEventListener("mousemove", e=>{ for (const id in canv){ const r=canv[id].canvas.getBoundingClientRect();
+  if (e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom){
+    LOOK.x=(e.clientX-r.left)/r.width*2-1; LOOK.y=(e.clientY-r.top)/r.height*2-1; } } });
+
+const STATES=["idle","happy","working","dizzy","dancing","sleeping"];
+let cur="idle";
+document.getElementById("demo").addEventListener("click", ()=>{
+  cur=STATES[(STATES.indexOf(cur)+1)%STATES.length];
+  document.getElementById("stateLabel").textContent="state: "+cur; });
+
+const stateRow=document.getElementById("states");
+for (const st of STATES){ const d=document.createElement("div"); d.className="card";
+  d.innerHTML=`<canvas height="190" data-state="${st}"></canvas><p class="hint" style="text-align:center">${st}</p>`;
+  stateRow.append(d); }
+
+let last=performance.now();
+function frame(now){
+  const t=now/1000, dt=Math.min(0.05,(now-last)/1000); last=now;
+  const W=(id)=>{const c=canv[id]; c.canvas.width=c.canvas.clientWidth*devicePixelRatio;
+    c.canvas.style.height=c.canvas.height/devicePixelRatio+"px"; return c;};
+  {const c=W("demo"); const w=c.canvas.width,h=c.canvas.height; c.clearRect(0,0,w,h);
+   drawChibi(c, 300*devicePixelRatio, w/2, h/2-30*devicePixelRatio, t, cur, LOOK);
+   const cheer=(cur==="happy"||cur==="dancing");
+   if (cheer && Math.random()<0.12) spawnBit(w/2, h/2-120*devicePixelRatio, cur==="dancing");
+   if (cheer) drawBits(c,dt);}
+  document.querySelectorAll("#states canvas").forEach(el=>{
+    const cc=el.getContext("2d"); el.width=el.clientWidth*devicePixelRatio;
+    const h=190*devicePixelRatio; cc.clearRect(0,0,el.width,h);
+    drawChibi(cc, 158*devicePixelRatio, el.width/2, h/2-10*devicePixelRatio, t, el.dataset.state, null); });
+  {const c=W("ladder"); const w=c.canvas.width,h=c.canvas.height; c.clearRect(0,0,w,h);
+   const sizes=[16,24,40,64,110]; const gap=w/(sizes.length+1);
+   for(let i=0;i<sizes.length;i++){ const s=sizes[i]*devicePixelRatio;
+     drawHeadForm(c, s, gap*(i+1), h/2, t, "idle", LOOK);
+     c.fillStyle="#8a88a0"; c.font=11*devicePixelRatio+"px system-ui"; c.textAlign="center";
+     c.fillText(sizes[i]+"px", gap*(i+1), h-8); } }
+  {const c=W("minis"); const w=c.canvas.width,h=c.canvas.height; c.clearRect(0,0,w,h);
+   const tints=["#f472b6","#22d3ee","#f59e0b","#4ade80","#818cf8","#f4505e","#7c5cff","#8a88a0"];
+   const gap=w/(tints.length+1);
+   for(let i=0;i<tints.length;i++)
+     drawHeadForm(c, 68*devicePixelRatio, gap*(i+1), h/2, t, i%2?"happy":"idle", null, tints[i]); }
+  {const c=W("light"); const w=c.canvas.width,h=c.canvas.height; c.clearRect(0,0,w,h);
+   drawHeadForm(c, 100*devicePixelRatio, w/2, h/2, t, "idle", null); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

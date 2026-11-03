@@ -1,4 +1,4 @@
-// The coloured band on top of each page of the Coucou window: a deep black
+// The coloured band on top of each page of the Kanon window: a deep black
 // with the page's colour breathing in a corner, particles that drift all the
 // time and move away from the pointer, and the page's little Mochis walking on
 // its floor — they hop, look around, wave, and react when poked. Also the
@@ -29,7 +29,7 @@ let fallback: number | null = null;
 let starved = false;
 let last = performance.now();
 const start = performance.now();
-/** The Coucou window is on screen, as Rust last said (`setWindowShown`). */
+/** The Kanon window is on screen, as Rust last said (`setWindowShown`). */
 let windowShown = true;
 
 function running(): boolean {

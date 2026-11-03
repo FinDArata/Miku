@@ -1,6 +1,6 @@
-// The Mail section's settings, the journal of what Coucou sorted, what it sent for the chat,
+// The Mail section's settings, the journal of what Kanon sorted, what it sent for the chat,
 // and the messages the automatic sorting already looked at. Small JSON files in
-// %APPDATA%\Coucou\mail, on this computer only (MailTriageStore.swift on the Mac).
+// %APPDATA%\Kanon\mail, on this computer only (MailTriageStore.swift on the Mac).
 
 use std::path::PathBuf;
 
@@ -8,7 +8,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::triage::{Action, Reason, Settings};
 
-/// One thing Coucou did to a message: shown in the Mail section, with its Undo.
+/// One thing Kanon did to a message: shown in the Mail section, with its Undo.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JournalEntry {
@@ -26,7 +26,7 @@ pub struct JournalEntry {
     pub undone: bool,
 }
 
-/// A mail Coucou sent for the chat (a plan the user ran).
+/// A mail Kanon sent for the chat (a plan the user ran).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SentEntry {
@@ -64,7 +64,7 @@ impl Store {
     }
 
     pub fn set_settings(&mut self, mut s: Settings, now: i64) {
-        // Only what arrives from now on: Coucou never goes through the old messages.
+        // Only what arrives from now on: Kanon never goes through the old messages.
         if s.auto_sort && !self.settings.auto_sort {
             s.auto_sort_since = Some(now);
         }
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn turning_sorting_on_starts_from_now_and_files_survive() {
-        let dir = std::env::temp_dir().join(format!("coucou-mail-store-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("kanon-mail-store-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = Store::load(dir.clone());
         s.set_settings(Settings { auto_sort: true, ..Default::default() }, 1234);

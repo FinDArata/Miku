@@ -155,7 +155,7 @@ pub fn listen(codes: &[String], tx: Sender<(KeyEvent, Instant)>) -> Result<KeyLi
     let stop = Arc::new(AtomicBool::new(false));
     let stop_thread = stop.clone();
     let thread = std::thread::Builder::new()
-        .name("coucou-flow-keys".into())
+        .name("kanon-flow-keys".into())
         .spawn(move || run(conn, keymap, members, tx, stop_thread))
         .map_err(|e| e.to_string())?;
     Ok(KeyListener { stop, thread: Some(thread) })
@@ -245,7 +245,7 @@ fn class_of(conn: &RustConnection, window: u32) -> Option<(String, String)> {
     let reply = conn.get_property(false, window, AtomEnum::WM_CLASS, AtomEnum::STRING, 0, 256).ok()?.reply().ok()?;
     let parts: Vec<&[u8]> = reply.value.split(|&b| b == 0).filter(|p| !p.is_empty()).collect();
     let class = String::from_utf8_lossy(parts.last()?).to_string();
-    if class.is_empty() || class.eq_ignore_ascii_case("coucou") {
+    if class.is_empty() || class.eq_ignore_ascii_case("kanon") {
         return None;
     }
     Some((class.to_lowercase(), super::display_name(&class)))

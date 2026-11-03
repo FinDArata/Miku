@@ -44,7 +44,7 @@ function bubble(message: ChatMessage): HTMLElement {
     );
   }
   const reply = h("div", { class: "reply" });
-  // A mail plan (```coucou-mail) is never shown as raw JSON: its card goes under the answer.
+  // A mail plan (```kanon-mail) is never shown as raw JSON: its card goes under the answer.
   const { prose, plan } = splitPlan(message.content);
   renderMarkdown(reply, prose);
   if (plan) reply.append(mailPlanCard(`chat-${message.id}-${message.content.length}`, "", message.content));

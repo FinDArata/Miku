@@ -1,9 +1,9 @@
 // WhatsApp in the island (experimental), the Windows and Linux port of the Mac's WhatsAppController.swift.
 //
-// Talks to the local gateway the user runs (GOWA, which Coucou can install and start itself, or
+// Talks to the local gateway the user runs (GOWA, which Kanon can install and start itself, or
 // OpenWA), receives new messages on a webhook bound to 127.0.0.1, falls back to polling every 20 s
 // when no webhook comes, and keeps the conversations in memory only: nothing of a message is ever
-// written to disk or to a log, and everything is forgotten when Coucou quits or the integration is
+// written to disk or to a log, and everything is forgotten when Kanon quits or the integration is
 // turned off. Runs only while the integration is on and its pill is active: otherwise there is no
 // timer, no listener and no request at all.
 //
@@ -139,9 +139,9 @@ pub struct SettingsView {
     /// This account's number once linked.
     pub me: Option<String>,
     pub install: Step,
-    /// A GOWA binary Coucou can start (the one it installed, or one the user gave).
+    /// A GOWA binary Kanon can start (the one it installed, or one the user gave).
     pub installed: bool,
-    /// Where GOWA keeps its WhatsApp session (and Coucou the binary it installed).
+    /// Where GOWA keeps its WhatsApp session (and Kanon the binary it installed).
     pub gowa_dir: String,
     pub pill_active: bool,
     pub ignored: Vec<IgnoredChat>,
@@ -371,7 +371,7 @@ pub fn sync(active_integrations: &[String]) {
     }
 }
 
-/// Coucou quits: GOWA goes with it, and so does everything in memory.
+/// Kanon quits: GOWA goes with it, and so does everything in memory.
 pub fn shutdown() {
     {
         let mut c = ctl();
@@ -430,7 +430,7 @@ fn begin() {
         c.link = LinkState::Connecting;
         c.secret = secret.clone();
         c.tick = 0;
-        // GOWA started by Coucou when asked to, before the first check.
+        // GOWA started by Kanon when asked to, before the first check.
         sync_gowa(&c);
         (c.generation, c.prefs.port, kind)
     };
@@ -479,7 +479,7 @@ fn start_listener(gen: u64, port: u16, kind: Kind, secret: String) {
         if request.method != "POST" || !request.path.starts_with(WEBHOOK_PATH) {
             return 404;
         }
-        // Signed by the gateway with Coucou's secret, over the exact bytes received.
+        // Signed by the gateway with Kanon's secret, over the exact bytes received.
         if !gateway::verify(kind, &request.headers, &request.body, &secret) {
             return 401;
         }
@@ -513,7 +513,7 @@ fn spawn_ticker(gen: u64) {
                 break;
             }
             // Back from sleep (the 5 s took far longer): nothing is trusted, the gateway may have
-            // restarted without Coucou's webhook.
+            // restarted without Kanon's webhook.
             if last.elapsed() > Duration::from_secs(30) {
                 let mut c = ctl();
                 if c.webhook == WebhookState::Registered {
@@ -651,7 +651,7 @@ fn apply(c: &mut Ctl, error: WaError) {
     if c.failures == 2 {
         c.down = true;
     }
-    // GOWA started by Coucou and gone (crash, killed): started again, once a minute at most.
+    // GOWA started by Kanon and gone (crash, killed): started again, once a minute at most.
     if error == WaError::Unreachable {
         sync_gowa(c);
     }
@@ -676,7 +676,7 @@ async fn test_connection() -> TestResult {
     let mut attempt = 0;
     let status = loop {
         match provider.status().await {
-            // GOWA just started by Coucou: a few seconds to come up.
+            // GOWA just started by Kanon: a few seconds to come up.
             Err(WaError::Unreachable) if process::is_running() && attempt < 8 => {
                 attempt += 1;
                 tokio::time::sleep(Duration::from_secs(1)).await;
@@ -961,7 +961,7 @@ async fn send(chat: &str, text: &str) -> bool {
         c.sending = false;
         match result {
             Ok(id) => {
-                let id = id.unwrap_or_else(|| format!("coucou-{}-{}", gateway::now_ms(), c.inbox.conversations.len()));
+                let id = id.unwrap_or_else(|| format!("kanon-{}-{}", gateway::now_ms(), c.inbox.conversations.len()));
                 let mut mine = Message::new(&id, &key, me.as_deref().unwrap_or(""), &body, gateway::now_ms());
                 mine.from_me = true;
                 mine.chat_name = c.inbox.conversations.get(&key).map(|conv| conv.name.clone());
@@ -1089,7 +1089,7 @@ pub fn whatsapp_close(window: WebviewWindow, chat: String) -> Result<(), String>
     Ok(())
 }
 
-/// Enter or the send button in the island's card: the only way a message leaves Coucou.
+/// Enter or the send button in the island's card: the only way a message leaves Kanon.
 #[tauri::command]
 pub async fn whatsapp_send(window: WebviewWindow, chat: String, text: String) -> Result<bool, String> {
     only(&window, crate::island::WINDOW_LABEL)?;
@@ -1142,7 +1142,7 @@ pub fn whatsapp_set_options(window: WebviewWindow, enabled: bool, mute_groups: b
 }
 
 /// Advanced → Save: the gateway, its address and credential (None keeps the stored one, "" removes
-/// it), the webhook's port, and GOWA started by Coucou.
+/// it), the webhook's port, and GOWA started by Kanon.
 #[tauri::command]
 pub fn whatsapp_save_gateway(
     window: WebviewWindow,

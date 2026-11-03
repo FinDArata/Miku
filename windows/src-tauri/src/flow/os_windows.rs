@@ -38,7 +38,7 @@ const VK_LMENU: u32 = 0xA4;
 const VK_RMENU: u32 = 0xA5;
 const VK_LWIN: u32 = 0x5B;
 const VK_RWIN: u32 = 0x5C;
-/// Unassigned: pressed and released by Coucou so a held Alt or Win, once let
+/// Unassigned: pressed and released by Kanon so a held Alt or Win, once let
 /// go, opens neither the app's menu bar nor the Start menu.
 const VK_MASK: u16 = 0xE8;
 
@@ -200,7 +200,7 @@ pub fn listen(codes: &[String], tx: Sender<(KeyEvent, Instant)>) -> Result<KeyLi
     *SINK.lock().unwrap() = Some(tx);
     let (ready_tx, ready_rx) = std::sync::mpsc::channel::<Result<u32, String>>();
     let thread = std::thread::Builder::new()
-        .name("coucou-flow-keys".into())
+        .name("kanon-flow-keys".into())
         .spawn(move || unsafe {
             let module = GetModuleHandleW(None).ok();
             let handle = match SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook), module.map(Into::into), 0) {
@@ -297,7 +297,7 @@ fn program_of(hwnd: HWND) -> Option<(String, String)> {
     }
 }
 
-/// The app in front: (id, name), None for Coucou itself or the desktop.
+/// The app in front: (id, name), None for Kanon itself or the desktop.
 pub fn foreground_app() -> Option<(String, String)> {
     let hwnd = unsafe { GetForegroundWindow() };
     if hwnd.0.is_null() {

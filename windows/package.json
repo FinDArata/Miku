@@ -1,5 +1,5 @@
 {
-  "name": "coucou-windows",
+  "name": "kanon-windows",
   "private": true,
   "version": "0.5.9",
   "type": "module",
@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "test": "node --import ./tests/setup.mjs --test \"tests/**/*.test.mjs\"",
     "icons": "node scripts/gen-icons.mjs",
+    "sounds": "node scripts/gen-sounds.mjs --style=chimes",
     "tauri": "tauri",
-    "predev": "cargo build --release -p coucou-hook",
-    "prebuild": "cargo build --release -p coucou-hook",
+    "predev": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p kanon-hook",
+    "prebuild": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p kanon-hook",
     "pack": "tauri build && node scripts/pack.mjs"
   },
   "devDependencies": {

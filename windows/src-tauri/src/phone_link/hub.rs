@@ -73,7 +73,7 @@ const STATES: &[&str] = &[
 ];
 
 /// How a decision gets back to the agent. The app's implementation answers the
-/// waiting `coucou-hook` and closes the card on the island.
+/// waiting `kanon-hook` and closes the card on the island.
 pub trait Host: Send + Sync {
     fn decide(&self, request_id: &str, allow: bool);
     /// A phone answered a question Claude Code asked: each question's text mapped to the label picked (a list of
@@ -1276,7 +1276,7 @@ mod tests {
             step_count: 3,
             steps: vec!["Read · a.rs".into(), "Edit · a.rs".into()],
             final_line: Some("All done".into()),
-            project: Some("/home/me/work/coucou".into()),
+            project: Some("/home/me/work/kanon".into()),
             color: Some("#2DD4BF".into()),
             ..Default::default()
         }
@@ -1314,7 +1314,7 @@ mod tests {
         assert!(p.get("steps").is_none() && p.get("finalLine").is_none() && p.get("project").is_none() && p.get("color").is_none());
         assert_eq!(r["steps"], json!(["Read · a.rs", "Edit · a.rs"]));
         assert_eq!(r["finalLine"], "All done");
-        assert_eq!(r["project"], "coucou");
+        assert_eq!(r["project"], "kanon");
         assert_eq!(r["color"], "#2DD4BF");
         // and the shared fields are the same for both
         assert_eq!(p["statusText"], r["statusText"]);
@@ -1326,7 +1326,7 @@ mod tests {
         hub.publish(vec![rich("integration_claude")], None, 1_000);
         let (tx, mut rx) = mpsc::channel(8);
         hub.subscribe(tx, 1_001, true);
-        assert_eq!(first_sessions(&mut rx)[0]["project"], "coucou");
+        assert_eq!(first_sessions(&mut rx)[0]["project"], "kanon");
     }
 
     #[test]
@@ -1358,8 +1358,8 @@ mod tests {
 
     #[test]
     fn the_project_is_a_folder_name_never_a_path() {
-        assert_eq!(project_name("/home/me/work/coucou").as_deref(), Some("coucou"));
-        assert_eq!(project_name("/home/me/work/coucou/").as_deref(), Some("coucou"));
+        assert_eq!(project_name("/home/me/work/kanon").as_deref(), Some("kanon"));
+        assert_eq!(project_name("/home/me/work/kanon/").as_deref(), Some("kanon"));
         assert_eq!(project_name("C:\\Users\\me\\proj").as_deref(), Some("proj"));
         assert_eq!(project_name("C:\\Users\\me\\proj\\").as_deref(), Some("proj"));
         assert_eq!(project_name("proj").as_deref(), Some("proj"));
@@ -1415,7 +1415,7 @@ mod tests {
         assert!(!steps.is_empty() && steps.len() < MAX_STEPS);
         assert!(steps.last().unwrap().as_str().unwrap().starts_with("29: "));
         // and the short fields are all still there
-        assert_eq!(list[15]["project"], "coucou");
+        assert_eq!(list[15]["project"], "kanon");
     }
 
     #[test]
@@ -2051,7 +2051,7 @@ mod tests {
             allowed: 20.0,
             denied: 3.0,
             top_agent: Some("Claude Code\n<b>".into()),
-            top_project: Some("/home/someone/private/coucou".into()),
+            top_project: Some("/home/someone/private/kanon".into()),
         }
     }
 
@@ -2085,10 +2085,10 @@ mod tests {
         drain(&mut detailed);
         hub.publish_recap(recap_in());
         assert!(drain(&mut plain)[0].get("project").is_none());
-        assert_eq!(drain(&mut detailed)[0]["project"], "coucou", "the folder, never the path");
+        assert_eq!(drain(&mut detailed)[0]["project"], "kanon", "the folder, never the path");
         // A phone arriving later is told the form it may have.
         let (_, mut late) = sub_with(&hub, Caps { recap: true, details: true, ..Caps::default() });
-        assert_eq!(drain(&mut late).iter().find(|l| l["type"] == "recap").unwrap()["project"], "coucou");
+        assert_eq!(drain(&mut late).iter().find(|l| l["type"] == "recap").unwrap()["project"], "kanon");
         let (_, mut late_plain) = sub_with(&hub, Caps { recap: true, ..Caps::default() });
         assert!(drain(&mut late_plain).iter().find(|l| l["type"] == "recap").unwrap().get("project").is_none());
     }

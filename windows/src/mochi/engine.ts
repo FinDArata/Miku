@@ -7,7 +7,7 @@
 import { Ease, lerp, type EaseFn } from "../core/anim";
 import { Sound } from "../core/sound";
 import type { BotEmoteName, BotStateName } from "../core/layout";
-import { PUMPKIN_BODY, drawOutfitBehind, drawOutfitFront, makeHead } from "./outfits";
+import { drawOutfitBehind, drawOutfitFront, makeHead } from "./outfits";
 import type { Outfit } from "./wardrobe";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -61,16 +61,46 @@ interface Particle {
   age: number; life: number; rot: number; size: number;
 }
 
-// ── Constants (MochiConst / PISTES.mochi) ─────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
+// (Mochi's squircle constants retired with the Kanon chibi; see K_* below.)
 
-const EYE_W = 0.25;
-const EYE_H = 0.27;
-const EYE_SP = 0.37;
-const EYE_P = -0.12;
-const BASE_TOP: RGB = [0.929, 0.929, 0.937]; // #EDEDEF
-const BASE_BOTTOM: RGB = [0.769, 0.773, 0.792]; // #C4C5CA
-const INK = "rgb(26,20,18)"; // #1A1412
 const MINI_INK = "rgb(16,19,26)"; // #10131A
+
+// ── Kanon (花音) — chibi ala Mai Kawasumi (design/prototype/kanon.html v4.3) ──
+const K_HAIR: RGB = [0.227, 0.275, 0.408];   // #3A4668
+const K_HAIR_D: RGB = [0.165, 0.2, 0.314];   // #2A3350
+const K_HAIR_HI = "rgba(92,108,150,0.55)";
+const K_BOW: RGB = [0.604, 0.635, 0.878];    // #9AA2E0
+const K_BOW_D: RGB = [0.482, 0.514, 0.784];  // #7B83C8
+const K_SKIN: RGB = [1, 0.914, 0.863];       // #FFE9DC
+const K_EYE_G1: RGB = [0.341, 0.851, 0.604]; // #57D99A
+const K_EYE_G2: RGB = [0.051, 0.478, 0.322]; // #0D7A52
+const K_EYE_INK = "rgb(28,43,38)";           // #1C2B26
+const K_DRESS: RGB = [0.576, 0.224, 0.29];   // #93394A
+const K_DRESS_D: RGB = [0.478, 0.173, 0.235];// #7A2C3C
+const K_CAPE: RGB = [0.957, 0.957, 0.973];   // #F4F4F8
+const K_CAPE_B: RGB = [0.886, 0.89, 0.941];
+const K_TRIM: RGB = [0.545, 0.576, 0.839];   // #8B93D6
+const K_SAKURA: RGB = [0.957, 0.447, 0.714]; // #F472B6
+const K_GOLD = "rgb(245,200,110)";
+const K_BLADE = "rgb(201,204,216)";
+const K_INK = "rgb(32,36,46)";
+
+function mixRGB(a: RGB, b: RGB, k: number): RGB {
+  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+}
+
+/** Jepit not ♪ — tanda tangan merek Kanon, digambar di kode. */
+function kanonNote(x: CanvasRenderingContext2D, px: number, py: number, s: number, col: string, rot: number) {
+  x.save(); x.translate(px, py); x.rotate(rot); x.fillStyle = col;
+  x.beginPath(); x.ellipse(0, s * 0.32, s * 0.36, s * 0.26, -0.3, 0, Math.PI * 2); x.fill();
+  x.fillRect(s * 0.3, -s * 0.95, s * 0.13, s * 1.27);
+  x.beginPath(); x.moveTo(s * 0.43, -s * 0.95);
+  x.quadraticCurveTo(s * 0.95, -s * 0.82, s * 0.9, -s * 0.3);
+  x.quadraticCurveTo(s * 0.66, -s * 0.52, s * 0.43, -s * 0.42);
+  x.closePath(); x.fill();
+  x.restore();
+}
 
 const C = {
   idle: [0.902, 0.914, 0.933] as RGB,
@@ -199,7 +229,7 @@ export class BotEngine {
   /** Solid body colour for mini bots / integration pills (null = Mochi gradient). */
   bodyColor: RGB | null = null;
   /**
-   * A new Coucou waits (whats-new/whats-new.ts): while Mochi is idle or asleep
+   * A new Kanon waits (whats-new/whats-new.ts): while Mochi is idle or asleep
    * he wears the up-arrow badge. The island turns his body blue alongside.
    */
   private updateHint: RGB | null = null;
@@ -396,7 +426,7 @@ export class BotEngine {
     this.anim("roll", [[Math.PI * 2 * turns, durationMs, Ease.inOut]], () => { this.roll = 0; });
   }
 
-  /** Peek wave — the "coucou". Timings from BotEngine.greet(). */
+  /** Peek wave — the "kanon". Timings from BotEngine.greet(). */
   greet() {
     const t = now();
     const tok = ++this.greetToken;
@@ -829,18 +859,17 @@ export class BotEngine {
     if (blushVal > 0.01) {
       x.save();
       x.clip(body);
-      const yOffset = Math.sin(this.yaw) * rx * 0.8;
-      x.fillStyle = `rgba(255,120,150,${0.5 * blushVal})`;
+      x.fillStyle = `rgba(255,150,170,${0.45 * blushVal})`;
       for (const sd of [-1, 1]) {
         x.beginPath();
-        x.ellipse(sd * rx * 0.55 + yOffset, ry * 0.2, R * 0.17, R * 0.1, 0, 0, Math.PI * 2);
+        x.ellipse(sd * R * 0.32, -R * 0.26, R * 0.09, R * 0.055, 0, 0, Math.PI * 2);
         x.fill();
       }
       x.restore();
     }
 
     this.drawEyes(x, body, R, rx, ry);
-    if (this.morph > 0.05) this.drawMouth(x, body, R);
+    this.drawKanonFront(x, R, rx, ry);
 
     if (head) drawOutfitFront(x, this.outfit, head, outfitState);
 
@@ -882,319 +911,341 @@ export class BotEngine {
   }
 
   /** How much of the pumpkin's orange shows on the body (it comes and goes with the outfit). */
-  private get pumpkinAlpha(): number {
-    if (this.isMini || this.outfit !== "pumpkin") return 0;
-    return Math.min(1, this.outfitPresence * 2.5) * (1 - this.morph);
-  }
-
-  private drawBody(x: CanvasRenderingContext2D, body: Path2D, R: number, rx: number, ry: number) {
-    const pumpkin = this.pumpkinAlpha;
-    if (this.bodyColor) {
-      // Mini bots: flat solid fill — no gradient, no reflection, no highlight
-      x.fillStyle = rgba(this.bodyColor, 1);
-      x.fill(body);
-      if (pumpkin <= 0.001) return;
-    } else {
-      const g = x.createLinearGradient(rx * 0.7, -ry * 0.85, -rx * 0.8, ry * 0.9);
-      g.addColorStop(0, rgba(BASE_TOP));
-      g.addColorStop(1, rgba(BASE_BOTTOM));
-      x.fillStyle = g;
-      x.fill(body);
-    }
+  /** Chibi Kanon utuh — lapisan belakang (rambut/pita) sampai badan; wajah di drawEyes. */
+  private drawBody(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
+    const u = R / 158;
+    const t = now();
+    const state = this.state;
+    const tint = Math.min(1, this.tint);
     x.save();
-    if (pumpkin > 0.001) {
-      const pg = x.createLinearGradient(rx * 0.7, -ry * 0.85, -rx * 0.8, ry * 0.9);
-      pg.addColorStop(0, PUMPKIN_BODY[0]);
-      pg.addColorStop(1, PUMPKIN_BODY[1]);
-      x.globalAlpha = pumpkin;
-      x.fillStyle = pg;
-      x.fill(body);
-      // A flat-coloured body only gets the shading while it is a pumpkin.
-      x.globalAlpha = this.bodyColor ? pumpkin : 1;
+    x.scale(u, u);
+    x.translate(-150, -150);
+
+    if (this.isMini) {
+      // Mini bot: kepala saja, rambut mewarnai pill
+      const hair = this.bodyColor ? mixRGB(K_HAIR, this.bodyColor, 0.62) : K_HAIR;
+      x.fillStyle = rgba(hair);
+      x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
+      this.kanonHeadMass(x, hair);
+      x.restore();
+      return;
     }
 
-    const effectiveTint = this.tint * (1 - this.morph);
-    if (effectiveTint > 0.01) {
-      const tg = x.createLinearGradient(0, ry, 0, -ry);
-      tg.addColorStop(0, rgba(this.col, 0.72 * effectiveTint));
-      tg.addColorStop(1, rgba(this.col, 0));
-      x.fillStyle = tg;
-      x.fill(body);
+    // ── lapisan belakang: tirai rambut panjang + ekor kuda + pita belakang ──
+    const sway = this.isDancing ? Math.sin(t * 6) * 6
+      : state === "dizzy" ? Math.sin(t * 9) * 5 : Math.sin(t * 1.6) * 1.8;
+    const hg = x.createLinearGradient(0, 10, 0, 260);
+    hg.addColorStop(0, rgba(K_HAIR));
+    hg.addColorStop(1, rgba(K_HAIR_D));
+    x.fillStyle = hg;
+    x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
+    for (const s of [-1, 1]) {
+      x.beginPath();
+      x.moveTo(s * 80 + sway, 90);
+      x.quadraticCurveTo(s * 86 + sway, 190, s * 66 + sway, 246);
+      x.quadraticCurveTo(s * 40 + sway, 252, s * 30 + sway, 236);
+      x.quadraticCurveTo(s * 52 + sway, 180, s * 46 + sway, 96);
+      x.closePath(); x.fill();
+    }
+    x.save(); x.translate(56 + sway * 0.6, 108); x.rotate(0.12 + sway * 0.02);
+    x.fillStyle = rgba(K_HAIR_D);
+    x.beginPath(); x.moveTo(-16, 0);
+    x.quadraticCurveTo(30, 60, 10, 150);
+    x.quadraticCurveTo(-6, 158, -18, 148);
+    x.quadraticCurveTo(2, 70, -34, 10);
+    x.closePath(); x.fill();
+    x.restore();
+    // pita belakang: ekor menggantung + loop mengintip dua sisi kepala
+    x.fillStyle = rgba(K_BOW_D);
+    for (const s of [-1, 1]) {
+      x.beginPath();
+      x.moveTo(s * 66, 100);
+      x.quadraticCurveTo(s * 82, 132, s * 70, 170);
+      x.quadraticCurveTo(s * 62, 165, s * 57, 150);
+      x.quadraticCurveTo(s * 63, 122, s * 56, 104);
+      x.closePath(); x.fill();
+    }
+    x.fillStyle = rgba(K_BOW);
+    for (const s of [-1, 1]) {
+      x.save(); x.translate(s * 86, 92); x.rotate(s * 0.55);
+      x.beginPath(); x.moveTo(0, 0);
+      x.quadraticCurveTo(s * 26, -20, s * 32, 0);
+      x.quadraticCurveTo(s * 26, 16, 0, 8);
+      x.closePath(); x.fill();
+      x.restore();
     }
 
-    const sh = x.createRadialGradient(0, 0, R * 0.15, 0, 0, R * 1.25);
-    sh.addColorStop(0, "rgba(0,0,0,0)");
-    sh.addColorStop(0.6, "rgba(0,0,0,0)");
-    sh.addColorStop(1, "rgba(0,0,0,0.2)");
-    x.fillStyle = sh;
-    x.fill(body);
+    // ── gaun marun ──
+    const dg = x.createLinearGradient(0, 120, 0, 258);
+    dg.addColorStop(0, rgba(K_DRESS));
+    dg.addColorStop(1, rgba(K_DRESS_D));
+    x.fillStyle = dg;
+    x.beginPath(); x.moveTo(-46, 124);
+    x.quadraticCurveTo(-62, 200, -54, 248);
+    x.quadraticCurveTo(0, 260, 54, 248);
+    x.quadraticCurveTo(62, 200, 46, 124);
+    x.closePath(); x.fill();
+    x.strokeStyle = "rgba(255,255,255,0.85)"; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(-52, 244); x.quadraticCurveTo(0, 256, 52, 244); x.stroke();
 
-    const hl = x.createRadialGradient(rx * 0.34, -ry * 0.46, 0, rx * 0.34, -ry * 0.46, R * 0.42);
-    hl.addColorStop(0, "rgba(255,255,255,0.55)");
-    hl.addColorStop(1, "rgba(255,255,255,0)");
-    x.fillStyle = hl;
-    x.fill(body);
+    // ── lengan ──
+    x.fillStyle = rgba(K_DRESS);
+    if (state === "working") {
+      x.beginPath(); x.ellipse(-30, 172, 16, 30, 0.4, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(30, 172, 16, 30, -0.4, 0, Math.PI * 2); x.fill();
+      x.fillStyle = "#fff";
+      x.beginPath(); x.ellipse(-14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(K_SKIN);
+      x.beginPath(); x.ellipse(0, 204, 12, 6, 0, 0, Math.PI * 2); x.fill();
+    } else {
+      x.beginPath(); x.ellipse(-34, 168, 17, 34, 0.35, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(50, 172, 15, 30, -0.5, 0, Math.PI * 2); x.fill();
+      x.fillStyle = "#fff";
+      x.beginPath(); x.ellipse(62, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(K_SKIN);
+      x.beginPath(); x.ellipse(74, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
+    }
+
+    // ── cape putih — warna state melebur di sini ──
+    const capeTop = mixRGB(K_CAPE, this.col, tint * 0.5);
+    const capeBot = mixRGB(K_CAPE_B, this.col, tint * 0.32);
+    const cg = x.createLinearGradient(0, 118, 0, 176);
+    cg.addColorStop(0, rgba(capeTop));
+    cg.addColorStop(1, rgba(capeBot));
+    x.fillStyle = cg;
+    x.beginPath(); x.moveTo(-58, 120);
+    x.quadraticCurveTo(-66, 168, -44, 176);
+    x.lineTo(44, 176);
+    x.quadraticCurveTo(66, 168, 58, 120);
+    x.quadraticCurveTo(0, 136, -58, 120);
+    x.closePath(); x.fill();
+    x.strokeStyle = rgba(K_TRIM, 0.9); x.lineWidth = 3;
+    x.beginPath(); x.moveTo(-60, 128); x.quadraticCurveTo(-64, 164, -44, 174);
+    x.lineTo(44, 174); x.quadraticCurveTo(64, 164, 60, 128); x.stroke();
+
+    // ── pita leher ──
+    x.fillStyle = rgba(K_DRESS);
+    roundRectPath(x, -15, 136, 30, 9, 3); x.fill();
+    x.fillStyle = "#6b83d9";
+    x.beginPath(); x.moveTo(0, 150); x.quadraticCurveTo(-24, 139, -31, 150);
+    x.quadraticCurveTo(-24, 163, 0, 159); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(0, 150); x.quadraticCurveTo(24, 139, 31, 150);
+    x.quadraticCurveTo(24, 163, 0, 159); x.closePath(); x.fill();
+    x.beginPath(); x.ellipse(0, 152, 6.5, 5, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#5a72c4";
+    x.beginPath(); x.moveTo(-3, 157); x.quadraticCurveTo(-9, 172, -15, 181);
+    x.lineTo(-6, 179); x.quadraticCurveTo(-1, 166, 3, 157); x.closePath(); x.fill();
+
+    // ── kepala: wajah + poni + side locks ──
+    this.kanonHeadMass(x, K_HAIR);
     x.restore();
   }
 
-  private drawEyes(x: CanvasRenderingContext2D, body: Path2D, R: number, rx: number, ry: number) {
+  /** Wajah + poni + side locks (dipakai chibi penuh dan mini). */
+  private kanonHeadMass(x: CanvasRenderingContext2D, hair: RGB) {
+    x.fillStyle = rgba(K_SKIN);
+    x.beginPath(); x.ellipse(150, 76, 64, 60, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = rgba(hair);
+    for (let i = -2; i <= 2; i++) {
+      x.save(); x.translate(150 + i * 28, 38 + Math.abs(i) * 3); x.rotate(i * 0.05);
+      x.beginPath(); x.ellipse(0, 0, 24, 27, 0, 0, Math.PI * 2); x.fill();
+      x.restore();
+    }
+    x.fillStyle = K_HAIR_HI; x.globalAlpha = 0.55;
+    x.beginPath(); x.ellipse(116, 26, 6, 15, 0.25, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(182, 24, 5.5, 14, -0.2, 0, Math.PI * 2); x.fill();
+    x.globalAlpha = 1;
+    x.fillStyle = rgba(K_HAIR_D);
+    x.beginPath(); x.ellipse(84, 96, 13, 52, 0.08, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(216, 96, 13, 52, -0.08, 0, Math.PI * 2); x.fill();
+  }
+
+  /** Wajah Kanon: alis, mata (half-lidded stoic + emote), mulut, kacamata. */
+  private drawEyes(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
     let shape: EyeShape = this.eyeOverride ?? this.cfg.eye;
-    // Dancing: happy eyes in the calm states.
     if (this.isDancing && this.dancingLevel > 0.15 && !this.isMini && (this.state === "idle" || this.state === "finished")) {
       shape = "happy";
     }
-    if (this.morph > 0.5) {
-      if (this.isChewing) shape = "happy";
-      else if (this.slotHTarget > 0.05 || this.slotH > 0.1) shape = "cup";
-    }
+    const u = R / 158;
+    const state = this.state;
+    const ink = this.isMini ? MINI_INK : K_EYE_INK;
+    const es = this.es;
+    const blink = this.open < 0.22;
 
     x.save();
-    x.clip(body);
-    const ink = this.isMini ? MINI_INK : INK;
-    x.fillStyle = ink;
-    x.strokeStyle = ink;
+    x.scale(u, u);
+    x.translate(-150, -150);
 
+    // alis — rata, ujung dalam sedikit naik (meek)
+    x.strokeStyle = ink; x.lineWidth = 2.2; x.lineCap = "round";
+    const browLift = shape === "happy" ? -2.5 : 0;
     for (const sd of [-1, 1]) {
-      const eyeYaw = sd * EYE_SP + this.yaw;
-      // Rolling with an outfit on, the whole body turns: the eyes must not roll again.
-      let eyePitch = EYE_P + this.pitch + (this.rigidRoll ? 0 : this.roll);
-      eyePitch = (((eyePitch + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-      const cp = Math.cos(eyePitch);
-      if (Math.cos(eyeYaw) * cp <= 0.04) continue;
-
-      const ex = Math.sin(eyeYaw) * cp * rx;
-      const ey = -Math.sin(eyePitch) * ry + (this.morph > 0 ? ry * 0.14 * this.morph : 0);
-      const fx = lerp(Math.max(0.18, Math.cos(eyeYaw)), 1, this.morph * 0.7);
-      const fy = lerp(Math.max(0.18, cp), 1, this.morph * 0.7);
-      const eyeMult = this.isMini ? 1.9 : 1.0;
-      const ew = R * EYE_W * this.es * eyeMult;
-      const eh = R * EYE_H * this.es * eyeMult;
-
-      x.save();
-      x.translate(ex, ey);
-      x.scale(fx, fy);
-      this.drawEyeShape(x, shape, ew, eh, sd, ink);
-      x.restore();
-    }
-    x.restore();
-  }
-
-  private drawEyeShape(
-    x: CanvasRenderingContext2D, shape: EyeShape,
-    w: number, h: number, sd: number, ink: string,
-  ) {
-    const t = now();
-    switch (shape) {
-      case "wide":
-        this.drawEyeShape(x, "pill", w * 1.16, h * 1.12, sd, ink);
-        break;
-      case "pill": {
-        const hh = Math.max(h * this.open, w * 0.3);
-        roundRectPath(x, -w / 2, -hh / 2, w, hh, Math.min(w / 2, hh / 2));
-        x.fill();
-        break;
-      }
-      case "dot":
-        x.beginPath();
-        x.arc(0, 0, w * 0.45, 0, Math.PI * 2);
-        x.fill();
-        break;
-      case "line":
-        x.rotate(-sd * 0.2);
-        roundRectPath(x, -w * 0.78, -w * 0.21, w * 1.56, w * 0.42, w * 0.21);
-        x.fill();
-        break;
-      case "flat":
-        roundRectPath(x, -w * 0.72, -w * 0.2, w * 1.44, w * 0.4, w * 0.2);
-        x.fill();
-        break;
-      case "happy":
-        x.lineWidth = w * 0.5;
-        x.lineCap = "round";
-        x.beginPath();
-        x.arc(0, h * 0.18, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
-        x.stroke();
-        break;
-      case "closed":
-        x.lineWidth = w * 0.36;
-        x.lineCap = "round";
-        x.beginPath();
-        x.arc(0, -h * 0.08, w * 0.78, Math.PI * 0.15, Math.PI * 0.85);
-        x.stroke();
-        break;
-      case "spiral": {
-        x.lineWidth = w * 0.22;
-        x.lineCap = "round";
-        x.beginPath();
-        for (let a = 0; a < 4.4 * Math.PI; a += 0.2) {
-          const r = w * 0.06 + a * w * 0.058;
-          const aa = a + t * 9 * sd;
-          const px = Math.cos(aa) * r;
-          const py = Math.sin(aa) * r;
-          if (a === 0) x.moveTo(px, py);
-          else x.lineTo(px, py);
-        }
-        x.stroke();
-        break;
-      }
-      case "heart":
-        x.fillStyle = "#FF4D6D";
-        heartPath(x, w * 1.2);
-        x.fill();
-        x.fillStyle = ink;
-        break;
-      case "star":
-        x.fillStyle = "#F7B32B";
-        x.rotate(t * 1.5 * sd);
-        starPath(x, w * 1.05, w * 0.46);
-        x.fill();
-        x.fillStyle = ink;
-        break;
-      case "tired":
-        roundRectPath(x, -w / 2, -h * 0.02, w, h * 0.38, w / 2);
-        x.fill();
-        roundRectPath(x, -w * 0.62, -h * 0.1, w * 1.24, w * 0.22, w * 0.11);
-        x.fill();
-        break;
-      case "wink":
-        if (sd < 0) {
-          const hh = Math.max(h * this.open, w * 0.3);
-          roundRectPath(x, -w / 2, -hh / 2, w, hh, Math.min(w / 2, hh / 2));
-          x.fill();
-        } else {
-          x.lineWidth = w * 0.5;
-          x.lineCap = "round";
-          x.beginPath();
-          x.arc(0, h * 0.18, w * 0.82, Math.PI * 1.12, Math.PI * 1.88);
-          x.stroke();
-        }
-        break;
-      case "cup": {
-        // Flat top, rounded bottom corners (U shape) — used while the box is open
-        const hh = Math.max(h * this.open, w * 0.3);
-        const cr = Math.min(w / 2, hh / 2);
-        x.beginPath();
-        x.moveTo(-w / 2, -hh / 2);
-        x.lineTo(w / 2, -hh / 2);
-        x.lineTo(w / 2, hh / 2 - cr);
-        x.quadraticCurveTo(w / 2, hh / 2, w / 2 - cr, hh / 2);
-        x.lineTo(-w / 2 + cr, hh / 2);
-        x.quadraticCurveTo(-w / 2, hh / 2, -w / 2, hh / 2 - cr);
-        x.closePath();
-        x.fill();
-        break;
-      }
-    }
-  }
-
-  /** Mailbox slot: dark pill cut into the box face, with rim and lip highlights. */
-  private drawMouth(x: CanvasRenderingContext2D, body: Path2D, R: number) {
-    const m = this.morph;
-    const hW = R * 1.8 * m;
-    const hH = this.slotH * R * m;
-    const hX = -hW / 2;
-    const boxTop = -R * (0.88 + 0.06 * m);
-    const hY = boxTop + R * 0.08 * m;
-
-    x.save();
-    x.clip(body);
-
-    x.strokeStyle = `rgba(255,255,255,${0.55 * m})`;
-    x.lineWidth = 1;
-    x.lineCap = "round";
-    x.beginPath();
-    x.moveTo(-R * 0.9 * m, boxTop + 1);
-    x.lineTo(R * 0.9 * m, boxTop + 1);
-    x.stroke();
-
-    if (hH > 0.8) {
-      const hR = Math.min(hW / 2, hH / 2);
-      const g = x.createLinearGradient(0, hY, 0, hY + hH);
-      g.addColorStop(0, "rgb(7,8,10)");
-      g.addColorStop(1, "rgb(16,19,26)");
-      roundRectPath(x, hX, hY, hW, hH, hR);
-      x.fillStyle = g;
-      x.fill();
-      if (hH > 4) {
-        const lipR = Math.min(hR, (hW - 2) / 2);
-        x.strokeStyle = `rgba(255,255,255,${0.28 * m})`;
-        x.beginPath();
-        x.moveTo(hX + lipR, hY + hH - 0.5);
-        x.lineTo(hX + hW - lipR, hY + hH - 0.5);
-        x.stroke();
-      }
-    }
-    x.restore();
-  }
-
-  /** Hands sit behind the body — drawn before it, in world coordinates. */
-  private drawHandsBehind(
-    x: CanvasRenderingContext2D,
-    R: number, rx: number, ry: number, cx: number, cy: number,
-  ) {
-    if (this.hands <= 0.01 || this.isMini) return;
-    if (R <= 14) return; // meaningless at compact/peek sizes
-
-    const n = now();
-    const bodyH = 2 * ry;
-    const hew = 0.3 * ry * this.hands;
-    const heh = 0.26 * ry * this.hands;
-    const hwB = rx * this.sx;
-    const hhB = ry * this.sy;
-    const isWaving = n >= this.waveStart && this.waveStart > 0 && n < this.waveUntil;
-
-    for (const sd of [-1, 1]) {
-      let localX: number;
-      let localY: number;
-      let handRot = 0;
-
-      if (sd > 0 && isWaving) {
-        const wt = n - this.waveStart;
-        const rise = Math.min(1, wt / 0.18);
-        const riseEased = 1 - Math.pow(1 - rise, 3);
-        const restX = hwB * 1.08;
-        const restY = hhB * 0.7;
-        const oscX = Math.cos(13 * wt) * 0.06 * bodyH;
-        const oscY = -Math.sin(13 * wt) * 0.14 * bodyH;
-        const waveX = hwB * 1.1 + oscX;
-        const waveY = -hhB * 0.15 + oscY;
-        localX = restX + (waveX - restX) * riseEased;
-        localY = restY + (waveY - restY) * riseEased;
-        handRot = (-0.5 + Math.sin(13 * wt) * 0.35) * riseEased;
-      } else if (sd < 0 && isWaving) {
-        const wt = n - this.waveStart;
-        localX = -hwB * 1.08;
-        localY = hhB * 0.7 + Math.sin(6 * wt) * 0.04 * bodyH;
-      } else {
-        localX = sd * hwB * 1.08;
-        localY = hhB * 0.7;
-      }
-
-      const cosT = Math.cos(this.tilt);
-      const sinT = Math.sin(this.tilt);
-      const worldX = cx + cosT * localX - sinT * localY;
-      const worldY = cy + sinT * localX + cosT * localY;
-
-      x.save();
-      x.translate(worldX, worldY);
-      if (handRot !== 0) x.rotate(handRot);
-      const g = x.createLinearGradient(hew * 0.7, -heh * 0.85, -hew * 0.8, heh * 0.9);
-      if (this.bodyColor) {
-        g.addColorStop(0, rgba(mix3(this.bodyColor, [1, 1, 1], 0.35)));
-        g.addColorStop(1, rgba(this.bodyColor));
-      } else {
-        g.addColorStop(0, rgba(BASE_TOP));
-        g.addColorStop(1, rgba(BASE_BOTTOM));
-      }
+      const bx = 150 + sd * 30 + this.lookX * 4;
       x.beginPath();
-      x.ellipse(0, 0, hew, heh, 0, 0, Math.PI * 2);
-      x.fillStyle = g;
-      x.fill();
-      x.strokeStyle = "rgba(0,0,0,0.08)";
-      x.lineWidth = 1;
+      x.moveTo(bx - sd * 8, 59.5 + browLift);
+      x.quadraticCurveTo(bx, 61.5 + browLift, bx + sd * 8, 61 + browLift);
       x.stroke();
-      x.restore();
     }
+
+    const eye = (sd: number, mode: "normal" | "happy" | "closed" | "tired" | "flat" | "dot" | "x" | "heart" | "star" | "wink") => {
+      const EW = 13 * es, EH = 19 * es;
+      const ex = 150 + sd * 30 + this.lookX * 4;
+      const ey = 88 + this.lookY * 3 + 1.5;
+      if (mode === "closed" || (mode === "wink" && sd > 0)) {
+        x.strokeStyle = ink; x.lineWidth = 3;
+        x.beginPath(); x.moveTo(ex - 8, ey); x.quadraticCurveTo(ex, ey + 4.5, ex + 8, ey); x.stroke();
+        return;
+      }
+      if (mode === "happy") {
+        x.strokeStyle = ink; x.lineWidth = 3.6; x.lineCap = "round";
+        x.beginPath(); x.arc(ex, ey + 5.5, 10, Math.PI * 1.15, Math.PI * 1.85); x.stroke();
+        return;
+      }
+      if (mode === "x") {
+        x.strokeStyle = ink; x.lineWidth = 3.4; x.lineCap = "round";
+        x.beginPath(); x.moveTo(ex - 9, ey - 9); x.lineTo(ex + 9, ey + 9);
+        x.moveTo(ex + 9, ey - 9); x.lineTo(ex - 9, ey + 9); x.stroke();
+        return;
+      }
+      if (mode === "flat" || mode === "tired") {
+        x.fillStyle = ink;
+        roundRectPath(x, ex - 11, ey - 2, 22, 5, 2.5); x.fill();
+        return;
+      }
+      // iris gradien zamrud
+      const iris = x.createLinearGradient(0, ey - EH, 0, ey + EH);
+      iris.addColorStop(0, rgba(K_EYE_G1));
+      iris.addColorStop(1, rgba(K_EYE_G2));
+      x.fillStyle = iris;
+      x.beginPath(); x.ellipse(ex, ey, EW, EH, 0, 0, Math.PI * 2); x.fill();
+      x.strokeStyle = ink; x.lineWidth = 1.9;
+      x.beginPath(); x.ellipse(ex, ey, EW, EH, 0, 0, Math.PI * 2); x.stroke();
+      if (mode === "heart") {
+        x.fillStyle = "#FF4D6D";
+        x.save(); x.translate(ex, ey + 1); heartPath(x, EW * 1.1); x.fill(); x.restore();
+      } else if (mode === "star") {
+        x.fillStyle = "#F7B32B";
+        x.save(); x.translate(ex, ey); x.rotate(now() * 1.5 * sd); starPath(x, EW * 0.95, EW * 0.42); x.fill(); x.restore();
+      } else if (mode === "dot") {
+        x.fillStyle = ink;
+        x.beginPath(); x.arc(ex, ey, EW * 0.42, 0, Math.PI * 2); x.fill();
+      }
+      // kelopak atas menutup ~1/3 iris — tatapan tenang (tired berhenti di cabang flat di atas)
+      const lidH = EH * 0.62;
+      x.fillStyle = rgba(K_SKIN);
+      x.fillRect(ex - EW - 3, ey - EH - 6, (EW + 3) * 2, lidH);
+      x.strokeStyle = ink; x.lineWidth = 3.4;
+      const lidY = ey - EH + lidH;
+      x.beginPath(); x.moveTo(ex - EW, lidY); x.quadraticCurveTo(ex, lidY - 4, ex + EW, lidY); x.stroke();
+      x.fillStyle = "#fff";
+      x.beginPath(); x.ellipse(ex - 3, ey + 2.5, 2.5, 3.2, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(ex + 4, ey + 7.5, 1.4, 1.8, 0, 0, Math.PI * 2); x.fill();
+      x.strokeStyle = ink; x.lineWidth = 2.4;
+      x.beginPath(); x.moveTo(ex + sd * 11, lidY + 5); x.lineTo(ex + sd * 18, lidY); x.stroke();
+      x.beginPath(); x.moveTo(ex + sd * 12, lidY + 10); x.lineTo(ex + sd * 20, lidY + 8); x.stroke();
+    };
+
+    for (const sd of [-1, 1]) {
+      const base = shape === "pill" || shape === "wide" || shape === "cup" ? "normal"
+        : shape === "spiral" ? "x" : shape;
+      eye(sd, blink && base === "normal" ? "closed"
+        : base as "happy" | "closed" | "tired" | "flat" | "dot" | "heart" | "star" | "wink");
+    }
+
+    // mulut — hemat ekspresi, khas Mai
+    x.strokeStyle = ink; x.lineWidth = 2.6; x.lineCap = "round";
+    if (this.isChewing) {
+      x.beginPath(); x.arc(146, 118.5, 4, 0.1 * Math.PI, 0.9 * Math.PI);
+      x.arc(154, 118.5, 4, 0.1 * Math.PI, 0.9 * Math.PI); x.stroke();
+    } else if (shape === "happy" || state === "finished" || state === "dancing" as BotStateName) {
+      x.beginPath(); x.arc(150, 120, 9, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
+    } else if (state === "sleeping") {
+      x.beginPath(); x.moveTo(145, 121); x.quadraticCurveTo(150, 125, 155, 121); x.stroke();
+    } else if (state === "dizzy") {
+      x.beginPath();
+      for (let i = 0; i <= 10; i++) { const px = 140 + i * 2, py = 120 + (i % 2 ? -1.8 : 1.8); i ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.stroke();
+    } else if (state === "error") {
+      x.beginPath(); x.arc(150, 126, 5, 1.15 * Math.PI, 1.85 * Math.PI); x.stroke();
+    } else {
+      x.beginPath(); x.moveTo(146.5, 120.5); x.lineTo(153.5, 120.5); x.stroke();
+    }
+
+    // kacamata bulat (state working)
+    if (state === "working" && !this.isMini) {
+      x.strokeStyle = "#22d3ee"; x.lineWidth = 3; x.globalAlpha = 0.92;
+      for (const sd of [-1, 1]) {
+        x.beginPath(); x.arc(150 + sd * 30 + this.lookX * 4, 88, 19, 0, Math.PI * 2); x.stroke();
+      }
+      x.beginPath(); x.moveTo(139, 88); x.quadraticCurveTo(150, 84, 161, 88); x.stroke();
+      x.beginPath(); x.moveTo(101, 88); x.lineTo(86, 83); x.stroke();
+      x.beginPath(); x.moveTo(199, 88); x.lineTo(214, 83); x.stroke();
+      x.globalAlpha = 1;
+    }
+
+    x.restore();
+  }
+
+  /** Lapisan paling depan: ahoge, jepit not, katana/laptop. */
+  private drawKanonFront(x: CanvasRenderingContext2D, R: number, _rx: number, _ry: number) {
+    if (this.isMini) return;
+    const u = R / 158;
+    const t = now();
+    const state = this.state;
+    x.save();
+    x.scale(u, u);
+    x.translate(-150, -150);
+
+    // ahoge — antena sakura, tenang kecuali sedang joget/cegang
+    const sway = state === "dizzy" ? Math.sin(t * 9) * 8
+      : this.isDancing ? Math.sin(t * 6) * 11 : Math.sin(t * 1.8) * 2;
+    x.strokeStyle = rgba(K_SAKURA); x.lineWidth = 3; x.lineCap = "round";
+    x.beginPath(); x.moveTo(150, 12);
+    x.quadraticCurveTo(153, -2, 160 + sway, -6);
+    x.quadraticCurveTo(169 + sway * 1.5, -6, 163 + sway * 1.5, 5);
+    x.stroke();
+    kanonNote(x, 54, 90, 16, rgba(K_SAKURA), 0.2);
+
+    if (state === "working") {
+      // laptop di pelukan + petir error kecil
+      x.fillStyle = K_INK;
+      roundRectPath(x, 110, 186, 80, 44, 8); x.fill();
+      x.fillStyle = "#22d3ee"; x.globalAlpha = 0.8;
+      for (let i = 0; i < 3; i++) x.fillRect(118, 198 + i * 9, 44, 4);
+      x.globalAlpha = 1;
+      if ((t % 1.2) < 0.5) {
+        x.fillStyle = "#fde047";
+        x.beginPath(); x.moveTo(210, 146); x.lineTo(198, 194); x.lineTo(210, 194);
+        x.lineTo(198, 240); x.lineTo(226, 184); x.lineTo(211, 184); x.lineTo(223, 146);
+        x.closePath(); x.fill();
+      }
+    } else if (this.outfit === "none" && R >= 30) {
+      // katana di sisi kanan, digenggam tangan yang sudah digambar di badan
+      x.save(); x.translate(224, 158); x.rotate(0.09);
+      x.fillStyle = K_BLADE;
+      x.beginPath(); x.moveTo(-4, 190); x.lineTo(4, 190); x.lineTo(3, 42); x.lineTo(0, 32);
+      x.lineTo(-3, 42); x.closePath(); x.fill();
+      x.fillStyle = K_GOLD;
+      roundRectPath(x, -9, 190, 18, 6, 2); x.fill();
+      x.fillStyle = K_INK;
+      roundRectPath(x, -4, 196, 8, 28, 3); x.fill();
+      x.restore();
+      x.fillStyle = "#fff";
+      x.beginPath(); x.ellipse(212, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(K_SKIN);
+      x.beginPath(); x.ellipse(224, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
+    }
+
+    x.restore();
+  }
+
+  /** Kanon: moe-sode — tangan tak terlihat; gestur sapa jadi anggukan kepala. */
+  private drawHandsBehind(
+    _x: CanvasRenderingContext2D,
+    _R: number, _rx: number, _ry: number, _cx: number, _cy: number,
+  ) {
+    return;
   }
 
   private drawBadge(x: CanvasRenderingContext2D, badge: Badge, R: number, cx: number, cy: number) {
@@ -1236,7 +1287,7 @@ export class BotEngine {
         }
       }
     } else if (badge.kind === "arrow") {
-      // The "!" badge's ring and disc, with a white up-arrow: a new Coucou is out.
+      // The "!" badge's ring and disc, with a white up-arrow: a new Kanon is out.
       x.fillStyle = "#000";
       x.beginPath();
       x.arc(0, 0, R * 0.3, 0, Math.PI * 2);

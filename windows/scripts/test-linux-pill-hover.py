@@ -27,7 +27,7 @@ args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 output = pathlib.Path(tempfile.mkdtemp(prefix="run-", dir=args.output)).resolve()
 # Keep Unix socket paths short even when --output is deep in a checkout.
-runtime = tempfile.TemporaryDirectory(prefix="coucou-hover-")
+runtime = tempfile.TemporaryDirectory(prefix="kanon-hover-")
 
 
 def tool(name):
@@ -58,9 +58,9 @@ env.update(
     XDG_RUNTIME_DIR=runtime.name,
     LD_PRELOAD=str(shim),
 )
-for directory in [output / "data/coucou/Flow", output / "config"]:
+for directory in [output / "data/kanon/Flow", output / "config"]:
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-(output / "data/coucou/Flow/prefs.json").write_text(
+(output / "data/kanon/Flow/prefs.json").write_text(
     json.dumps({"enabled": True, "openAtLaunch": False})
 )
 
@@ -123,7 +123,7 @@ try:
         if app.poll() is not None:
             break
         try:
-            windows = command("xdotool", "search", "--onlyvisible", "--name", "^Coucou$").splitlines()
+            windows = command("xdotool", "search", "--onlyvisible", "--name", "^Kanon$").splitlines()
         except subprocess.CalledProcessError:
             continue
         for window in windows:

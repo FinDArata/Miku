@@ -52,7 +52,7 @@ const OUT = {
   ...NO_UPDATE,
   consent: true,
   current: "0.5.0",
-  latest: { version: "0.6.0", headline: "Flow dictation", pageUrl: "https://github.com/Louis-CFM/coucou/releases/tag/windows-v0.6.0" },
+  latest: { version: "0.6.0", headline: "Flow dictation", pageUrl: "https://github.com/FinDArata/kanon/releases/tag/windows-v0.6.0" },
   canInstall: true,
 };
 let shown;
@@ -127,7 +127,7 @@ test("an announcement with no version known yet, or while the chat is open, wait
   assert.deepEqual(shown, []);
 });
 
-test("the tray's Update Coucou to X… opens the card without marking anything", () => {
+test("the tray's Update Kanon to X… opens the card without marking anything", () => {
   emit("update-status", OUT);
   State.mode = "expanded";
   State.view = "prompt";

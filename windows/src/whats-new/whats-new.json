@@ -1,5 +1,5 @@
 {
-  "about": "What's new, shown once in the island after Coucou updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
+  "about": "What's new, shown once in the island after Kanon updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 14 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
       "version": "0.5.9",
@@ -23,20 +23,20 @@
             "ja": "アイランドが画面に残る"
           },
           "detail": {
-            "en": "Closed, it keeps Mochi or the time at the top of the screen. Hover it to bring Coucou back.",
-            "zh-Hans": "关闭后，屏幕顶部仍显示 Mochi 或时间。将指针移上去即可唤回 Coucou。",
-            "hi": "बंद होने पर ऊपर Mochi या समय दिखता रहता है। Coucou लौटाने के लिए पॉइंटर रखें।",
-            "es": "Cerrada, muestra a Mochi o la hora arriba. Pasa el puntero para recuperar Coucou.",
-            "ar": "عند الإغلاق يبقى Mochi أو الوقت أعلى الشاشة. مرّر المؤشر لإعادة Coucou.",
-            "fr": "Fermée, elle garde Mochi ou l'heure en haut de l'écran. Survolez-la pour retrouver Coucou.",
-            "bn": "বন্ধ হলেও উপরে Mochi বা সময় থাকে। Coucou ফেরাতে পয়েন্টার রাখুন।",
-            "pt-BR": "Fechada, mostra o Mochi ou a hora no topo. Passe o ponteiro para trazer o Coucou.",
-            "ru": "Закрытый, он показывает Mochi или время вверху. Наведите указатель, чтобы вернуть Coucou.",
-            "id": "Saat ditutup, Mochi atau jam tetap di atas. Arahkan penunjuk untuk memunculkan Coucou.",
-            "de": "Geschlossen zeigt sie oben Mochi oder die Uhrzeit. Zeiger darüber holt Coucou zurück.",
-            "tr": "Kapalıyken üstte Mochi ya da saat kalır. Coucou'yu geri getirmek için üzerine gelin.",
-            "ko": "닫혀도 화면 위에 Mochi나 시간이 남아요. 포인터를 올리면 Coucou가 돌아와요.",
-            "ja": "閉じても上部に Mochi か時刻が残ります。ポインタを乗せると Coucou が戻ります。"
+            "en": "Closed, it keeps Mochi or the time at the top of the screen. Hover it to bring Kanon back.",
+            "zh-Hans": "关闭后，屏幕顶部仍显示 Mochi 或时间。将指针移上去即可唤回 Kanon。",
+            "hi": "बंद होने पर ऊपर Mochi या समय दिखता रहता है। Kanon लौटाने के लिए पॉइंटर रखें।",
+            "es": "Cerrada, muestra a Mochi o la hora arriba. Pasa el puntero para recuperar Kanon.",
+            "ar": "عند الإغلاق يبقى Mochi أو الوقت أعلى الشاشة. مرّر المؤشر لإعادة Kanon.",
+            "fr": "Fermée, elle garde Mochi ou l'heure en haut de l'écran. Survolez-la pour retrouver Kanon.",
+            "bn": "বন্ধ হলেও উপরে Mochi বা সময় থাকে। Kanon ফেরাতে পয়েন্টার রাখুন।",
+            "pt-BR": "Fechada, mostra o Mochi ou a hora no topo. Passe o ponteiro para trazer o Kanon.",
+            "ru": "Закрытый, он показывает Mochi или время вверху. Наведите указатель, чтобы вернуть Kanon.",
+            "id": "Saat ditutup, Mochi atau jam tetap di atas. Arahkan penunjuk untuk memunculkan Kanon.",
+            "de": "Geschlossen zeigt sie oben Mochi oder die Uhrzeit. Zeiger darüber holt Kanon zurück.",
+            "tr": "Kapalıyken üstte Mochi ya da saat kalır. Kanon'yu geri getirmek için üzerine gelin.",
+            "ko": "닫혀도 화면 위에 Mochi나 시간이 남아요. 포인터를 올리면 Kanon가 돌아와요.",
+            "ja": "閉じても上部に Mochi か時刻が残ります。ポインタを乗せると Kanon が戻ります。"
           }
         },
         {
@@ -128,20 +128,20 @@
             "ja": "話している間は静かに"
           },
           "detail": {
-            "en": "On Windows, videos, music and calls go quiet while Coucou listens, then come back.",
-            "zh-Hans": "在 Windows 上，Coucou 聆听时视频、音乐和通话会静音，之后恢复。",
-            "hi": "Windows पर Coucou के सुनते समय वीडियो, संगीत और कॉल शांत होकर फिर लौट आते हैं।",
-            "es": "En Windows, vídeos, música y llamadas se callan mientras Coucou escucha y luego vuelven.",
-            "ar": "على Windows تصمت الفيديوهات والموسيقى والمكالمات أثناء استماع Coucou ثم تعود.",
-            "fr": "Sur Windows, vidéos, musique et appels se taisent pendant que Coucou écoute, puis reviennent.",
-            "bn": "Windows-এ Coucou শোনার সময় ভিডিও, গান ও কল চুপ থাকে, পরে ফিরে আসে।",
-            "pt-BR": "No Windows, vídeos, música e chamadas silenciam enquanto o Coucou ouve e depois voltam.",
-            "ru": "В Windows видео, музыка и звонки затихают, пока Coucou слушает, а потом возвращаются.",
-            "id": "Di Windows, video, musik, dan panggilan senyap saat Coucou mendengar, lalu kembali.",
-            "de": "Unter Windows verstummen Videos, Musik und Anrufe, während Coucou zuhört.",
-            "tr": "Windows'ta Coucou dinlerken videolar, müzik ve aramalar susar, sonra geri gelir.",
-            "ko": "Windows에서 Coucou가 듣는 동안 영상·음악·통화가 조용해졌다가 돌아와요.",
-            "ja": "Windows では Coucou が聞く間、動画・音楽・通話が静かになり、その後戻ります。"
+            "en": "On Windows, videos, music and calls go quiet while Kanon listens, then come back.",
+            "zh-Hans": "在 Windows 上，Kanon 聆听时视频、音乐和通话会静音，之后恢复。",
+            "hi": "Windows पर Kanon के सुनते समय वीडियो, संगीत और कॉल शांत होकर फिर लौट आते हैं।",
+            "es": "En Windows, vídeos, música y llamadas se callan mientras Kanon escucha y luego vuelven.",
+            "ar": "على Windows تصمت الفيديوهات والموسيقى والمكالمات أثناء استماع Kanon ثم تعود.",
+            "fr": "Sur Windows, vidéos, musique et appels se taisent pendant que Kanon écoute, puis reviennent.",
+            "bn": "Windows-এ Kanon শোনার সময় ভিডিও, গান ও কল চুপ থাকে, পরে ফিরে আসে।",
+            "pt-BR": "No Windows, vídeos, música e chamadas silenciam enquanto o Kanon ouve e depois voltam.",
+            "ru": "В Windows видео, музыка и звонки затихают, пока Kanon слушает, а потом возвращаются.",
+            "id": "Di Windows, video, musik, dan panggilan senyap saat Kanon mendengar, lalu kembali.",
+            "de": "Unter Windows verstummen Videos, Musik und Anrufe, während Kanon zuhört.",
+            "tr": "Windows'ta Kanon dinlerken videolar, müzik ve aramalar susar, sonra geri gelir.",
+            "ko": "Windows에서 Kanon가 듣는 동안 영상·음악·통화가 조용해졌다가 돌아와요.",
+            "ja": "Windows では Kanon が聞く間、動画・音楽・通話が静かになり、その後戻ります。"
           }
         }
       ]
@@ -348,20 +348,20 @@
             "ja": "設定を検索"
           },
           "detail": {
-            "en": "Type in the Coucou window's sidebar to find any setting.",
-            "zh-Hans": "在 Coucou 窗口的侧边栏输入，即可找到任何设置。",
-            "hi": "कोई भी सेटिंग ढूँढने के लिए Coucou विंडो की साइडबार में टाइप करें।",
-            "es": "Escribe en la barra lateral de la ventana de Coucou para encontrar cualquier ajuste.",
-            "ar": "اكتب في الشريط الجانبي لنافذة Coucou لتجد أي إعداد.",
-            "fr": "Tape dans la barre latérale de la fenêtre Coucou pour trouver n'importe quel réglage.",
-            "bn": "যেকোনো সেটিং খুঁজতে Coucou উইন্ডোর সাইডবারে টাইপ করুন।",
-            "pt-BR": "Digite na barra lateral da janela do Coucou para achar qualquer ajuste.",
-            "ru": "Начните печатать в боковой панели окна Coucou, чтобы найти любую настройку.",
-            "id": "Ketik di bilah samping jendela Coucou untuk menemukan pengaturan apa pun.",
-            "de": "Tippe in der Seitenleiste des Coucou-Fensters, um jede Einstellung zu finden.",
-            "tr": "Herhangi bir ayarı bulmak için Coucou penceresinin kenar çubuğuna yazın.",
-            "ko": "Coucou 창의 사이드바에 입력해 원하는 설정을 찾으세요.",
-            "ja": "Coucou ウインドウのサイドバーに入力して、どの設定もすぐ見つかります。"
+            "en": "Type in the Kanon window's sidebar to find any setting.",
+            "zh-Hans": "在 Kanon 窗口的侧边栏输入，即可找到任何设置。",
+            "hi": "कोई भी सेटिंग ढूँढने के लिए Kanon विंडो की साइडबार में टाइप करें।",
+            "es": "Escribe en la barra lateral de la ventana de Kanon para encontrar cualquier ajuste.",
+            "ar": "اكتب في الشريط الجانبي لنافذة Kanon لتجد أي إعداد.",
+            "fr": "Tape dans la barre latérale de la fenêtre Kanon pour trouver n'importe quel réglage.",
+            "bn": "যেকোনো সেটিং খুঁজতে Kanon উইন্ডোর সাইডবারে টাইপ করুন।",
+            "pt-BR": "Digite na barra lateral da janela do Kanon para achar qualquer ajuste.",
+            "ru": "Начните печатать в боковой панели окна Kanon, чтобы найти любую настройку.",
+            "id": "Ketik di bilah samping jendela Kanon untuk menemukan pengaturan apa pun.",
+            "de": "Tippe in der Seitenleiste des Kanon-Fensters, um jede Einstellung zu finden.",
+            "tr": "Herhangi bir ayarı bulmak için Kanon penceresinin kenar çubuğuna yazın.",
+            "ko": "Kanon 창의 사이드바에 입력해 원하는 설정을 찾으세요.",
+            "ja": "Kanon ウインドウのサイドバーに入力して、どの設定もすぐ見つかります。"
           }
         }
       ]
@@ -423,20 +423,20 @@
             "ja": "韓国語と日本語"
           },
           "detail": {
-            "en": "Coucou now speaks 14 languages. Korean thanks to @lovyestar.",
-            "zh-Hans": "Coucou 现在支持 14 种语言。韩语由 @lovyestar 贡献。",
-            "hi": "Coucou अब 14 भाषाएँ बोलता है। कोरियाई @lovyestar की बदौलत।",
-            "es": "Coucou ya habla 14 idiomas. El coreano gracias a @lovyestar.",
-            "ar": "يتحدث Coucou الآن 14 لغة. الكورية بفضل @lovyestar.",
-            "fr": "Coucou parle maintenant 14 langues. Le coréen grâce à @lovyestar.",
-            "bn": "Coucou এখন 14টি ভাষায় কথা বলে। কোরিয়ান @lovyestar-এর সৌজন্যে।",
-            "pt-BR": "O Coucou agora fala 14 idiomas. O coreano graças a @lovyestar.",
-            "ru": "Coucou теперь говорит на 14 языках. Корейский — благодаря @lovyestar.",
-            "id": "Coucou kini berbicara 14 bahasa. Bahasa Korea berkat @lovyestar.",
-            "de": "Coucou spricht jetzt 14 Sprachen. Koreanisch dank @lovyestar.",
-            "tr": "Coucou artık 14 dil konuşuyor. Korece @lovyestar sayesinde.",
-            "ko": "Coucou가 이제 14개 언어를 지원합니다. 한국어는 @lovyestar 덕분이에요.",
-            "ja": "Coucou は 14 言語に対応しました。韓国語は @lovyestar のおかげです。"
+            "en": "Kanon now speaks 14 languages. Korean thanks to @lovyestar.",
+            "zh-Hans": "Kanon 现在支持 14 种语言。韩语由 @lovyestar 贡献。",
+            "hi": "Kanon अब 14 भाषाएँ बोलता है। कोरियाई @lovyestar की बदौलत।",
+            "es": "Kanon ya habla 14 idiomas. El coreano gracias a @lovyestar.",
+            "ar": "يتحدث Kanon الآن 14 لغة. الكورية بفضل @lovyestar.",
+            "fr": "Kanon parle maintenant 14 langues. Le coréen grâce à @lovyestar.",
+            "bn": "Kanon এখন 14টি ভাষায় কথা বলে। কোরিয়ান @lovyestar-এর সৌজন্যে।",
+            "pt-BR": "O Kanon agora fala 14 idiomas. O coreano graças a @lovyestar.",
+            "ru": "Kanon теперь говорит на 14 языках. Корейский — благодаря @lovyestar.",
+            "id": "Kanon kini berbicara 14 bahasa. Bahasa Korea berkat @lovyestar.",
+            "de": "Kanon spricht jetzt 14 Sprachen. Koreanisch dank @lovyestar.",
+            "tr": "Kanon artık 14 dil konuşuyor. Korece @lovyestar sayesinde.",
+            "ko": "Kanon가 이제 14개 언어를 지원합니다. 한국어는 @lovyestar 덕분이에요.",
+            "ja": "Kanon は 14 言語に対応しました。韓国語は @lovyestar のおかげです。"
           }
         }
       ]
@@ -487,19 +487,19 @@
         {
           "icon": "shield",
           "title": {
-            "en": "Coucou keeps listening",
-            "zh-Hans": "Coucou 始终在线",
-            "hi": "Coucou हमेशा सुनता रहे",
-            "es": "Coucou sigue escuchando",
-            "ar": "Coucou يبقى منصتًا",
-            "fr": "Coucou reste à l’écoute",
-            "bn": "Coucou সবসময় শোনে",
-            "pt-BR": "O Coucou continua ouvindo",
-            "ru": "Coucou всегда на связи",
-            "id": "Coucou terus mendengarkan",
-            "de": "Coucou hört weiter zu",
-            "tr": "Coucou dinlemeye devam eder",
-            "ja": "Coucou は聞き続けます"
+            "en": "Kanon keeps listening",
+            "zh-Hans": "Kanon 始终在线",
+            "hi": "Kanon हमेशा सुनता रहे",
+            "es": "Kanon sigue escuchando",
+            "ar": "Kanon يبقى منصتًا",
+            "fr": "Kanon reste à l’écoute",
+            "bn": "Kanon সবসময় শোনে",
+            "pt-BR": "O Kanon continua ouvindo",
+            "ru": "Kanon всегда на связи",
+            "id": "Kanon terus mendengarkan",
+            "de": "Kanon hört weiter zu",
+            "tr": "Kanon dinlemeye devam eder",
+            "ja": "Kanon は聞き続けます"
           },
           "detail": {
             "en": "One failed connection no longer cuts Claude Code off, and a card goes once the terminal takes over.",
@@ -609,20 +609,20 @@
             "ja": "1 クリックで設定"
           },
           "detail": {
-            "en": "Coucou installs the gateway, checks it and shows the QR code to scan.",
-            "zh-Hans": "Coucou 安装网关、进行校验，并显示要扫描的二维码。",
-            "hi": "Coucou गेटवे इंस्टॉल करता है, जाँचता है और स्कैन के लिए QR कोड दिखाता है।",
-            "es": "Coucou instala la pasarela, la comprueba y muestra el código QR.",
-            "ar": "يثبّت Coucou البوابة ويتحقق منها ويعرض رمز QR للمسح.",
-            "fr": "Coucou installe la passerelle, la vérifie et affiche le QR code à scanner.",
-            "bn": "Coucou গেটওয়ে ইনস্টল করে, যাচাই করে, তারপর স্ক্যানের QR কোড দেখায়।",
-            "pt-BR": "O Coucou instala o gateway, verifica e mostra o QR code para escanear.",
-            "ru": "Coucou ставит шлюз, проверяет его и показывает QR-код.",
-            "id": "Coucou memasang gateway, memeriksanya, dan menampilkan kode QR.",
-            "de": "Coucou installiert das Gateway, prüft es und zeigt den QR-Code.",
-            "tr": "Coucou ağ geçidini kurar, doğrular ve taranacak QR kodunu gösterir.",
-            "ko": "Coucou가 게이트웨이를 설치하고 확인한 다음, 스캔할 QR 코드까지 보여 줘요.",
-            "ja": "Coucou がゲートウェイをインストールして確認し、読み取る QR コードを表示します。"
+            "en": "Kanon installs the gateway, checks it and shows the QR code to scan.",
+            "zh-Hans": "Kanon 安装网关、进行校验，并显示要扫描的二维码。",
+            "hi": "Kanon गेटवे इंस्टॉल करता है, जाँचता है और स्कैन के लिए QR कोड दिखाता है।",
+            "es": "Kanon instala la pasarela, la comprueba y muestra el código QR.",
+            "ar": "يثبّت Kanon البوابة ويتحقق منها ويعرض رمز QR للمسح.",
+            "fr": "Kanon installe la passerelle, la vérifie et affiche le QR code à scanner.",
+            "bn": "Kanon গেটওয়ে ইনস্টল করে, যাচাই করে, তারপর স্ক্যানের QR কোড দেখায়।",
+            "pt-BR": "O Kanon instala o gateway, verifica e mostra o QR code para escanear.",
+            "ru": "Kanon ставит шлюз, проверяет его и показывает QR-код.",
+            "id": "Kanon memasang gateway, memeriksanya, dan menampilkan kode QR.",
+            "de": "Kanon installiert das Gateway, prüft es und zeigt den QR-Code.",
+            "tr": "Kanon ağ geçidini kurar, doğrular ve taranacak QR kodunu gösterir.",
+            "ko": "Kanon가 게이트웨이를 설치하고 확인한 다음, 스캔할 QR 코드까지 보여 줘요.",
+            "ja": "Kanon がゲートウェイをインストールして確認し、読み取る QR コードを表示します。"
           }
         },
         {
@@ -644,20 +644,20 @@
             "ja": "何もパソコンの外に出ません"
           },
           "detail": {
-            "en": "Messages stay in memory and are gone when Coucou quits.",
-            "zh-Hans": "消息只保存在内存中，退出 Coucou 后即消失。",
-            "hi": "संदेश सिर्फ़ मेमोरी में रहते हैं और Coucou बंद होते ही मिट जाते हैं।",
-            "es": "Los mensajes quedan en memoria y se borran al cerrar Coucou.",
-            "ar": "تبقى الرسائل في الذاكرة وتُمحى عند إغلاق Coucou.",
-            "fr": "Les messages restent en mémoire et disparaissent quand Coucou quitte.",
-            "bn": "বার্তা শুধু মেমোরিতে থাকে, Coucou বন্ধ হলেই মুছে যায়।",
-            "pt-BR": "As mensagens ficam na memória e somem quando o Coucou fecha.",
-            "ru": "Сообщения хранятся только в памяти и исчезают при выходе из Coucou.",
-            "id": "Pesan hanya di memori dan hilang saat Coucou ditutup.",
-            "de": "Nachrichten bleiben im Speicher und sind weg, wenn Coucou beendet wird.",
-            "tr": "Mesajlar bellekte kalır, Coucou kapanınca silinir.",
-            "ko": "메시지는 메모리에만 남고, Coucou를 끄면 사라져요.",
-            "ja": "メッセージはメモリ上にだけあり、Coucou を終了すると消えます。"
+            "en": "Messages stay in memory and are gone when Kanon quits.",
+            "zh-Hans": "消息只保存在内存中，退出 Kanon 后即消失。",
+            "hi": "संदेश सिर्फ़ मेमोरी में रहते हैं और Kanon बंद होते ही मिट जाते हैं।",
+            "es": "Los mensajes quedan en memoria y se borran al cerrar Kanon.",
+            "ar": "تبقى الرسائل في الذاكرة وتُمحى عند إغلاق Kanon.",
+            "fr": "Les messages restent en mémoire et disparaissent quand Kanon quitte.",
+            "bn": "বার্তা শুধু মেমোরিতে থাকে, Kanon বন্ধ হলেই মুছে যায়।",
+            "pt-BR": "As mensagens ficam na memória e somem quando o Kanon fecha.",
+            "ru": "Сообщения хранятся только в памяти и исчезают при выходе из Kanon.",
+            "id": "Pesan hanya di memori dan hilang saat Kanon ditutup.",
+            "de": "Nachrichten bleiben im Speicher und sind weg, wenn Kanon beendet wird.",
+            "tr": "Mesajlar bellekte kalır, Kanon kapanınca silinir.",
+            "ko": "메시지는 메모리에만 남고, Kanon를 끄면 사라져요.",
+            "ja": "メッセージはメモリ上にだけあり、Kanon を終了すると消えます。"
           }
         }
       ]
@@ -719,20 +719,20 @@
             "ja": "新機能をここで"
           },
           "detail": {
-            "en": "After each update: what it brings, then your Coucou so far.",
-            "fr": "Après chaque mise à jour : ce qu’elle apporte, puis ton Coucou jusqu’ici.",
-            "es": "Tras cada actualización: lo que trae y luego tu Coucou hasta ahora.",
-            "pt-BR": "Após cada atualização: o que ela traz e depois seu Coucou até agora.",
-            "ru": "После каждого обновления — что нового, а затем ваш Coucou на сегодня.",
-            "zh-Hans": "每次更新后：先看新内容，再看你的 Coucou 至今。",
-            "hi": "हर अपडेट के बाद: उसमें क्या नया है, फिर अब तक आपका Coucou।",
-            "ar": "بعد كل تحديث: ما الجديد فيه، ثم Coucou الخاص بك حتى الآن.",
-            "bn": "প্রতিটি আপডেটের পর: কী নতুন, তারপর এ পর্যন্ত আপনার Coucou।",
-            "id": "Setelah tiap pembaruan: isinya, lalu Coucou-mu sejauh ini.",
-            "de": "Nach jedem Update: was es bringt, dann dein Coucou bisher.",
-            "tr": "Her güncellemeden sonra: getirdikleri, ardından şimdiye kadar Coucou’n.",
-            "ko": "업데이트할 때마다 새로 뭐가 생겼는지 보여 주고, 지금까지의 Coucou도 알려 줘요.",
-            "ja": "アップデートのたびに、新しい内容とこれまでのあなたの Coucou を表示します。"
+            "en": "After each update: what it brings, then your Kanon so far.",
+            "fr": "Après chaque mise à jour : ce qu’elle apporte, puis ton Kanon jusqu’ici.",
+            "es": "Tras cada actualización: lo que trae y luego tu Kanon hasta ahora.",
+            "pt-BR": "Após cada atualização: o que ela traz e depois seu Kanon até agora.",
+            "ru": "После каждого обновления — что нового, а затем ваш Kanon на сегодня.",
+            "zh-Hans": "每次更新后：先看新内容，再看你的 Kanon 至今。",
+            "hi": "हर अपडेट के बाद: उसमें क्या नया है, फिर अब तक आपका Kanon।",
+            "ar": "بعد كل تحديث: ما الجديد فيه، ثم Kanon الخاص بك حتى الآن.",
+            "bn": "প্রতিটি আপডেটের পর: কী নতুন, তারপর এ পর্যন্ত আপনার Kanon।",
+            "id": "Setelah tiap pembaruan: isinya, lalu Kanon-mu sejauh ini.",
+            "de": "Nach jedem Update: was es bringt, dann dein Kanon bisher.",
+            "tr": "Her güncellemeden sonra: getirdikleri, ardından şimdiye kadar Kanon’n.",
+            "ko": "업데이트할 때마다 새로 뭐가 생겼는지 보여 주고, 지금까지의 Kanon도 알려 줘요.",
+            "ja": "アップデートのたびに、新しい内容とこれまでのあなたの Kanon を表示します。"
           }
         },
         {
@@ -828,19 +828,19 @@
             "ja": "アイランドに新バージョン"
           },
           "detail": {
-            "en": "Coucou tells you when a new version is out. On Windows, one click installs it.",
-            "zh-Hans": "有新版本时 Coucou 会告诉你。在 Windows 上一键即可安装。",
-            "hi": "नया वर्ज़न आने पर Coucou बताता है। Windows पर एक क्लिक में इंस्टॉल।",
-            "es": "Coucou te avisa cuando sale una versión nueva. En Windows, un clic la instala.",
-            "ar": "يخبرك Coucou بصدور إصدار جديد. على Windows تثبّته نقرة واحدة.",
-            "fr": "Coucou te prévient quand une nouvelle version sort. Sur Windows, un clic l'installe.",
-            "bn": "নতুন ভার্সন এলে Coucou জানায়। Windows-এ এক ক্লিকে ইনস্টল।",
-            "pt-BR": "O Coucou avisa quando sai uma nova versão. No Windows, um clique instala.",
-            "ru": "Coucou сообщит о новой версии. В Windows она ставится одним кликом.",
-            "id": "Coucou memberi tahu saat versi baru keluar. Di Windows, sekali klik untuk memasang.",
-            "de": "Coucou sagt dir, wenn eine neue Version da ist. Unter Windows installiert sie ein Klick.",
-            "tr": "Yeni sürüm çıkınca Coucou haber verir. Windows'ta tek tıkla kurulur.",
-            "ja": "新しいバージョンが出ると Coucou が知らせます。Windows では 1 クリックでインストール。"
+            "en": "Kanon tells you when a new version is out. On Windows, one click installs it.",
+            "zh-Hans": "有新版本时 Kanon 会告诉你。在 Windows 上一键即可安装。",
+            "hi": "नया वर्ज़न आने पर Kanon बताता है। Windows पर एक क्लिक में इंस्टॉल।",
+            "es": "Kanon te avisa cuando sale una versión nueva. En Windows, un clic la instala.",
+            "ar": "يخبرك Kanon بصدور إصدار جديد. على Windows تثبّته نقرة واحدة.",
+            "fr": "Kanon te prévient quand une nouvelle version sort. Sur Windows, un clic l'installe.",
+            "bn": "নতুন ভার্সন এলে Kanon জানায়। Windows-এ এক ক্লিকে ইনস্টল।",
+            "pt-BR": "O Kanon avisa quando sai uma nova versão. No Windows, um clique instala.",
+            "ru": "Kanon сообщит о новой версии. В Windows она ставится одним кликом.",
+            "id": "Kanon memberi tahu saat versi baru keluar. Di Windows, sekali klik untuk memasang.",
+            "de": "Kanon sagt dir, wenn eine neue Version da ist. Unter Windows installiert sie ein Klick.",
+            "tr": "Yeni sürüm çıkınca Kanon haber verir. Windows'ta tek tıkla kurulur.",
+            "ja": "新しいバージョンが出ると Kanon が知らせます。Windows では 1 クリックでインストール。"
           }
         },
         {
@@ -861,19 +861,19 @@
             "ja": "ドイツ語とトルコ語"
           },
           "detail": {
-            "en": "Coucou now speaks 12 languages.",
-            "zh-Hans": "Coucou 现在支持 12 种语言。",
-            "hi": "Coucou अब 12 भाषाएँ बोलता है।",
-            "es": "Coucou ya habla 12 idiomas.",
-            "ar": "يتحدث Coucou الآن 12 لغة.",
-            "fr": "Coucou parle maintenant 12 langues.",
-            "bn": "Coucou এখন ১২টি ভাষায় কথা বলে।",
-            "pt-BR": "O Coucou agora fala 12 idiomas.",
-            "ru": "Теперь Coucou говорит на 12 языках.",
-            "id": "Coucou kini berbicara 12 bahasa.",
-            "de": "Coucou spricht jetzt 12 Sprachen.",
-            "tr": "Coucou artık 12 dil konuşuyor.",
-            "ja": "Coucou は 12 言語を話せるようになりました。"
+            "en": "Kanon now speaks 12 languages.",
+            "zh-Hans": "Kanon 现在支持 12 种语言。",
+            "hi": "Kanon अब 12 भाषाएँ बोलता है।",
+            "es": "Kanon ya habla 12 idiomas.",
+            "ar": "يتحدث Kanon الآن 12 لغة.",
+            "fr": "Kanon parle maintenant 12 langues.",
+            "bn": "Kanon এখন ১২টি ভাষায় কথা বলে।",
+            "pt-BR": "O Kanon agora fala 12 idiomas.",
+            "ru": "Теперь Kanon говорит на 12 языках.",
+            "id": "Kanon kini berbicara 12 bahasa.",
+            "de": "Kanon spricht jetzt 12 Sprachen.",
+            "tr": "Kanon artık 12 dil konuşuyor.",
+            "ja": "Kanon は 12 言語を話せるようになりました。"
           }
         },
         {

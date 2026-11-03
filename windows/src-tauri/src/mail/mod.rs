@@ -4,14 +4,14 @@
 //
 // - The pill: the latest messages of every inbox, a search and quick filters, and actions
 //   on a message (each one the user's click).
-// - The Mail section of the Coucou window: automatic sorting (off by default), rules, banned
-//   words, VIPs, a journal with Undo, and what Coucou sent.
+// - The Mail section of the Kanon window: automatic sorting (off by default), rules, banned
+//   words, VIPs, a journal with Undo, and what Kanon sent.
 // - The chat's Mail switch: the AI gets the latest messages and may answer with a plan
 //   (plan.rs) that runs only after the user clicks Run on its card.
 //
 // Outlook is read every 60 s only while the pill is on or the sorting is, and only when
-// OUTLOOK.EXE runs: Coucou never starts Outlook, and a closed Outlook costs nothing.
-// Coucou never deletes a message.
+// OUTLOOK.EXE runs: Kanon never starts Outlook, and a closed Outlook costs nothing.
+// Kanon never deletes a message.
 
 pub mod outlook;
 pub mod pdf;
@@ -422,7 +422,7 @@ pub async fn decorate(query: &str) -> String {
     }
     let mut list = match outlook::run(outlook::list_script(20), TIMEOUT).await {
         Ok(v) => serde_json::from_value::<outlook::Listing>(v).unwrap_or_default().messages,
-        Err(e) => return format!("{query}\n\n<mail>Coucou could not read Outlook ({e}).</mail>"),
+        Err(e) => return format!("{query}\n\n<mail>Kanon could not read Outlook ({e}).</mail>"),
     };
     list.sort_by(|a, b| b.date.cmp(&a.date));
     list.truncate(40);
@@ -549,7 +549,7 @@ fn set_phase(app: &AppHandle, id: &str, phase: Phase) {
 }
 
 fn work_dir() -> std::path::PathBuf {
-    std::env::temp_dir().join("coucou-mail-plans")
+    std::env::temp_dir().join("kanon-mail-plans")
 }
 
 /// The card of a chat answer holding a plan: prepared once, then its state.

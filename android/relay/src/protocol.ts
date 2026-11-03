@@ -7,8 +7,8 @@ export const RATE_PER_SECOND = 30;
 export const RATE_BURST = 60;
 export const ROOM_ID = /^[A-Za-z0-9_-]{22}$/;
 export const B64URL_32 = /^[A-Za-z0-9_-]{43}$/;
-export const SUBPROTOCOL = "coucou.v1";
-const JOIN_PREFIX = "coucou.join.";
+export const SUBPROTOCOL = "kanon.v1";
+const JOIN_PREFIX = "kanon.join.";
 
 export type Role = "pc" | "phone";
 export const otherRole = (r: Role): Role => (r === "pc" ? "phone" : "pc");
@@ -28,7 +28,7 @@ export function bearer(header: string | null): string | null {
   return m ? m[1] : null;
 }
 
-/** The join proof from the offered sub-protocols (`coucou.v1, coucou.join.<43 chars>`), or null. */
+/** The join proof from the offered sub-protocols (`kanon.v1, kanon.join.<43 chars>`), or null. */
 export function parseJoinProof(header: string | null): string | null {
   if (!header) return null;
   const offered = header.split(",").map((s) => s.trim());
