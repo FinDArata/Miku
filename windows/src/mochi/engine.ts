@@ -847,7 +847,10 @@ export class BotEngine {
     if (this.tilt !== 0) x.rotate(this.tilt);
     x.scale(this.sx, this.sy);
 
-    const dressed = !this.isMini && this.outfit !== "none";
+    // Kanon: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
+    // sementara TIDAK digambar sampai diadaptasi ke kepala chibi (fase lanjut).
+    // Tanpa ini, topi melayang di posisi lama dan terlihat seperti kepala terbelah.
+    const dressed = false;
     const head = dressed ? makeHead(R, this.yaw, this.pitch, this.physDx, this.physDy) : null;
     const outfitState = { presence: this.outfitPresence, morph: this.morph };
     if (head) drawOutfitBehind(x, this.outfit, head, outfitState);
@@ -911,12 +914,14 @@ export class BotEngine {
   }
 
   /** How much of the pumpkin's orange shows on the body (it comes and goes with the outfit). */
-  /** Chibi Kanon utuh — lapisan belakang (rambut/pita) sampai badan; wajah di drawEyes. */
+  /** Chibi Kanon utuh — lapisan belakang (rambut/pita) sampai badan; wajah di drawEyes.
+   *  Semua koordinat 0-relatif terhadap pusat karakter (satu sistem, tanpa translate). */
   private drawBody(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
     const u = R / 158;
     const t = now();
     const state = this.state;
     const tint = Math.min(1, this.tint);
+    // Semua koordinat di bawah: ruang proto 0..300, pusat karakter di (150, ~150).
     x.save();
     x.scale(u, u);
     x.translate(-150, -150);
@@ -941,13 +946,13 @@ export class BotEngine {
     x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
     for (const s of [-1, 1]) {
       x.beginPath();
-      x.moveTo(s * 80 + sway, 90);
-      x.quadraticCurveTo(s * 86 + sway, 190, s * 66 + sway, 246);
-      x.quadraticCurveTo(s * 40 + sway, 252, s * 30 + sway, 236);
-      x.quadraticCurveTo(s * 52 + sway, 180, s * 46 + sway, 96);
+      x.moveTo(150 + s * 80 + sway, 90);
+      x.quadraticCurveTo(150 + s * 86 + sway, 190, 150 + s * 66 + sway, 246);
+      x.quadraticCurveTo(150 + s * 40 + sway, 252, 150 + s * 30 + sway, 236);
+      x.quadraticCurveTo(150 + s * 52 + sway, 180, 150 + s * 46 + sway, 96);
       x.closePath(); x.fill();
     }
-    x.save(); x.translate(56 + sway * 0.6, 108); x.rotate(0.12 + sway * 0.02);
+    x.save(); x.translate(150 + 56 + sway * 0.6, 108); x.rotate(0.12 + sway * 0.02);
     x.fillStyle = rgba(K_HAIR_D);
     x.beginPath(); x.moveTo(-16, 0);
     x.quadraticCurveTo(30, 60, 10, 150);
@@ -959,15 +964,15 @@ export class BotEngine {
     x.fillStyle = rgba(K_BOW_D);
     for (const s of [-1, 1]) {
       x.beginPath();
-      x.moveTo(s * 66, 100);
-      x.quadraticCurveTo(s * 82, 132, s * 70, 170);
-      x.quadraticCurveTo(s * 62, 165, s * 57, 150);
-      x.quadraticCurveTo(s * 63, 122, s * 56, 104);
+      x.moveTo(150 + s * 66, 100);
+      x.quadraticCurveTo(150 + s * 82, 132, 150 + s * 70, 170);
+      x.quadraticCurveTo(150 + s * 62, 165, 150 + s * 57, 150);
+      x.quadraticCurveTo(150 + s * 63, 122, 150 + s * 56, 104);
       x.closePath(); x.fill();
     }
     x.fillStyle = rgba(K_BOW);
     for (const s of [-1, 1]) {
-      x.save(); x.translate(s * 86, 92); x.rotate(s * 0.55);
+      x.save(); x.translate(150 + s * 86, 92); x.rotate(s * 0.55);
       x.beginPath(); x.moveTo(0, 0);
       x.quadraticCurveTo(s * 26, -20, s * 32, 0);
       x.quadraticCurveTo(s * 26, 16, 0, 8);
@@ -980,31 +985,31 @@ export class BotEngine {
     dg.addColorStop(0, rgba(K_DRESS));
     dg.addColorStop(1, rgba(K_DRESS_D));
     x.fillStyle = dg;
-    x.beginPath(); x.moveTo(-46, 124);
-    x.quadraticCurveTo(-62, 200, -54, 248);
-    x.quadraticCurveTo(0, 260, 54, 248);
-    x.quadraticCurveTo(62, 200, 46, 124);
+    x.beginPath(); x.moveTo(150 - 46, 124);
+    x.quadraticCurveTo(150 - 62, 200, 150 - 54, 248);
+    x.quadraticCurveTo(150, 260, 150 + 54, 248);
+    x.quadraticCurveTo(150 + 62, 200, 150 + 46, 124);
     x.closePath(); x.fill();
     x.strokeStyle = "rgba(255,255,255,0.85)"; x.lineWidth = 3;
-    x.beginPath(); x.moveTo(-52, 244); x.quadraticCurveTo(0, 256, 52, 244); x.stroke();
+    x.beginPath(); x.moveTo(150 - 52, 244); x.quadraticCurveTo(150, 256, 150 + 52, 244); x.stroke();
 
     // ── lengan ──
     x.fillStyle = rgba(K_DRESS);
     if (state === "working") {
-      x.beginPath(); x.ellipse(-30, 172, 16, 30, 0.4, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(30, 172, 16, 30, -0.4, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 - 30, 172, 16, 30, 0.4, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 30, 172, 16, 30, -0.4, 0, Math.PI * 2); x.fill();
       x.fillStyle = "#fff";
-      x.beginPath(); x.ellipse(-14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 - 14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = rgba(K_SKIN);
-      x.beginPath(); x.ellipse(0, 204, 12, 6, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150, 204, 12, 6, 0, 0, Math.PI * 2); x.fill();
     } else {
-      x.beginPath(); x.ellipse(-34, 168, 17, 34, 0.35, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(50, 172, 15, 30, -0.5, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 - 34, 168, 17, 34, 0.35, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 50, 172, 15, 30, -0.5, 0, Math.PI * 2); x.fill();
       x.fillStyle = "#fff";
-      x.beginPath(); x.ellipse(62, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 62, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = rgba(K_SKIN);
-      x.beginPath(); x.ellipse(74, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 74, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
     }
 
     // ── cape putih — warna state melebur di sini ──
@@ -1014,28 +1019,28 @@ export class BotEngine {
     cg.addColorStop(0, rgba(capeTop));
     cg.addColorStop(1, rgba(capeBot));
     x.fillStyle = cg;
-    x.beginPath(); x.moveTo(-58, 120);
-    x.quadraticCurveTo(-66, 168, -44, 176);
-    x.lineTo(44, 176);
-    x.quadraticCurveTo(66, 168, 58, 120);
-    x.quadraticCurveTo(0, 136, -58, 120);
+    x.beginPath(); x.moveTo(150 - 58, 120);
+    x.quadraticCurveTo(150 - 66, 168, 150 - 44, 176);
+    x.lineTo(150 + 44, 176);
+    x.quadraticCurveTo(150 + 66, 168, 150 + 58, 120);
+    x.quadraticCurveTo(150, 136, 150 - 58, 120);
     x.closePath(); x.fill();
     x.strokeStyle = rgba(K_TRIM, 0.9); x.lineWidth = 3;
-    x.beginPath(); x.moveTo(-60, 128); x.quadraticCurveTo(-64, 164, -44, 174);
-    x.lineTo(44, 174); x.quadraticCurveTo(64, 164, 60, 128); x.stroke();
+    x.beginPath(); x.moveTo(150 - 60, 128); x.quadraticCurveTo(150 - 64, 164, 150 - 44, 174);
+    x.lineTo(150 + 44, 174); x.quadraticCurveTo(150 + 64, 164, 150 + 60, 128); x.stroke();
 
     // ── pita leher ──
     x.fillStyle = rgba(K_DRESS);
-    roundRectPath(x, -15, 136, 30, 9, 3); x.fill();
+    roundRectPath(x, 150 - 15, 136, 30, 9, 3); x.fill();
     x.fillStyle = "#6b83d9";
-    x.beginPath(); x.moveTo(0, 150); x.quadraticCurveTo(-24, 139, -31, 150);
-    x.quadraticCurveTo(-24, 163, 0, 159); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(0, 150); x.quadraticCurveTo(24, 139, 31, 150);
-    x.quadraticCurveTo(24, 163, 0, 159); x.closePath(); x.fill();
-    x.beginPath(); x.ellipse(0, 152, 6.5, 5, 0, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(150, 150); x.quadraticCurveTo(150 - 24, 139, 150 - 31, 150);
+    x.quadraticCurveTo(150 - 24, 163, 150, 159); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(150, 150); x.quadraticCurveTo(150 + 24, 139, 150 + 31, 150);
+    x.quadraticCurveTo(150 + 24, 163, 150, 159); x.closePath(); x.fill();
+    x.beginPath(); x.ellipse(150, 152, 6.5, 5, 0, 0, Math.PI * 2); x.fill();
     x.fillStyle = "#5a72c4";
-    x.beginPath(); x.moveTo(-3, 157); x.quadraticCurveTo(-9, 172, -15, 181);
-    x.lineTo(-6, 179); x.quadraticCurveTo(-1, 166, 3, 157); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(150 - 3, 157); x.quadraticCurveTo(150 - 9, 172, 150 - 15, 181);
+    x.lineTo(150 - 6, 179); x.quadraticCurveTo(150 - 1, 166, 150 + 3, 157); x.closePath(); x.fill();
 
     // ── kepala: wajah + poni + side locks ──
     this.kanonHeadMass(x, K_HAIR);
