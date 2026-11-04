@@ -313,7 +313,7 @@ fn begin(app: &AppHandle, flow: &Arc<Flow>) -> Option<Listening> {
             app,
             "download",
             "#3B9EFF",
-            t("Download the voice model first, in Kanon → Settings → Recognition."),
+            t("Download the voice model first, in Miku → Settings → Recognition."),
             Some((t("Open Settings"), "openSettings")),
             10,
         );
@@ -347,7 +347,7 @@ fn begin(app: &AppHandle, flow: &Arc<Flow>) -> Option<Listening> {
                 app,
                 "mic",
                 "#FF6B6B",
-                t("Kanon can't hear you: the microphone is not allowed or not available."),
+                t("Miku can't hear you: the microphone is not allowed or not available."),
                 None,
                 8,
             );

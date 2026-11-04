@@ -163,7 +163,7 @@ function content(l: Look): HTMLElement {
         m,
         pillButton("mic", t("Dictate · {0}", { 0: key }), () => void FlowBridge.pillAction("dictate")),
         pillButton("record", t("Record a call"), () => void FlowBridge.pillAction("note")),
-        pillButton("window", t("Open Kanon"), () => void FlowBridge.pillAction("hub")),
+        pillButton("window", t("Open Miku"), () => void FlowBridge.pillAction("hub")),
       );
       break;
     }

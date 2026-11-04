@@ -89,8 +89,8 @@ pub fn description(id: &str) -> &'static str {
         "attachFrontWindow" => n_("Attach the front window to the chat"),
         "nextPill" => n_("Next pill"),
         "prevPill" => n_("Previous pill"),
-        "muteToggle" => n_("Mute or unmute Mochi"),
-        "desktopToggle" => n_("Send Mochi to the desktop"),
+        "muteToggle" => n_("Mute or unmute Miku"),
+        "desktopToggle" => n_("Send Miku to the desktop"),
         "wardrobeToggle" => n_("Open the wardrobe"),
         _ => "Kanon",
     }

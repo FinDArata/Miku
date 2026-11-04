@@ -86,7 +86,7 @@ const HOOKS_CHANGE: Change = {
   preview: Bridge.hooksPreview,
   apply: Bridge.hooksApply,
   get installText() { return t("This is exactly what will change in your settings.json. Your own hooks are left untouched."); },
-  get removeText() { return t("This removes Kanon's entries only. Your own hooks are left untouched."); },
+  get removeText() { return t("This removes Miku's entries only. Your own hooks are left untouched."); },
   get installButton() { return t("Back up and write"); },
   get removeButton() { return t("Back up and remove"); },
   done: (backup) => backup
@@ -97,7 +97,7 @@ const HOOKS_CHANGE: Change = {
 const STATUS_LINE_CHANGE: Change = {
   preview: Bridge.statusLinePreview,
   apply: Bridge.statusLineApply,
-  get installText() { return t("This is exactly what will change: only the status line. If you already have one it keeps working, Kanon's relay runs it for you."); },
+  get installText() { return t("This is exactly what will change: only the status line. If you already have one it keeps working, Miku's relay runs it for you."); },
   get removeText() { return t("This puts your previous status line back, or removes the entry if there was none."); },
   get installButton() { return t("Back up and write"); },
   get removeButton() { return t("Back up and remove"); },
@@ -193,7 +193,7 @@ function claudeSection(status: HookStatus): HTMLElement {
       h("div", {
         class: "hint",
         text: status.installed
-          ? t("Kanon is hooked into your Claude Code sessions. Tool calls, questions and permission requests show up in the island, and you can answer them there.")
+          ? t("Miku is hooked into your Claude Code sessions. Tool calls, questions and permission requests show up in the island, and you can answer them there.")
           : t("Install the hooks to see your Claude Code sessions in the island and approve permissions without leaving what you are doing."),
       }),
       h("div", { class: "row" },
@@ -210,7 +210,7 @@ function claudeSection(status: HookStatus): HTMLElement {
     if (!status.hookReady) {
       body.append(h("div", {
         class: "notice warn",
-        text: t("kanon-hook.exe is not in place yet. Restart Kanon; if it still fails, build it with `cargo build -p kanon-hook`."),
+        text: t("miku-hook.exe is not in place yet. Restart Miku; if it still fails, build it with `cargo build -p miku-hook`."),
       }));
     }
 
@@ -250,11 +250,11 @@ function claudeSection(status: HookStatus): HTMLElement {
  * that has been confirmed. A status line the user had keeps working.
  */
 const PLAN_SETTINGS_TEXT = {
-  get claude() { return t("Shows your Claude plan usage (5-hour and weekly limits) in the island's header. Kanon adds a status line relay in ~/.claude/settings.json. If you already have a status line, it keeps working as before. Pro and Max plans only."); },
+  get claude() { return t("Shows your Claude plan usage (5-hour and weekly limits) in the island's header. Miku adds a status line relay in ~/.claude/settings.json. If you already have a status line, it keeps working as before. Pro and Max plans only."); },
   get claudeCli() { return t("The numbers come from the Claude Code command-line tool. The Claude desktop app does not report them, so the gauge stays empty if you only use the desktop app."); },
   get showClaude() { return t("Show in notch"); },
   get showClaudeCompact() { return t("Show in compact island"); },
-  get codex() { return t("Shows your Codex plan usage (weekly limit and free resets left) in the island's header. Kanon asks the Codex CLI (codex app-server) when the pill shows; nothing is installed. Codex must be signed in with ChatGPT."); },
+  get codex() { return t("Shows your Codex plan usage (weekly limit and free resets left) in the island's header. Miku asks the Codex CLI (codex app-server) when the pill shows; nothing is installed. Codex must be signed in with ChatGPT."); },
   get showCodex() { return t("Show Codex plan in the notch"); },
 };
 
@@ -407,7 +407,7 @@ function subscriptionsSection(): HTMLElement {
     h("h2", { text: t("Your AI subscriptions") }),
     h("div", {
       class: "hint",
-      text: t("Chat on the plan you already pay for. Kanon asks your AI's official terminal tool, signed in with your own account: it never sees your password or your key."),
+      text: t("Chat on the plan you already pay for. Miku asks your AI's official terminal tool, signed in with your own account: it never sees your password or your key."),
     }),
     list,
   );
@@ -568,7 +568,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("Active pills") })),
-    h("div", { class: "hint", text: t("Choose the tools you use. Kanon only shows what you declare here.") }),
+    h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here.") }),
     slots,
     h("div", { class: "row" }, h("label", { text: t("Main tool") }), main),
     groups,
@@ -898,7 +898,7 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
 
   function updateNote() {
     const used = settings.activeIntegrations.length;
-    note.textContent = t("Pick up to {max} pills to show next to Mochi — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
+    note.textContent = t("Pick up to {max} pills to show next to Miku — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
   }
   declaredViews.push(updateNote);
 
@@ -1036,7 +1036,7 @@ function generalSection(): HTMLElement {
   // The closed island (core/closed.ts): what stays at the top of the screen.
   const closed = h("select", {}) as HTMLSelectElement;
   closed.append(
-    h("option", { value: "mochi", text: t("Mochi, as on a Mac without a notch") }),
+    h("option", { value: "mochi", text: t("Miku, as on a Mac without a notch") }),
     h("option", { value: "time", text: t("The time") }),
     h("option", { value: "datetime", text: t("The date and the time") }),
     h("option", { value: "claude", text: t("Claude usage") }),
@@ -1086,7 +1086,7 @@ function generalSection(): HTMLElement {
       volume,
     ),
     h("div", { class: "row" }, soundsFolder, reloadSounds, customCount),
-    h("div", { class: "hint", text: t("Drop a file named like one of Mochi's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
+    h("div", { class: "hint", text: t("Drop a file named like one of Miku's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
     h("div", { class: "row" },
       h("label", { text: t("Open on hover") }),
       toggle(settings.openOnHover, (v) => { settings.openOnHover = v; void save(); }),
@@ -1106,7 +1106,7 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Closed island shows") }),
       closed,
     ),
-    h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Kanon back. Hidden, move the pointer to the very top of the screen.") }),
+    h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Miku back. Hidden, move the pointer to the very top of the screen.") }),
     h("div", { class: "row" },
       h("label", { text: t("Auto-close") }),
       autoClose,

@@ -208,7 +208,7 @@ fn run(app: AppHandle, stop: Arc<AtomicBool>) {
                 show(&app, Some(VoiceView {
                     phase: "speaking".into(),
                     heard: question,
-                    answer: if done { "✓".into() } else { crate::i18n::t("Kanon couldn't answer: check your Claude key in Notch → Chat.") },
+                    answer: if done { "✓".into() } else { crate::i18n::t("Miku couldn't answer: check your Claude key in Notch → Chat.") },
                 }));
                 hide_at = Some(Instant::now() + Duration::from_secs(5));
                 continue;

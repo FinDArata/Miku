@@ -15,7 +15,7 @@ use crate::island::WINDOW_LABEL;
 /// The menu's items, id and English label, in order. The labels are shown in
 /// the interface language (i18n.rs) and follow it when it changes.
 const ITEMS: [(&str, &str); 6] = [
-    ("open", n_("Open Kanon")),
+    ("open", n_("Open Miku")),
     ("recap", n_("Weekly recap")),
     ("wardrobe", n_("Wardrobe…")),
     ("settings", n_("Settings…")),
@@ -34,7 +34,7 @@ struct UpdateItem {
 }
 
 fn update_label(version: &str) -> String {
-    tf("Update Kanon to {version}…", &[("version", version)])
+    tf("Update Miku to {version}…", &[("version", version)])
 }
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {

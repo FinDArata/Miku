@@ -36,9 +36,9 @@ export const FLOW_PAGES: PageDef[] = [
 ];
 
 export const NOTCH_PAGES: PageDef[] = [
-  { id: "general", icon: "gear", title: () => t("General"), subtitle: () => t("Mochi, his sounds and how the island behaves.") },
+  { id: "general", icon: "gear", title: () => t("General"), subtitle: () => t("Miku, her sounds and how the island behaves.") },
   { id: "pills", icon: "grid", title: () => t("Active pills"), subtitle: () => t("The pills shown in the island, their order and their colours.") },
-  { id: "agents", icon: "terminal", title: () => t("Agents"), subtitle: () => t("Claude Code, Codex and the other agents Mochi follows.") },
+  { id: "agents", icon: "terminal", title: () => t("Agents"), subtitle: () => t("Claude Code, Codex and the other agents Miku follows.") },
   { id: "chat", icon: "chat", title: () => t("Chat"), subtitle: () => t("The AI of the island's chat, with your own keys.") },
   { id: "voice", icon: "wave", title: () => "OK Kanon" },
   { id: "integrations", icon: "puzzle", title: () => t("Integrations"), subtitle: () => t("Stripe, GitHub, Vercel, n8n, Notion and the rest.") },

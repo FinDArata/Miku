@@ -55,6 +55,63 @@ const RENAMES = {
   "status.local.unreachable %1$@ %2$@": ["name", "url"],
 };
 
+/**
+ * The fork's brand, applied on top of the Mac's catalog.
+ *
+ * The upstream catalog (and its 13 translations) name the app "Coucou" and its
+ * mascot "Mochi". This build is "Miku" with a Miku mascot, so every string that
+ * names either is rewritten here, in every language, on the way out — including
+ * the two the translations write in their own script ("カノン" in Japanese,
+ * "모찌" in Korean) and the gender the Mac's English gives Mochi.
+ *
+ * Keys move with the text (`strings.json` is keyed by its English), which is why
+ * this lives in the generator and not in a hand edit of the output: regenerate
+ * and the keys, the translations and the source's `t("…")` calls stay in step.
+ * Each pair is [what the catalog says, what this build says].
+ */
+const BRAND = [
+  // The name of the app.
+  ["Coucou", "Miku"],
+  ["coucou", "miku"],
+  ["COUCOU", "MIKU"],
+  ["カノン", "Miku"], // the earlier fork's Japanese spelling, still in a few strings
+  // The mascot.
+  ["Mochi", "Miku"],
+  ["mochi", "miku"],
+  ["Mochis", "Mikus"],
+  ["모찌", "미쿠"], // Korean
+  // The Mac calls the mascot "he"; Miku is not.
+  ["his sounds", "her sounds"],
+  ["He sweats", "She sweats"],
+  // The wake phrase, and the two-word spellings the Mac's strings use.
+  ["OK Kanon", "OK Miku"],
+  ["«OK Kanon»", "«OK Miku»"],
+  ["« OK Kanon »", "« OK Miku »"],
+  ["kanon", "miku"],
+  ["Kanon", "Miku"],
+];
+
+/**
+ * Phrasing that only breaks once the app and the mascot share one name: the
+ * catalog has the mascot checking the app's releases, and an agent plugin group
+ * named after the app. Applied after BRAND, on the renamed text.
+ */
+const AFTER = [
+  // "Miku checks Miku's releases …" → "Miku checks her own releases …"
+  [/\bMiku checks Miku[’']s releases/g, "Miku checks her own releases"],
+  // "a hook group named "miku" that Miku did not write" reads fine: the group
+  // really is named `miku`. Nothing to do.
+];
+
+/** Applies BRAND to a string, then the phrasing fixups unique to this build. */
+export function rebrand(text) {
+  if (typeof text !== "string") return text;
+  let out = text;
+  for (const [from, to] of BRAND) out = out.split(from).join(to);
+  for (const [re, to] of AFTER) out = out.replace(re, to);
+  return out;
+}
+
 /** "%@ at %lld" → "{0} at {1}"; "%2$@" → "{1}"; "%%" → "%". */
 export function convertFormat(text, names = []) {
   let next = 0;
@@ -91,11 +148,18 @@ export function generate(catalog) {
     const locs = entry.localizations ?? {};
     // A Mac key with no English localization is its own English text.
     const en = readLocalization(locs.en, names) ?? convertFormat(macKey, names);
-    const key = typeof en === "string" ? en : en.other ?? Object.values(en)[0];
+    // The brand goes on before anything is keyed: an English string is its own
+    // key, so the rename has to happen first or the keys would still say Coucou.
+    const branded = (v) => typeof v === "string" ? rebrand(v)
+      : v && typeof v === "object"
+        ? Object.fromEntries(Object.entries(v).map(([k, s]) => [k, rebrand(s)]))
+        : v;
+    const enOut = branded(en);
+    const key = typeof enOut === "string" ? enOut : enOut.other ?? Object.values(enOut)[0];
     const out = {};
     for (const lang of LANGUAGES) {
       if (lang === "en") continue;
-      const value = readLocalization(locs[lang], names);
+      const value = branded(readLocalization(locs[lang], names));
       if (value !== undefined) out[lang] = value;
     }
     // Only a string translated in every language comes across. Xcode keeps every literal it finds in the catalog,
@@ -103,7 +167,7 @@ export function generate(catalog) {
     // the Mac shows in English there. Either way Windows has nothing to add, and the tests below would flag it.
     if (LANGUAGES.some((lang) => lang !== "en" && out[lang] === undefined)) continue;
     // The English plural forms are needed to pick "one" in English too.
-    if (typeof en !== "string") out.en = en;
+    if (typeof enOut !== "string") out.en = enOut;
     strings[key] = out;
   }
   const sorted = Object.fromEntries(Object.entries(strings).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
