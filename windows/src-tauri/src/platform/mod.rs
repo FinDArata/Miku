@@ -99,7 +99,7 @@ fn is_legacy_relay(name: &std::ffi::OsStr) -> bool {
     name == "kanon-hook" || name == "kanon-hook.exe"
 }
 
-/// Carries a Miku install's files into Miku's folders, once per launch. Cheap
+/// Carries a Kanon install's files into Miku's folders, once per launch. Cheap
 /// when there is nothing to do: a readdir that comes back empty.
 pub fn migrate_legacy_dirs() {
     for (from, to) in legacy_dirs() {
