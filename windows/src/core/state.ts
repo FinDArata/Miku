@@ -11,6 +11,7 @@ import type { ProviderId } from "./providers";
 import type { FileDiff } from "./diff";
 import type { Bindings } from "./shortcuts";
 import { DEFAULT_OUTFIT, type Outfit } from "../mochi/wardrobe";
+import type { MikuVariantId } from "../mochi/variants";
 import { pillColor } from "./pill-colors";
 import { Spotify, musicPlaying } from "./spotify";
 
@@ -145,10 +146,15 @@ export interface Settings {
   /** Global shortcuts the user changed, by action id (see core/shortcuts.ts). */
   shortcuts: Bindings;
   /**
-   * Mochi's outfit: "auto" (dresses for the season), "none" or an outfit id.
+   * Miku's outfit: "auto" (dresses for the season), "none" or an outfit id.
    * Same raw values as the Mac's "mochiOutfit"; read it through parseOutfit.
    */
   mochiOutfit: string;
+  /**
+   * Which Miku is drawn: "auto" (follows the season — snow in winter, sakura in
+   * spring), or a variant id. Read it through parseVariant in mochi/wardrobe.ts.
+   */
+  mikuVariant: string;
   /**
    * A colour of the user's own for a pill's Mochi, by pill ID ("#RRGGBB").
    * Empty means the catalog's colours; read it through core/pill-colors.ts.
@@ -209,6 +215,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customUrl: "",
   shortcuts: {},
   mochiOutfit: DEFAULT_OUTFIT,
+  mikuVariant: "auto",
   pillColors: {},
   language: "",
 };
@@ -277,8 +284,11 @@ class AppState {
    */
   mochiOnDesktop = false;
 
-  /** Outfit shown on Mochi while the pointer rests on a wardrobe button. */
+  /** Outfit shown on Miku while the pointer rests on a wardrobe button. */
   wardrobePreview: Outfit | null = null;
+
+  /** Variant shown on Miku while the pointer rests on a wardrobe swatch. */
+  variantPreview: MikuVariantId | null = null;
 
   lastActivity = performance.now();
 

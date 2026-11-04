@@ -11,7 +11,7 @@ import { desktopDances } from "../core/spotify";
 import {
   DESKTOP_EVENTS, DesktopMochiController, alertActive, type DesktopSnapshot,
 } from "../mochi/desktop-logic";
-import { SeasonCache, parseOutfit } from "../mochi/wardrobe";
+import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 
 /** Label of the desktop Mochi's window (desktop.rs LABEL). */
 const WINDOW = "mochi";
@@ -34,6 +34,8 @@ export class DesktopLink {
   carrying = false;
 
   private seasons = new SeasonCache();
+  /** Which Miku on the desktop: the same choice the island draws. */
+  private variants = new VariantCache();
   private pushed = "";
   private pendingCarry: { x: number; y: number } | null = null;
   private carryFrame = false;
@@ -168,6 +170,7 @@ export class DesktopLink {
     const snapshot: DesktopSnapshot = {
       state: State.effectiveState,
       outfit: State.wardrobePreview ?? this.seasons.get(parseOutfit(State.settings.mochiOutfit)),
+      variant: this.variants.get(parseVariant(State.settings.mikuVariant)),
       soundEnabled: State.settings.soundEnabled,
       soundVolume: State.settings.soundVolume,
       paused: State.paused,

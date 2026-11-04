@@ -2416,6 +2416,35 @@ input[type="range"]::-webkit-slider-thumb {
   pointer-events: none;
 }
 
+/* Which Miku: a swatch of her hair colour, beside the garment row. The "auto"
+   one shows the season's colour and is redrawn on every sync. */
+.wardrobe-variants {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.wardrobe-variant {
+  border-radius: 50%;
+}
+
+.wardrobe-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.wardrobe-swatch-auto {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  font: 600 7px var(--font);
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 /* ── New version (views/update.ts) — UpdateCardView on macOS ────────────────── */
 
 .update-line {

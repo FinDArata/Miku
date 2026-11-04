@@ -198,7 +198,7 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   // ── The sidebar ──
   const side = h("nav", { class: "hub-side" });
   const logo = h("canvas", {});
-  side.append(h("div", { class: "hub-brand" }, logo, h("span", { text: "Kanon" })));
+  side.append(h("div", { class: "hub-brand" }, logo, h("span", { text: "Miku" })));
   liveMochi(logo as HTMLCanvasElement);
 
   // Settings search field

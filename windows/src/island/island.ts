@@ -19,7 +19,7 @@ import { SPOTIFY_ID, Spotify, islandDances } from "../core/spotify";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
 import { syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
-import { SeasonCache, parseOutfit } from "../mochi/wardrobe";
+import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { dominantPct, planColor } from "../core/plan";
@@ -102,6 +102,8 @@ export class Island {
   private greeting = new Greeting();
   private greetingShown = false;
   private seasons = new SeasonCache();
+  /** "auto" → which Miku the season dresses her as, remembered for the day. */
+  private variants = new VariantCache();
 
   private running = false;
   private lastFrame = 0;
@@ -289,6 +291,18 @@ export class Island {
       },
       previewOutfit: (outfit) => {
         State.wardrobePreview = outfit;
+        State.notify();
+      },
+      chooseVariant: (selection) => {
+        if (parseVariant(State.settings.mikuVariant) === selection) return;
+        State.settings.mikuVariant = selection;
+        void Bridge.saveSettings(State.settings);
+        Sound.play("pop");
+        this.engine.triggerEmote("proud");
+        State.notify();
+      },
+      previewVariant: (variant) => {
+        State.variantPreview = variant;
         State.notify();
       },
       keyboard: (on) => {
@@ -1313,6 +1327,10 @@ export class Island {
     const showOutfit = mainFocused || State.mode !== "expanded" || inWardrobe;
     const outfit = State.wardrobePreview ?? this.seasons.get(parseOutfit(State.settings.mochiOutfit));
     this.engine.setOutfit(showOutfit ? outfit : "none", !inWardrobe);
+    // Which Miku: the wardrobe's choice, or the season's. Asked every frame, so
+    // picking one in the wardrobe shows at once.
+    this.engine.setVariant(State.variantPreview
+      ?? this.variants.get(parseVariant(State.settings.mikuVariant)));
     // Dances while music plays: always in the compact island, expanded only on
     // the music pill's card (BotCanvasView, macOS). Asked every frame.
     this.engine.setDancing(islandDances({

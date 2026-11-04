@@ -8,8 +8,10 @@
 // scrolled out of sight.
 
 import { BotEngine, hexToRGB } from "../mochi/engine";
+import { VariantCache, parseVariant } from "../mochi/wardrobe";
 import { onScreen, shouldAnimate } from "./frames";
 import type { BotStateName } from "../core/layout";
+import { State } from "../core/state";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -267,9 +269,13 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
 
 // ── The Mochi ─────────────────────────────────────────────────────────────────
 
-/** One Mochi alone (the sidebar's logo, an empty page). */
+/** "auto" → the season's Miku, remembered for the day. */
+const variants = new VariantCache();
+
+/** One Miku alone (the sidebar's logo, an empty page), in the user's variant. */
 export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: BotStateName = "idle") {
   const engine = new BotEngine();
+  engine.setVariant(variants.get(parseVariant(State.settings.mikuVariant)));
   engine.bodyColor = hexToRGB(color);
   engine.setState(state, true);
   canvas.addEventListener("click", () => engine.slap());

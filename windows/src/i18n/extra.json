@@ -376,6 +376,21 @@
       "ko": "자동 · 계절 따라 (지금: {outfit})",
       "ja": "自動 · 季節に合わせる（現在：{outfit}）"
     },
+    "Auto · follows the seasons (now: {variant})": {
+      "zh-Hans": "自动 · 随季节变化（当前：{variant}）",
+      "hi": "ऑटो · मौसम के अनुसार (अभी: {variant})",
+      "es": "Auto · sigue las estaciones (ahora: {variant})",
+      "ar": "تلقائي · يتبع المواسم (الآن: {variant})",
+      "fr": "Auto · suit les saisons (actuellement : {variant})",
+      "bn": "অটো · ঋতু অনুযায়ী (এখন: {variant})",
+      "pt-BR": "Auto · segue as estações (agora: {variant})",
+      "ru": "Авто · по сезону (сейчас: {variant})",
+      "id": "Otomatis · mengikuti musim (sekarang: {variant})",
+      "de": "Automatisch · folgt den Jahreszeiten (jetzt: {variant})",
+      "tr": "Otomatik · mevsimleri izler (şu an: {variant})",
+      "ko": "자동 · 계절을 따라가요 (지금: {variant})",
+      "ja": "自動 · 季節に合わせます（現在：{variant}）"
+    },
     "Auto · {outfit}": {
       "zh-Hans": "自动 · {outfit}",
       "hi": "ऑटो · {outfit}",
@@ -390,6 +405,21 @@
       "tr": "Otomatik · {outfit}",
       "ko": "자동 · {outfit}",
       "ja": "自動 · {outfit}"
+    },
+    "Auto · {variant}": {
+      "zh-Hans": "自动 · {variant}",
+      "hi": "ऑटो · {variant}",
+      "es": "Auto · {variant}",
+      "ar": "تلقائي · {variant}",
+      "fr": "Auto · {variant}",
+      "bn": "অটো · {variant}",
+      "pt-BR": "Auto · {variant}",
+      "ru": "Авто · {variant}",
+      "id": "Otomatis · {variant}",
+      "de": "Automatisch · {variant}",
+      "tr": "Otomatik · {variant}",
+      "ko": "자동 · {variant}",
+      "ja": "自動 · {variant}"
     },
     "Auto-close": {
       "zh-Hans": "自动关闭",
@@ -2716,6 +2746,21 @@
       "ko": "마이크",
       "ja": "マイク"
     },
+    "Miku": {
+      "zh-Hans": "Miku",
+      "hi": "Miku",
+      "es": "Miku",
+      "ar": "Miku",
+      "fr": "Miku",
+      "bn": "Miku",
+      "pt-BR": "Miku",
+      "ru": "Miku",
+      "id": "Miku",
+      "de": "Miku",
+      "tr": "Miku",
+      "ko": "미쿠",
+      "ja": "ミク"
+    },
     "Miku answers out loud": {
       "zh-Hans": "Miku 大声回答",
       "hi": "Miku ज़ोर से जवाब देता है",
@@ -4441,6 +4486,21 @@
       "ko": "가사 로마자 표기",
       "ja": "歌詞をローマ字にする"
     },
+    "Sakura Miku": {
+      "zh-Hans": "Sakura Miku",
+      "hi": "Miku",
+      "es": "Miku",
+      "ar": "Miku",
+      "fr": "Miku",
+      "bn": "Miku",
+      "pt-BR": "Miku",
+      "ru": "Miku",
+      "id": "Miku",
+      "de": "Miku",
+      "tr": "Miku",
+      "ko": "사쿠라 미쿠",
+      "ja": "桜ミク"
+    },
     "Saturday": {
       "zh-Hans": "星期六",
       "hi": "शनिवार",
@@ -4935,6 +4995,21 @@
       "tr": "Codex plan kullanımını (haftalık sınır ve kalan ücretsiz sıfırlama hakları) adanın başlığında gösterir. Araç göründüğünde Miku, Codex CLI'a (codex app-server) sorgu gönderir; hiçbir şey kurulmaz. Codex'te ChatGPT ile oturum açılmış olmalı.",
       "ko": "아일랜드 상단에 Codex 요금제 사용량(주간 한도와 남은 무료 초기화 횟수)을 보여 줘요. 미쿠가 보일 때 Miku가 Codex CLI(codex app-server)에 물어볼 뿐, 아무것도 설치하지 않아요. Codex는 ChatGPT로 로그인돼 있어야 해요.",
       "ja": "Codex プランの使用状況（週の上限と残りの無料リセット）をアイランドのヘッダーに表示します。ピルが表示されるとき Miku が Codex CLI（codex app-server）に問い合わせます。何もインストールされません。Codex は ChatGPT でサインインしている必要があります。"
+    },
+    "Snow Miku": {
+      "zh-Hans": "Snow Miku",
+      "hi": "Miku",
+      "es": "Miku",
+      "ar": "Miku",
+      "fr": "Miku",
+      "bn": "Miku",
+      "pt-BR": "Miku",
+      "ru": "Miku",
+      "id": "Miku",
+      "de": "Miku",
+      "tr": "Miku",
+      "ko": "스노 미쿠",
+      "ja": "雪ミク"
     },
     "Space": {
       "zh-Hans": "空格",

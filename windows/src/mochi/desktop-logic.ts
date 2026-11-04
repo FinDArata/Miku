@@ -9,12 +9,15 @@
 
 import type { BotEmoteName, BotStateName } from "../core/layout";
 import type { Outfit } from "./wardrobe";
+import type { MikuVariantId } from "./variants";
 
 /** What the island tells the desktop window, whenever it changes. */
 export interface DesktopSnapshot {
   state: BotStateName;
-  /** He is always the main Mochi, so always dressed (try-ons included). */
+  /** Always the main Miku, so always dressed (try-ons included). */
   outfit: Outfit;
+  /** Which Miku: the wardrobe's choice, or the season's. */
+  variant: MikuVariantId;
   soundEnabled: boolean;
   soundVolume: number;
   /** Tray → Pause: he dozes off and stays asleep. */

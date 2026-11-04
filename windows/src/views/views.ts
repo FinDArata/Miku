@@ -29,7 +29,8 @@ import { buildWhatsAppCard } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
-import type { Outfit, OutfitSelection } from "../mochi/wardrobe";
+import type { Outfit, OutfitSelection, VariantSelection } from "../mochi/wardrobe";
+import type { MikuVariantId } from "../mochi/variants";
 import { language, t, tl, type Msg } from "../i18n/i18n";
 import type { ViewCommand } from "../island/shortcuts";
 
@@ -57,8 +58,12 @@ export interface ViewActions {
   blip(): void;
   /** Wardrobe click: keeps the outfit ("auto" and "none" included). */
   chooseOutfit(selection: OutfitSelection): void;
-  /** Wardrobe hover: shows an outfit on Mochi without keeping it; null ends it. */
+  /** Wardrobe hover: shows an outfit on Miku without keeping it; null ends it. */
   previewOutfit(outfit: Outfit | null): void;
+  /** Wardrobe click: keeps the variant ("auto" follows the season). */
+  chooseVariant(selection: VariantSelection): void;
+  /** Wardrobe hover: shows a variant without keeping it; null ends it. */
+  previewVariant(variant: MikuVariantId | null): void;
   /** The island takes the keyboard (a text field in a card) or gives it back. */
   keyboard(on: boolean): void;
   /** Something is being typed in a card: the island stays open until it is sent or cleared. */
