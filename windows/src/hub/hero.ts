@@ -1,8 +1,7 @@
 // The coloured band on top of each page of the Kanon window: a deep black
-// with the page's colour breathing in a corner, particles that drift all the
-// time and move away from the pointer, and the page's little Mochis walking on
-// its floor — they hop, look around, wave, and react when poked. Also the
-// glowing cards and the Mochis of empty pages. Port of FlowHubMochis.swift.
+// with the page's colour breathing in a corner, and particles that drift all
+// the time and move away from the pointer. Also the glowing cards and the
+// Mochis of empty pages. Port of FlowHubMochis.swift.
 //
 // One animation loop draws every live canvas; it stops when none is left or
 // the window is hidden, so a hidden window costs nothing, and skips the ones
@@ -10,8 +9,7 @@
 
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { onScreen, shouldAnimate } from "./frames";
-import type { BotEmoteName, BotStateName } from "../core/layout";
-import type { Outfit } from "../mochi/wardrobe";
+import type { BotStateName } from "../core/layout";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -267,137 +265,7 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
   });
 }
 
-// ── The Mochis ────────────────────────────────────────────────────────────────
-
-export interface MochiSpec {
-  color: string;
-  /** Body width in CSS pixels. */
-  size: number;
-  /** Where he starts along the floor, 0…1. */
-  start: number;
-  outfit?: Outfit;
-  state?: BotStateName;
-  /** False: he stays where he is (working, thinking, asleep). */
-  roams?: boolean;
-}
-
-const EMOTES: BotEmoteName[] = ["love", "happy", "wink", "proud", "surprised"];
-
-class Walker {
-  engine = new BotEngine();
-  x = 0;
-  target = 0;
-  dir = 1;
-  hop = 0;
-  hopV = 0;
-  pause = 1 + Math.random() * 2;
-  nextEvent = 2 + Math.random() * 4;
-  waving = 0;
-
-  constructor(public spec: MochiSpec) {
-    this.engine.bodyColor = hexToRGB(spec.color);
-    this.engine.setState(spec.state ?? "idle", true);
-    if (spec.outfit && spec.outfit !== "none") this.engine.setOutfit(spec.outfit, false);
-  }
-}
-
-/** The page's Mochis on the band's floor, in the right part of `canvas`. */
-export function troupe(canvas: HTMLCanvasElement, cast: MochiSpec[], width: number) {
-  const walkers = cast.map((spec) => new Walker(spec));
-  let pointer: { x: number; y: number } | null = null;
-  let placed = false;
-  canvas.addEventListener("pointermove", (e) => {
-    const r = canvas.getBoundingClientRect();
-    pointer = { x: e.clientX - r.left, y: e.clientY - r.top };
-  });
-  canvas.addEventListener("pointerleave", () => (pointer = null));
-  canvas.addEventListener("click", (e) => {
-    const r = canvas.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    for (const w of walkers) {
-      if (Math.abs(px - w.x) < w.spec.size * 0.4) {
-        w.engine.slap();
-        w.hopV = 260;
-      }
-    }
-  });
-
-  add({
-    el: canvas,
-    draw(dt, t) {
-      const { w: cw, h: ch, ctx } = fit(canvas);
-      if (!ctx || cw === 0) return;
-      const left = Math.max(0, cw - width - 18);
-      const right = cw - 18;
-      if (!placed) {
-        placed = true;
-        for (const w of walkers) {
-          w.x = left + w.spec.size / 2 + (right - left - w.spec.size) * w.spec.start;
-          w.target = w.x;
-        }
-      }
-      ctx.clearRect(0, 0, cw, ch);
-      for (const w of walkers) {
-        const s = w.spec.size;
-        const lo = left + s / 2;
-        const hi = right - s / 2;
-        if (w.spec.roams !== false) {
-          if (Math.abs(w.target - w.x) < 1) {
-            w.pause -= dt;
-            if (w.pause <= 0) {
-              w.target = lo + Math.random() * Math.max(1, hi - lo);
-              w.pause = 1.5 + Math.random() * 3.5;
-            }
-          } else {
-            const step = Math.sign(w.target - w.x) * Math.min(Math.abs(w.target - w.x), 28 * dt);
-            w.x += step;
-            w.dir = Math.sign(step) || w.dir;
-            // A little bounce in the walk.
-            if (w.hop === 0 && w.hopV === 0) w.hopV = 70;
-          }
-        }
-        w.nextEvent -= dt;
-        if (w.nextEvent <= 0) {
-          w.nextEvent = 4 + Math.random() * 6;
-          const roll = Math.random();
-          if (roll < 0.35) w.hopV = 200;
-          else if (roll < 0.6) w.engine.triggerEmote(EMOTES[Math.floor(Math.random() * EMOTES.length)]);
-          else if (roll < 0.75) w.engine.greet();
-        }
-        // Hops: a simple ballistic jump.
-        if (w.hopV !== 0 || w.hop > 0) {
-          w.hopV -= 900 * dt;
-          w.hop = Math.max(0, w.hop + w.hopV * dt);
-          if (w.hop === 0 && w.hopV < 0) {
-            w.hopV = 0;
-            w.engine.squash();
-          }
-        }
-        // Eyes: the pointer when it is over the band, else where they walk.
-        if (pointer) {
-          w.engine.lookX = Math.max(-1, Math.min(1, (pointer.x - w.x) / 160));
-          w.engine.lookY = Math.max(-1, Math.min(1, (pointer.y - (ch - s * 0.6)) / 120));
-        } else {
-          w.engine.lookX = w.dir * 0.5;
-          w.engine.lookY = 0.1 + 0.1 * Math.sin(t + w.spec.start * 7);
-        }
-        w.engine.update(dt);
-        // `size` is the drawing's square, as on the Mac; the body is about 0.68 of it.
-        const box = s;
-        const floor = ch - 8;
-        ctx.save();
-        ctx.translate(w.x - box / 2, floor - box * 0.78 - w.hop);
-        // A soft shadow on the floor.
-        ctx.fillStyle = `rgba(0,0,0,${0.35 * (1 - Math.min(1, w.hop / 60))})`;
-        ctx.beginPath();
-        ctx.ellipse(box / 2, box * 0.78 + w.hop - 1, s * 0.3, s * 0.05, 0, 0, Math.PI * 2);
-        ctx.fill();
-        w.engine.draw(ctx, box, box);
-        ctx.restore();
-      }
-    },
-  });
-}
+// ── The Mochi ─────────────────────────────────────────────────────────────────
 
 /** One Mochi alone (the sidebar's logo, an empty page). */
 export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: BotStateName = "idle") {
@@ -427,46 +295,32 @@ export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: B
   return engine;
 }
 
-// ── Page themes ───────────────────────────────────────────────────────────────
+// ── Page colours ──────────────────────────────────────────────────────────────
 
-export interface Theme {
-  color: string;
-  cast: MochiSpec[];
-}
-
-const m = (color: string, size: number, start: number, extra: Partial<MochiSpec> = {}): MochiSpec => ({
-  color, size, start, ...extra,
-});
-
-export const THEMES: Record<string, Theme> = {
-  dictation: { color: "#FB923C", cast: [m("#F5F6F8", 66, 0.2), m("#FB923C", 52, 0.65), m("#F472B6", 44, 0.95, { outfit: "bow" })] },
-  notes: { color: "#3B9EFF", cast: [m("#3B9EFF", 58, 0.1, { outfit: "roundGlasses" }), m("#34D399", 50, 0.5), m("#A78BFA", 46, 0.9)] },
-  insights: { color: "#34D399", cast: [m("#F7B32B", 62, 0.3, { outfit: "crown" }), m("#34D399", 48, 0.75), m("#F5F6F8", 40, 1)] },
-  dictionary: { color: "#A78BFA", cast: [m("#A78BFA", 60, 0.2, { outfit: "roundGlasses" }), m("#F5F6F8", 48, 0.8, { outfit: "beanie" })] },
-  snippets: { color: "#F7B32B", cast: [m("#F7B32B", 56, 0.15, { state: "working" }), m("#FB923C", 46, 0.6), m("#F5F6F8", 40, 0.95)] },
-  styles: { color: "#F472B6", cast: [m("#F472B6", 60, 0.25, { outfit: "sunglasses" }), m("#F5F6F8", 48, 0.7, { outfit: "bow" }), m("#22D3EE", 42, 1, { outfit: "partyHat" })] },
-  flowsettings: { color: "#8E939C", cast: [m("#F5F6F8", 56, 0.3), m("#8E939C", 46, 0.95, { state: "sleeping", roams: false })] },
-  general: { color: "#8E939C", cast: [m("#F5F6F8", 60, 0.4, { outfit: "scarf" }), m("#FB923C", 46, 0.85)] },
-  pills: {
-    color: "#F5A524",
-    cast: [m("#F5A524", 44, 0.05), m("#3B9EFF", 44, 0.3), m("#34D399", 44, 0.55), m("#E07950", 44, 0.8), m("#A78BFA", 44, 1)],
-  },
-  agents: {
-    color: "#3B9EFF",
-    cast: [m("#3B9EFF", 56, 0.1, { state: "working", roams: false }), m("#E07950", 50, 0.5, { state: "thinking", roams: false }), m("#34D399", 50, 0.9)],
-  },
-  chat: { color: "#E07950", cast: [m("#E07950", 58, 0.3, { state: "thinking", roams: false }), m("#F5F6F8", 48, 0.85)] },
-  integrations: { color: "#7C5CFF", cast: [m("#7C5CFF", 54, 0.15), m("#22D3EE", 46, 0.55), m("#F7B32B", 42, 0.95)] },
-  phone: { color: "#3DDC84", cast: [m("#3DDC84", 56, 0.25), m("#F5F6F8", 46, 0.8, { outfit: "beanie" })] },
-  voice: { color: "#F97316", cast: [m("#F97316", 60, 0.3), m("#F5F6F8", 48, 0.85, { outfit: "roundGlasses" })] },
-  shortcuts: { color: "#6366F1", cast: [m("#6366F1", 56, 0.2, { outfit: "sunglasses" }), m("#F5F6F8", 46, 0.8)] },
-  mailOverview: { color: "#2F8CFF", cast: [m("#2F8CFF", 58, 0.2, { state: "working" }), m("#F5F6F8", 46, 0.7), m("#F5A524", 40, 1)] },
-  mailRules: { color: "#34D399", cast: [m("#34D399", 56, 0.3, { outfit: "roundGlasses" }), m("#8E939C", 46, 0.85)] },
-  mailBanned: { color: "#FF453A", cast: [m("#FF453A", 54, 0.25, { outfit: "sunglasses" }), m("#F5F6F8", 44, 0.8, { state: "sleeping", roams: false })] },
-  mailVIP: { color: "#F5A524", cast: [m("#F5A524", 60, 0.3, { outfit: "crown" }), m("#2F8CFF", 46, 0.85)] },
+/** Each page's colour, worn by the band at the top and by its glow. */
+export const THEMES: Record<string, { color: string }> = {
+  dictation: { color: "#FB923C" },
+  notes: { color: "#3B9EFF" },
+  insights: { color: "#34D399" },
+  dictionary: { color: "#A78BFA" },
+  snippets: { color: "#F7B32B" },
+  styles: { color: "#F472B6" },
+  flowsettings: { color: "#8E939C" },
+  general: { color: "#8E939C" },
+  pills: { color: "#F5A524" },
+  agents: { color: "#3B9EFF" },
+  chat: { color: "#E07950" },
+  integrations: { color: "#7C5CFF" },
+  phone: { color: "#3DDC84" },
+  voice: { color: "#F97316" },
+  shortcuts: { color: "#6366F1" },
+  mailOverview: { color: "#2F8CFF" },
+  mailRules: { color: "#34D399" },
+  mailBanned: { color: "#FF453A" },
+  mailVIP: { color: "#F5A524" },
 };
 
-/** The band itself: title, line, actions, and the Mochis. */
+/** The band itself: title, line and actions. */
 export function hero(page: string, title: string, subtitle: string | null, actions: HTMLElement[] = [], compact = false): HTMLElement {
   const theme = THEMES[page] ?? THEMES.general;
   const el = document.createElement("div");
@@ -476,8 +330,6 @@ export function hero(page: string, title: string, subtitle: string | null, actio
   el.style.setProperty("--hero-tint", rgba(theme.color, 0.1));
   const back = document.createElement("canvas");
   back.className = "backdrop";
-  const mochis = document.createElement("canvas");
-  mochis.className = "troupe";
   const copy = document.createElement("div");
   copy.className = "copy";
   const h1 = document.createElement("h1");
@@ -494,9 +346,8 @@ export function hero(page: string, title: string, subtitle: string | null, actio
     row.append(...actions);
     copy.append(row);
   }
-  el.append(back, mochis, copy);
+  el.append(back, copy);
   backdrop(back, theme.color, el);
-  troupe(mochis, theme.cast, compact ? 280 : 340);
   return el;
 }
 
