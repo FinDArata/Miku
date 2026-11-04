@@ -1,5 +1,5 @@
-// The launch greeting (src/mochi/greeting.ts): Mochi must never be cut off by
-// the island while it grows, while he bounces and waves, or while it shrinks
+// The launch greeting (src/mochi/greeting.ts): Miku must never be cut off by
+// the island while it grows, while she bounces and waves, or while it shrinks
 // back to the compact island.
 
 import { test } from "node:test";
@@ -11,7 +11,7 @@ import { COMPACT_W, NOTCH_H, NOTCH_W, VIEW_LAYOUTS } from "../src/core/layout.ts
 const FRAME = 1 / 60;
 const SLACK = 0.5; // anti-aliasing
 
-/** Mochi's box against the island's, which is centred in the 640 px greeting canvas. */
+/** The figure's box against the island's, which is centred in the 640 px greeting canvas. */
 function assertInside(t, tc, w, h) {
   const b = mochiBounds(greetingPose(t, tc));
   if (!b) return;
@@ -46,25 +46,27 @@ function run(tc) {
   }
 }
 
-test("Mochi stays inside the island for the whole greeting", () => {
+test("Miku stays inside the island for the whole greeting", () => {
   run(Number.POSITIVE_INFINITY);
 });
 
-test("Mochi stays inside the island when the greeting is cut short", () => {
+test("Miku stays inside the island when the greeting is cut short", () => {
   for (let tc = 0.3; tc < GREETING_END + 0.4; tc += 0.1) run(tc);
 });
 
-test("he slides to the side to wave, then comes back to the middle", () => {
+test("she slides to the side to wave, then comes back to the middle", () => {
   const atWave = greetingPose(2.0);
   assert.ok(atWave.x < 290, `waving at x=${atWave.x}`);
-  assert.ok(atWave.handL > 0.9 && atWave.handR > 0.9, "both hands out");
+  // The wave is a head tilt now: Miku has moe-sleeves, not hands.
   assert.ok(atWave.wave >= 0, "waving");
+  assert.notEqual(atWave.tilt, 0, "the tilt carries the wave");
   const back = greetingPose(3.6);
   assert.equal(back.x, 320);
-  assert.equal(back.handL, 0);
+  assert.equal(back.wave, -1);
+  assert.equal(back.tilt, 0);
 });
 
-test("he lands where the compact island's Mochi sits", () => {
+test("she lands where the compact island's Miku sits", () => {
   const end = greetingPose(10, 5);
   assert.equal(end.y, NOTCH_H / 2);
   assert.equal(end.x, GREETING_W / 2 - COMPACT_W / 2 + 40);

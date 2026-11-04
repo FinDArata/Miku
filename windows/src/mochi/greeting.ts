@@ -6,6 +6,8 @@
 import { closeCurve } from "../core/anim";
 import { Sound } from "../core/sound";
 import { COMPACT_W, NOTCH_H, NOTCH_W } from "../core/layout";
+import { BotEngine } from "./engine";
+import type { MikuVariantId } from "./variants";
 
 // ── Timing (GT in the Swift file) ─────────────────────────────────────────────
 
@@ -183,10 +185,12 @@ function greetPose(t: number): Pose {
   const handR = t < T.tuck0
     ? E.back(seg(t, T.pop0 + 0.04, T.pop0 + 0.18))
     : 1 - E.easeIn(seg(t, T.tuck0 + 0.03, T.tuck1));
+  // The greeting's "hand" — Miku waves with her head, see waveTilt().
   const wave = t >= T.pop1 && t < T.tuck0 ? t - T.pop1 : -1;
+  const tilt = waveTilt({ wave } as Pose);
 
   return {
-    hb, x, y, sx, sy, tilt: 0,
+    hb, x, y, sx, sy, tilt,
     eye, open, eyeRoll: 0,
     lookX, lookY,
     handL, handR, wave,
@@ -254,65 +258,43 @@ export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY): Pose {
   return p;
 }
 
-/** Where the waving (left, round) hand is, in body space before the body's scale. */
-function handLPos(hw: number, hh: number, p: Pose) {
-  const k = p.handL;
-  const hb = hh * 2;
-  const r = hb * 0.15 * k;
-  const x = lerp(-hw * 0.35, -hw - hb * 0.22, k);
-  let y = lerp(hh * 0.85, hh * 0.62, k);
-  if (p.wave >= 0) {
-    // ramp in 0.08 s after pop1, ramp out over the tuck
-    const w = p.wave;
-    const rampIn = clamp(w / 0.08, 0, 1);
-    const rampOut = 1 - clamp((w - (T.tuck0 - T.pop1)) / (T.tuck1 - T.tuck0), 0, 1);
-    y += Math.sin(w * 2 * Math.PI * 5) * hb * 0.14 * rampIn * rampOut;
-  }
-  return { x, y, r };
+/**
+ * The wave used to be a little round hand poking out of the marshmallow. Miku
+ * has moe-sleeves, so the greeting waves with the head: the tilt swings at the
+ * same beat and the same envelope the hand had, which keeps the greeting's
+ * rhythm without an asset the character does not have.
+ */
+function waveTilt(p: Pose): number {
+  if (p.wave < 0) return 0;
+  const w = p.wave;
+  const rampIn = clamp(w / 0.08, 0, 1);
+  const rampOut = 1 - clamp((w - (T.tuck0 - T.pop1)) / (T.tuck1 - T.tuck0), 0, 1);
+  return Math.sin(w * 2 * Math.PI * 5) * 0.1 * rampIn * rampOut;
 }
 
-/** The resting (right, capsule) hand. */
-function handRPos(hw: number, hh: number, p: Pose) {
-  const k = p.handR;
-  const hb = hh * 2;
-  return {
-    x: lerp(hw * 0.35, hw + hb * 0.2, k),
-    y: lerp(hh * 0.85, hh * 0.2, k),
-    L: hb * 0.4 * k,
-    T: hb * 0.22 * k,
-    // breathing rotation ±0.04 rad at 2.5 Hz while the other hand waves
-    ang: p.wave >= 0 ? -0.61 + Math.sin(p.wave * 2 * Math.PI * 2.5) * 0.04 : -0.61,
-  };
-}
 
 /**
- * Bounding box of Mochi's body and hands in the 640×150 space — what must stay
- * inside the island so nothing of him is cut off.
+ * Bounding box of the figure in the 640×150 space — what must stay inside the
+ * island so nothing of it is cut off.
+ *
+ * It measures the box the engine actually paints into, not the old
+ * marshmallow's hands: the engine draws the whole chibi inside a square of
+ * `hb / 0.6`, filling about 58 % of its height (the twintails and the skirt sit
+ * inside that). Keeping the test against the drawn box means it still catches a
+ * greeting pose that pushes the character out of the island.
  */
 export function mochiBounds(p: Pose): { left: number; right: number; top: number; bottom: number } | null {
   const hh = p.hb / 2;
-  const hw = hh * ASP;
   if (hh <= 0.4) return null;
-  let left = -hw;
-  let right = hw;
-  let top = -hh;
-  let bottom = hh;
-  if (p.handL > 0.01) {
-    const l = handLPos(hw, hh, p);
-    left = Math.min(left, l.x - l.r);
-    top = Math.min(top, l.y - l.r);
-    bottom = Math.max(bottom, l.y + l.r);
-  }
-  if (p.handR > 0.01) {
-    const r = handRPos(hw, hh, p);
-    const ext = r.L / 2 + r.T / 2;
-    right = Math.max(right, r.x + ext);
-    top = Math.min(top, r.y - ext);
-    bottom = Math.max(bottom, r.y + ext);
-  }
+  const side = p.hb / 0.6;
+  // The engine's own margins, from its draw(): the body is R = W*0.3 wide and
+  // the figure spans roughly 0.62 of the box vertically, centred a touch high.
+  const halfW = side * 0.5 * 0.62;
+  const top = -side * 0.5 + side * 0.19;
+  const bottom = -side * 0.5 + side * 0.81;
   return {
-    left: p.x + left * p.sx,
-    right: p.x + right * p.sx,
+    left: p.x - halfW * p.sx,
+    right: p.x + halfW * p.sx,
     top: p.y + top * p.sy,
     bottom: p.y + bottom * p.sy,
   };
@@ -361,68 +343,14 @@ function rr(x: CanvasRenderingContext2D, X: number, Y: number, W: number, H: num
   x.closePath();
 }
 
-function mochiPath(hw: number, hh: number): Path2D {
-  const n = 3.2;
-  const p = new Path2D();
-  const steps = 96;
-  for (let i = 0; i <= steps; i++) {
-    const a = (i / steps) * 2 * Math.PI;
-    const ca = Math.cos(a);
-    const sa = Math.sin(a);
-    const px = hw * (ca < 0 ? -1 : 1) * Math.pow(Math.abs(ca), 2 / n);
-    const py = hh * (sa < 0 ? -1 : 1) * Math.pow(Math.abs(sa), 2 / n);
-    if (i === 0) p.moveTo(px, py);
-    else p.lineTo(px, py);
-  }
-  p.closePath();
-  return p;
-}
+/**
+ * Bounding box of the figure in the 640×150 space — what must stay inside the
+ * island so nothing of it is cut off. The pose drives it (the engine draws the
+ * body at its own scale around p.x/p.y), so this stays a pure function of the
+ * pose, which is what the greeting tests exercise.
+ */
 
-/** White body gradient. A canvas gradient pads past its ends, so the corners are never left unpainted. */
-function whiteFill(
-  x: CanvasRenderingContext2D, path: Path2D,
-  x0: number, y0: number, x1: number, y1: number,
-) {
-  const g = x.createLinearGradient(x0, y0, x1, y1);
-  g.addColorStop(0, "rgb(251,251,252)");
-  g.addColorStop(1, "rgb(231,233,236)");
-  x.fillStyle = g;
-  x.fill(path);
-}
-
-function drawHandL(x: CanvasRenderingContext2D, hw: number, hh: number, p: Pose) {
-  if (p.handL <= 0.01) return;
-  const { x: hx, y: hy, r } = handLPos(hw, hh, p);
-  x.save();
-  x.translate(hx, hy);
-  const circ = new Path2D();
-  circ.ellipse(0, 0, r, r, 0, 0, Math.PI * 2);
-  whiteFill(x, circ, r, -r, -r, r);
-  x.strokeStyle = "rgba(0,0,0,0.08)";
-  x.lineWidth = 0.8;
-  x.stroke(circ);
-  x.restore();
-}
-
-function drawHandR(x: CanvasRenderingContext2D, hw: number, hh: number, p: Pose) {
-  if (p.handR <= 0.01) return;
-  const h = handRPos(hw, hh, p);
-  x.save();
-  x.translate(h.x, h.y);
-  x.rotate(h.ang);
-  rr(x, -h.L / 2, -h.T / 2, h.L, h.T, h.T / 2);
-  const g = x.createLinearGradient(h.L / 2, -h.T / 2, -h.L / 2, h.T / 2);
-  g.addColorStop(0, "rgb(251,251,252)");
-  g.addColorStop(1, "rgb(231,233,236)");
-  x.fillStyle = g;
-  x.fill();
-  x.strokeStyle = "rgba(0,0,0,0.08)";
-  x.lineWidth = 0.8;
-  x.stroke();
-  x.restore();
-}
-
-function drawMochi(x: CanvasRenderingContext2D, p: Pose) {
+function drawMiku(x: CanvasRenderingContext2D, p: Pose, engine: BotEngine) {
   const hh = p.hb / 2;
   const hw = hh * ASP;
   if (hh <= 0.4) return;
@@ -444,64 +372,24 @@ function drawMochi(x: CanvasRenderingContext2D, p: Pose) {
     }
   }
 
+  // The mascot is the island's own engine, so the greeting can never show a
+  // different character from the one that lands in the compact island.
   x.save();
   x.translate(p.x, p.y);
   x.rotate(p.tilt);
   x.scale(p.sx, p.sy);
-
-  drawHandL(x, hw, hh, p);
-  drawHandR(x, hw, hh, p);
-
-  const body = mochiPath(hw, hh);
-  whiteFill(x, body, hw * 0.6, -hh, -hw * 0.6, hh);
-
-  if (p.tint > 0) {
-    const g = x.createLinearGradient(0, hh, 0, -hh * 0.1);
-    g.addColorStop(0, `rgba(127,180,234,${p.tint})`);
-    g.addColorStop(1, "rgba(127,180,234,0)");
-    x.fillStyle = g;
-    x.fill(body);
-  }
-
-  // Eyes
-  x.save();
-  x.clip(body);
-  x.fillStyle = "#16171A";
-  x.strokeStyle = "#16171A";
-  const er = p.hb * 0.06;
-  const sp = p.hb * 0.19;
-  const lx = p.lookX * hw * 0.42;
-  const ly = p.lookY * hh * 0.28 + hh * 0.12 + p.eyeRoll * hh * 1.25;
-  for (const sd of [-1, 1]) {
-    x.save();
-    x.translate(sd * sp + lx, ly);
-    if (p.eye === "happy") {
-      x.lineWidth = er * 0.95;
-      x.lineCap = "round";
-      x.beginPath();
-      x.arc(0, er * 0.6, er * 1.25, Math.PI * 1.15, Math.PI * 1.85);
-      x.stroke();
-    } else if (p.eye === "content") {
-      x.lineWidth = er * 0.95;
-      x.lineCap = "round";
-      x.beginPath();
-      x.arc(0, -er * 0.5, er * 1.25, Math.PI * 0.15, Math.PI * 0.85);
-      x.stroke();
-    } else {
-      x.scale(1, Math.max(0.12, p.open));
-      x.beginPath();
-      x.arc(0, 0, er, 0, Math.PI * 2);
-      x.fill();
-    }
-    x.restore();
-  }
+  const side = p.hb / 0.6; // the engine draws the body at 60 % of its box
+  engine.syncGreeting(p);
+  x.translate(-side / 2, -side / 2);
+  engine.draw(x, side, side);
   x.restore();
 
-  // Activity badge
+  // Activity badge, over the whole thing (the engine's own sits inside its box,
+  // which the greeting scales differently).
   if (p.badge > 0.01) {
     const br = hh * 0.3;
     x.save();
-    x.translate(-hw * 0.78, -hh * 0.72);
+    x.translate(p.x - hw * 0.78, p.y - hh * 0.72);
     x.scale(p.badge, p.badge);
     x.fillStyle = "#000";
     x.beginPath();
@@ -519,8 +407,6 @@ function drawMochi(x: CanvasRenderingContext2D, p: Pose) {
     }
     x.restore();
   }
-
-  x.restore();
 }
 
 function drawParticles(x: CanvasRenderingContext2D, t: number, p: Pose) {
@@ -570,8 +456,15 @@ export class Greeting {
   private tc = Number.POSITIVE_INFINITY;
   private fired = false;
   private timers: number[] = [];
+  /** The island's own engine, so the greeting shows the same Miku it lands as. */
+  private engine = new BotEngine();
 
   onComplete: (() => void) | null = null;
+
+  /** Which Miku: the wardrobe's choice, as the island draws it too. */
+  setVariant(id: MikuVariantId) {
+    this.engine.setVariant(id);
+  }
 
   start() {
     this.startMs = performance.now();
@@ -647,6 +540,6 @@ export class Greeting {
       drawParticles(x, t, p);
     }
 
-    drawMochi(x, p);
+    drawMiku(x, p, this.engine);
   }
 }

@@ -334,6 +334,35 @@ export class BotEngine {
     if (v && v !== this.variant) this.variant = v;
   }
 
+  /**
+   * The launch greeting drives the pose itself (drop, bounce, slide, wave,
+   * settle) and hands the result here each frame, so it draws the same Miku with
+   * the same eye shapes as everything else instead of its own copy of the face.
+   */
+  syncGreeting(p: {
+    eye: "dot" | "happy" | "content";
+    open: number;
+    lookX: number;
+    lookY: number;
+    tint: number;
+  }) {
+    this.state = "idle";
+    this.cfg = BOT_STATES.idle;
+    this.permanentEye = null;
+    this.eyeOverride = p.eye === "dot" ? "pill" : p.eye === "happy" ? "happy" : "closed";
+    this.open = Math.max(0.05, p.open);
+    this.lookX = p.lookX;
+    this.lookY = p.lookY;
+    this.tint = p.tint;
+    // The greeting bobs the body through its own transform, so the engine's
+    // spring-driven offset stays neutral.
+    this.oy = 0;
+    this.ox = 0;
+    this.tilt = 0;
+    this.sx = 1;
+    this.sy = 1;
+  }
+
   setState(next: BotStateName, force = false) {
     if (this.state === next && !force) return;
     const prev = this.state;
