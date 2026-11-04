@@ -936,7 +936,7 @@ mod tests {
         assert_eq!(kind(r"C:\Users\Ana\Downloads\kanon.exe", true), InstallKind::Manual);
         assert_eq!(kind(r"C:\dev\kanon\windows\target\release\kanon.exe", false), InstallKind::Manual);
         assert_eq!(kind(r"C:\Program Files\Kanon\bin\kanon.exe", false), InstallKind::Manual);
-        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Kanon\bin\kanon-hook.exe", true), InstallKind::Manual);
+        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Kanon\bin\miku-hook.exe", true), InstallKind::Manual);
         assert_eq!(kind("kanon.exe", true), InstallKind::Manual);
         assert_eq!(install_kind(r"C:\Program Files\Kanon\kanon.exe", false, None, &[]), InstallKind::Manual);
         assert_eq!(install_kind("/opt/Kanon/kanon", false, Some(""), &[String::new()]), InstallKind::Manual);

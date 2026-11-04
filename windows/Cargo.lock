@@ -2541,52 +2541,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanon"
-version = "0.5.9"
-dependencies = [
- "arboard",
- "cpal",
- "dbus",
- "futures-util",
- "gtk",
- "keyring",
- "libc",
- "lopdf",
- "mdns-sd",
- "miniz_oxide 0.8.9",
- "qrcode",
- "rcgen",
- "reqwest 0.12.28",
- "ring",
- "rustls",
- "serde",
- "serde_json",
- "sherpa-onnx",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-single-instance",
- "tokio",
- "tokio-rustls",
- "tokio-tungstenite",
- "webpki-roots 1.0.9",
- "webview2-com",
- "windows 0.61.3",
- "windows-core 0.62.2",
- "x11rb",
-]
-
-[[package]]
-name = "kanon-hook"
-version = "0.5.9"
-dependencies = [
- "libc",
- "serde_json",
- "windows 0.61.3",
-]
-
-[[package]]
 name = "keyboard-types"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2814,6 +2768,52 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "miku"
+version = "0.5.9"
+dependencies = [
+ "arboard",
+ "cpal",
+ "dbus",
+ "futures-util",
+ "gtk",
+ "keyring",
+ "libc",
+ "lopdf",
+ "mdns-sd",
+ "miniz_oxide 0.8.9",
+ "qrcode",
+ "rcgen",
+ "reqwest 0.12.28",
+ "ring",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sherpa-onnx",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-single-instance",
+ "tokio",
+ "tokio-rustls",
+ "tokio-tungstenite",
+ "webpki-roots 1.0.9",
+ "webview2-com",
+ "windows 0.61.3",
+ "windows-core 0.62.2",
+ "x11rb",
+]
+
+[[package]]
+name = "miku-hook"
+version = "0.5.9"
+dependencies = [
+ "libc",
+ "serde_json",
+ "windows 0.61.3",
 ]
 
 [[package]]

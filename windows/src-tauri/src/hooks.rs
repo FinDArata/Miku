@@ -38,8 +38,19 @@ pub const HOOK_EVENTS: &[(&str, u64)] = &[
     ("SubagentStop", 10),
 ];
 
-/// Marker that identifies a Kanon entry inside settings.json.
-const MARKER: &str = "kanon-hook";
+/// Marker that identifies this app's entries inside settings.json: the relay's
+/// file name.
+const MARKER: &str = "miku-hook";
+
+/// What those entries said before the rebrand. A settings.json written by Kanon
+/// has to be recognised as ours too, or updating would leave its hooks behind
+/// and add Miku's beside them — every event would then run two relays.
+const LEGACY_MARKER: &str = "kanon-hook";
+
+/// Whether `command` runs our relay, under either name.
+fn is_ours(command: &str) -> bool {
+    command.contains(MARKER) || command.contains(LEGACY_MARKER)
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -101,7 +112,7 @@ fn entry_is_ours(entry: &Value) -> bool {
             hooks.iter().any(|h| {
                 h.get("command")
                     .and_then(Value::as_str)
-                    .map(|c| c.contains(MARKER))
+                    .map(|c| is_ours(c))
                     .unwrap_or(false)
             })
         })
@@ -109,9 +120,9 @@ fn entry_is_ours(entry: &Value) -> bool {
 }
 
 /// The status line in settings.json is Kanon's relay (old installs wrote
-/// `kanon-hook StatusLine`, new ones `kanon-hook --statusline`; both match).
+/// `miku-hook StatusLine`, new ones `miku-hook --statusline`; both match).
 fn status_line_is_ours(v: &Value) -> bool {
-    v.get("command").and_then(Value::as_str).is_some_and(|c| c.contains(MARKER))
+    v.get("command").and_then(Value::as_str).is_some_and(is_ours)
 }
 
 /// Settings with Kanon's hooks added; everything else is left untouched. A
@@ -365,7 +376,7 @@ fn save_status_line_previous(status_line: &Value) -> std::io::Result<()> {
     config_file::write_like(&path, &path, config_file::pretty(status_line).as_bytes())
 }
 
-/// Copies the relay (kanon-hook.exe / kanon-hook) into the local data dir's
+/// Copies the relay (miku-hook.exe / miku-hook) into the local data dir's
 /// bin/ on launch. In a bundled install it comes from the app resources; in
 /// `tauri dev` it sits next to the app binary in the workspace target directory.
 ///
@@ -584,7 +595,7 @@ mod tests {
     /// the home directory at a temp directory, and that is process-wide.
     #[test]
     fn writing_backs_up_preserves_and_refuses_a_changed_file() {
-        let tmp = std::env::temp_dir().join(format!("kanon-hooks-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("miku-hooks-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(tmp.join(".claude")).unwrap();
         std::env::set_var(platform::HOME_VAR, &tmp);
@@ -602,7 +613,7 @@ mod tests {
 
         // Install.
         let plan = preview(true).expect("a BOM must not stop the preview");
-        assert!(plan.diff.contains("kanon-hook"), "the diff must show what changes");
+        assert!(plan.diff.contains("miku-hook"), "the diff must show what changes");
         let backup = write(true, &plan.fingerprint).expect("install should succeed");
 
         // The backup holds the original bytes, BOM and all.

@@ -17,8 +17,17 @@ use serde_json::{json, Map, Value};
 use crate::config_file::{self, FileEdit, Plan};
 use crate::{platform, settings};
 
-/// Marker that identifies a Kanon entry: the relay's file name.
-const MARKER: &str = "kanon-hook";
+/// Marker that identifies this app's entry: the relay's file name.
+const MARKER: &str = "miku-hook";
+
+/// The same, as an install from before the rebrand wrote it. Recognising it is
+/// what keeps an update from leaving Kanon's hooks in place next to Miku's.
+const LEGACY_MARKER: &str = "kanon-hook";
+
+/// Whether `command` runs our relay, under either name.
+fn mentions_relay(command: &str) -> bool {
+    command.contains(MARKER) || command.contains(LEGACY_MARKER)
+}
 
 // ── The relay command line ────────────────────────────────────────────────────
 
@@ -142,28 +151,54 @@ impl Agent {
             Agent::Antigravity => vec![home.join(".gemini").join("config").join("hooks.json")],
             Agent::Cursor => vec![home.join(".cursor").join("hooks.json")],
             Agent::Codex => vec![home.join(".codex").join("hooks.json")],
-            Agent::Copilot => vec![home.join(".copilot").join("hooks").join("kanon.json")],
+            Agent::Copilot => vec![home.join(".copilot").join("hooks").join("miku.json")],
             Agent::Muse => vec![home.join(".config").join("muse").join("settings.json")],
             // OpenCode and Amp read ~/.config on Windows too.
+            Agent::OpenCode => vec![home.join(".config").join("opencode").join("plugins").join("miku.js")],
+            Agent::Amp => vec![home.join(".config").join("amp").join("plugins").join("miku.ts")],
+            Agent::Hermes => {
+                let dir = home.join(".hermes").join("plugins").join("miku");
+                vec![dir.join("__init__.py"), dir.join("plugin.yaml")]
+            }
+        }
+    }
+
+    /// The edits that install (or remove) this app for this agent.
+    fn edits(self, home: &Path, relay: &Relay, install: bool) -> Vec<FileEdit<'static>> {
+        let files = self.files(home);
+        let mut edits = if let Some(contents) = self.plugin(relay) {
+            files.into_iter().zip(contents).map(|(path, text)| plugin_edit(path, text, install)).collect()
+        } else {
+            let path = files[0].clone();
+            let label = path.display().to_string();
+            let change = self.json_change(relay, install);
+            vec![FileEdit { path, edit: config_file::json_edit(label, change) }]
+        };
+        // A plugin written before the rebrand sits under the old name, still
+        // pointing at a relay that is gone. Removing ours there stops the agent
+        // from loading two plugins; somebody else's file is left alone — and
+        // their file must not stop the new plugin from being installed.
+        if install {
+            for path in self.legacy_plugin_files(home) {
+                if std::fs::read_to_string(&path).is_ok_and(|text| is_our_plugin(&text)) {
+                    edits.push(plugin_edit(path, String::new(), false));
+                }
+            }
+        }
+        edits
+    }
+
+    /// The files the same plugin had before the rebrand.
+    fn legacy_plugin_files(self, home: &Path) -> Vec<PathBuf> {
+        match self {
             Agent::OpenCode => vec![home.join(".config").join("opencode").join("plugins").join("kanon.js")],
             Agent::Amp => vec![home.join(".config").join("amp").join("plugins").join("kanon.ts")],
             Agent::Hermes => {
                 let dir = home.join(".hermes").join("plugins").join("kanon");
                 vec![dir.join("__init__.py"), dir.join("plugin.yaml")]
             }
+            _ => Vec::new(),
         }
-    }
-
-    /// The edits that install (or remove) Kanon for this agent.
-    fn edits(self, home: &Path, relay: &Relay, install: bool) -> Vec<FileEdit<'static>> {
-        let files = self.files(home);
-        if let Some(contents) = self.plugin(relay) {
-            return files.into_iter().zip(contents).map(|(path, text)| plugin_edit(path, text, install)).collect();
-        }
-        let path = files[0].clone();
-        let label = path.display().to_string();
-        let change = self.json_change(relay, install);
-        vec![FileEdit { path, edit: config_file::json_edit(label, change) }]
     }
 
     /// For an agent that loads a plugin rather than running hook commands, the
@@ -252,7 +287,12 @@ impl Agent {
         };
         match self {
             Agent::Gemini => groups_have_ours(&json(), "gemini"),
-            Agent::Antigravity => json().get("kanon").is_some_and(antigravity_is_ours),
+            Agent::Antigravity => {
+                let config = json();
+                [ANTIGRAVITY_KEY, ANTIGRAVITY_LEGACY_KEY]
+                    .iter()
+                    .any(|key| config.get(*key).is_some_and(antigravity_is_ours))
+            }
             Agent::Cursor => groups_have_ours(&json(), "cursor"),
             Agent::Codex => groups_have_ours(&json(), "codex"),
             Agent::Copilot => json()
@@ -390,11 +430,11 @@ fn list_at(hooks: &Map<String, Value>, event: &str) -> Result<Vec<Value>, String
     }
 }
 
-/// A command line written by Kanon for `agent`.
+/// A command line written by this app for `agent`.
 fn is_our_command(command: Option<&Value>, agent: &str) -> bool {
     command
         .and_then(Value::as_str)
-        .is_some_and(|c| c.contains(MARKER) && c.contains(&format!("--agent {agent}")))
+        .is_some_and(|c| mentions_relay(c) && c.contains(&format!("--agent {agent}")))
 }
 
 /// Claude-style groups (`{"matcher"?, "hooks": [{"command"}]}`, or a legacy
@@ -547,20 +587,33 @@ fn antigravity_is_ours(group: &Value) -> bool {
     text.contains(MARKER) && text.contains("--agent antigravity")
 }
 
+/// The key this app's hook group has in Antigravity's config.
+const ANTIGRAVITY_KEY: &str = "miku";
+/// The same key before the rebrand, still read so an update recognises the group
+/// Kanon wrote instead of refusing its own file.
+const ANTIGRAVITY_LEGACY_KEY: &str = "kanon";
+
 fn antigravity_install(root: &Value, block: &Value) -> Result<Value, String> {
     let mut root = root.as_object().cloned().unwrap_or_default();
-    if root.get("kanon").is_some_and(|g| !antigravity_is_ours(g)) {
-        return Err(crate::i18n::t("A hook group named \"miku\" that Miku did not write is already there — Miku has not touched it."));
+    // A group under either name that is not ours is somebody else's: refuse it.
+    for key in [ANTIGRAVITY_KEY, ANTIGRAVITY_LEGACY_KEY] {
+        if root.get(key).is_some_and(|g| !antigravity_is_ours(g)) {
+            return Err(crate::i18n::t("A hook group named \"miku\" that Miku did not write is already there — Miku has not touched it."));
+        }
     }
-    root.insert("kanon".into(), block.clone());
+    // Written under the new name; the old one goes, so the file never carries two.
+    root.remove(ANTIGRAVITY_LEGACY_KEY);
+    root.insert(ANTIGRAVITY_KEY.into(), block.clone());
     Ok(Value::Object(root))
 }
 
-/// Removes Kanon's group, and only if it is Kanon's.
+/// Removes this app's group, under either name, and only if it is ours.
 fn antigravity_uninstall(root: &Value) -> Result<Value, String> {
     let mut root = root.as_object().cloned().unwrap_or_default();
-    if root.get("kanon").is_some_and(antigravity_is_ours) {
-        root.remove("kanon");
+    for key in [ANTIGRAVITY_KEY, ANTIGRAVITY_LEGACY_KEY] {
+        if root.get(key).is_some_and(antigravity_is_ours) {
+            root.remove(key);
+        }
     }
     Ok(Value::Object(root))
 }
@@ -736,11 +789,16 @@ fn muse_install(root: &Value, commands: &[(String, String, u64)]) -> Result<Valu
 // approvals (as on the Mac), and Amp's steps come from `tool.result` so the
 // plugin never has to return a verdict from `tool.call`.
 
-/// Every plugin file Kanon writes says so; only such a file is replaced or removed.
-const GENERATED: &str = "generated by Kanon";
+/// Every plugin file this app writes says so; only such a file is replaced or
+/// removed.
+const GENERATED: &str = "generated by Miku";
+
+/// What those files said before the rebrand: a plugin written by Kanon is still
+/// ours to replace, and would otherwise be refused as somebody else's.
+const LEGACY_GENERATED: &str = "generated by Kanon";
 
 fn is_our_plugin(text: &str) -> bool {
-    text.contains(GENERATED)
+    text.contains(GENERATED) || text.contains(LEGACY_GENERATED)
 }
 
 fn plugin_edit(path: PathBuf, content: String, install: bool) -> FileEdit<'static> {
@@ -756,9 +814,9 @@ fn plugin_edit(path: PathBuf, content: String, install: bool) -> FileEdit<'stati
     FileEdit { path, edit }
 }
 
-const OPENCODE_PLUGIN: &str = r#"// Kanon plugin for OpenCode — generated by Kanon.
-// Forwards OpenCode's events to Kanon's relay (kanon-hook), fire-and-forget:
-// OpenCode never waits on it, and nothing happens when Kanon is closed.
+const OPENCODE_PLUGIN: &str = r#"// Miku plugin for OpenCode — generated by Miku.
+// Forwards OpenCode's events to Miku's relay (miku-hook), fire-and-forget:
+// OpenCode never waits on it, and nothing happens when Miku is closed.
 import { spawn } from 'node:child_process';
 
 const HOOK = {HOOK};
@@ -787,7 +845,7 @@ function forward(hook_event_name, payload) {
   } catch {}
 }
 
-export const KanonPlugin = async ({ directory } = {}) => ({
+export const MikuPlugin = async ({ directory } = {}) => ({
   event: async ({ event }) => {
     const hook_event_name = EVENT_MAP[event?.type];
     if (!hook_event_name) return;
@@ -815,7 +873,7 @@ export const KanonPlugin = async ({ directory } = {}) => ({
 });
 
 export default {
-  id: 'kanon',
+  id: 'miku',
   setup: async (ctx = {}) => {
     const dir = ctx.directory || ctx.location?.directory || '';
     if (ctx.tool?.hook) {
@@ -852,14 +910,14 @@ export default {
         } catch {}
       })();
     }
-    return KanonPlugin(ctx);
+    return MikuPlugin(ctx);
   },
-  server: KanonPlugin,
+  server: MikuPlugin,
 };
 "#;
 
-const AMP_PLUGIN: &str = r#"// Kanon plugin for Amp — generated by Kanon.
-// Forwards Amp's events to Kanon's relay (kanon-hook), fire-and-forget and
+const AMP_PLUGIN: &str = r#"// Miku plugin for Amp — generated by Miku.
+// Forwards Amp's events to Kanon's relay (miku-hook), fire-and-forget and
 // display only: Amp never waits on it, and it never decides anything for Amp.
 import { spawn } from 'node:child_process';
 
@@ -894,8 +952,8 @@ export default function (amp: any): void {
 }
 "#;
 
-const HERMES_PLUGIN: &str = r#"# Kanon plugin for Hermes Agent — generated by Kanon.
-# Session and tool events go to Kanon's relay (kanon-hook), fire-and-forget:
+const HERMES_PLUGIN: &str = r#"# Miku plugin for Hermes Agent — generated by Miku.
+# Session and tool events go to Kanon's relay (miku-hook), fire-and-forget:
 # Hermes never waits on it, and keeps every approval decision to itself.
 import json, os, subprocess, threading
 
@@ -966,7 +1024,7 @@ def register(ctx):
 
 const HERMES_PLUGIN_YAML: &str = r#"name: kanon
 version: "1.0"
-description: Kanon island integration — generated by Kanon
+description: Miku island integration — generated by Miku
 "#;
 
 #[cfg(test)]
@@ -975,15 +1033,15 @@ mod tests {
     use crate::config_file::tests::scratch;
 
     fn linux() -> Relay {
-        Relay { exe: "/home/me/.local/share/kanon/bin/kanon-hook".into(), windows: false }
+        Relay { exe: "/home/me/.local/share/kanon/bin/miku-hook".into(), windows: false }
     }
 
     fn windows(exe: &str) -> Relay {
         Relay { exe: exe.into(), windows: true }
     }
 
-    const WIN: &str = r"C:\Users\me\AppData\Local\Kanon\bin\kanon-hook.exe";
-    const WIN_SPACE: &str = r"C:\Users\Jane O'Neil\AppData\Local\Kanon\bin\kanon-hook.exe";
+    const WIN: &str = r"C:\Users\me\AppData\Local\Kanon\bin\miku-hook.exe";
+    const WIN_SPACE: &str = r"C:\Users\Jane O'Neil\AppData\Local\Kanon\bin\miku-hook.exe";
 
     /// Installs then uninstalls `agent` in a fresh home holding `existing` in
     /// its first file, and returns (installed file, uninstalled file).
@@ -1019,12 +1077,12 @@ mod tests {
     fn the_command_is_quoted_for_the_shell_that_runs_it() {
         assert_eq!(
             linux().command(Shell::Cmd, "--agent codex"),
-            "'/home/me/.local/share/kanon/bin/kanon-hook' --agent codex"
+            "'/home/me/.local/share/kanon/bin/miku-hook' --agent codex"
         );
         let w = windows(WIN);
         assert_eq!(
             w.command(Shell::Sh, "Stop"),
-            "\"C:/Users/me/AppData/Local/Kanon/bin/kanon-hook.exe\" Stop"
+            "\"C:/Users/me/AppData/Local/Kanon/bin/miku-hook.exe\" Stop"
         );
         assert_eq!(
             w.command(Shell::PowerShell, "--agent gemini Stop"),
@@ -1037,7 +1095,7 @@ mod tests {
         assert_eq!(spaced.command(Shell::Cmd, "x"), format!("\"{WIN_SPACE}\" x"));
         assert_eq!(
             spaced.command(Shell::PowerShell, "x"),
-            r"& 'C:\Users\Jane O''Neil\AppData\Local\Kanon\bin\kanon-hook.exe' x"
+            r"& 'C:\Users\Jane O''Neil\AppData\Local\Kanon\bin\miku-hook.exe' x"
         );
     }
 
@@ -1077,8 +1135,8 @@ mod tests {
 
     #[test]
     fn installing_twice_leaves_one_entry_per_event() {
-        let once = gemini_install(&json!({}), &[("BeforeTool".into(), "'x/kanon-hook' --agent gemini PreToolUse".into(), 5000)]).unwrap();
-        let twice = gemini_install(&once, &[("BeforeTool".into(), "'y/kanon-hook' --agent gemini PreToolUse".into(), 5000)]).unwrap();
+        let once = gemini_install(&json!({}), &[("BeforeTool".into(), "'x/miku-hook' --agent gemini PreToolUse".into(), 5000)]).unwrap();
+        let twice = gemini_install(&once, &[("BeforeTool".into(), "'y/miku-hook' --agent gemini PreToolUse".into(), 5000)]).unwrap();
         assert_eq!(twice["hooks"]["BeforeTool"].as_array().unwrap().len(), 1);
     }
 
@@ -1090,7 +1148,7 @@ mod tests {
             if file.extension().is_some_and(|e| e == "json") {
                 std::fs::create_dir_all(file.parent().unwrap()).unwrap();
                 let shaped: &[&str] = match agent {
-                    Agent::Antigravity => &[r#"{"kanon":"nope"}"#],
+                    Agent::Antigravity => &[r#"{"miku":"nope"}"#, r#"{"kanon":"nope"}"#],
                     _ => &[r#"{"hooks":"nope"}"#, r#"{"hooks":[1]}"#],
                 };
                 for odd in shaped.iter().copied().chain(["[1,2]", "{ broken", "\"text\""]) {
@@ -1109,7 +1167,7 @@ mod tests {
         let existing = r#"{"my-guard":{"PreToolUse":[{"matcher":"run_command","hooks":[{"command":"/bin/guard"}]}]}}"#;
         let (home, installed, removed) = round_trip(Agent::Antigravity, Some(existing));
         assert_eq!(installed["my-guard"]["PreToolUse"][0]["matcher"], "run_command");
-        let ours = &installed["kanon"];
+        let ours = &installed[ANTIGRAVITY_KEY];
         for event in ANTIGRAVITY_TOOL_EVENTS {
             assert_eq!(ours[event][0]["matcher"], "*");
             let cmd = ours[event][0]["hooks"][0]["command"].as_str().unwrap();
@@ -1124,10 +1182,29 @@ mod tests {
     }
 
     #[test]
-    fn a_kanon_group_someone_else_wrote_is_neither_replaced_nor_removed() {
-        let theirs = json!({ "kanon": { "Stop": [{ "command": "/bin/notify" }] } });
-        assert!(antigravity_install(&theirs, &antigravity_block(&linux())).is_err());
-        assert_eq!(antigravity_uninstall(&theirs).unwrap(), theirs);
+    fn a_hook_group_someone_else_wrote_is_neither_replaced_nor_removed() {
+        for key in [ANTIGRAVITY_KEY, ANTIGRAVITY_LEGACY_KEY] {
+            let theirs = json!({ key: { "Stop": [{ "command": "/bin/notify" }] } });
+            assert!(antigravity_install(&theirs, &antigravity_block(&linux())).is_err(), "{key}");
+            assert_eq!(antigravity_uninstall(&theirs).unwrap(), theirs, "{key}");
+        }
+    }
+
+    #[test]
+    fn the_group_kanon_wrote_is_taken_over_under_the_new_name() {
+        // An install from before the rebrand: our own group, old key, old relay.
+        let before = json!({
+            "my-guard": { "PreToolUse": [{ "command": "/bin/guard" }] },
+            ANTIGRAVITY_LEGACY_KEY: antigravity_block(&linux()),
+        });
+        let after = antigravity_install(&before, &antigravity_block(&linux())).unwrap();
+        // One group, under the new name; somebody else's group untouched.
+        assert!(after.get(ANTIGRAVITY_KEY).is_some());
+        assert!(after.get(ANTIGRAVITY_LEGACY_KEY).is_none());
+        assert_eq!(after["my-guard"]["PreToolUse"][0]["command"], "/bin/guard");
+        // And uninstalling leaves the file with only the other agent's group.
+        let gone = antigravity_uninstall(&after).unwrap();
+        assert_eq!(gone, json!({ "my-guard": { "PreToolUse": [{ "command": "/bin/guard" }] } }));
     }
 
     #[test]
@@ -1155,7 +1232,7 @@ mod tests {
 
     #[test]
     fn a_new_cursor_file_gets_its_version() {
-        let after = cursor_install(&json!({}), "'x/kanon-hook' --agent cursor").unwrap();
+        let after = cursor_install(&json!({}), "'x/miku-hook' --agent cursor").unwrap();
         assert_eq!(after["version"], 1);
         // A version the user set is theirs.
         let after = cursor_install(&json!({ "version": 2 }), "c").unwrap();
@@ -1215,7 +1292,7 @@ mod tests {
         assert_eq!(entry["powershell"], format!("& '{WIN}' --agent copilot preToolUse"));
         assert_eq!(
             entry["bash"],
-            "\"C:/Users/me/AppData/Local/Kanon/bin/kanon-hook.exe\" --agent copilot preToolUse"
+            "\"C:/Users/me/AppData/Local/Kanon/bin/miku-hook.exe\" --agent copilot preToolUse"
         );
     }
 
@@ -1254,7 +1331,7 @@ mod tests {
             let main = std::fs::read_to_string(&agent.files(&home)[0]).unwrap();
             // The relay itself, at this machine's path, as a string literal: no
             // shell, no macOS path.
-            assert!(main.contains(r#""/home/me/.local/share/kanon/bin/kanon-hook""#), "{agent:?}");
+            assert!(main.contains(r#""/home/me/.local/share/kanon/bin/miku-hook""#), "{agent:?}");
             assert!(!main.contains("/bin/sh") && !main.contains("nb-hook"), "{agent:?}");
             assert!(main.contains(&format!("'--agent', '{}'", agent.id())), "{agent:?}");
             // Never a verdict for the agent.
@@ -1297,9 +1374,45 @@ mod tests {
         std::fs::write(&file, "export const Mine = async () => ({});\n").unwrap();
         for install in [true, false] {
             let err = config_file::preview(&Agent::OpenCode.edits(&home, &linux(), install)).unwrap_err();
-            assert!(err.contains("wasn't written by Kanon"), "{err}");
+            assert!(err.contains("wasn't written by Miku"), "{err}");
         }
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "export const Mine = async () => ({});\n");
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn a_plugin_written_before_the_rebrand_is_replaced_and_its_old_file_removed() {
+        let home = scratch("plugin-legacy");
+        let old = home.join(".config").join("opencode").join("plugins").join("kanon.js");
+        std::fs::create_dir_all(old.parent().unwrap()).unwrap();
+        std::fs::write(&old, "// Kanon plugin for OpenCode — generated by Kanon.\n").unwrap();
+
+        // Installing writes the new file and takes the old one away, so OpenCode
+        // never loads two plugins both forwarding to a relay.
+        let edits = Agent::OpenCode.edits(&home, &linux(), true);
+        assert_eq!(edits.len(), 2, "one to write, one to remove");
+        assert!(edits.iter().any(|e| e.path.ends_with("miku.js")));
+        assert!(edits.iter().any(|e| e.path.ends_with("kanon.js")));
+        // The plan says one file changes and one goes.
+        let plan = config_file::preview(&edits).unwrap();
+        assert!(plan.diff.contains("kanon.js"), "{}", plan.diff);
+        assert!(plan.diff.contains("miku.js"), "{}", plan.diff);
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn a_legacy_plugin_file_that_is_somebody_elses_is_left_alone() {
+        let home = scratch("plugin-legacy-foreign");
+        let old = home.join(".config").join("opencode").join("plugins").join("kanon.js");
+        std::fs::create_dir_all(old.parent().unwrap()).unwrap();
+        std::fs::write(&old, "export const Mine = async () => ({});\n").unwrap();
+
+        // A file of the user's own at the old path is not ours to remove, and it
+        // must not stop the new plugin from being installed either.
+        let edits = Agent::OpenCode.edits(&home, &linux(), true);
+        assert_eq!(edits.len(), 1, "only the new file is written");
+        assert!(edits[0].path.ends_with("miku.js"));
+        assert!(config_file::preview(&edits).is_ok());
         let _ = std::fs::remove_dir_all(home);
     }
 
@@ -1323,11 +1436,11 @@ mod tests {
     fn opencode_plugin_exports_v2_default_and_v1_named_plugin() {
         let plugins = Agent::OpenCode.plugin(&windows(WIN_SPACE)).unwrap();
         let plugin = &plugins[0];
-        assert!(plugin.contains("export const KanonPlugin ="));
+        assert!(plugin.contains("export const MikuPlugin ="));
         assert!(plugin.contains("export default {"));
-        assert!(plugin.contains("id: 'kanon'"));
+        assert!(plugin.contains("id: 'miku'"));
         assert!(plugin.contains("setup: async (ctx = {}) => {"));
-        assert!(plugin.contains("return KanonPlugin(ctx);"));
+        assert!(plugin.contains("return MikuPlugin(ctx);"));
         assert!(is_our_plugin(plugin));
     }
 }

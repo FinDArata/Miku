@@ -1,13 +1,13 @@
 [package]
-name = "kanon"
-description = "Kanon for Windows and Linux — Mochi lives at the top of your screen"
+name = "miku"
+description = "Miku for Windows and Linux — live at the top of your screen"
 authors = ["Louis Raille"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "kanon_lib"
+name = "miku_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

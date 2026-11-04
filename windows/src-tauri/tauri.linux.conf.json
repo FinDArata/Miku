@@ -7,8 +7,8 @@
       "rpm"
     ],
     "resources": {
-      "../target/release/kanon-hook.exe": null,
-      "../target/release/kanon-hook": "kanon-hook"
+      "../target/release/miku-hook.exe": null,
+      "../target/release/miku-hook": "miku-hook"
     },
     "linux": {
       "appimage": {
@@ -32,7 +32,7 @@
     "windows": [
       {
         "label": "island",
-        "title": "Kanon",
+        "title": "Miku",
         "url": "index.html",
         "width": 240,
         "height": 6,

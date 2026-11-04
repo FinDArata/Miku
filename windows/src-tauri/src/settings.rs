@@ -499,7 +499,10 @@ mod tests {
   "phoneRelay": true,
   "phoneRelayUrl": "wss://relay.example.workers.dev",
   "showClock": true,
-  "closedIsland": "music"
+  "closedIsland": "music",
+  "lyrics": { "shown": false, "spot": null },
+  "lyricsRomanize": true,
+  "lyricsShowOriginal": true
 }"##;
 
     fn custom() -> Value {
@@ -1022,6 +1025,9 @@ mod tests {
                 "phoneRelayUrl",
                 "showClock",
                 "closedIsland",
+                "lyrics",
+                "lyricsRomanize",
+                "lyricsShowOriginal",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

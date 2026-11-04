@@ -8,7 +8,7 @@
 // Code instead (claude_code.rs); « OK Kanon » still needs the key, its tools
 // being Kanon's own.
 //
-// KANON_ANTHROPIC_BASE_URL points the chat at an Anthropic-compatible gateway
+// MIKU_ANTHROPIC_BASE_URL points the chat at an Anthropic-compatible gateway
 // instead (issue #180). Only that variable is read: Claude Code's own
 // ANTHROPIC_BASE_URL may name a proxy the user never meant to hand this key to.
 
@@ -25,7 +25,7 @@ use crate::{claude_code, net, secrets};
 /// Credential store entry of the Anthropic API key.
 pub const KEY: &str = "anthropic-api-key";
 const DEFAULT_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
-const BASE_URL_VAR: &str = "KANON_ANTHROPIC_BASE_URL";
+const BASE_URL_VAR: &str = "MIKU_ANTHROPIC_BASE_URL";
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 /// Server-side fallback: on a policy decline the API retries the same request on
 /// a fallback model inside the same call, so the island never shows a dead end.
@@ -46,7 +46,7 @@ pub fn uses_relay() -> bool {
     !secrets::present(KEY) && claude_code::available()
 }
 
-/// The Messages endpoint: Anthropic's, or the gateway in KANON_ANTHROPIC_BASE_URL.
+/// The Messages endpoint: Anthropic's, or the gateway in MIKU_ANTHROPIC_BASE_URL.
 /// Read once; the gateway's host (never the key) goes to the log once.
 fn endpoint() -> Result<Url, String> {
     static ENDPOINT: OnceLock<Result<Url, String>> = OnceLock::new();

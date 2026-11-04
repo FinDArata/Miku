@@ -22,22 +22,22 @@ const PACKAGES = {
     {
       dir: "nsis",
       suffix: "-setup.exe",
-      names: [`Kanon-Windows-${version}-setup.exe`, "Kanon-Windows-setup.exe"],
+      names: [`Miku-Windows-${version}-setup.exe`, "Miku-Windows-setup.exe"],
     },
     {
       dir: "msi",
       suffix: ".msi",
-      names: [`Kanon-Windows-${version}.msi`, "Kanon-Windows.msi"],
+      names: [`Miku-Windows-${version}.msi`, "Miku-Windows.msi"],
     },
   ],
   linux: [
     {
       dir: "appimage",
       suffix: ".AppImage",
-      names: [`Kanon-Linux-${version}-${arch}.AppImage`, `Kanon-Linux-${arch}.AppImage`],
+      names: [`Miku-Linux-${version}-${arch}.AppImage`, `Miku-Linux-${arch}.AppImage`],
     },
-    { dir: "deb", suffix: ".deb", names: [`Kanon-Linux-${version}-${debArch}.deb`] },
-    { dir: "rpm", suffix: ".rpm", names: [`Kanon-Linux-${version}-${arch}.rpm`] },
+    { dir: "deb", suffix: ".deb", names: [`Miku-Linux-${version}-${debArch}.deb`] },
+    { dir: "rpm", suffix: ".rpm", names: [`Miku-Linux-${version}-${arch}.rpm`] },
   ],
 };
 

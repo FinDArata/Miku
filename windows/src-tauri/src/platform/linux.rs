@@ -23,7 +23,7 @@ use tauri::{AppHandle, WebviewWindow};
 use super::{home_dir, LocalTime};
 
 /// File name of the Claude Code relay.
-pub const HOOK_EXE: &str = "kanon-hook";
+pub const HOOK_EXE: &str = "miku-hook";
 
 /// Environment variable holding the home directory.
 pub const HOME_VAR: &str = "HOME";
@@ -39,16 +39,16 @@ fn xdg(var: &str, fallback: &str) -> PathBuf {
         .unwrap_or_else(|| home_dir().join(fallback))
 }
 
-/// ~/.config/kanon — preferences.
+/// ~/.config/miku — preferences.
 pub fn config_dir() -> PathBuf {
-    xdg("XDG_CONFIG_HOME", ".config").join("kanon")
+    xdg("XDG_CONFIG_HOME", ".config").join("miku")
 }
 
-/// ~/.local/share/kanon — where kanon-hook, the inbox and the log live. The
+/// ~/.local/share/miku — where miku-hook, the inbox and the log live. The
 /// relay has to sit at a stable path: an AppImage is mounted somewhere new on
 /// every launch.
 pub fn local_dir() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("kanon")
+    xdg("XDG_DATA_HOME", ".local/share").join("miku")
 }
 
 /// Where a saved image goes, best first: the XDG pictures folder named in
@@ -98,7 +98,7 @@ pub fn prepare_environment() {
     if std::env::var_os("APPIMAGE").is_none() || std::env::var_os("GST_REGISTRY").is_some() {
         return;
     }
-    let cache = xdg("XDG_CACHE_HOME", ".cache").join("kanon");
+    let cache = xdg("XDG_CACHE_HOME", ".cache").join("miku");
     if std::fs::create_dir_all(&cache).is_ok() {
         std::env::set_var("GST_REGISTRY", cache.join("gstreamer-registry.bin"));
     }
@@ -201,8 +201,8 @@ fn is_private_dir(dir: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Where kanon-hook finds us: `$XDG_RUNTIME_DIR/kanon.sock`, or
-/// `/run/user/<uid>/kanon.sock` when the variable is missing. A directory
+/// Where miku-hook finds us: `$XDG_RUNTIME_DIR/miku.sock`, or
+/// `/run/user/<uid>/miku.sock` when the variable is missing. A directory
 /// that is not ours and private means no relay at all — never a fallback to a
 /// shared place like /tmp. Must match `socket_path()` in hook/src/unix.rs
 /// exactly.
@@ -211,7 +211,7 @@ pub fn relay_socket_path() -> Option<PathBuf> {
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())
         .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })));
-    is_private_dir(&dir).then(|| dir.join("kanon.sock"))
+    is_private_dir(&dir).then(|| dir.join("miku.sock"))
 }
 
 // ── Who we are ────────────────────────────────────────────────────────────────

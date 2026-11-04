@@ -11,7 +11,7 @@
 // The island keeps owning the sessions and the pending request. It publishes a
 // picture of them (`phone_link_publish`), the hub works out what changed, and a
 // phone's decision comes back through `TauriHost`, which answers the waiting
-// `kanon-hook` exactly as a click on the island would — but only for the request
+// `miku-hook` exactly as a click on the island would — but only for the request
 // that is still pending (hub.rs). The desktop's own card keeps working all along.
 
 mod admission;

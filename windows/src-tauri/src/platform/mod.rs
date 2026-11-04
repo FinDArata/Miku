@@ -37,6 +37,176 @@ pub fn home_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
+// ── Carrying an old install over ─────────────────────────────────────────────
+//
+// This app was called Kanon before it was Miku. `config_dir()` and `local_dir()`
+// now point at the new folders, so without this an update would look like a
+// fresh install: no settings, an empty recap history, and an inbox and log gone.
+//
+// The move is a **copy that never deletes the source**. The old folder is left
+// exactly as it was, so an install that goes back to an older build still finds
+// its files, and a failure halfway through leaves both copies usable. Every item
+// is skipped once it is already in the new folder, so running it on each launch
+// is cheap and converges.
+//
+// Only the file layout is carried over. The relay is not: it is named after the
+// old binary and Miku stages its own on the next launch. The hook entries in
+// Claude Code's settings.json are recognised and replaced by the installer,
+// which matches the old marker too.
+
+/// A folder's tree copied into another folder, never deleting anything.
+struct Carry {
+    from: PathBuf,
+    to: PathBuf,
+}
+
+impl Carry {
+    fn run(&self) {
+        self.dir(&self.from, &self.to);
+    }
+
+    fn dir(&self, from: &std::path::Path, to: &std::path::Path) {
+        let Ok(entries) = std::fs::read_dir(from) else { return };
+        if std::fs::create_dir_all(to).is_err() {
+            return;
+        }
+        for entry in entries.flatten() {
+            let src = entry.path();
+            let dst = to.join(entry.file_name());
+            match entry.file_type() {
+                Ok(t) if t.is_dir() => self.dir(&src, &dst),
+                // A file already there is left alone: the new folder always wins.
+                Ok(t) if t.is_file() && !dst.exists() && !is_legacy_relay(&entry.file_name()) => {
+                    let _ = std::fs::copy(&src, &dst);
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+/// `miku-hook` / `miku-hook.exe`: Miku stages its own relay, so these are not
+/// carried over.
+fn is_legacy_relay(name: &std::ffi::OsStr) -> bool {
+    let name = name.to_string_lossy();
+    name == "miku-hook" || name == "miku-hook.exe"
+}
+
+/// Carries a Kanon install's files into Miku's folders, once per launch. Cheap
+/// when there is nothing to do: a readdir that comes back empty.
+pub fn migrate_legacy_dirs() {
+    for (from, to) in legacy_dirs() {
+        if from.is_dir() && from != to {
+            Carry { from, to }.run();
+        }
+    }
+}
+
+/// The (old, new) folder pairs on this system: preferences and local data.
+fn legacy_dirs() -> Vec<(PathBuf, PathBuf)> {
+    vec![
+        (legacy_dir("APPDATA", "XDG_CONFIG_HOME", ".config"), config_dir()),
+        (legacy_dir("LOCALAPPDATA", "XDG_DATA_HOME", ".local/share"), local_dir()),
+    ]
+}
+
+/// The folder this app used before the rebrand, computed by the same rule as the
+/// current one so the two always sit side by side.
+fn legacy_dir(win_var: &str, xdg_var: &str, xdg_fallback: &str) -> PathBuf {
+    #[cfg(windows)]
+    {
+        let _ = (xdg_var, xdg_fallback);
+        std::env::var_os(win_var)
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("Kanon")
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = win_var;
+        // Same rule as platform::xdg: an unset or relative variable falls back
+        // to the home folder, which is where the old build wrote it.
+        std::env::var_os(xdg_var)
+            .map(PathBuf::from)
+            .filter(|p| p.is_absolute())
+            .unwrap_or_else(|| home_dir().join(xdg_fallback))
+            .join("kanon")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A throwaway folder, unique per test.
+    fn temp(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("miku-migrate-{}-{tag}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn write(path: &std::path::Path, text: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, text).unwrap();
+    }
+
+    #[test]
+    fn a_legacy_folder_is_copied_whole_and_left_in_place() {
+        let dir = temp("whole");
+        let (from, to) = (dir.join("old"), dir.join("new"));
+        write(&from.join("settings.json"), "{}");
+        write(&from.join("Flow/notes.json"), "[]");
+        write(&from.join("bin/miku-hook.exe"), "relay");
+
+        Carry { from: from.clone(), to: to.clone() }.run();
+
+        assert_eq!(std::fs::read_to_string(to.join("settings.json")).unwrap(), "{}");
+        assert_eq!(std::fs::read_to_string(to.join("Flow/notes.json")).unwrap(), "[]");
+        // The old copy is untouched: going back to an older build still works.
+        assert!(from.join("settings.json").exists());
+        assert!(from.join("Flow/notes.json").exists());
+        // The relay is not carried: Miku stages its own.
+        assert!(!to.join("bin/miku-hook.exe").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn what_the_new_build_already_wrote_is_never_overwritten() {
+        let dir = temp("wins");
+        let (from, to) = (dir.join("old"), dir.join("new"));
+        write(&from.join("settings.json"), "{\"from\":\"kanon\"}");
+        write(&to.join("settings.json"), "{\"from\":\"miku\"}");
+
+        Carry { from, to: to.clone() }.run();
+
+        assert_eq!(std::fs::read_to_string(to.join("settings.json")).unwrap(), "{\"from\":\"miku\"}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn running_it_again_changes_nothing() {
+        let dir = temp("again");
+        let (from, to) = (dir.join("old"), dir.join("new"));
+        write(&from.join("a/b/c.json"), "1");
+        let carry = || Carry { from: from.clone(), to: to.clone() }.run();
+
+        carry();
+        carry();
+
+        assert_eq!(std::fs::read_to_string(to.join("a/b/c.json")).unwrap(), "1");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_missing_legacy_folder_is_not_an_error() {
+        let dir = temp("absent");
+        Carry { from: dir.join("nope"), to: dir.join("new") }.run();
+        assert!(!dir.join("new").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
 /// How the desktop Mochi's window can be placed and clicked on this system.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum DesktopMode {

@@ -856,6 +856,9 @@ fn open_settings_window(app: AppHandle, page: Option<String>) {
 
 pub fn run() {
     platform::prepare_environment();
+    // An install that predates the rebrand keeps its settings and history: the
+    // old folders are copied into the new ones before anything reads them.
+    platform::migrate_legacy_dirs();
     let loaded = settings::load();
     i18n::set_picked(&loaded.language);
     let gate = Arc::new(PollGate::new());

@@ -1,9 +1,9 @@
-//! kanon-hook — the relay Claude Code (and every other agent) runs on each hook
+//! miku-hook — the relay Claude Code (and every other agent) runs on each hook
 //! event.
 //!
 //! Reads the hook JSON on stdin, maps the agent's event and field names onto
 //! Claude Code's (normalize.rs), adds a little terminal context, and hands it to
-//! Kanon over the named pipe `\\.\pipe\kanon-<sid>` (Windows) or the Unix
+//! Kanon over the named pipe `\\.\pipe\miku-<sid>` (Windows) or the Unix
 //! socket `$XDG_RUNTIME_DIR/kanon.sock` (Linux).
 //!
 //! Hard rule (docs/CLAUDE.md): **never block the agent.**
@@ -17,9 +17,9 @@
 //!   island is the whole point. No answer means no decision, and the agent asks
 //!   in its terminal exactly as if Kanon were not installed.
 //!
-//! Usage: `kanon-hook [--agent <name>] [<EventName>]` (the event name is also
+//! Usage: `miku-hook [--agent <name>] [<EventName>]` (the event name is also
 //! read from the JSON; `--agent` is absent for Claude Code), or
-//! `kanon-hook --statusline` as Claude Code's status line command (plan usage,
+//! `miku-hook --statusline` as Claude Code's status line command (plan usage,
 //! see statusline.rs): it passes the plan limits on and runs the status line the
 //! user had before, so that keeps working.
 
@@ -158,7 +158,7 @@ fn prepare(raw: &[u8], args: &Args, env: &dyn Fn(&str) -> Option<String>, cwd: &
     // unchanged; invalid names are discarded by the app, not here. A Claude Code
     // session started from the Claude desktop app is tagged `claude-desktop`.
     if let Some(tag) = agent_tag(&args.agent, env) {
-        map.insert("kanon_agent".into(), Value::String(tag));
+        map.insert("miku_agent".into(), Value::String(tag));
     }
     // Claude Code in Cursor's terminal goes on the Cursor pill (Mac #120).
     if !map.contains_key("term_editor") {
@@ -218,7 +218,7 @@ fn add_terminal_context(map: &mut Map<String, Value>, env: &dyn Fn(&str) -> Opti
     }
 }
 
-/// The `kanon_agent` tag: `--agent` when given, otherwise `claude-desktop` for
+/// The `miku_agent` tag: `--agent` when given, otherwise `claude-desktop` for
 /// a Claude Code session started from the Claude desktop app, which says so in
 /// CLAUDE_CODE_ENTRYPOINT — the same rule as the Mac's relay (#191). Nothing
 /// for a plain Claude Code session.
@@ -244,7 +244,7 @@ fn term_editor(env: &dyn Fn(&str) -> Option<String>) -> Option<&'static str> {
 
 /// Caps the strings of a payload: every field to MAX_FIELD_LEN, except the edit
 /// strings of a finished Edit / MultiEdit / Write, which the live diff needs
-/// whole. If even those had to be cut, `kanon_diff_truncated` tells the island
+/// whole. If even those had to be cut, `miku_diff_truncated` tells the island
 /// not to show counts it cannot trust.
 fn truncate_payload(payload: &mut serde_json::Value, event: &str) {
     let keeps_diff = event == "PostToolUse"
@@ -267,7 +267,7 @@ fn truncate_payload(payload: &mut serde_json::Value, event: &str) {
         if let Some(map) = payload.as_object_mut() {
             map.insert("tool_input".into(), input);
             if cut_any {
-                map.insert("kanon_diff_truncated".into(), serde_json::Value::Bool(true));
+                map.insert("miku_diff_truncated".into(), serde_json::Value::Bool(true));
             }
         }
     }
@@ -419,7 +419,7 @@ mod tests {
     fn claude_code_payloads_are_forwarded_as_they_are() {
         let (v, ev) = run(r#"{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"/p"}"#, "", "PreToolUse");
         assert_eq!(ev.name, "PreToolUse");
-        assert!(v.get("kanon_agent").is_none());
+        assert!(v.get("miku_agent").is_none());
         assert_eq!(v["cwd"], "/p");
         assert_eq!(v["tool_name"], "Bash");
     }
@@ -430,7 +430,7 @@ mod tests {
         let (v, ev) = run(r#"{"hook_event_name":"BeforeTool","toolCall":{"name":"shell","args":{"CommandLine":"ls"}}}"#, "gemini", "PreToolUse");
         assert_eq!(ev.name, "PreToolUse");
         assert_eq!(v["hook_event_name"], "PreToolUse");
-        assert_eq!(v["kanon_agent"], "gemini");
+        assert_eq!(v["miku_agent"], "gemini");
         assert_eq!(v["tool_input"]["command"], "ls");
         assert_eq!(v["cwd"], "/home/me/here");
 
@@ -498,7 +498,7 @@ mod tests {
         assert_eq!(v["tool_input"]["new_string"].as_str().unwrap().len(), big.len());
         // Everything else keeps the ordinary cap, and nothing says "cut".
         assert!(v["cwd"].as_str().unwrap().len() <= MAX_FIELD_LEN + 4);
-        assert!(v.get("kanon_diff_truncated").is_none());
+        assert!(v.get("miku_diff_truncated").is_none());
 
         let mut multi = serde_json::json!({
             "tool_name": "MultiEdit",
@@ -527,7 +527,7 @@ mod tests {
         });
         truncate_payload(&mut v, "PostToolUse");
         assert!(v["tool_input"]["content"].as_str().unwrap().len() <= MAX_DIFF_FIELD_LEN + 4);
-        assert_eq!(v["kanon_diff_truncated"], serde_json::Value::Bool(true));
+        assert_eq!(v["miku_diff_truncated"], serde_json::Value::Bool(true));
 
         // Together, the edit strings never pass the shared budget.
         let half = "y".repeat(MAX_DIFF_FIELD_LEN - 1);
@@ -537,6 +537,6 @@ mod tests {
         let mut multi = serde_json::json!({ "tool_name": "MultiEdit", "tool_input": { "edits": edits } });
         truncate_payload(&mut multi, "PostToolUse");
         assert!(multi.to_string().len() < MAX_DIFF_TOTAL + 64 * 1024);
-        assert_eq!(multi["kanon_diff_truncated"], serde_json::Value::Bool(true));
+        assert_eq!(multi["miku_diff_truncated"], serde_json::Value::Bool(true));
     }
 }
