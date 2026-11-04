@@ -1,7 +1,7 @@
 // Classic Outlook on Windows, driven through its own COM objects by a small PowerShell
 // script: the Windows counterpart of Apple Mail's AppleScript on the Mac (MailController.swift).
 //
-// Kanon attaches to the Outlook already open (GetActiveObject) and never starts it. No
+// Miku attaches to the Outlook already open (GetActiveObject) and never starts it. No
 // sign-in, no app registration, no admin consent: it is the user's Outlook, on the user's PC.
 // The new Outlook for Windows has no COM objects, so it is not reached this way.
 //

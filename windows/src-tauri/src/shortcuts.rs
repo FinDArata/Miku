@@ -133,7 +133,7 @@ pub enum Status {
     Off,
     /// Another app already holds this combination.
     InUse,
-    /// Another Kanon shortcut has the same combination.
+    /// Another Miku shortcut has the same combination.
     Duplicate,
     /// Not a combination the OS can register.
     Invalid,
@@ -173,7 +173,7 @@ pub struct ActionStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typed: Option<String>,
     /// Wayland: the keys the desktop says run it, in its own words. It may
-    /// let the user pick other keys than the ones Kanon asked for.
+    /// let the user pick other keys than the ones Miku asked for.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger: Option<String>,
 }
@@ -329,7 +329,7 @@ pub fn dispatch<R: Runtime>(app: &AppHandle<R>, action: &str) {
     }
 }
 
-/// Unregisters everything Kanon holds.
+/// Unregisters everything Miku holds.
 fn release<R: Runtime>(app: &AppHandle<R>) {
     if let Some(gs) = app.try_state::<GlobalShortcut<R>>() {
         if let Err(err) = gs.unregister_all() {
@@ -395,7 +395,7 @@ pub fn apply<R: Runtime>(app: &AppHandle<R>, stored: &Bindings) {
 }
 
 /// Lets go of every shortcut while a new one is being recorded in Settings,
-/// so pressing a combination Kanon already holds records it instead of
+/// so pressing a combination Miku already holds records it instead of
 /// running it.
 pub fn suspend<R: Runtime>(app: &AppHandle<R>) {
     release(app);

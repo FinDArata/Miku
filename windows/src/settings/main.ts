@@ -1,4 +1,4 @@
-// The Kanon window (settings.html): Flow dictation, the Notetaker and, under
+// The Miku window (settings.html): Flow dictation, the Notetaker and, under
 // Notch, every setting of the island — the place where anything that writes to
 // disk is confirmed. The window's frame and the Flow pages live in ../hub; the
 // island's settings are drawn here, one Notch page at a time.
@@ -335,7 +335,7 @@ function planSection(status: HookStatus): HTMLElement {
               onclick: () => void reviewChange(body, STATUS_LINE_CHANGE, true, redraw, () => void rebuild()),
             }),
       ),
-      // Codex: nothing to install, Kanon asks the Codex CLI when the pill shows.
+      // Codex: nothing to install, Miku asks the Codex CLI when the pill shows.
       h("div", { class: "hint", text: PLAN_SETTINGS_TEXT.codex }),
       h("div", { class: "row" },
         h("label", { text: PLAN_SETTINGS_TEXT.showCodex }),
@@ -1158,7 +1158,7 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
 
 /**
  * Settings → General → Language, as on the Mac: "System" follows the
- * system's language when Kanon has it (else English), or one of the ten.
+ * system's language when Miku has it (else English), or one of the ten.
  * Both windows and the tray switch in place, without a restart.
  */
 function languageRow(): HTMLElement {

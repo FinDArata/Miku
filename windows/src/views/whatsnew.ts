@@ -1,6 +1,6 @@
 // What's new after an update (whats-new/controller.ts decides when): first
 // what this version brings — an icon, a title and a line per item — then
-// "Your Kanon so far", the numbers this computer kept, and Buy Mochi a
+// "Your Miku so far", the numbers this computer kept, and Buy Mochi a
 // coffee. Same left inset as the other cards, Mochi on the left.
 
 import { h, clear, svg } from "./dom";

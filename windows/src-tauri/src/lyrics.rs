@@ -2,7 +2,7 @@
 // always-on-top strip that follows whatever Spotify plays and shows the line
 // being sung, with the ones around it.
 //
-// The window is created at launch, hidden, like the Kanon window and the
+// The window is created at launch, hidden, like the Miku window and the
 // dictation pill: a WebView2 window built after the island comes up blank in
 // this app (see create_settings_window in lib.rs). `lyrics_set_visible` only
 // shows and hides it, and remembers the choice.
@@ -388,7 +388,7 @@ async fn get_json(url: Url) -> Option<serde_json::Value> {
         .get(url.clone())
         .header("accept", "application/json")
         // LRCLIB asks that a client say who it is.
-        .header("user-agent", concat!("Kanon/", env!("CARGO_PKG_VERSION"), " (+https://github.com/findarata/kanon)"))
+        .header("user-agent", concat!("Miku/", env!("CARGO_PKG_VERSION"), " (+https://github.com/findarata/kanon)"))
         .send()
         .await
     {

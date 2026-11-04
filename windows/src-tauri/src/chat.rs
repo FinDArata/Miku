@@ -177,7 +177,7 @@ pub fn model_for(settings: &Settings, provider: &str) -> String {
         .unwrap_or_default()
 }
 
-/// A file rides along only if it is one of Kanon's own copies of a dropped
+/// A file rides along only if it is one of Miku's own copies of a dropped
 /// file (files.rs puts them in the inbox). The page names the path, so without
 /// this any file the user can read could be sent to a chat provider.
 fn checked_context(context: ChatContext) -> Result<ChatContext, String> {

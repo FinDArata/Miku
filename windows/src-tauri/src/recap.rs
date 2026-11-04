@@ -6,7 +6,7 @@
 // component. Never a command, a file path, file contents or a prompt.
 //
 // The history lives in recap.json under platform::local_dir()
-// (%LOCALAPPDATA%\Kanon on Windows, ~/.local/share/kanon on Linux), keeps a
+// (%LOCALAPPDATA%\Miku on Windows, ~/.local/share/kanon on Linux), keeps a
 // 12-week rolling window and a hard cap on its length, and is written whole to
 // a temporary file then renamed over the old one, so a crash never leaves half
 // a file. Nothing in it ever leaves the machine.

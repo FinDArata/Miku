@@ -1,4 +1,4 @@
-// « OK Kanon » asks the island what only it knows (src-tauri/src/voice): the
+// « OK Miku » asks the island what only it knows (src-tauri/src/voice): the
 // pills, to add, remove or pick the main one, and the user's own data for
 // Claude to answer from. Port of the Mac's VoiceTools pills and service_info.
 

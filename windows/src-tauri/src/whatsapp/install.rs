@@ -1,6 +1,6 @@
 // "Install WhatsApp": one click instead of GitHub, a zip and a command line (port of
 // WhatsAppGOWAInstaller.swift). Downloads GOWA's own latest build for this system from its GitHub
-// releases, checks its SHA-256 against the one GOWA publishes, puts the binary in Kanon's GOWA
+// releases, checks its SHA-256 against the one GOWA publishes, puts the binary in Miku's GOWA
 // folder (next to the WhatsApp session it keeps) and turns on "Start GOWA automatically".
 // The only network call is to GitHub, after the click; no message ever goes there.
 

@@ -267,12 +267,12 @@ export const Bridge = {
 
   openSettingsWindow: () => call<void>("open_settings_window"),
 
-  /** Writes to %LOCALAPPDATA%\Kanon\kanon.log, next to the Rust lines. */
+  /** Writes to %LOCALAPPDATA%\Miku\miku.log, next to the Rust lines. */
   log: (message: string) => call<void>("log_line", { message }),
 
   // ── Claude Code hooks ─────────────────────────────────────────────────────
   hooksStatus: () => call<HookStatus>("hooks_status"),
-  /** Pill ID → whether that agent's hooks reach Kanon (read-only, Mac #183). */
+  /** Pill ID → whether that agent's hooks reach Miku (read-only, Mac #183). */
   agentHooksStatus: () => call<Record<string, boolean>>("agent_hooks_status"),
   /** Diff to show before anything is written. `install: false` previews removal. */
   hooksPreview: (install: boolean) => callOrThrow<HookPreview>("hooks_preview", { install }),
@@ -318,7 +318,7 @@ export const Bridge = {
   /** "Nobody can act on this" — Claude Code asks in the terminal right away. */
   approvalDecline: (requestId: string) => call<void>("approval_decline", { requestId }),
 
-  // ── Phone link (Kanon for Android) ───────────────────────────────────────
+  // ── Phone link (Miku for Android) ───────────────────────────────────────
   phoneLinkStatus: () => call<PhoneLinkStatus>("phone_link_status"),
   /** Only ever from the switch in Settings. Throws with the reason if it cannot start. */
   phoneLinkSetEnabled: (enabled: boolean) => callOrThrow<PhoneLinkStatus>("phone_link_set_enabled", { enabled }),
@@ -493,7 +493,7 @@ export const Bridge = {
 
   // ── New versions (src-tauri/src/update.rs) ────────────────────────────────
   updateStatus: () => call<UpdateStatus>("update_status"),
-  /** The island's question or Settings' toggle: may Kanon look at GitHub on its own? */
+  /** The island's question or Settings' toggle: may Miku look at GitHub on its own? */
   updateSetConsent: (allowed: boolean) => call<void>("update_set_consent", { allowed }),
   /** "Check now": one look at GitHub, the toggle on or off. */
   updateCheck: () => call<UpdateStatus>("update_check"),
@@ -610,7 +610,7 @@ export interface LyricsPrefs {
 
 export interface HookStatus {
   installed: boolean;
-  /** Kanon's status line relay (plan usage) is the status line in settings.json. */
+  /** Miku's status line relay (plan usage) is the status line in settings.json. */
   planRelayInstalled: boolean;
   settingsPath: string;
   hookPath: string;
@@ -623,7 +623,7 @@ export interface AgentHookStatus {
   id: string;
   name: string;
   installed: boolean;
-  /** The file (or files, one per line) Kanon writes. */
+  /** The file (or files, one per line) Miku writes. */
   path: string;
   hookReady: boolean;
   /** The island can allow or deny this agent's permission requests. */

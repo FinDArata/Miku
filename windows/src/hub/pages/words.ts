@@ -1,4 +1,4 @@
-// Dictionary (names Kanon always spells right, and replacements) and
+// Dictionary (names Miku always spells right, and replacements) and
 // Snippets (say a short phrase, paste a whole text). Port of FlowHubWords.swift.
 
 import { h, clear } from "../../views/dom";

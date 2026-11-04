@@ -37,7 +37,7 @@ export function romanize(text: string): string {
 
 /**
  * A mixed line's non-Latin runs, romanised, with the Latin left as it is.
- * `Kanon ♪ 私の心` → `Kanon ♪ watashi no kokoro`.
+ * `Miku ♪ 私の心` → `Miku ♪ watashi no kokoro`.
  */
 export function romanizeMixed(text: string): string {
   if (scriptOf(text) === "latin") return text;

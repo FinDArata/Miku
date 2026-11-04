@@ -1,4 +1,4 @@
-// The one careful way Kanon changes a file that belongs to somebody else:
+// The one careful way Miku changes a file that belongs to somebody else:
 // Claude Code's settings.json, every other agent's hook config, and the plugin
 // files a few agents load.
 //
@@ -108,7 +108,7 @@ pub fn json_edit<'a>(
     })
 }
 
-/// An `Edit` for a text file Kanon generates whole (a plugin): `change` gets
+/// An `Edit` for a text file Miku generates whole (a plugin): `change` gets
 /// the current text and returns the new one, or `None` to remove the file.
 pub fn text_edit<'a>(
     label: String,

@@ -2,9 +2,9 @@
 // sherpa-onnx, and the small models that tell the voices of a call apart. The
 // Mac runs the same Parakeet through FluidAudio (ParakeetEngine.swift).
 //
-// Nothing is downloaded until the user clicks Download in Kanon → Settings.
+// Nothing is downloaded until the user clicks Download in Miku → Settings.
 // The files come from Hugging Face at a pinned revision, are checked against
-// their SHA-256 and kept in %LOCALAPPDATA%\Kanon\Models (Windows) or
+// their SHA-256 and kept in %LOCALAPPDATA%\Miku\Models (Windows) or
 // ~/.local/share/kanon/Models (Linux). From then on everything runs offline.
 
 pub mod audio;

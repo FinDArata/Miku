@@ -6,7 +6,7 @@
 //
 // Claude Code is read here, with the Mac's own rule. Every other agent is read
 // by agents.rs — the code that writes their configs is the one source of truth
-// for where those files are and what Kanon's entries look like, so the pill
+// for where those files are and what Miku's entries look like, so the pill
 // and Settings → Agents always agree.
 
 use std::collections::HashMap;

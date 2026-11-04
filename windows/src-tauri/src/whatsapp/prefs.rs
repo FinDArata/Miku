@@ -23,10 +23,10 @@ pub struct Prefs {
     pub mute_groups: bool,
     /// Normalized chat ids.
     pub ignored: Vec<String>,
-    /// Kanon starts the GOWA binary at `gowa_path` itself.
+    /// Miku starts the GOWA binary at `gowa_path` itself.
     pub auto_start: bool,
     pub gowa_path: String,
-    /// GOWA's version once installed by Kanon.
+    /// GOWA's version once installed by Miku.
     pub gowa_version: Option<String>,
 }
 

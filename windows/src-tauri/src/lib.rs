@@ -1,4 +1,4 @@
-// Kanon for Windows — app wiring and the commands the island calls.
+// Miku for Windows — app wiring and the commands the island calls.
 
 mod agent_hooks;
 mod agents;
@@ -405,7 +405,7 @@ fn hooks_status() -> HookStatus {
     hooks::status()
 }
 
-/// Pill ID → whether that agent's hooks reach Kanon. Read-only.
+/// Pill ID → whether that agent's hooks reach Miku. Read-only.
 #[tauri::command]
 fn agent_hooks_status() -> std::collections::HashMap<String, bool> {
     agent_hooks::status()
@@ -745,11 +745,11 @@ fn settings_page_url(app: &AppHandle) -> WebviewUrl {
     WebviewUrl::App("settings.html".into())
 }
 
-/// The Kanon window (Flow dictation, the Notetaker and every setting of the
+/// The Miku window (Flow dictation, the Notetaker and every setting of the
 /// island), labelled "settings" since it grew out of the settings window.
 pub const HUB_LABEL: &str = "settings";
 
-/// The Kanon window is created hidden at launch and only ever shown and
+/// The Miku window is created hidden at launch and only ever shown and
 /// hidden afterwards. A WebView2 window created later — on the main thread or
 /// not — silently comes up blank in this app, so the window that works is the
 /// one that exists before the island's webview does.
@@ -786,7 +786,7 @@ fn create_settings_window(app: &AppHandle) {
     }
 }
 
-/// Whether the Kanon window is on screen (shown and not minimised). Its page
+/// Whether the Miku window is on screen (shown and not minimised). Its page
 /// animates its canvases only then (hub/hero.ts): WebKitGTK can keep
 /// `document.visibilityState` at "visible" for a hidden window, and its
 /// animation loop then kept a core busy with the window closed (#792).
@@ -798,7 +798,7 @@ fn set_hub_shown(win: &tauri::WebviewWindow, shown: bool) {
     }
 }
 
-/// Whether the Kanon window is on screen, for what only it shows.
+/// Whether the Miku window is on screen, for what only it shows.
 pub(crate) fn hub_is_shown() -> bool {
     HUB_SHOWN.load(Ordering::Relaxed)
 }
@@ -813,7 +813,7 @@ pub fn show_settings_window(app: &AppHandle) {
     show_hub(app, Some("general"));
 }
 
-/// Shows the Kanon window, on `page` when given ("dictation", "notes",
+/// Shows the Miku window, on `page` when given ("dictation", "notes",
 /// "settings", "general", "shortcuts"…).
 pub fn show_hub(app: &AppHandle, page: Option<&str>) {
     let Some(win) = app.get_webview_window(HUB_LABEL) else {
@@ -841,10 +841,10 @@ pub fn show_hub(app: &AppHandle, page: Option<&str>) {
     set_hub_shown(&win, true);
 }
 
-/// The argument the login item starts Kanon with.
+/// The argument the login item starts Miku with.
 const AUTOSTART_ARG: &str = "--autostart";
 
-/// Kanon started with the computer, not opened by the user: the window stays hidden.
+/// Miku started with the computer, not opened by the user: the window stays hidden.
 pub fn launched_at_login() -> bool {
     std::env::args().any(|a| a == AUTOSTART_ARG)
 }
@@ -869,7 +869,7 @@ pub fn run() {
             // settings run where we can't listen for keys ourselves (Wayland).
             match shortcuts::from_args(&argv) {
                 Some(action) => shortcuts::dispatch(app, action),
-                // Opening Kanon again (its shortcut, the Start menu) shows its window.
+                // Opening Miku again (its shortcut, the Start menu) shows its window.
                 None => show_hub(app, None),
             }
         }))
@@ -1121,7 +1121,7 @@ pub fn run() {
             // New versions: nothing goes to GitHub until the user agrees (update.rs).
             update::start(handle.clone());
             if loaded.autostart {
-                // Login items written before 0.5 start Kanon without --autostart:
+                // Login items written before 0.5 start Miku without --autostart:
                 // writing it again adds it, so the window stays hidden at login.
                 let _ = handle.autolaunch().enable();
             }
@@ -1138,7 +1138,7 @@ pub fn run() {
             if let tauri::RunEvent::Exit = event {
                 phone_link::stop_on_exit(app);
                 notes::shutdown(app);
-                // GOWA started by Kanon stops with it; the conversations were only in memory.
+                // GOWA started by Miku stops with it; the conversations were only in memory.
                 whatsapp::shutdown();
             }
         });

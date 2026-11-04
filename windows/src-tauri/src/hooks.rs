@@ -3,7 +3,7 @@
 // The rule from CLAUDE.md is strict and is followed to the letter:
 // read %USERPROFILE%\.claude\settings.json, take a dated backup, merge without
 // touching anybody else's hooks, show the diff, and write only after an explicit
-// click. Uninstall removes Kanon's entries and nothing else.
+// click. Uninstall removes Miku's entries and nothing else.
 //
 // The command is only the quoted exe path in forward slashes plus the event name:
 // on Windows Claude Code runs hook commands through Git Bash, and anything with
@@ -42,7 +42,7 @@ pub const HOOK_EVENTS: &[(&str, u64)] = &[
 /// file name.
 const MARKER: &str = "miku-hook";
 
-/// What those entries said before the rebrand. A settings.json written by Kanon
+/// What those entries said before the rebrand. A settings.json written by Miku
 /// has to be recognised as ours too, or updating would leave its hooks behind
 /// and add Miku's beside them — every event would then run two relays.
 const LEGACY_MARKER: &str = "kanon-hook";
@@ -56,7 +56,7 @@ fn is_ours(command: &str) -> bool {
 #[serde(rename_all = "camelCase")]
 pub struct HookStatus {
     pub installed: bool,
-    /// Kanon's status line relay (plan usage) is the one in settings.json.
+    /// Miku's status line relay (plan usage) is the one in settings.json.
     pub plan_relay_installed: bool,
     pub settings_path: String,
     pub hook_path: String,
@@ -119,13 +119,13 @@ fn entry_is_ours(entry: &Value) -> bool {
         .unwrap_or(false)
 }
 
-/// The status line in settings.json is Kanon's relay (old installs wrote
+/// The status line in settings.json is Miku's relay (old installs wrote
 /// `miku-hook StatusLine`, new ones `miku-hook --statusline`; both match).
 fn status_line_is_ours(v: &Value) -> bool {
     v.get("command").and_then(Value::as_str).is_some_and(is_ours)
 }
 
-/// Settings with Kanon's hooks added; everything else is left untouched. A
+/// Settings with Miku's hooks added; everything else is left untouched. A
 /// `hooks` (or one of its events) that is not what Claude Code documents is
 /// refused rather than replaced.
 fn merged(existing: &Value) -> Result<Value, String> {
@@ -161,7 +161,7 @@ fn unexpected(what: &str) -> String {
     crate::i18n::tf("settings.json: {what} has an unexpected type — Miku has not touched it.", &[("what", what)])
 }
 
-/// Settings with every Kanon entry removed, and nothing else changed.
+/// Settings with every Miku entry removed, and nothing else changed.
 fn without_ours(existing: &Value) -> Result<Value, String> {
     let mut root = existing.as_object().cloned().unwrap_or_default();
     let hooks = match root.get("hooks") {
@@ -251,7 +251,7 @@ pub fn write(install: bool, fingerprint: &str) -> Result<String, String> {
 
 // ── Status line (plan usage) ──────────────────────────────────────────────────
 //
-// Claude Code runs one `statusLine` command and hands it the plan limits. Kanon
+// Claude Code runs one `statusLine` command and hands it the plan limits. Miku
 // puts its relay there; a status line the user already had is kept in
 // statusline-previous.json in local_dir() (outside bin/, surviving uninstaller),
 // and the relay still runs it, so it keeps working. Installing and removing it
@@ -283,7 +283,7 @@ fn migrate_status_line_previous(legacy: &Path, new: &Path) {
     }
 }
 
-/// True when the `statusLine` in settings.json is Kanon's relay.
+/// True when the `statusLine` in settings.json is Miku's relay.
 pub fn plan_relay_installed(settings: &Value) -> bool {
     settings.get("statusLine").is_some_and(status_line_is_ours)
 }

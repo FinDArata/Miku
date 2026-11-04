@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rhytam Biswas. MIT License, like the rest of Kanon; see android/LICENSE for the text.
-// The phone link: lets the Android app ("Kanon for Android") see the agents'
+// Copyright (c) 2026 Rhytam Biswas. MIT License, like the rest of Miku; see android/LICENSE for the text.
+// The phone link: lets the Android app ("Miku for Android") see the agents'
 // sessions and answer permission requests from the phone.
 // Protocol: docs/ANDROID_LINK.md.
 //

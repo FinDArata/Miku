@@ -1,6 +1,6 @@
-// Everything the Kanon window shows and edits about dictation: the history,
+// Everything the Miku window shows and edits about dictation: the history,
 // the numbers, the dictionary, the snippets, the styles and the preferences.
-// Small JSON files in the app's folder (%LOCALAPPDATA%\Kanon\Flow or
+// Small JSON files in the app's folder (%LOCALAPPDATA%\Miku\Flow or
 // ~/.local/share/kanon/Flow), on this computer only. Port of FlowStore.swift.
 
 use std::collections::{BTreeMap, HashSet};
@@ -104,13 +104,13 @@ pub struct Prefs {
     /// The style of the apps that have none of their own.
     pub default_style: Style,
     pub summary_engine: SummaryEngine,
-    /// Open the Kanon window when Kanon is opened (not when it starts with the computer).
+    /// Open the Miku window when Miku is opened (not when it starts with the computer).
     pub open_at_launch: bool,
-    /// « OK Kanon »: listen for it and answer with Claude (needs the Claude key).
+    /// « OK Miku »: listen for it and answer with Claude (needs the Claude key).
     pub voice: bool,
-    /// The other apps' sound is muted while Kanon listens to you (Windows).
+    /// The other apps' sound is muted while Miku listens to you (Windows).
     pub mute_others: bool,
-    /// How Kanon answers out loud: "system", "elevenlabs" or "off".
+    /// How Miku answers out loud: "system", "elevenlabs" or "off".
     pub voice_output: String,
     /// The ElevenLabs voice: "female" or "male".
     pub voice_gender: String,

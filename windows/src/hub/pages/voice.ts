@@ -1,4 +1,4 @@
-// « OK Kanon »: say it, then ask anything. Turning it on, how Kanon answers
+// « OK Miku »: say it, then ask anything. Turning it on, how Miku answers
 // out loud, and what leaves the computer. Port of the Mac's Settings → Voice.
 
 import { h, clear } from "../../views/dom";

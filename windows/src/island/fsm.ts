@@ -23,9 +23,9 @@ export class IslandStateMachine {
   }
   /** petit → hidden delay, seconds. */
   petitToHiddenDelay = 60;
-  /** kanon → petit once the greeting animation ends (no hover). */
+  /** miku → petit once the greeting animation ends (no hover). */
   greetAutoCollapseDelay = 0.6;
-  /** kanon → petit while the mouse hovers the greeting. */
+  /** miku → petit while the mouse hovers the greeting. */
   greetHoverCollapseDelay = 10;
   /** An alert waiting for an answer stays open, even when the mouse leaves. */
   pinned = false;

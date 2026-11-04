@@ -90,7 +90,7 @@ fn xdg_user_dir(text: &str, key: &str, home: &Path) -> Option<PathBuf> {
 /// keeps its plugin registry in ~/.cache/gstreamer-1.0 by default — the same
 /// file the system's GStreamer uses. The AppImage is mounted somewhere new on
 /// every launch, so each launch would rewrite the system's registry with
-/// plugin paths that vanish once Kanon quits. Give ours its own file.
+/// plugin paths that vanish once Miku quits. Give ours its own file.
 pub fn prepare_environment() {
     let _ = INHERITED.set(OWN_OVERRIDES.iter().map(|k| (*k, std::env::var_os(k))).collect());
     prefer_x11_on_gnome();
@@ -240,7 +240,7 @@ pub fn process_running(_exe: &str) -> bool {
     false
 }
 
-/// What the variables Kanon sets for itself (prepare_environment) were when it
+/// What the variables Miku sets for itself (prepare_environment) were when it
 /// started, so its children get the user's own values back.
 static INHERITED: std::sync::OnceLock<Vec<(&'static str, Option<std::ffi::OsString>)>> = std::sync::OnceLock::new();
 /// Set or changed by prepare_environment for this process only.
@@ -250,7 +250,7 @@ const OWN_OVERRIDES: [&str; 3] = ["GDK_BACKEND", "GDK_DPI_SCALE", "GST_REGISTRY"
 const APPIMAGE_GST: [&str; 3] = ["GST_REGISTRY_1_0", "GST_PLUGIN_SYSTEM_PATH", "GST_PLUGIN_SYSTEM_PATH_1_0"];
 
 /// The changes a child's environment needs: `Some` sets the value back, `None`
-/// removes the variable. Nothing for a variable Kanon left as it found it.
+/// removes the variable. Nothing for a variable Miku left as it found it.
 fn child_env(
     inherited: &[(&str, Option<std::ffi::OsString>)],
     current: impl Fn(&str) -> Option<std::ffi::OsString>,
@@ -272,7 +272,7 @@ fn child_env(
     out
 }
 
-/// Prepares a command to launch a child process: Kanon's own GDK and
+/// Prepares a command to launch a child process: Miku's own GDK and
 /// GStreamer settings (GDK_BACKEND=x11 on GNOME, GDK_DPI_SCALE, the AppImage's
 /// GStreamer paths) go back to what the user had, so they do not leak into the
 /// browser, the editor or the apps it opens (#859).
@@ -953,7 +953,7 @@ mod tests {
                 _ => None,
             }
         };
-        // Kanon forced x11 over the user's wayland, and set the other two itself.
+        // Miku forced x11 over the user's wayland, and set the other two itself.
         let inherited = [("GDK_BACKEND", Some(OsString::from("wayland"))), ("GDK_DPI_SCALE", None), ("GST_REGISTRY", None)];
         let fixes = child_env(&inherited, current, Some(OsStr::new("/tmp/.mount_KanonX")));
         assert_eq!(fixes, vec![
@@ -962,7 +962,7 @@ mod tests {
             ("GST_REGISTRY".to_string(), None),
             ("GST_PLUGIN_SYSTEM_PATH_1_0".to_string(), None),
         ]);
-        // Values the user set and Kanon kept (an explicit GDK_DPI_SCALE) stay.
+        // Values the user set and Miku kept (an explicit GDK_DPI_SCALE) stay.
         let kept = [("GDK_BACKEND", Some(OsString::from("x11"))), ("GDK_DPI_SCALE", Some(OsString::from("0.8")))];
         assert!(child_env(&kept, current, None).is_empty());
     }

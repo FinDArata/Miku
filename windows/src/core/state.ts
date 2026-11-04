@@ -129,7 +129,7 @@ export interface Settings {
   showPlanInNotch: boolean;
   /** Show the Claude plan percentage in the compact island next to the agent dots. */
   showPlanInCompactIsland: boolean;
-  /** Kanon's status line relay is installed in Claude Code's settings. */
+  /** Miku's status line relay is installed in Claude Code's settings. */
   planRelayInstalled: boolean;
   /** Show the Codex plan pill in the island's header. */
   showCodexPlanInNotch: boolean;
@@ -162,12 +162,12 @@ export interface Settings {
    */
   pillColors: Record<string, string>;
   /**
-   * Interface language: "" follows the system (when Kanon has its language,
+   * Interface language: "" follows the system (when Miku has its language,
    * else English), or one of src/i18n's ten codes ("fr", "pt-BR", "zh-Hans"…).
    */
   language: string;
   /**
-   * The phone link for Kanon for Android is on. Rust owns it (only the switch in
+   * The phone link for Miku for Android is on. Rust owns it (only the switch in
    * Settings → Android phone turns it on): whatever the page sends back is ignored.
    */
   phoneLink?: boolean;

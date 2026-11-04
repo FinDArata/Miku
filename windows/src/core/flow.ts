@@ -1,4 +1,4 @@
-// Flow dictation, the voice models and the Notetaker, as the Kanon window and
+// Flow dictation, the voice models and the Notetaker, as the Miku window and
 // the pill see them (src-tauri/src/flow, speech, notes).
 
 import { invoke } from "@tauri-apps/api/core";
@@ -48,11 +48,11 @@ export interface FlowPrefs {
   defaultStyle: Style;
   summaryEngine: "claude" | "off";
   openAtLaunch: boolean;
-  /** « OK Kanon »: listen for it and answer with Claude. */
+  /** « OK Miku »: listen for it and answer with Claude. */
   voice: boolean;
   voiceOutput: VoiceOutput;
   voiceGender: "female" | "male";
-  /** The other apps go quiet while Kanon listens to you (Windows). */
+  /** The other apps go quiet while Miku listens to you (Windows). */
   muteOthers: boolean;
 }
 
@@ -186,7 +186,7 @@ export interface PillState {
   noteStartedAt: number | null;
   announcement: Announcement | null;
   enabled: boolean;
-  /** « OK Kanon » is talking with you. */
+  /** « OK Miku » is talking with you. */
   voice: VoiceView | null;
 }
 
@@ -200,7 +200,7 @@ export type VoiceOutput = "system" | "elevenlabs" | "off";
 
 export const FlowBridge = {
   status: () => call<FlowStatus>("flow_status"),
-  /** The Kanon window is on screen (shown, not minimised); `hub-visible` tells when it changes. */
+  /** The Miku window is on screen (shown, not minimised); `hub-visible` tells when it changes. */
   hubShown: () => call<boolean>("hub_shown"),
   setPrefs: (prefs: FlowPrefs) => call<void>("flow_set_prefs", { prefs }),
   history: () => call<FlowEntry[]>("flow_history"),
@@ -235,7 +235,7 @@ export const FlowBridge = {
   pillHot: (rects: [number, number, number, number][]) => call<void>("pill_hot", { rects }),
   pillHover: (inside: boolean) => call<void>("pill_hover", { inside }),
   pillAction: (action: string, id?: number) => call<void>("pill_action", { action, id: id ?? null }),
-  /** The pill has said what « OK Kanon » answered. */
+  /** The pill has said what « OK Miku » answered. */
   voiceDone: (id: number) => call<void>("voice_done", { id, text: null }),
   /** speech-dispatcher or espeak-ng, where the webview has no voice. */
   sayNative: (text: string, lang: string | null) => call<boolean>("voice_say_native", { text, lang }),

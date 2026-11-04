@@ -1,5 +1,5 @@
-// GOWA started by Kanon ("Start GOWA automatically", or after "Install WhatsApp"): a child of
-// Kanon, on the address set in Settings, stopped when Kanon quits. Port of WhatsAppGOWAProcess.swift.
+// GOWA started by Miku ("Start GOWA automatically", or after "Install WhatsApp"): a child of
+// Miku, on the address set in Settings, stopped when Miku quits. Port of WhatsAppGOWAProcess.swift.
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -19,7 +19,7 @@ struct Running {
 
 static STATE: Mutex<Running> = Mutex::new(Running { child: None, last_start: None, launched_with: None });
 
-/// Where GOWA keeps its own WhatsApp session (its database, not Kanon's), and where Kanon
+/// Where GOWA keeps its own WhatsApp session (its database, not Miku's), and where Miku
 /// puts the binary it installs: the link survives restarts.
 pub fn working_dir() -> PathBuf {
     crate::platform::local_dir().join("GOWA")
@@ -29,7 +29,7 @@ pub fn installed_binary() -> PathBuf {
     working_dir().join(if cfg!(windows) { "gowa.exe" } else { "gowa" })
 }
 
-/// A file Kanon may start: there, a file, and on Linux executable.
+/// A file Miku may start: there, a file, and on Linux executable.
 pub fn is_runnable(path: &Path) -> bool {
     let Ok(meta) = std::fs::metadata(path) else { return false };
     if !meta.is_file() {
@@ -108,7 +108,7 @@ pub fn sync(wanted: bool, binary: &str, url: &str, credential: &str) -> bool {
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        // Its own web dashboard is not needed (Kanon is the interface).
+        // Its own web dashboard is not needed (Miku is the interface).
         .env("APP_UI_ENABLED", "false");
     // The credential goes through the environment, not the command line (any user sees that).
     if credential.contains(':') {
@@ -158,7 +158,7 @@ fn stop_locked(s: &mut Running) {
     let _ = child.wait();
 }
 
-/// Stops GOWA if Kanon started it, waiting a second at most (at quit, or before starting it
+/// Stops GOWA if Miku started it, waiting a second at most (at quit, or before starting it
 /// again so two never share its database).
 pub fn stop_now() {
     stop_locked(&mut STATE.lock().unwrap());

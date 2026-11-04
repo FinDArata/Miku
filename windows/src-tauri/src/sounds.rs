@@ -1,7 +1,7 @@
 // Your own sounds: a file named like one of Mochi's sounds in the sounds folder
 // replaces it (finish.wav, approval.mp3, greet.m4a…), as on the Mac
 // (SoundEngine.customFolder). The folder is platform::config_dir()/sounds:
-// ~/.config/kanon/sounds on Linux, %APPDATA%\Kanon\sounds on Windows.
+// ~/.config/kanon/sounds on Linux, %APPDATA%\Miku\sounds on Windows.
 //
 // The page decodes the bytes itself; a file it can't decode falls back to the
 // built-in sound there (src/core/sound.ts).

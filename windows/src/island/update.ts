@@ -108,7 +108,7 @@ class UpdateController {
     }
   }
 
-  /** Tray → "Update Kanon to X…", Settings → Install X. */
+  /** Tray → "Update Miku to X…", Settings → Install X. */
   show() {
     this.offer("show");
   }

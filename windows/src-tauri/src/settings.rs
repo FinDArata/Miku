@@ -35,7 +35,7 @@ pub struct Settings {
     pub show_plan_in_notch: bool,
     /// Show the Claude plan percentage in the compact island next to the agent dots.
     pub show_plan_in_compact_island: bool,
-    /// Kanon's status line relay is the one in Claude Code's settings.json.
+    /// Miku's status line relay is the one in Claude Code's settings.json.
     /// Like `hooks_installed`, the real state wins at launch over what was stored.
     pub plan_relay_installed: bool,
     /// Show the Codex plan pill (5 h / weekly limits from `codex app-server`).

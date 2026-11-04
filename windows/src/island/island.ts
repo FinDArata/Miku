@@ -541,14 +541,14 @@ export class Island {
     this.expand(view);
   }
 
-  /** A new Kanon waits and Mochi has nothing else to say (he is blue). */
+  /** A new Miku waits and Mochi has nothing else to say (he is blue). */
   private updateHintOn(): boolean {
     return !State.paused && showsUpdateHint(Updates.waiting(), State.effectiveState, State.pendingApproval != null);
   }
 
   /**
    * What a click or a hover opens on: while Mochi is blue, the new version
-   * ("Kanon X is out", Update now); otherwise the usual view. A waiting
+   * ("Miku X is out", Update now); otherwise the usual view. A waiting
    * permission or question always comes first.
    */
   private openingView(): IslandViewName {
@@ -1295,7 +1295,7 @@ export class Island {
     if (!ctx) return;
 
     const focus = State.focusTask;
-    // A new Kanon waits: over an idle or sleeping Mochi, the blue and the arrow
+    // A new Miku waits: over an idle or sleeping Mochi, the blue and the arrow
     // badge (whats-new.ts). Anything Mochi has to say comes first.
     this.engine.setUpdateHint(this.updateHintOn() ? UPDATE_BLUE_RGB : null);
     // While a plan card is open Mochi wears the plan's colour, like its pill.

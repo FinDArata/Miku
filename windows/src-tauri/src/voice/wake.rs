@@ -1,4 +1,4 @@
-// « OK Kanon »: hearing the wake phrase in what Parakeet wrote, and telling
+// « OK Miku »: hearing the wake phrase in what Parakeet wrote, and telling
 // speech from silence on the microphone. Nothing here touches the OS.
 
 /// Lower case, accents gone, everything but letters and digits a space.
@@ -169,7 +169,7 @@ impl Vad {
         done
     }
 
-    /// Forgets what is being heard (Kanon speaks, or dictation starts).
+    /// Forgets what is being heard (Miku speaks, or dictation starts).
     pub fn reset(&mut self) {
         self.in_speech = false;
         self.speech_frames = 0;

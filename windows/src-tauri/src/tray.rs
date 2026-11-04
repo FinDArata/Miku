@@ -1,5 +1,5 @@
 // Notification-area icon: Open, Weekly recap, Wardrobe, Settings, Pause, Quit.
-// "Update Kanon to X…" shows under Open only while a new version is out
+// "Update Miku to X…" shows under Open only while a new version is out
 // (update.rs). While one waits, the tray Mochi turns blue like the island's.
 
 use std::sync::Mutex;
@@ -26,7 +26,7 @@ const ITEMS: [(&str, &str); 6] = [
 /// Kept so a language change relabels the menu without rebuilding the tray.
 struct Items(Vec<(&'static str, MenuItem<Wry>)>);
 
-/// "Update Kanon to X…": in the menu only while `version` is set.
+/// "Update Miku to X…": in the menu only while `version` is set.
 struct UpdateItem {
     menu: Menu<Wry>,
     item: MenuItem<Wry>,
@@ -58,7 +58,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
         .on_menu_event(|app: &AppHandle, event| match event.id.as_ref() {
             "quit" => app.exit(0),
             "settings" => crate::show_settings_window(app),
-            // The Kanon window: dictation, notes and every setting.
+            // The Miku window: dictation, notes and every setting.
             "open" => crate::show_hub(app, None),
             id => {
                 let _ = app.emit_to(WINDOW_LABEL, "tray", id.to_string());
@@ -88,7 +88,7 @@ pub fn retitle(app: &AppHandle) {
     }
 }
 
-/// Shows "Update Kanon to `version`…" right under Open, or takes it out (None).
+/// Shows "Update Miku to `version`…" right under Open, or takes it out (None).
 pub fn set_update(app: &AppHandle, version: Option<&str>) {
     let Some(update) = app.try_state::<UpdateItem>() else { return };
     let was_shown = {
@@ -113,7 +113,7 @@ pub fn set_update(app: &AppHandle, version: Option<&str>) {
     }
 }
 
-/// Kanon's update blue, #3B82F6, the colour of Mochi while a new version waits.
+/// Miku's update blue, #3B82F6, the colour of Mochi while a new version waits.
 const UPDATE_BLUE: [f32; 3] = [59.0, 130.0, 246.0];
 
 /// The tray Mochi in the update blue: the light body takes the blue and keeps its

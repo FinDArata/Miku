@@ -603,7 +603,7 @@ function handleHook(island: Island, payload: HookPayload) {
         ...(questions ? { questions } : {}),
       };
 
-      // Kanon answers within 108 s or not at all; after that the terminal has
+      // Miku answers within 108 s or not at all; after that the terminal has
       // taken over and the card would be lying.
       armRequestTimeout(island, requestId);
       Sound.play(view);

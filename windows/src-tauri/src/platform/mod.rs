@@ -39,7 +39,7 @@ pub fn home_dir() -> PathBuf {
 
 // ── Carrying an old install over ─────────────────────────────────────────────
 //
-// This app was called Kanon before it was Miku. `config_dir()` and `local_dir()`
+// This app was called Miku before it was Miku. `config_dir()` and `local_dir()`
 // now point at the new folders, so without this an update would look like a
 // fresh install: no settings, an empty recap history, and an inbox and log gone.
 //
@@ -92,7 +92,7 @@ fn is_legacy_relay(name: &std::ffi::OsStr) -> bool {
     name == "miku-hook" || name == "miku-hook.exe"
 }
 
-/// Carries a Kanon install's files into Miku's folders, once per launch. Cheap
+/// Carries a Miku install's files into Miku's folders, once per launch. Cheap
 /// when there is nothing to do: a readdir that comes back empty.
 pub fn migrate_legacy_dirs() {
     for (from, to) in legacy_dirs() {

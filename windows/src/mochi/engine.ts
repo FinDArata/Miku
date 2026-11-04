@@ -63,13 +63,13 @@ interface Particle {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-// (Mochi's squircle constants retired with the Kanon chibi; see K_* below.)
+// (Mochi's squircle constants retired with the Miku chibi; see K_* below.)
 
 const MINI_INK = "rgb(16,19,26)"; // #10131A
 
 // ── Miku — chibi drawn in code, in three official variants ───────────────────
 //
-// The palette used to be constants here (the earlier fork's Kanon chibi). It now
+// The palette used to be constants here (the earlier fork's Miku chibi). It now
 // comes from ./variants.ts, one MikuVariant per look: classic, Snow and Sakura
 // share every shape and differ in colour, plus the few ornaments the variant
 // paints itself through `extra`. `engine.setVariant()` swaps it at runtime.
@@ -482,7 +482,7 @@ export class BotEngine {
     this.anim("roll", [[Math.PI * 2 * turns, durationMs, Ease.inOut]], () => { this.roll = 0; });
   }
 
-  /** Peek wave — the "kanon". Timings from BotEngine.greet(). */
+  /** Peek wave — the "miku". Timings from BotEngine.greet(). */
   greet() {
     const t = now();
     const tok = ++this.greetToken;
@@ -903,7 +903,7 @@ export class BotEngine {
     if (this.tilt !== 0) x.rotate(this.tilt);
     x.scale(this.sx, this.sy);
 
-    // Kanon: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
+    // Miku: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
     // sementara TIDAK digambar sampai diadaptasi ke kepala chibi (fase lanjut).
     // Tanpa ini, topi melayang di posisi lama dan terlihat seperti kepala terbelah.
     const dressed = false;
@@ -1238,7 +1238,7 @@ export class BotEngine {
     x.beginPath(); x.ellipse(216, 96, 13, 48, -0.08, 0, Math.PI * 2); x.fill();
   }
 
-  /** Wajah Kanon: alis, mata (half-lidded stoic + emote), mulut, kacamata. */
+  /** Wajah Miku: alis, mata (half-lidded stoic + emote), mulut, kacamata. */
   private drawEyes(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
     let shape: EyeShape = this.eyeOverride ?? this.cfg.eye;
     if (this.isDancing && this.dancingLevel > 0.15 && !this.isMini && (this.state === "idle" || this.state === "finished")) {
@@ -1469,7 +1469,7 @@ export class BotEngine {
         }
       }
     } else if (badge.kind === "arrow") {
-      // The "!" badge's ring and disc, with a white up-arrow: a new Kanon is out.
+      // The "!" badge's ring and disc, with a white up-arrow: a new Miku is out.
       x.fillStyle = "#000";
       x.beginPath();
       x.arc(0, 0, R * 0.3, 0, Math.PI * 2);

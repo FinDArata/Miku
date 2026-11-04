@@ -1,4 +1,4 @@
-// « OK Kanon »'s brain: Claude with the user's key and Kanon's tools —
+// « OK Miku »'s brain: Claude with the user's key and Miku's tools —
 // pills, music, the user's own data, opening an app, preparing an email (the
 // mail app opens with it filled in; the user sends it) and Anthropic's web
 // search. The conversation lives in memory only and is forgotten 90 s after

@@ -5,7 +5,7 @@ use keyring::Entry;
 
 const SERVICE: &str = "com.findarata.kanon";
 
-/// Every key Kanon may store. Anything outside this list is refused.
+/// Every key Miku may store. Anything outside this list is refused.
 pub const KNOWN_KEYS: &[&str] = &[
     "anthropic-api-key",
     "openai-api-key",
@@ -24,7 +24,7 @@ pub const KNOWN_KEYS: &[&str] = &[
     "resend-api-key",
     "notion-api-key",
     "calcom-api-key",
-    // « OK Kanon »'s answers in an ElevenLabs voice.
+    // « OK Miku »'s answers in an ElevenLabs voice.
     "elevenlabs-api-key",
 ];
 

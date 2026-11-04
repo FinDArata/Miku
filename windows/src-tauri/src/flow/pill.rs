@@ -39,7 +39,7 @@ pub struct PillState {
     pub announcement: Option<Announcement>,
     /// Dictation is on (the resting pill shows).
     pub enabled: bool,
-    /// « OK Kanon » is talking with you.
+    /// « OK Miku » is talking with you.
     pub voice: Option<crate::voice::VoiceView>,
 }
 

@@ -207,7 +207,7 @@ pub fn setup(app: &AppHandle) {
         }
     }
     notes.sort_by(|a, b| b.start.cmp(&a.start));
-    // A call left recording or being written when Kanon last quit: written now.
+    // A call left recording or being written when Miku last quit: written now.
     let unfinished: Vec<String> = notes
         .iter()
         .filter(|n| matches!(n.status, Status::Recording | Status::Processing))
@@ -421,7 +421,7 @@ pub fn stop(app: &AppHandle) {
     std::thread::spawn(move || process(&app, &id));
 }
 
-/// Kanon quits during a call: the recordings are closed properly, and the
+/// Miku quits during a call: the recordings are closed properly, and the
 /// transcript is written at the next launch.
 pub fn shutdown(app: &AppHandle) {
     let Some(taker) = get(app) else { return };

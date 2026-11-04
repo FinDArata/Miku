@@ -21,7 +21,7 @@ use crate::{platform, settings};
 const MARKER: &str = "miku-hook";
 
 /// The same, as an install from before the rebrand wrote it. Recognising it is
-/// what keeps an update from leaving Kanon's hooks in place next to Miku's.
+/// what keeps an update from leaving Miku's hooks in place next to Miku's.
 const LEGACY_MARKER: &str = "kanon-hook";
 
 /// Whether `command` runs our relay, under either name.
@@ -215,7 +215,7 @@ impl Agent {
     }
 
     /// The change to this agent's JSON config: the new object, or `None` to
-    /// remove a file that is Kanon's alone. Command lines are built here, up
+    /// remove a file that is Miku's alone. Command lines are built here, up
     /// front, so the change itself is pure.
     fn json_change(self, relay: &Relay, install: bool) -> JsonChange {
         match (self, install) {
@@ -271,7 +271,7 @@ impl Agent {
         }
     }
 
-    /// True when the agent's config already routes to Kanon. Never fails: a
+    /// True when the agent's config already routes to Miku. Never fails: a
     /// file we cannot read just reads as "not installed".
     fn installed(self, home: &Path) -> bool {
         let files = self.files(home);
@@ -355,7 +355,7 @@ pub struct AgentStatus {
     pub id: &'static str,
     pub name: &'static str,
     pub installed: bool,
-    /// The file (or files, one per line) Kanon writes.
+    /// The file (or files, one per line) Miku writes.
     pub path: String,
     pub hook_ready: bool,
     /// The island can allow or deny this agent's permission requests.
@@ -438,7 +438,7 @@ fn is_our_command(command: Option<&Value>, agent: &str) -> bool {
 }
 
 /// Claude-style groups (`{"matcher"?, "hooks": [{"command"}]}`, or a legacy
-/// flat `{"command"}`) without Kanon's entries for `agent`. A group left
+/// flat `{"command"}`) without Miku's entries for `agent`. A group left
 /// empty goes; everything else stays exactly as it was.
 fn without_ours_in_groups(groups: &[Value], agent: &str) -> Vec<Value> {
     groups
@@ -465,8 +465,8 @@ fn without_ours_in_groups(groups: &[Value], agent: &str) -> Vec<Value> {
         .collect()
 }
 
-/// `root` with one Kanon group per event, built by `group(event)`. Earlier
-/// Kanon entries for `agent` are replaced; nobody else's are touched.
+/// `root` with one Miku group per event, built by `group(event)`. Earlier
+/// Miku entries for `agent` are replaced; nobody else's are touched.
 fn groups_install(
     root: &Value,
     agent: &str,
@@ -483,7 +483,7 @@ fn groups_install(
     Ok(root)
 }
 
-/// `root` without any Kanon group for `agent`; an event left empty goes, and
+/// `root` without any Miku group for `agent`; an event left empty goes, and
 /// so does `hooks` when nothing is left in it.
 fn groups_uninstall(root: &Value, agent: &str) -> Result<Value, String> {
     let mut root = root.as_object().cloned().unwrap_or_default();
@@ -554,7 +554,7 @@ fn gemini_install(root: &Value, commands: &[(String, String, u64)]) -> Result<Va
 
 // ── Antigravity — ~/.gemini/config/hooks.json ─────────────────────────────────
 //
-// Hooks are named groups at the top level; Kanon's is `kanon`. Tool events
+// Hooks are named groups at the top level; Miku's is `kanon`. Tool events
 // take matcher groups, lifecycle events take handlers directly; timeouts are
 // in seconds. Merge and removal come from #298 (kobaltgit). The relay answers
 // PreToolUse with "{}" — no decision — never with an allow: Antigravity's own
@@ -581,7 +581,7 @@ fn antigravity_block(relay: &Relay) -> Value {
     Value::Object(block)
 }
 
-/// A `kanon` group Kanon wrote (it runs the relay as `--agent antigravity`).
+/// A `kanon` group Miku wrote (it runs the relay as `--agent antigravity`).
 fn antigravity_is_ours(group: &Value) -> bool {
     let text = group.to_string();
     text.contains(MARKER) && text.contains("--agent antigravity")
@@ -590,7 +590,7 @@ fn antigravity_is_ours(group: &Value) -> bool {
 /// The key this app's hook group has in Antigravity's config.
 const ANTIGRAVITY_KEY: &str = "miku";
 /// The same key before the rebrand, still read so an update recognises the group
-/// Kanon wrote instead of refusing its own file.
+/// Miku wrote instead of refusing its own file.
 const ANTIGRAVITY_LEGACY_KEY: &str = "kanon";
 
 fn antigravity_install(root: &Value, block: &Value) -> Result<Value, String> {
@@ -665,7 +665,7 @@ const CODEX_EVENTS: &[(&str, u64)] = &[
     ("SessionEnd", 3),
 ];
 
-const CODEX_WAITING: &str = "Waiting for your answer in the island (Kanon)";
+const CODEX_WAITING: &str = "Waiting for your answer in the island (Miku)";
 
 fn codex_install(root: &Value, command: &str) -> Result<Value, String> {
     let events = CODEX_EVENTS.iter().map(|(event, timeout)| {
@@ -680,12 +680,12 @@ fn codex_install(root: &Value, command: &str) -> Result<Value, String> {
 
 // ── GitHub Copilot CLI — ~/.copilot/hooks/kanon.json ─────────────────────────
 //
-// A file of Kanon's own in Copilot's hooks folder: camelCase events, each
+// A file of Miku's own in Copilot's hooks folder: camelCase events, each
 // entry `{"type": "command", "bash": …, "timeoutSec": N}`, plus `powershell`
 // on Windows, where Copilot runs that one. The event goes on the command line
 // because Copilot does not put it in the payload. Copilot is fail-closed on
 // permissionRequest: the relay always answers it with valid JSON — "ask" when
-// nobody clicked. Removing the last of Kanon's entries removes the file.
+// nobody clicked. Removing the last of Miku's entries removes the file.
 
 const COPILOT_EVENTS: &[(&str, u64)] = &[
     ("sessionStart", 10),
@@ -741,7 +741,7 @@ fn copilot_uninstall(root: &Value) -> Result<Option<Value>, String> {
             root.insert("hooks".into(), Value::Object(hooks));
         }
     }
-    // Nothing of anyone else's left: the file was Kanon's, and goes.
+    // Nothing of anyone else's left: the file was Miku's, and goes.
     if root.keys().all(|k| k == "version") {
         return Ok(None);
     }
@@ -784,7 +784,7 @@ fn muse_install(root: &Value, commands: &[(String, String, u64)]) -> Result<Valu
 // These agents load code rather than run hook commands. The Mac's plugins
 // start `/bin/sh` on a script at a macOS path; these start the relay itself,
 // at this machine's path, with no shell in between. Every one is
-// fire-and-forget: the agent never waits on Kanon, and if Kanon is closed
+// fire-and-forget: the agent never waits on Miku, and if Miku is closed
 // nothing happens. None of them ever answers a permission: Hermes keeps its
 // approvals (as on the Mac), and Amp's steps come from `tool.result` so the
 // plugin never has to return a verdict from `tool.call`.
@@ -793,7 +793,7 @@ fn muse_install(root: &Value, commands: &[(String, String, u64)]) -> Result<Valu
 /// removed.
 const GENERATED: &str = "generated by Miku";
 
-/// What those files said before the rebrand: a plugin written by Kanon is still
+/// What those files said before the rebrand: a plugin written by Miku is still
 /// ours to replace, and would otherwise be refused as somebody else's.
 const LEGACY_GENERATED: &str = "generated by Kanon";
 
@@ -917,7 +917,7 @@ export default {
 "#;
 
 const AMP_PLUGIN: &str = r#"// Miku plugin for Amp — generated by Miku.
-// Forwards Amp's events to Kanon's relay (miku-hook), fire-and-forget and
+// Forwards Amp's events to Miku's relay (miku-hook), fire-and-forget and
 // display only: Amp never waits on it, and it never decides anything for Amp.
 import { spawn } from 'node:child_process';
 
@@ -944,7 +944,7 @@ export default function (amp: any): void {
     forward('UserPromptSubmit', { ...session(e), prompt: typeof e?.message === 'string' ? e.message : '' });
   });
   // A step per tool once it has run: listening to tool.call would mean
-  // returning a verdict for Amp, and Kanon never makes one.
+  // returning a verdict for Amp, and Miku never makes one.
   amp.on('tool.result', (e: any) => {
     forward('PreToolUse', { ...session(e), tool_name: typeof e?.tool === 'string' ? e.tool : '', tool_input: e?.input ?? null });
   });
@@ -1303,7 +1303,7 @@ mod tests {
         assert_eq!(installed["hooks"]["PermissionRequest"][0]["hooks"][0]["timeout"], 120_000);
         assert_eq!(installed["hooks"]["PreToolUse"][0]["matcher"], "*");
         assert!(installed["hooks"]["Stop"][0]["hooks"][0]["command"].as_str().unwrap().ends_with("--agent muse Stop"));
-        // Only Kanon's hooks go; the file and its schema_version stay.
+        // Only Miku's hooks go; the file and its schema_version stay.
         assert_eq!(removed.unwrap(), json!({ "schema_version": 1 }));
         let _ = std::fs::remove_dir_all(home);
 

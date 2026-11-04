@@ -117,7 +117,7 @@ pub fn start(app: AppHandle) {
             return;
         };
         // A socket file left behind by a crash answers nothing and can go. One
-        // that answers belongs to a Kanon that is still running: like
+        // that answers belongs to a Miku that is still running: like
         // first_pipe_instance on Windows, we refuse to serve on top of it.
         if path.exists() {
             if std::os::unix::net::UnixStream::connect(&path).is_ok() {
@@ -245,7 +245,7 @@ async fn handle(app: AppHandle, mut pipe: impl Relay) {
     app.state::<Pending>().0.lock().unwrap().remove(&id);
 
     // No decision: say nothing at all. miku-hook then writes nothing to stdout
-    // and Claude Code asks in the terminal, exactly as if Kanon were closed.
+    // and Claude Code asks in the terminal, exactly as if Miku were closed.
     // The island is told, so a card that came up late (or is still up after the
     // long wait) goes instead of holding the view with nobody to answer (#857).
     match decision {

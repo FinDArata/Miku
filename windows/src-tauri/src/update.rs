@@ -1,17 +1,17 @@
-// "Kanon 0.6.0 is out" in the island, and on Windows one click to install it.
+// "Miku 0.6.0 is out" in the island, and on Windows one click to install it.
 // Port of MacUpdate.swift / MacUpdater.swift (the Mac's GitHub build).
 //
 // Nothing is asked of GitHub before the user says yes: the island asks once
 // (again a day later at most if the card was left unanswered), or Settings →
 // General → Updates. "Check now" is a click, so it works either way. Once
-// allowed, Kanon looks at launch and every 6 hours: one unauthenticated
+// allowed, Miku looks at launch and every 6 hours: one unauthenticated
 // `GET /repos/FinDArata/kanon/releases`, no cookies, nothing about the user.
 //
 // Windows: the installer this copy came from — the per-user setup.exe in
-// %LOCALAPPDATA%\Kanon, the per-machine .msi under Program Files — is
+// %LOCALAPPDATA%\Miku, the per-machine .msi under Program Files — is
 // downloaded from GitHub only (redirects to github.com, api.github.com and
 // *.githubusercontent.com, nothing else), checked against the SHA-256 GitHub
-// publishes for that asset, then run; Kanon quits and the installer starts it
+// publishes for that asset, then run; Miku quits and the installer starts it
 // again. Anything else (the portable exe, every Linux package) gets the
 // release page: people update those the way they installed them.
 //
@@ -50,7 +50,7 @@ pub const ASK_AGAIN: i64 = 24 * 3600;
 const FIRST_TICK: Duration = Duration::from_secs(30);
 /// How often the schedule is looked at; GitHub is only called when `should_check` says so.
 const TICK: Duration = Duration::from_secs(3600);
-/// An installer bigger than this is not Kanon's (0.5.0's .msi is 14 MB).
+/// An installer bigger than this is not Miku's (0.5.0's .msi is 14 MB).
 const MAX_INSTALLER: u64 = 512 * 1024 * 1024;
 
 // ── Releases ──────────────────────────────────────────────────────────────────
@@ -189,9 +189,9 @@ pub fn parse_digest(digest: &str) -> Option<String> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InstallKind {
-    /// The per-user setup.exe (NSIS): %LOCALAPPDATA%\Kanon.
+    /// The per-user setup.exe (NSIS): %LOCALAPPDATA%\Miku.
     Setup,
-    /// The per-machine .msi (WiX): Program Files\Kanon.
+    /// The per-machine .msi (WiX): Program Files\Miku.
     Msi,
     /// Anything else — the portable exe, a build, Linux: the release page only.
     Manual,
@@ -203,8 +203,8 @@ fn win_path(p: &str) -> String {
 }
 
 /// The installer that put `exe` where it is, from its folder alone: Tauri's
-/// NSIS installer (per user) uses %LOCALAPPDATA%\Kanon, its MSI (per machine)
-/// Program Files\Kanon. `has_uninstaller` is whether NSIS's uninstall.exe sits
+/// NSIS installer (per user) uses %LOCALAPPDATA%\Miku, its MSI (per machine)
+/// Program Files\Miku. `has_uninstaller` is whether NSIS's uninstall.exe sits
 /// next to it, so a portable exe someone copied into that folder isn't taken
 /// for an installed one.
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -240,7 +240,7 @@ pub fn pick_asset(release: &Release, kind: InstallKind) -> Option<&Asset> {
 /// What runs the downloaded installer. The setup.exe with Tauri's own update
 /// flags: `/P` passive (a progress bar, no questions), `/UPDATE` (no "reinstall
 /// or uninstall?" step, the old uninstaller never runs, shortcuts are left as
-/// they are), `/R` (start Kanon again once done). The MSI through msiexec,
+/// they are), `/R` (start Miku again once done). The MSI through msiexec,
 /// passive, with Tauri's `AUTOLAUNCHAPP` to start it again; being per machine
 /// it asks for admin rights, as installing it by hand does.
 pub fn installer_command(kind: InstallKind, file: &Path, system_root: Option<&str>) -> Option<(PathBuf, Vec<String>)> {
@@ -273,7 +273,7 @@ pub fn should_ask(asked_at: Option<i64>, now: i64) -> bool {
     due(asked_at, now, ASK_AGAIN)
 }
 
-/// Whether Mochi says "Kanon X is out": newer than what runs, and not shown
+/// Whether Mochi says "Miku X is out": newer than what runs, and not shown
 /// or put off for that version in the last day.
 pub fn should_announce(version: &str, current: &str, snoozed_version: Option<&str>, snoozed_at: Option<i64>, now: i64) -> bool {
     if !is_newer(version, current) {
@@ -288,7 +288,7 @@ pub fn should_announce(version: &str, current: &str, snoozed_version: Option<&st
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 struct Prefs {
-    /// None: not asked yet. true: Kanon may look at GitHub. false: never on its own.
+    /// None: not asked yet. true: Miku may look at GitHub. false: never on its own.
     consent: Option<bool>,
     last_check: Option<i64>,
     snoozed_version: Option<String>,
@@ -430,7 +430,7 @@ pub fn status() -> Status {
     }
 }
 
-/// Tells both windows, and the tray's "Update Kanon to X…".
+/// Tells both windows, and the tray's "Update Miku to X…".
 fn changed(app: &AppHandle) {
     let status = status();
     crate::tray::set_update(app, status.latest.as_ref().map(|l| l.version.as_str()));
@@ -514,7 +514,7 @@ fn github_client(timeout: Duration) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(15))
         .timeout(timeout)
-        .user_agent("Kanon")
+        .user_agent("Miku")
         .redirect(policy)
         .build()
         .map_err(|e| e.to_string())
@@ -586,7 +586,7 @@ pub async fn check(app: &AppHandle, manual: bool) {
 
 // ── Install (Windows) ─────────────────────────────────────────────────────────
 
-/// Old downloads left in the temp folder by an update that ran: Kanon quits
+/// Old downloads left in the temp folder by an update that ran: Miku quits
 /// before the installer is done with its file, so they go at the next launch.
 fn remove_old_downloads() {
     let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else { return };
@@ -620,7 +620,7 @@ pub fn install(app: &AppHandle) {
             Ok(()) => {
                 crate::log::line(format!("update: running the {kind:?} installer for {}, quitting", release.version));
                 set_phase(&app, Phase::Installing);
-                // Long enough for the card to say so; the installer closes a Kanon still open.
+                // Long enough for the card to say so; the installer closes a Miku still open.
                 tokio::time::sleep(Duration::from_millis(1200)).await;
                 app.exit(0);
             }

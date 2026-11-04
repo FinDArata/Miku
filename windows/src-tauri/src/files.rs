@@ -1,4 +1,4 @@
-// Dropped files are copied into %LOCALAPPDATA%\Kanon\inbox so the original is
+// Dropped files are copied into %LOCALAPPDATA%\Miku\inbox so the original is
 // never touched and the copy survives the drag source going away.
 // The inbox is swept of anything older than a week, as on macOS.
 

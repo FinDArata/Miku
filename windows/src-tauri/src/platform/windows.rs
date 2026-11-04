@@ -459,7 +459,7 @@ fn bring_forward(raw: isize) -> bool {
             let _ = ShowWindow(hwnd, SW_SHOW);
         }
 
-        // The island window has WS_EX_NOACTIVATE, so clicks on it do not make Kanon
+        // The island window has WS_EX_NOACTIVATE, so clicks on it do not make Miku
         // the active foreground window. Windows blocks SetForegroundWindow unless the
         // calling thread is attached to the foreground thread or owns foreground rights.
         let fg_hwnd = GetForegroundWindow();

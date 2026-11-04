@@ -1,5 +1,5 @@
 // The chat's mail actions: the plan the AI writes (a ```kanon-mail JSON block in its
-// answer), what Kanon tells the AI, and the matching of PDF pages to recipients. Port of
+// answer), what Miku tells the AI, and the matching of PDF pages to recipients. Port of
 // MailPlan.swift; pure, tested on any machine. Nothing in a plan happens until the user
 // clicks Run on its card (mod.rs).
 

@@ -1,4 +1,4 @@
-// Settings search in the Kanon window: matches every setting of Flow,
+// Settings search in the Miku window: matches every setting of Flow,
 // Notch and Mail in the app's language, whatever the accents and case.
 // Port of SettingsSearch.swift and SettingsSearchMatch.swift.
 

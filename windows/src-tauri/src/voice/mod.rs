@@ -1,9 +1,9 @@
-// « OK Kanon » on Windows and Linux: say it, then ask anything. Port of the
+// « OK Miku » on Windows and Linux: say it, then ask anything. Port of the
 // Mac's Voice/ (VoiceEngine.swift and its friends).
 //
 // While it is on, the microphone is open and a cheap energy detector cuts what
 // you say into stretches; only a stretch of speech goes to Parakeet, on this
-// computer, and only a stretch that starts with « OK Kanon » goes further:
+// computer, and only a stretch that starts with « OK Miku » goes further:
 // what you said after it goes to Claude with your own key (brain.rs), never
 // the audio. Mochi shows it all in the pill at the bottom of the screen —
 // listening, thinking, then the answer, said out loud by the system's voice
@@ -34,9 +34,9 @@ use crate::speech::{self, audio};
 pub struct VoiceView {
     /// "listening", "thinking", "speaking".
     pub phase: String,
-    /// What you said (after « OK Kanon »).
+    /// What you said (after « OK Miku »).
     pub heard: String,
-    /// Kanon's answer.
+    /// Miku's answer.
     pub answer: String,
 }
 
@@ -53,7 +53,7 @@ fn pending() -> &'static Mutex<HashMap<u64, mpsc::Sender<String>>> {
 }
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Whether « OK Kanon » can run: the voice model and a Claude key.
+/// Whether « OK Miku » can run: the voice model and a Claude key.
 pub fn requirements_met() -> bool {
     speech::is_ready() && crate::secrets::present(crate::claude::KEY)
 }
@@ -86,7 +86,7 @@ pub fn sync(app: &AppHandle) {
     }
 }
 
-/// « OK Kanon » is listening (the voice model stays loaded).
+/// « OK Miku » is listening (the voice model stays loaded).
 pub fn is_listening() -> bool {
     RUNNING.lock().unwrap().is_some()
 }
@@ -104,11 +104,11 @@ fn show(app: &AppHandle, view: Option<VoiceView>) {
 }
 
 enum Mode {
-    /// Waiting for « OK Kanon ».
+    /// Waiting for « OK Miku ».
     Wake,
-    /// Heard « OK Kanon » alone: what comes next is the question.
+    /// Heard « OK Miku » alone: what comes next is the question.
     Command { text: String, until: Instant },
-    /// Kanon asked something back: an answer comes without « OK Kanon ».
+    /// Miku asked something back: an answer comes without « OK Miku ».
     FollowUp { until: Instant },
 }
 
@@ -130,7 +130,7 @@ fn run(app: AppHandle, stop: Arc<AtomicBool>) {
     let mut mode = Mode::Wake;
     let mut brain = brain::Brain::default();
     let mut hide_at: Option<Instant> = None;
-    // Silence for the question that follows « OK Kanon » (flow/hush.rs).
+    // Silence for the question that follows « OK Miku » (flow/hush.rs).
     let mut hush: Option<crate::flow::hush::Guard> = None;
     let quiet = || crate::flow::get(&app).is_some_and(|f| f.store.lock().unwrap().prefs.mute_others);
     while !stop.load(Ordering::Relaxed) {
@@ -160,7 +160,7 @@ fn run(app: AppHandle, stop: Arc<AtomicBool>) {
             }
             _ => {}
         }
-        // Dictation and calls have the microphone: Kanon doesn't listen meanwhile.
+        // Dictation and calls have the microphone: Miku doesn't listen meanwhile.
         if pill::dictating(&app) || crate::notes::is_recording(&app) {
             vad.reset();
             continue;
@@ -216,7 +216,7 @@ fn run(app: AppHandle, stop: Arc<AtomicBool>) {
             show(&app, Some(VoiceView { phase: "speaking".into(), heard: question.clone(), answer: answer.clone() }));
             speak(&app, &answer);
             vad.reset();
-            // Drop what the microphone heard of Kanon's own voice.
+            // Drop what the microphone heard of Miku's own voice.
             while rx.try_recv().is_ok() {}
             if answer.trim_end().ends_with('?') {
                 mode = Mode::FollowUp { until: Instant::now() + Duration::from_secs(8) };
