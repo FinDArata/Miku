@@ -19,6 +19,7 @@ mod integrations;
 mod island;
 mod local_chat;
 mod log;
+mod lyrics;
 mod mail;
 mod net;
 mod notes;
@@ -114,6 +115,8 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
         settings.phone_relay = current.phone_relay;
         settings.phone_relay_url = current.phone_relay_url.clone();
         settings.phone_chat_models = current.phone_chat_models.clone();
+        // The lyrics overlay's switch and spot are lyrics.rs's, same reason.
+        settings.lyrics = current.lyrics.clone();
         *current = settings;
         (current.clone(), screen_changed, autostart_changed, shortcuts_changed)
     };
@@ -951,6 +954,10 @@ pub fn run() {
             set_paused,
             shortcuts_status,
             shortcuts_suspend,
+            lyrics::lyrics_set_visible,
+            lyrics::lyrics_visible,
+            lyrics::lyrics_prefs,
+            lyrics::lyrics_fetch,
             phone_link::phone_link_status,
             phone_link::phone_link_set_enabled,
             phone_link::phone_link_pairing,
@@ -1072,6 +1079,8 @@ pub fn run() {
             desktop::setup(&handle);
             flow::setup(&handle);
             notes::setup(&handle);
+            // And for the floating lyrics overlay (lyrics.rs).
+            lyrics::setup(&handle);
 
             if let Some(win) = island::window(&handle) {
                 // Where Tauri takes the drop itself (Linux), its paths are the

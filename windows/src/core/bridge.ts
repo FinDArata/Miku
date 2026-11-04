@@ -457,6 +457,17 @@ export const Bridge = {
   /** Whether there is a Spotify to launch (Settings). */
   spotifyInstalled: () => call<boolean>("spotify_installed"),
 
+  // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
+  /** Settings' switch: shows or hides the overlay, and remembers the choice. */
+  lyricsSetVisible: (visible: boolean) => call<void>("lyrics_set_visible", { visible }),
+  /** Whether the overlay is on, for the page's first frame. */
+  lyricsVisible: () => call<boolean>("lyrics_visible"),
+  /** The overlay's two preferences, for a window that has just opened. */
+  lyricsPrefs: () => call<LyricsPrefs>("lyrics_prefs"),
+  /** A track's words from LRCLIB. `null`: none of it, or nobody answered. */
+  lyricsFetch: (artist: string, title: string, album: string, duration: number) =>
+    call<LyricsAnswer | null>("lyrics_fetch", { artist, title, album, duration }),
+
   // ── WhatsApp (src-tauri/src/whatsapp) ─────────────────────────────────────
   /** The island's copy, asked once at start (then the "whatsapp" event). Island only. */
   whatsappIsland: () => call<WaIslandView>("whatsapp_island"),
@@ -579,6 +590,22 @@ export interface DroppedFile {
   name: string;
   path: string;
   size: number;
+}
+
+/** What LRCLIB has for a track (src-tauri/src/lyrics.rs). */
+export interface LyricsAnswer {
+  /** The LRC text, timestamps and all. */
+  synced: string | null;
+  /** The words without timing. */
+  plain: string | null;
+  /** LRCLIB matched the track exactly; false for a search's best guess. */
+  exact: boolean;
+}
+
+/** The floating overlay's two preferences (Settings → General). */
+export interface LyricsPrefs {
+  romanize: boolean;
+  showOriginal: boolean;
 }
 
 export interface HookStatus {

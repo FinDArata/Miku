@@ -1122,8 +1122,38 @@ function generalSection(): HTMLElement {
     ),
     ...recapRows(),
     ...updateRows(toggle, version),
+    ...lyricsRows(toggle),
     languageRow(),
   );
+}
+
+/**
+ * Settings → General → Floating lyrics: the switch asks Rust (lyrics.rs), which
+ * owns the overlay's window and remembers whether it is on.
+ */
+function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTMLElement): HTMLElement[] {
+  const el = toggle(false, (v) => void Bridge.lyricsSetVisible(v));
+  void Bridge.lyricsVisible().then((shown) => {
+    el.classList.toggle("on", shown === true);
+    el.setAttribute("aria-pressed", String(shown === true));
+  });
+  return [
+    h("div", { class: "row" },
+      h("label", { text: t("Floating lyrics") }),
+      el,
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Romanise the lyrics") }),
+      toggle(settings.lyricsRomanize, (v) => { settings.lyricsRomanize = v; void save(); }),
+    ),
+    h("div", { class: "hint", text: t("Japanese, Korean and Chinese lines are shown in the letters you read: rōmaji, latin and pinyin.") }),
+    h("div", { class: "row" },
+      h("label", { text: t("Show the words as written") }),
+      toggle(settings.lyricsShowOriginal, (v) => { settings.lyricsShowOriginal = v; void save(); }),
+    ),
+    h("div", { class: "hint", text: t("Under a romanised line, the original is kept in smaller type.") }),
+    h("div", { class: "hint", text: t("A small window that follows what Spotify plays and shows the line being sung, with the ones around it. Drag it anywhere; it stays where you leave it.") }),
+  ];
 }
 
 /**

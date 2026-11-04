@@ -1,0 +1,163 @@
+/* The floating lyrics overlay (lyrics.html): three lines of a song on a black
+   card that can be dragged anywhere. Its own window is transparent and
+   always-on-top, so what shows is the card and nothing else. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  font: 600 15px system-ui, "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
+  color: #fff;
+}
+
+#lyrics {
+  position: absolute;
+  inset: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(8, 9, 12, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  /* The whole card is the drag handle (data-tauri-drag-region="deep"). */
+  cursor: grab;
+  overflow: hidden;
+}
+
+/* The hover adds the one thing the card is missing: it can be moved. */
+#lyrics:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+#lyrics::before {
+  /* The page's colour, breathing in the corner as the island's band does. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 120% at 50% -30%, rgba(29, 185, 84, 0.22), transparent 70%);
+}
+
+.row {
+  position: relative;
+  min-height: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* The line before and the one after: there, and quiet. */
+.row.past,
+.row.next {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.34);
+  /* A long line is cut, not wrapped: three rows are what fits. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* The line being sung: the brightest thing on screen, and the only big one. */
+.row.current {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 0 22px rgba(29, 185, 84, 0.28);
+  min-height: 34px;
+  max-width: 100%;
+}
+
+.row.current .line {
+  /* A line too long for the width gets smaller rather than clipped. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The words as written, under a romanised line. */
+.original {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A change of line: the new one slides up into place, the old one goes. */
+.row.current.enter .line {
+  animation: rise 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Nothing to sing: an advertisement, an instrumental, or no words on LRCLIB. */
+.note {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: center;
+  position: relative;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The title line, small, at the very top: the one thing that says which song. */
+#song {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* A row that is not there takes no space: an overlay with an ad keeps the
+   card the same size it always is. */
+.row:empty {
+  display: none;
+}

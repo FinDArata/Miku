@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "lyrics",
+  "description": "The floating lyrics overlay may be dragged by its own background (data-tauri-drag-region). Everything else goes through Kanon's own commands, as for every other window.",
+  "windows": ["lyrics"],
+  "permissions": ["core:default", "core:window:allow-start-dragging"]
+}

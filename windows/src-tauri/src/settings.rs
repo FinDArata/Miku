@@ -115,6 +115,15 @@ pub struct Settings {
     /// the screen wakes it). Kept as it comes, like `mochi_outfit`: the island
     /// reads what it doesn't know as "mochi".
     pub closed_island: String,
+    /// The floating lyrics overlay (lyrics.rs): whether it is on, and where the
+    /// user last left it. Owned by the Rust side, like `desktop_mochi`: a
+    /// webview changes it through lyrics_set_visible, never through save_settings.
+    pub lyrics: crate::lyrics::LyricsPref,
+    /// Japanese, Korean and Chinese lyric lines are shown romanised. On by
+    /// default: that is the point of the overlay.
+    pub lyrics_romanize: bool,
+    /// Under a romanised line, the words as they are written.
+    pub lyrics_show_original: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -186,6 +195,9 @@ impl Default for Settings {
             phone_relay_url: String::new(),
             show_clock: false,
             closed_island: "mochi".into(),
+            lyrics: crate::lyrics::LyricsPref::default(),
+            lyrics_romanize: true,
+            lyrics_show_original: true,
         }
     }
 }

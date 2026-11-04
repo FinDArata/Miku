@@ -413,9 +413,19 @@ fn now_ms() -> f64 {
         .unwrap_or(0.0)
 }
 
+/// The island, and the floating lyrics overlay (lyrics.rs) when it is up. The
+/// overlay is hidden most of the time: a label with no window takes the event
+/// nowhere, and the overlay asks for the state itself the first time it shows.
 fn emit_state(app: &AppHandle, state: &PlayerState) {
     use tauri::Emitter;
     let _ = app.emit_to(crate::island::WINDOW_LABEL, STATE_EVENT, state);
+    let _ = app.emit_to(crate::lyrics::WINDOW_LABEL, STATE_EVENT, state);
+}
+
+fn emit_artwork(app: &AppHandle, art: Artwork) {
+    use tauri::Emitter;
+    let _ = app.emit_to(crate::island::WINDOW_LABEL, ARTWORK_EVENT, art.clone());
+    let _ = app.emit_to(crate::lyrics::WINDOW_LABEL, ARTWORK_EVENT, art);
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
@@ -1042,11 +1052,7 @@ mod linux {
         {
             let mut art = ART.lock().unwrap();
             if let Some((_, data)) = art.entries.iter().find(|(u, _)| *u == url) {
-                let _ = app.emit_to(
-                    crate::island::WINDOW_LABEL,
-                    ARTWORK_EVENT,
-                    Artwork { art_url: url.clone(), data_url: data.clone() },
-                );
+                super::emit_artwork(app, Artwork { art_url: url.clone(), data_url: data.clone() });
                 return;
             }
             if art.loading.as_deref() == Some(url.as_str()) {
@@ -1111,7 +1117,7 @@ mod linux {
         // Only if it is still the track on screen.
         let current = SHARED.lock().unwrap().state.track.as_ref().and_then(|t| t.art_url.clone());
         if current.as_deref() == Some(url.as_str()) {
-            let _ = app.emit_to(crate::island::WINDOW_LABEL, ARTWORK_EVENT, Artwork { art_url: url, data_url: data });
+            super::emit_artwork(app, Artwork { art_url: url, data_url: data });
         }
     }
 
@@ -1688,7 +1694,6 @@ mod win {
     /// remote). Read once per track; Spotify sometimes adds the thumbnail a
     /// moment after the title, and the next event brings it then.
     fn artwork(app: &AppHandle, track: &Track, props: &MediaProperties) {
-        use tauri::Emitter;
         let Some(key) = track.art_url.clone() else { return };
         let cached = ART.lock().unwrap().iter().find(|(k, _)| *k == key).map(|(_, d)| d.clone());
         let data = match cached {
@@ -1703,7 +1708,7 @@ mod win {
                 data
             }
         };
-        let _ = app.emit_to(crate::island::WINDOW_LABEL, ARTWORK_EVENT, Artwork { art_url: key, data_url: data });
+        super::emit_artwork(app, Artwork { art_url: key, data_url: data });
     }
 
     fn thumbnail(props: &MediaProperties) -> Option<Vec<u8>> {

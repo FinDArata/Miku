@@ -109,6 +109,10 @@ export interface Settings {
   showClock: boolean;
   /** What the closed island shows at the top of the screen (see core/closed.ts). */
   closedIsland: string;
+  /** Japanese, Korean and Chinese lyric lines are shown romanised (the overlay). */
+  lyricsRomanize: boolean;
+  /** Under a romanised lyric line, the words as they are written. */
+  lyricsShowOriginal: boolean;
   absenceInterval: number;
   /** Declared pills next to the main one (at most 4), in the order they were added. */
   activeIntegrations: string[];
@@ -182,6 +186,8 @@ export const DEFAULT_SETTINGS: Settings = {
   alertsFromAllPills: false,
   showClock: false,
   closedIsland: "mochi",
+  lyricsRomanize: true,
+  lyricsShowOriginal: true,
   absenceInterval: 180,
   activeIntegrations: [
     "integration_resend", "integration_n8n", "integration_vercel", "integration_github",
