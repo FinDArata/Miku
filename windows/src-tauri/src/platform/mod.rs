@@ -62,7 +62,9 @@ struct Carry {
 
 /// The folder names the build before the rebrand used. They stay spelled the old
 /// way: they are where that build actually wrote, and nothing else can find it.
+#[cfg(windows)]
 const LEGACY_DIR_WINDOWS: &str = "Kanon";
+#[cfg(target_os = "linux")]
 const LEGACY_DIR_LINUX: &str = "kanon";
 
 impl Carry {
