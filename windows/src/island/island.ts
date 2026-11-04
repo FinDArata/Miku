@@ -406,16 +406,16 @@ export class Island {
     this.fsm.openOnHover = State.settings.openOnHover;
     this.fsm.onTransition = (from, to) => {
       // The greeting is over, however it ended: back to his desktop spot.
-      if (from === "kanon" && to !== "kanon") this.desktop.launch();
+      if (from === "miku" && to !== "miku") this.desktop.launch();
       switch (to) {
         case "hidden":
           this.setMode("hidden");
           break;
         case "petit":
-          if (from === "kanon") this.greeting.interrupt();
+          if (from === "miku") this.greeting.interrupt();
           else if (from === "hidden" && !this.silentReveal) Sound.play("peek");
           this.setMode("compact");
-          if (from === "kanon") State.view = State.defaultView();
+          if (from === "miku") State.view = State.defaultView();
           if (!this.wasInIsland) this.fsm.mouseLeft();
           break;
         case "home":
@@ -425,7 +425,7 @@ export class Island {
           // say so on the next open, without polling while the island is shut.
           void refreshHookPills();
           break;
-        case "kanon":
+        case "miku":
           this.expand("greeting");
           this.greeting.start();
           break;
@@ -1072,7 +1072,7 @@ export class Island {
     const wasIn = this.wasInIsland;
     this.wasInIsland = inIsland;
     if (inIsland && !wasIn) {
-      if (this.fsm.state === "kanon") this.greeting.hover();
+      if (this.fsm.state === "miku") this.greeting.hover();
       this.fsm.mouseEntered();
     }
     if (!inIsland && wasIn) {

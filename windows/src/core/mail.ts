@@ -132,7 +132,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[kanon] ${cmd} failed`, err);
+    console.error(`[miku] ${cmd} failed`, err);
     return null;
   }
 }
@@ -222,9 +222,9 @@ export function reasonLine(r: MailReason): string {
   }
 }
 
-/** The answer without its ```kanon-mail block, and whether it held one (mail/plan.rs). */
+/** The answer without its ```miku-mail block, and whether it held one (mail/plan.rs). */
 export function splitPlan(text: string): { prose: string; plan: boolean } {
-  const fence = "```kanon-mail";
+  const fence = "```miku-mail";
   const start = text.indexOf(fence);
   if (start < 0) return { prose: text, plan: false };
   const after = text.slice(start + fence.length);

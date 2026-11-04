@@ -549,7 +549,7 @@ fn set_phase(app: &AppHandle, id: &str, phase: Phase) {
 }
 
 fn work_dir() -> std::path::PathBuf {
-    std::env::temp_dir().join("kanon-mail-plans")
+    std::env::temp_dir().join("miku-mail-plans")
 }
 
 /// The card of a chat answer holding a plan: prepared once, then its state.

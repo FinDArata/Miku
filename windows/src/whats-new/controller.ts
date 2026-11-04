@@ -26,7 +26,7 @@ export interface WhatsNewHost {
 }
 
 /** The last version this install saw. A convenience of this install, like the plan usage. */
-const LAST_KEY = "kanon.whatsNew.lastVersion";
+const LAST_KEY = "miku.whatsNew.lastVersion";
 
 /** After the greeting, so the two never meet; then every few seconds while the island is busy. */
 const FIRST_DELAY_MS = 3000;

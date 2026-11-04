@@ -39,7 +39,7 @@ pub fn home_dir() -> PathBuf {
 
 // ── Carrying an old install over ─────────────────────────────────────────────
 //
-// This app was called Miku before it was Miku. `config_dir()` and `local_dir()`
+// This app was called Kanon before it was Miku. `config_dir()` and `local_dir()`
 // now point at the new folders, so without this an update would look like a
 // fresh install: no settings, an empty recap history, and an inbox and log gone.
 //
@@ -59,6 +59,11 @@ struct Carry {
     from: PathBuf,
     to: PathBuf,
 }
+
+/// The folder names the build before the rebrand used. They stay spelled the old
+/// way: they are where that build actually wrote, and nothing else can find it.
+const LEGACY_DIR_WINDOWS: &str = "Kanon";
+const LEGACY_DIR_LINUX: &str = "kanon";
 
 impl Carry {
     fn run(&self) {
@@ -87,9 +92,11 @@ impl Carry {
 
 /// `miku-hook` / `miku-hook.exe`: Miku stages its own relay, so these are not
 /// carried over.
+/// The relay of the build before the rebrand: Miku stages its own, so it is not
+/// carried over. Spelled the old way on purpose — that is the file to skip.
 fn is_legacy_relay(name: &std::ffi::OsStr) -> bool {
     let name = name.to_string_lossy();
-    name == "miku-hook" || name == "miku-hook.exe"
+    name == "kanon-hook" || name == "kanon-hook.exe"
 }
 
 /// Carries a Miku install's files into Miku's folders, once per launch. Cheap
@@ -111,7 +118,8 @@ fn legacy_dirs() -> Vec<(PathBuf, PathBuf)> {
 }
 
 /// The folder this app used before the rebrand, computed by the same rule as the
-/// current one so the two always sit side by side.
+/// current one so the two always sit side by side. The names are the old ones on
+/// purpose: they are where the old build actually wrote (see LEGACY_* below).
 fn legacy_dir(win_var: &str, xdg_var: &str, xdg_fallback: &str) -> PathBuf {
     #[cfg(windows)]
     {
@@ -119,7 +127,7 @@ fn legacy_dir(win_var: &str, xdg_var: &str, xdg_fallback: &str) -> PathBuf {
         std::env::var_os(win_var)
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("Kanon")
+            .join(LEGACY_DIR_WINDOWS)
     }
     #[cfg(target_os = "linux")]
     {
@@ -130,7 +138,7 @@ fn legacy_dir(win_var: &str, xdg_var: &str, xdg_fallback: &str) -> PathBuf {
             .map(PathBuf::from)
             .filter(|p| p.is_absolute())
             .unwrap_or_else(|| home_dir().join(xdg_fallback))
-            .join("kanon")
+            .join(LEGACY_DIR_LINUX)
     }
 }
 
@@ -157,7 +165,8 @@ mod tests {
         let (from, to) = (dir.join("old"), dir.join("new"));
         write(&from.join("settings.json"), "{}");
         write(&from.join("Flow/notes.json"), "[]");
-        write(&from.join("bin/miku-hook.exe"), "relay");
+        // The relay the old build staged, under its own name.
+        write(&from.join("bin/kanon-hook.exe"), "relay");
 
         Carry { from: from.clone(), to: to.clone() }.run();
 
@@ -166,8 +175,8 @@ mod tests {
         // The old copy is untouched: going back to an older build still works.
         assert!(from.join("settings.json").exists());
         assert!(from.join("Flow/notes.json").exists());
-        // The relay is not carried: Miku stages its own.
-        assert!(!to.join("bin/miku-hook.exe").exists());
+        // The old relay is not carried: Miku stages its own on next launch.
+        assert!(!to.join("bin/kanon-hook.exe").exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

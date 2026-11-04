@@ -155,7 +155,7 @@ pub fn listen(codes: &[String], tx: Sender<(KeyEvent, Instant)>) -> Result<KeyLi
     let stop = Arc::new(AtomicBool::new(false));
     let stop_thread = stop.clone();
     let thread = std::thread::Builder::new()
-        .name("kanon-flow-keys".into())
+        .name("miku-flow-keys".into())
         .spawn(move || run(conn, keymap, members, tx, stop_thread))
         .map_err(|e| e.to_string())?;
     Ok(KeyListener { stop, thread: Some(thread) })

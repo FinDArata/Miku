@@ -1,7 +1,7 @@
 // Island open/close FSM — port of IslandStateMachine.swift.
 // No DOM, no Tauri: it only reports transitions.
 
-export type FsmState = "hidden" | "petit" | "home" | "kanon";
+export type FsmState = "hidden" | "petit" | "home" | "miku";
 
 export class IslandStateMachine {
   state: FsmState = "hidden";
@@ -61,7 +61,7 @@ export class IslandStateMachine {
 
   launch() {
     this.cancelTimers();
-    this.transition("kanon");
+    this.transition("miku");
   }
 
   mouseEntered() {
@@ -81,7 +81,7 @@ export class IslandStateMachine {
       case "home":
         this.clear("homeCollapse");
         break;
-      case "kanon":
+      case "miku":
         this.scheduleGreetCollapse(this.greetHoverCollapseDelay);
         break;
     }
@@ -98,7 +98,7 @@ export class IslandStateMachine {
       case "home":
         this.scheduleHomeCollapse();
         break;
-      case "kanon":
+      case "miku":
         this.clear("greetCollapse");
         this.transition("petit");
         break;
@@ -114,7 +114,7 @@ export class IslandStateMachine {
 
   /** Greeting animation finished (T.end). Doesn't override a running hover timer. */
   greetComplete() {
-    if (this.state !== "kanon") return;
+    if (this.state !== "miku") return;
     if (this.greetCollapse == null) this.scheduleGreetCollapse(this.greetAutoCollapseDelay);
   }
 
@@ -201,7 +201,7 @@ export class IslandStateMachine {
     this.clear("greetCollapse");
     this.greetCollapse = window.setTimeout(() => {
       this.greetCollapse = null;
-      if (this.state === "kanon") this.transition("petit");
+      if (this.state === "miku") this.transition("petit");
     }, delay * 1000);
   }
 

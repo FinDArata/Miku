@@ -9,8 +9,8 @@
 import { Bridge } from "../core/bridge";
 import { cacheKey, mainArtist, readSong, type Song } from "./lrc";
 
-const KEY = "kanon.lyrics.cache";
-const MISS_KEY = "kanon.lyrics.misses";
+const KEY = "miku.lyrics.cache";
+const MISS_KEY = "miku.lyrics.misses";
 /** Songs kept: about a long album, which is more than a night of listening. */
 const MAX_SONGS = 200;
 const MAX_MISSES = 300;

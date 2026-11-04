@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn turning_sorting_on_starts_from_now_and_files_survive() {
-        let dir = std::env::temp_dir().join(format!("kanon-mail-store-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("miku-mail-store-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = Store::load(dir.clone());
         s.set_settings(Settings { auto_sort: true, ..Default::default() }, 1234);

@@ -19,7 +19,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[kanon] ${cmd} failed`, err);
+    console.error(`[miku] ${cmd} failed`, err);
     return null;
   }
 }
@@ -545,7 +545,7 @@ export async function emitToWindow(label: string, event: string, payload?: unkno
   try {
     await emitTo(label, event, payload);
   } catch (err) {
-    console.error(`[kanon] emit ${event} failed`, err);
+    console.error(`[miku] emit ${event} failed`, err);
   }
 }
 
@@ -650,7 +650,7 @@ export interface HookPreview {
 
 /** Same as `call`, but surfaces the error so the UI can show what went wrong. */
 async function callOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (!IS_TAURI) throw new Error("not running inside Kanon");
+  if (!IS_TAURI) throw new Error("not running inside Miku");
   return invoke<T>(cmd, args);
 }
 
@@ -714,7 +714,7 @@ export async function onDragDrop(handler: (e: DragDropPayload) => void) {
       handler({ type: "drop", paths: [] });
       return;
     }
-    webview.postMessageWithAdditionalObjects("kanon-file-drop", files);
+    webview.postMessageWithAdditionalObjects("miku-file-drop", files);
   };
 
   window.addEventListener("dragenter", onEnter);

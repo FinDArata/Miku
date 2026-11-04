@@ -32,7 +32,7 @@ const T = {
   get longestSession() { return t("Longest session"); },
   get approved() { return t("Approved"); },
   get denied() { return t("Denied"); },
-  footer: "Kanon · github.com/FinDArata/kanon",
+  footer: "Miku · github.com/FinDArata/kanon",
 };
 
 /**
@@ -182,7 +182,7 @@ export function renderShareImage(
   const MOCHI = 220;
   const MOCHI_DRAW = 320;
   const blockH =
-    MOCHI + 20 + 62 + 6 + 36 + 14 + 29 + 80 + // Mochi, Kanon, title, range
+    MOCHI + 20 + 62 + 6 + 36 + 14 + 29 + 80 + // Miku, title, range
     110 + 6 + 26 + // time + caption
     56 + 94 + // stat row
     (hasLines ? 24 + 34 : 0) +

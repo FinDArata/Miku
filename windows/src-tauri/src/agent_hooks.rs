@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use serde_json::Value;
 
 
-/// Port of `kanonHooksPresent(inSettings:)` (ClaudeHookDetection.swift): true
+/// Port of `mikuHooksPresent(inSettings:)` (ClaudeHookDetection.swift): true
 /// when a parsed `~/.claude/settings.json` routes Claude Code's SessionStart
 /// events to this app. The command text is what tells: this build's relay is
 /// `miku-hook`, an install from before the rebrand still runs `kanon-hook`, and

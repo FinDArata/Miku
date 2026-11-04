@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn ingest_copies_and_never_overwrites() {
-        let tmp = std::env::temp_dir().join(format!("kanon-test-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("miku-test-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         let source = tmp.join("note.txt");
         std::fs::write(&source, b"hello").unwrap();
@@ -186,7 +186,7 @@ mod drop_tests {
     // One test: the list is process-wide and tests run in parallel.
     #[test]
     fn only_a_dropped_path_is_ingested_once_and_the_list_stays_bounded() {
-        let p = "/tmp/kanon-test-not-dropped.txt".to_string();
+        let p = "/tmp/miku-test-not-dropped.txt".to_string();
         assert!(ingest(&p).is_err(), "never dropped");
         allow_dropped([p.clone()]);
         assert!(take_dropped(&p));

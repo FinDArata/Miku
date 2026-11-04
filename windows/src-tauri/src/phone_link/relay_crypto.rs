@@ -144,7 +144,7 @@ pub fn k_join(k: &PairingKey) -> Secret32 {
     derive32(k, &[], "join")
 }
 
-/// The join proof for the `kanon.join.<…>` sub-protocol.
+/// The join proof for the `miku.join.<…>` sub-protocol.
 pub fn join_proof(k: &PairingKey) -> String {
     base64url_encode(k_join(k).as_bytes())
 }

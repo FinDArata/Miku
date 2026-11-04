@@ -67,7 +67,7 @@ pub fn sync(app: &AppHandle) {
             let stop = Arc::new(AtomicBool::new(false));
             let app2 = app.clone();
             let stop2 = stop.clone();
-            std::thread::Builder::new().name("kanon-voice".into()).spawn(move || run(app2, stop2)).ok();
+            std::thread::Builder::new().name("miku-voice".into()).spawn(move || run(app2, stop2)).ok();
             *running = Some(Running { stop });
             speech::preload();
             crate::log::line("voice: « OK Kanon » listening");

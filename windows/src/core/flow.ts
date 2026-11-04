@@ -10,13 +10,13 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[kanon] ${cmd} failed`, err);
+    console.error(`[miku] ${cmd} failed`, err);
     return null;
   }
 }
 
 async function callOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (!IS_TAURI) throw new Error("not running inside Kanon");
+  if (!IS_TAURI) throw new Error("not running inside Miku");
   return invoke<T>(cmd, args);
 }
 

@@ -90,7 +90,7 @@ fn variant<T: RefArg + 'static>(v: T) -> Variant<Box<dyn RefArg>> {
 /// may have a dialog to answer). The results, or why there are none.
 fn request(conn: &Connection, method: &str, args: impl FnOnce(&str) -> dbus::Message, tokens: &mut u32) -> Result<PropMap, String> {
     *tokens += 1;
-    let token = format!("kanonpaste{}_{}", std::process::id(), tokens);
+    let token = format!("mikupaste{}_{}", std::process::id(), tokens);
     let sender = conn.unique_name().to_string();
     let path = portal::request_path(&sender, &token);
     let answer: Arc<Mutex<Option<Result<PropMap, u32>>>> = Arc::new(Mutex::new(None));
@@ -122,7 +122,7 @@ fn open() -> Result<Remote, String> {
     let mut tokens = 0;
     let call = |member: &str| dbus::Message::new_method_call(DEST, OBJECT, IFACE, member).map_err(|e| e.to_string());
 
-    let session_token = format!("kanonpastes{}", std::process::id());
+    let session_token = format!("mikupastes{}", std::process::id());
     let create = call("CreateSession")?;
     let results = request(&conn, "CreateSession", |token| {
         let mut options: PropMap = HashMap::new();

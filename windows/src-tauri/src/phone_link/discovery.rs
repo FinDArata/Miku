@@ -1,5 +1,5 @@
 // Announces this computer on the local network while the phone link is on, so the phone finds it by itself when
-// its address changes (another Wi-Fi, a hotspot). mDNS / DNS-SD, service type `_kanon._tcp`, protocol: docs/ANDROID_LINK.md.
+// its address changes (another Wi-Fi, a hotspot). mDNS / DNS-SD, service type `_miku._tcp`, protocol: docs/ANDROID_LINK.md.
 //
 // What is announced: the computer's name (the instance name), the port, and a TXT record with the protocol version and a
 // short fingerprint id (the first 16 hex characters of the certificate's SHA-256, which is public by nature: anyone who
@@ -12,8 +12,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-/// The DNS-SD service type. The phone browses for `_kanon._tcp`.
-pub const SERVICE_TYPE: &str = "_kanon._tcp.local.";
+/// The DNS-SD service type. The phone browses for `_miku._tcp`.
+pub const SERVICE_TYPE: &str = "_miku._tcp.local.";
 /// How many hex characters of the certificate fingerprint go into the TXT record.
 pub const FP_ID_LEN: usize = 16;
 /// The protocol version in the TXT record (docs/ANDROID_LINK.md stays at v=1).

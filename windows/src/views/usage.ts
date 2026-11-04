@@ -60,7 +60,7 @@ export function closePlanCard(): void {
 
 // ── Claude numbers ────────────────────────────────────────────────────────────
 
-const STORE_KEY = "kanon.claudePlanUsage";
+const STORE_KEY = "miku.claudePlanUsage";
 
 /** New numbers from the status line; kept so they survive a restart, as on the Mac. */
 export function setClaudePlanUsage(usage: PlanUsage): void {

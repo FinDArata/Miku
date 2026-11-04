@@ -17,7 +17,7 @@ import { updateWaiting, type Later } from "../whats-new/whats-new";
  * whether Mochi stays blue and a click opens on the update. A per-install
  * convenience, so the webview's storage is enough: lost, Mochi is blue again.
  */
-const LATER_KEY = "kanon.update.later";
+const LATER_KEY = "miku.update.later";
 
 function readLater(): Later | null {
   try {

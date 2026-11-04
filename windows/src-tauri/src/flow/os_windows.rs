@@ -200,7 +200,7 @@ pub fn listen(codes: &[String], tx: Sender<(KeyEvent, Instant)>) -> Result<KeyLi
     *SINK.lock().unwrap() = Some(tx);
     let (ready_tx, ready_rx) = std::sync::mpsc::channel::<Result<u32, String>>();
     let thread = std::thread::Builder::new()
-        .name("kanon-flow-keys".into())
+        .name("miku-flow-keys".into())
         .spawn(move || unsafe {
             let module = GetModuleHandleW(None).ok();
             let handle = match SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook), module.map(Into::into), 0) {
