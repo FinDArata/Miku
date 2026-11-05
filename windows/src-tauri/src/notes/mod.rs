@@ -744,10 +744,10 @@ pub fn notes_export(taker: State<Arc<NoteTaker>>, id: String) -> Result<String, 
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ");
-    let mut path = dir.join(format!("{}.md", if safe.is_empty() { "Kanon notes".to_string() } else { safe.clone() }));
+    let mut path = dir.join(format!("{}.md", if safe.is_empty() { "Miku notes".to_string() } else { safe.clone() }));
     let mut n = 2;
     while path.exists() {
-        path = dir.join(format!("{} ({n}).md", if safe.is_empty() { "Kanon notes" } else { &safe }));
+        path = dir.join(format!("{} ({n}).md", if safe.is_empty() { "Miku notes" } else { &safe }));
         n += 1;
     }
     std::fs::write(&path, markdown(&note)).map_err(|e| e.to_string())?;

@@ -24,8 +24,10 @@ export const CLOSED_H = 24;
 export const CLOSED_MIN_W = 80;
 /** Mochi in it, as on that Mac: centred, a little smaller than the island is tall. */
 export const CLOSED_BOT_D = 18;
-/** Widest: a long song title is cut, the island doesn't run across the screen. */
-export const CLOSED_MAX_W = 280;
+/** Widest: a long song title is cut, the island doesn't run across the screen.
+ *  Kept narrow: the closed island rests over whatever the user is reading, so
+ *  it stays a small thing (the Mac's 280 was for a screen with a notch). */
+export const CLOSED_MAX_W = 160;
 /** Room on each side of the text. */
 export const CLOSED_PAD = 16;
 

@@ -70,6 +70,47 @@ body {
 
 /* ── Island ─────────────────────────────────────────────────────────────── */
 
+#lyrics-pill {
+  position: absolute;
+  inset: 6px 10px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(14, 15, 17, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: default;
+}
+
+#lyrics-pill[hidden] { display: none; }
+#lyrics-pill .lyrics-pill-title {
+  position: absolute;
+  top: 3px;
+  left: 14px;
+  right: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  color: var(--dim-3);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+#lyrics-pill .lyrics-pill-row {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.15;
+}
+#lyrics-pill .past, #lyrics-pill .next { color: var(--dim-3); font-size: 11px; }
+#lyrics-pill .current { color: var(--ink); font-size: 16px; font-weight: 700; }
+
 #island {
   position: absolute;
   top: 0;
@@ -1756,6 +1797,63 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 5px;
   padding-top: 8px;
   padding-right: 12px;
+}
+
+/* The System pill's gauges: a label, its number, and a bar that fills to it.
+   The colour comes from the value (views/system.ts's heatColor) rather than
+   from the stylesheet, so a number crossing a threshold shows at once. */
+.sys-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 8px;
+  padding-right: 12px;
+}
+
+.sys-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sys-gauge {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sys-label {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+}
+
+.sys-value {
+  margin-left: auto;
+  font: 600 12px var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-detail {
+  font: 400 10px var(--font);
+  color: var(--dim-3);
+  white-space: nowrap;
+}
+
+.sys-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: #ffffff14;
+  overflow: hidden;
+}
+
+.sys-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  /* A percentage that moved 3% reads as a bar that moved, not one that
+     flickered: the fill eases instead of jumping. */
+  transition: width 600ms ease, background 600ms ease;
 }
 
 .int-stat {

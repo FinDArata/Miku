@@ -92,7 +92,7 @@ pub fn description(id: &str) -> &'static str {
         "muteToggle" => n_("Mute or unmute Miku"),
         "desktopToggle" => n_("Send Miku to the desktop"),
         "wardrobeToggle" => n_("Open the wardrobe"),
-        _ => "Kanon",
+        _ => "Miku",
     }
 }
 
@@ -678,7 +678,7 @@ mod wayland {
         #[test]
         fn every_action_has_a_description() {
             for def in ACTIONS {
-                assert_ne!(description(def.id), "Kanon", "{}", def.id);
+                assert_ne!(description(def.id), "Miku", "{}", def.id);
             }
         }
     }

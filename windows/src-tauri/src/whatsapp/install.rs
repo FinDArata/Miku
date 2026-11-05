@@ -53,7 +53,7 @@ fn github_client(timeout: Duration) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(15))
         .timeout(timeout)
-        .user_agent("Kanon")
+        .user_agent("Miku")
         .redirect(policy)
         .build()
         .map_err(|_| fail("downloadFailed"))

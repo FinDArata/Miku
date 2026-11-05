@@ -26,6 +26,7 @@ import { buildWhatsNew } from "./whatsnew";
 import { buildSpotifyCard, buildSpotifyPill, type SpotifyPillHost } from "./spotify";
 import { SPOTIFY_ID } from "../core/spotify";
 import { buildWhatsAppCard } from "./whatsapp";
+import { buildSystemCard, SYSTEM_ID } from "./system";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
@@ -221,6 +222,9 @@ function buildOverview(actions: ViewActions): ViewHost {
   // WhatsApp's card too: its reply field keeps the draft and the keyboard while messages arrive.
   // Mail's card too (classic Outlook): the search field keeps its text and the keyboard.
   const mailCard = buildMailCard({ keyboard: (on) => actions.keyboard(on) });
+  // The System pill's card: its numbers change every three seconds, so it is
+  // kept and updated in place rather than rebuilt.
+  const systemCard = buildSystemCard();
   const whatsappCard = buildWhatsAppCard({
     openSettings: () => actions.openSettingsWindow(),
     keyboard: (on) => actions.keyboard(on),
@@ -235,7 +239,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "system" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
@@ -392,6 +396,16 @@ function buildOverview(actions: ViewActions): ViewHost {
           cardKey = "";
         }
         spotifyCard.sync();
+      } else if (task && task.id === SYSTEM_ID) {
+        // The gauges are redrawn in place: the card's own copy of the reading
+        // is what changed, three seconds at a time.
+        if (mode !== "system") {
+          clear(leftBody);
+          leftBody.append(systemCard.el);
+          mode = "system";
+          cardKey = "";
+        }
+        systemCard.sync();
       } else if (task && task.id === MAIL_ID) {
         if (mode !== "mail") {
           clear(leftBody);

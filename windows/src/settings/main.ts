@@ -878,8 +878,11 @@ const INTEGRATIONS: IntegrationDef[] = [
     fields: [{ key: "notion-api-key", label: N_("Integration token"), placeholder: "ntn_…", secret: true }] },
   { id: "integration_calcom", name: "Cal.com", color: "#C9956A",
     fields: [{ key: "calcom-api-key", label: N_("API key"), placeholder: "cal_…", secret: true }] },
-  // Nothing to enter: Spotify is read from the OS (src-tauri/src/spotify.rs).
-  { id: "integration_spotify", name: "Spotify", color: "#1DB954", fields: [] },
+  // Nothing to enter: the player is read from the OS (src-tauri/src/spotify.rs).
+  { id: "integration_spotify", name: t("Music"), color: "#1DB954", fields: [] },
+  // Nothing to enter either: CPU, memory and the battery are read on this
+  // computer (src-tauri/src/system_health.rs).
+  { id: "integration_system", name: t("System"), color: "#38BDF8", fields: [] },
 ];
 
 const MAX_ACTIVE = MAX_DECLARED;
@@ -1129,7 +1132,9 @@ function generalSection(): HTMLElement {
 
 /**
  * Settings → General → Floating lyrics: the switch asks Rust (lyrics.rs), which
- * owns the overlay's window and remembers whether it is on.
+ * owns the overlay's window and remembers whether it is on. The card's size,
+ * the words' size and colour, and how see-through it is live here, in the
+ * settings every window already reads.
  */
 function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTMLElement): HTMLElement[] {
   const el = toggle(false, (v) => void Bridge.lyricsSetVisible(v));
@@ -1137,14 +1142,70 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
     el.classList.toggle("on", shown === true);
     el.setAttribute("aria-pressed", String(shown === true));
   });
+
+  /** A labelled slider that writes `apply` on every move, so the card follows. */
+  const slider = (
+    label: string,
+    min: number,
+    max: number,
+    step: number,
+    read: () => number,
+    write: (v: number) => void,
+  ): HTMLElement => {
+    const input = h("input", {
+      type: "range",
+      min: String(min),
+      max: String(max),
+      step: String(step),
+      value: String(read()),
+      class: "lyrics-slider",
+    }) as HTMLInputElement;
+    input.addEventListener("input", () => {
+      write(Number(input.value));
+      void save();
+    });
+    return h("div", { class: "row" }, h("label", { text: label }), input);
+  };
+
+  /** A colour well: the browser's own picker, stored as #rrggbb. */
+  const colour = (label: string, read: () => string, write: (v: string) => void): HTMLElement => {
+    const input = h("input", { type: "color", value: read(), class: "lyrics-colour" }) as HTMLInputElement;
+    input.addEventListener("input", () => {
+      write(input.value);
+      void save();
+    });
+    return h("div", { class: "row" }, h("label", { text: label }), input);
+  };
+
+  const placement = h("select", {}) as HTMLSelectElement;
+  placement.append(
+    h("option", { value: "island", text: t("In the top pill") }),
+    h("option", { value: "floating", text: t("Floating") }),
+  );
+  placement.value = settings.lyrics?.placement ?? settings.lyricsPlacement ?? "island";
+  placement.addEventListener("change", () => {
+    const value = placement.value === "floating" ? "floating" : "island";
+    settings.lyricsPlacement = value;
+    if (settings.lyrics) settings.lyrics.placement = value;
+    void Bridge.lyricsSetPlacement(value);
+  });
+
   return [
     h("div", { class: "row" },
       h("label", { text: t("Floating lyrics") }),
       el,
     ),
     h("div", { class: "row" },
+      h("label", { text: t("Placement") }),
+      placement,
+    ),
+    h("div", { class: "row" },
       h("label", { text: t("Romanise the lyrics") }),
       toggle(settings.lyricsRomanize, (v) => { settings.lyricsRomanize = v; void save(); }),
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Show lyrics for videos too") }),
+      toggle(settings.lyricsVideos, (v) => { settings.lyricsVideos = v; void save(); }),
     ),
     h("div", { class: "hint", text: t("Japanese, Korean and Chinese lines are shown in the letters you read: rōmaji, latin and pinyin.") }),
     h("div", { class: "row" },
@@ -1152,6 +1213,20 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
       toggle(settings.lyricsShowOriginal, (v) => { settings.lyricsShowOriginal = v; void save(); }),
     ),
     h("div", { class: "hint", text: t("Under a romanised line, the original is kept in smaller type.") }),
+    h("div", { class: "subhead", text: t("The card") }),
+    slider(t("Opacity"), 0, 1, 0.05, () => settings.lyricsOpacity, (v) => { settings.lyricsOpacity = v; }),
+    h("div", { class: "hint", text: t("Lower lets the wallpaper show through the card; the words keep their shadow.") }),
+    slider(t("Text size"), 10, 40, 1, () => settings.lyricsFontSize, (v) => { settings.lyricsFontSize = v; }),
+    slider(t("Width"), 200, 900, 10, () => settings.lyricsWidth, (v) => {
+      settings.lyricsWidth = v;
+      void Bridge.lyricsResize(settings.lyricsWidth, settings.lyricsHeight);
+    }),
+    slider(t("Height"), 90, 400, 10, () => settings.lyricsHeight, (v) => {
+      settings.lyricsHeight = v;
+      void Bridge.lyricsResize(settings.lyricsWidth, settings.lyricsHeight);
+    }),
+    colour(t("Text colour"), () => settings.lyricsTextColor, (v) => { settings.lyricsTextColor = v; }),
+    colour(t("Card colour"), () => settings.lyricsBackground, (v) => { settings.lyricsBackground = v; }),
     h("div", { class: "hint", text: t("A small window that follows what Spotify plays and shows the line being sung, with the ones around it. Drag it anywhere; it stays where you leave it.") }),
   ];
 }

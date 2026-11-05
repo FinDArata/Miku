@@ -126,8 +126,20 @@ pub struct Settings {
     /// Japanese, Korean and Chinese lyric lines are shown romanised. On by
     /// default: that is the point of the overlay.
     pub lyrics_romanize: bool,
+    /// Let ordinary browser videos participate in lyric detection. Off by default.
+    pub lyrics_videos: bool,
     /// Under a romanised line, the words as they are written.
     pub lyrics_show_original: bool,
+    /// The overlay card's see-through amount, 0…1.
+    pub lyrics_opacity: f64,
+    /// The sung line's size in px; the lines around it scale with it.
+    pub lyrics_font_size: f64,
+    /// The card's size in px.
+    pub lyrics_width: f64,
+    pub lyrics_height: f64,
+    /// `#RRGGBB` for the words, and for the card behind them.
+    pub lyrics_text_color: String,
+    pub lyrics_background: String,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -202,7 +214,14 @@ impl Default for Settings {
             closed_island: "mochi".into(),
             lyrics: crate::lyrics::LyricsPref::default(),
             lyrics_romanize: true,
+            lyrics_videos: false,
             lyrics_show_original: true,
+            lyrics_opacity: 0.25,
+            lyrics_font_size: 16.0,
+            lyrics_width: 420.0,
+            lyrics_height: 160.0,
+            lyrics_text_color: "#ffffff".into(),
+            lyrics_background: "#08090c".into(),
         }
     }
 }
@@ -225,6 +244,34 @@ pub fn save(settings: &Settings) -> std::io::Result<()> {
     let dir = config_dir();
     crate::platform::ensure_private_dir(&dir)?;
     save_to(&settings_path(), settings)
+}
+
+/// Turns the Music pill on for the lyrics overlay, which draws what that pill's
+/// events carry. Idempotent: declaring it twice changes nothing, so opening the
+/// overlay again is free.
+pub fn declare_music_pill(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let pill = crate::spotify::PILL_ID.to_string();
+    let (changed, snapshot) = {
+        let Some(shared) = app.try_state::<crate::Shared>() else { return };
+        let mut s = shared.settings.lock().unwrap();
+        if s.active_integrations.iter().any(|id| *id == pill) {
+            return;
+        }
+        s.active_integrations.push(pill);
+        (true, s.clone())
+    };
+    if changed {
+        if let Err(err) = save(&snapshot) {
+            crate::log::line(format!("could not save settings: {err}"));
+        }
+        let order = snapshot.active_integrations.clone();
+        crate::spotify::sync(app, &order);
+        crate::integrations::settings_saved(app, &order);
+        // Settings' own copy is now behind: without this, the next unrelated
+        // save would write the old list back and undeclare the Music pill.
+        let _ = tauri::Emitter::emit(app, "settings-changed", &snapshot);
+    }
 }
 
 /// How many copies `set_aside` can make within one second before it gives up.
@@ -506,9 +553,16 @@ mod tests {
   "phoneRelayUrl": "wss://relay.example.workers.dev",
   "showClock": true,
   "closedIsland": "music",
-  "lyrics": { "shown": false, "spot": null },
+  "lyrics": { "shown": false, "placement": "island", "spot": null },
   "lyricsRomanize": true,
-  "lyricsShowOriginal": true
+  "lyricsVideos": false,
+  "lyricsShowOriginal": true,
+  "lyricsOpacity": 0.25,
+  "lyricsFontSize": 16.0,
+  "lyricsWidth": 420.0,
+  "lyricsHeight": 160.0,
+  "lyricsTextColor": "#ffffff",
+  "lyricsBackground": "#08090c"
 }"##;
 
     fn custom() -> Value {
@@ -1034,7 +1088,14 @@ mod tests {
                 "closedIsland",
                 "lyrics",
                 "lyricsRomanize",
+                "lyricsVideos",
                 "lyricsShowOriginal",
+                "lyricsOpacity",
+                "lyricsFontSize",
+                "lyricsWidth",
+                "lyricsHeight",
+                "lyricsTextColor",
+                "lyricsBackground",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

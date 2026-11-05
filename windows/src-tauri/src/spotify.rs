@@ -98,6 +98,10 @@ pub struct Track {
     /// Seconds.
     pub duration: f64,
     pub art_url: Option<String>,
+    /// The program that publishes the track: Windows' app user model id
+    /// ("Spotify.exe", "MSEdge", "chrome.exe") or the MPRIS bus suffix
+    /// ("spotify", "firefox"). The overlay tells a song from a video by it.
+    pub source: Option<String>,
     /// mpris:trackid as Spotify gave it, for SetPosition.
     #[serde(skip)]
     pub object_path: String,
@@ -163,6 +167,15 @@ impl PlayerState {
     fn anchor(&mut self, position: f64, now_ms: f64) {
         self.position = position.max(0.0);
         self.position_at = now_ms;
+    }
+
+    /// Stamps the loaded track with the program that published it. The metadata
+    /// itself never says, and the reader that does is a level above (the MPRIS
+    /// bus name, Windows' app user model id).
+    pub fn set_source(&mut self, source: &str) {
+        if let Some(track) = self.track.as_mut() {
+            track.source = Some(source.to_string());
+        }
     }
 
     /// Spotify is gone, or the pill is off: nothing is playing.
@@ -274,8 +287,19 @@ pub fn parse_metadata(map: &[(String, Value)]) -> Option<Track> {
         album: find(map, "xesam:album").map(Value::text).unwrap_or_default(),
         duration,
         art_url,
+        // Filled in by the reader with the bus name it came from: parse_metadata
+        // sees the metadata alone.
+        source: None,
         object_path,
     })
+}
+
+/// "org.mpris.MediaPlayer2.spotify" → "spotify"; the player's own name, which
+/// is what tells YouTube Music in a browser from Firefox playing a video.
+pub fn bus_source(bus: &str) -> String {
+    const PREFIX: &str = "org.mpris.MediaPlayer2.";
+    let rest = bus.strip_prefix(PREFIX).unwrap_or(bus);
+    rest.split('.').next().unwrap_or(rest).to_ascii_lowercase()
 }
 
 /// "/com/spotify/track/ID" → "spotify:track:ID", the id the Mac gets. Older
@@ -533,22 +557,28 @@ mod linux {
     use dbus::Message;
     use tauri::Emitter;
 
-    const BUS: &str = "org.mpris.MediaPlayer2.spotify";
+    /// The bus name every MPRIS player publishes under; the player's own name
+    /// is appended (`…spotify`, `…firefox`, `…vlc`, `…mpv`).
+    const MPRIS_PREFIX: &str = "org.mpris.MediaPlayer2.";
+    /// The bus name the desktop's own player controls use, if any.
+    const BUS_PREFIX: &str = MPRIS_PREFIX;
     const PATH: &str = "/org/mpris/MediaPlayer2";
     const ROOT: &str = "org.mpris.MediaPlayer2";
     const PLAYER: &str = "org.mpris.MediaPlayer2.Player";
     const PROPERTIES: &str = "org.freedesktop.DBus.Properties";
     const DBUS: &str = "org.freedesktop.DBus";
-    /// A call to Spotify never holds anything up for longer.
+    /// A call to a player never holds anything up for longer.
     const CALL: Duration = Duration::from_millis(1500);
     /// The listener sleeps on the bus; this only bounds a lost wake-up.
     const IDLE_WAIT: Duration = Duration::from_secs(3600);
     const FLATPAK_ID: &str = "com.spotify.Client";
 
+    /// Any player starting or stopping, whichever it is: the filter is by prefix
+    /// alone (`arg0_namespace`), so a new player is picked up without a restart.
     const RULES: [&str; 3] = [
-        "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.mpris.MediaPlayer2.spotify'",
-        "type='signal',sender='org.mpris.MediaPlayer2.spotify',path='/org/mpris/MediaPlayer2',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'",
-        "type='signal',sender='org.mpris.MediaPlayer2.spotify',path='/org/mpris/MediaPlayer2',interface='org.mpris.MediaPlayer2.Player',member='Seeked'",
+        "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0namespace='org.mpris.MediaPlayer2'",
+        "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',path='/org/mpris/MediaPlayer2'",
+        "type='signal',interface='org.mpris.MediaPlayer2.Player',member='Seeked',path='/org/mpris/MediaPlayer2'",
     ];
 
     struct Shared {
@@ -557,13 +587,16 @@ mod linux {
         active: bool,
         /// The listener's unique name, to wake it when it has to stop.
         listener: Option<String>,
-        /// Spotify's unique name while it runs: signals from anyone else are ignored.
+        /// The player we follow, by bus name (`org.mpris.MediaPlayer2.spotify`),
+        /// chosen when several are up: the one playing, Spotify on a tie.
+        bus: Option<String>,
+        /// That player's unique name while it runs: signals from anyone else are ignored.
         owner: Option<String>,
         state: PlayerState,
     }
 
     static SHARED: LazyLock<Mutex<Shared>> = LazyLock::new(|| {
-        Mutex::new(Shared { generation: 0, active: false, listener: None, owner: None, state: PlayerState::default() })
+        Mutex::new(Shared { generation: 0, active: false, listener: None, bus: None, owner: None, state: PlayerState::default() })
     });
 
     /// The connection the controls and reads go through, made on first use.
@@ -755,20 +788,26 @@ mod linux {
         match (interface.as_str(), member.as_str()) {
             (DBUS, "NameOwnerChanged") => {
                 let Ok((name, _old, new)) = msg.read3::<String, String, String>() else { return };
-                if name != BUS {
+                if !name.starts_with(MPRIS_PREFIX) {
                     return;
                 }
-                if new.is_empty() {
-                    // Spotify quit: nothing is playing anymore.
+                let watching = SHARED.lock().unwrap().bus.clone();
+                let is_ours = watching.as_deref() == Some(name.as_str());
+                if new.is_empty() && is_ours {
+                    // The player we follow quit: look for another one, or stop.
                     let state = {
                         let mut s = SHARED.lock().unwrap();
+                        s.bus = None;
                         s.owner = None;
                         s.state.running = false;
                         s.state.clear(now_ms());
                         s.state.clone()
                     };
                     out.state(&state);
+                    read_everything(conn, out, generation);
                 } else {
+                    // A player started or stopped, ours or not: pick again, so a
+                    // track that just started in a browser takes over.
                     read_everything(conn, out, generation);
                 }
             }
@@ -804,7 +843,8 @@ mod linux {
         let s = SHARED.lock().unwrap();
         match (&s.owner, sender) {
             (Some(owner), Some(sender)) => owner == sender,
-            // The owner isn't known yet: the bus only routes Spotify's to us.
+            // The owner isn't known yet: the match rules only route MPRIS
+            // players to us, so anything arriving here is worth reading.
             (None, _) => true,
             _ => false,
         }
@@ -813,7 +853,13 @@ mod linux {
     /// Applies a change; when the status or the track moved, reads the
     /// position (never signalled), then tells the island.
     fn apply_and_emit(conn: &Connection, out: &Out, props: &[(String, Value)]) {
+        let bus = current_bus();
         let applied = SHARED.lock().unwrap().state.apply(props, now_ms());
+        if let Some(bus) = bus.as_deref() {
+            // Which player this is: the metadata never says, and the overlay
+            // needs it to tell a song from a watched video.
+            SHARED.lock().unwrap().state.set_source(&bus_source(bus));
+        }
         if (applied.status_changed || applied.track_changed) && !applied.position_set {
             if let Some(position) = get_property(conn, "Position") {
                 SHARED.lock().unwrap().state.apply(&[("Position".into(), position)], now_ms());
@@ -824,22 +870,68 @@ mod linux {
     }
 
     fn get_property(conn: &Connection, name: &str) -> Option<Value> {
-        let proxy = conn.with_proxy(BUS, PATH, CALL);
+        let bus = current_bus()?;
+        let proxy = conn.with_proxy(bus, PATH, CALL);
         let v: Box<dyn RefArg> = proxy.get(PLAYER, name).ok()?;
         Some(value_of(&v))
     }
 
-    fn name_owner(conn: &Connection) -> Option<String> {
+    /// The bus of the player we follow, if one was chosen.
+    fn current_bus() -> Option<String> {
+        SHARED.lock().unwrap().bus.clone()
+    }
+
+    /// Every MPRIS player on the session bus right now, as bus names.
+    fn player_buses(conn: &Connection) -> Vec<String> {
         let proxy = conn.with_proxy(DBUS, "/org/freedesktop/DBus", CALL);
-        let (owner,): (String,) = proxy.method_call(DBUS, "GetNameOwner", (BUS,)).ok()?;
+        let (names,): (Vec<String>,) = match proxy.method_call(DBUS, "ListNames", ()) {
+            Ok(v) => v,
+            Err(_) => return Vec::new(),
+        };
+        names
+            .into_iter()
+            .filter(|n| n.starts_with(BUS_PREFIX) && n.len() > BUS_PREFIX.len())
+            .collect()
+    }
+
+    /// Picks the player to follow: one that is playing wins, and Spotify wins a
+    /// tie, so an install that only has Spotify behaves exactly as before.
+    /// Returns its bus name and its unique bus name (the owner).
+    fn pick_player(conn: &Connection) -> Option<(String, String)> {
+        let mut best: Option<(u8, String, String)> = None;
+        for bus in player_buses(conn) {
+            let owner = name_owner_of(conn, &bus);
+            let Some(owner) = owner else { continue };
+            let proxy = conn.with_proxy(&bus, PATH, CALL);
+            let props: PropMap = match proxy.get_all(PLAYER) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let playing = find(&props, "PlaybackStatus").map(Value::text).is_some_and(|s| s == "Playing");
+            let rank = session_rank(playing, is_spotify_app(&bus));
+            if best.as_ref().is_none_or(|(r, _, _)| rank < *r) {
+                best = Some((rank, bus, owner));
+            }
+        }
+        best.map(|(_, bus, owner)| (bus, owner))
+    }
+
+    fn name_owner(conn: &Connection) -> Option<String> {
+        let bus = current_bus()?;
+        name_owner_of(conn, &bus)
+    }
+
+    fn name_owner_of(conn: &Connection, bus: &str) -> Option<String> {
+        let proxy = conn.with_proxy(DBUS, "/org/freedesktop/DBus", CALL);
+        let (owner,): (String,) = proxy.method_call(DBUS, "GetNameOwner", (bus,)).ok()?;
         Some(owner)
     }
 
-    /// Whom Spotify is, and all of its Player properties.
+    /// Whichever player we follow, and all of its Player properties.
     fn read_everything(conn: &Connection, out: &Out, generation: u64) {
-        let owner = name_owner(conn);
-        let props = owner.as_ref().and_then(|_| {
-            let proxy = conn.with_proxy(BUS, PATH, CALL);
+        let picked = pick_player(conn);
+        let props = picked.as_ref().and_then(|(bus, _)| {
+            let proxy = conn.with_proxy(bus, PATH, CALL);
             proxy.get_all(PLAYER).ok().map(|m| props_of(&m))
         });
         let state = {
@@ -847,13 +939,22 @@ mod linux {
             if !(s.active && s.generation == generation) {
                 return;
             }
-            s.owner = owner.clone();
-            s.state.running = owner.is_some();
-            s.state.installed = owner.is_some() || installed();
+            let (bus, owner) = match &picked {
+                Some((bus, owner)) => (Some(bus.clone()), Some(owner.clone())),
+                None => (None, None),
+            };
+            let source = bus.as_deref().map(bus_source);
+            s.bus = bus;
+            s.owner = owner;
+            s.state.running = s.owner.is_some();
+            s.state.installed = s.owner.is_some() || installed();
             let now = now_ms();
             match props {
                 Some(props) => {
                     s.state.apply(&props, now);
+                    if let Some(source) = source.as_deref() {
+                        s.state.set_source(source);
+                    }
                 }
                 None => s.state.clear(now),
             }
@@ -881,9 +982,13 @@ mod linux {
             s.generation
         };
         let read = with_control(|c| {
-            let owner = name_owner(c);
+            let bus = match current_bus() {
+                Some(b) => b,
+                None => return Ok((None, None)),
+            };
+            let owner = name_owner_of(c, &bus);
             let props = match owner {
-                Some(_) => Some(props_of(&c.with_proxy(BUS, PATH, CALL).get_all(PLAYER)?)),
+                Some(_) => Some(props_of(&c.with_proxy(&bus, PATH, CALL).get_all(PLAYER)?)),
                 None => None,
             };
             Ok((owner, props))
@@ -898,9 +1003,13 @@ mod linux {
                 s.state.running = owner.is_some();
                 s.state.installed = owner.is_some() || installed();
                 let now = now_ms();
+                let source = current_bus().as_deref().map(bus_source);
                 match props {
                     Some(props) => {
                         s.state.apply(&props, now);
+                        if let Some(source) = source.as_deref() {
+                            s.state.set_source(source);
+                        }
                     }
                     None => s.state.clear(now),
                 }
@@ -922,7 +1031,8 @@ mod linux {
         let v = value.unwrap_or(0.0);
         let now = now_ms();
         let done = with_control(|c| {
-            let p = c.with_proxy(BUS, PATH, CALL);
+            let Some(bus) = current_bus() else { return Err(dbus::Error::new_failed("no player")) };
+            let p = c.with_proxy(&bus, PATH, CALL);
             match action {
                 "playPause" => p.method_call(PLAYER, "PlayPause", ()),
                 "next" => p.method_call(PLAYER, "Next", ()),
@@ -1003,10 +1113,11 @@ mod linux {
     pub fn open() -> bool {
         // Running: bring it forward when it says it can.
         let raised = with_control(|c| {
-            if name_owner(c).is_none() {
+            let Some(bus) = current_bus() else {
+                // Nothing playing: fall through to launching the default player.
                 return Ok(false);
-            }
-            let p = c.with_proxy(BUS, PATH, CALL);
+            };
+            let p = c.with_proxy(&bus, PATH, CALL);
             let can: bool = p.get(ROOT, "CanRaise").unwrap_or(false);
             if can {
                 p.method_call::<(), _, _, _>(ROOT, "Raise", ())?;
@@ -1259,6 +1370,7 @@ mod linux {
         /// A minimal MPRIS player: GetAll, Get, Set and the Player methods,
         /// signalling its status like Spotify. Releases its name when told to stop.
         fn fake_spotify(calls: Arc<Mutex<Vec<String>>>, stop: Arc<AtomicBool>) {
+            const BUS: &str = "org.mpris.MediaPlayer2.spotify";
             let conn = Connection::new_session().unwrap();
             conn.request_name(BUS, false, true, true).unwrap();
             let mut playing = true;
@@ -1355,10 +1467,31 @@ mod linux {
 // volume isn't part of it; it is Spotify's own volume in the Windows mixer
 // (Core Audio), read whenever the rest is.
 
-/// The media session ids Spotify registers: "Spotify.exe" (the installer from
+/// Whether this media session belongs to a player we follow. Every player that
+/// registers with the system media controls is welcome now: Spotify, YouTube
+/// Music in a browser, Apple Music, foobar2000, VLC, Groove… A browser playing
+/// a video is the one cost of that: it looks exactly like one playing music.
+pub fn is_player_app(_app_id: &str) -> bool {
+    true
+}
+
+/// Session ids that are known to be Spotify's: "Spotify.exe" (the installer from
 /// spotify.com) or "SpotifyAB.SpotifyMusic_…!Spotify" (the Microsoft Store).
+/// They are the tie-breaker when several players are up at once.
 pub fn is_spotify_app(app_id: &str) -> bool {
     app_id.to_ascii_lowercase().contains("spotify")
+}
+
+/// Rank for picking one session among several: a playing player beats a paused
+/// one, and Spotify wins a tie so an install that has both keeps the old
+/// behaviour. Lower is better.
+fn session_rank(playing: bool, is_spotify: bool) -> u8 {
+    match (playing, is_spotify) {
+        (true, true) => 0,
+        (true, false) => 1,
+        (false, true) => 2,
+        (false, false) => 3,
+    }
 }
 
 /// Windows durations and timeline positions: 100 ns ticks → seconds.
@@ -1377,7 +1510,7 @@ pub fn windows_time_to_unix_ms(universal: i64) -> Option<f64> {
 /// nothing is loaded. Windows gives no Spotify URI, so the id is made from the
 /// tags; an ad comes with a title and nothing else, and gets an ad id so the
 /// page treats it as the Mac does.
-pub fn windows_track(title: &str, artist: &str, album: &str, duration: f64) -> Option<Track> {
+pub fn windows_track(title: &str, artist: &str, album: &str, duration: f64, source: Option<&str>) -> Option<Track> {
     let title = title.trim();
     if title.is_empty() {
         return None;
@@ -1400,6 +1533,7 @@ pub fn windows_track(title: &str, artist: &str, album: &str, duration: f64) -> O
         // Not a URL: the thumbnail is read from the session itself. The page
         // only uses it to match a cover to its track.
         art_url: Some(format!("smtc:{hash:016x}")),
+        source: source.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         object_path: String::new(),
     })
 }
@@ -1475,6 +1609,7 @@ mod win {
         let (old, generation, state) = {
             let mut s = SHARED.lock().unwrap();
             if s.active == on {
+                crate::log::line(format!("spotify: already {} — nothing to do", if on { "on" } else { "off" }));
                 return;
             }
             s.active = on;
@@ -1490,6 +1625,7 @@ mod win {
             let _ = old.send(Wake::Stop);
         }
         if on {
+            crate::log::line("spotify: listener starting");
             let app = app.clone();
             let spawned = std::thread::Builder::new()
                 .name("miku-spotify".into())
@@ -1506,6 +1642,7 @@ mod win {
     /// runs between events.
     fn listen(app: AppHandle, generation: u64, tx: Sender<Wake>, rx: Receiver<Wake>) {
         com();
+        crate::log::line("spotify: COM ready, asking for the session manager");
         let manager = match Manager::RequestAsync().and_then(|op| op.get()) {
             Ok(m) => m,
             Err(err) => {
@@ -1513,6 +1650,7 @@ mod win {
                 return;
             }
         };
+        crate::log::line("spotify: session manager ready");
         let sessions_token = {
             let tx = tx.clone();
             manager
@@ -1531,6 +1669,9 @@ mod win {
                     b.unbind();
                 }
                 bound = find_session(&manager).and_then(|s| Bound::bind(s, &tx));
+                if bound.is_none() {
+                    crate::log::line("spotify: no media session to follow (nothing is playing?)");
+                }
                 rebind = false;
             }
             read_and_emit(&app, generation, bound.as_ref().map(|b| &b.session));
@@ -1602,10 +1743,36 @@ mod win {
     }
 
     fn find_session(manager: &Manager) -> Option<Session> {
-        let sessions = manager.GetSessions().ok()?;
-        (0..sessions.Size().ok()?)
-            .filter_map(|i| sessions.GetAt(i).ok())
-            .find(|s| s.SourceAppUserModelId().is_ok_and(|id| is_spotify_app(&id.to_string_lossy())))
+        let sessions = match manager.GetSessions() {
+            Ok(s) => s,
+            Err(err) => {
+                crate::log::line(format!("spotify: could not list sessions: {err}"));
+                return None;
+            }
+        };
+        let count = sessions.Size().unwrap_or(0);
+        crate::log::line(format!("spotify: {count} media session(s) on this machine"));
+        let mut best: Option<(u8, Session)> = None;
+        for i in 0..count {
+            let Ok(session) = sessions.GetAt(i) else { continue };
+            let app_id = session.SourceAppUserModelId().map(|id| id.to_string_lossy().to_string()).unwrap_or_default();
+            let playing = session
+                .GetPlaybackInfo()
+                .and_then(|info| info.PlaybackStatus())
+                .is_ok_and(|status| status == Status::Playing);
+            crate::log::line(format!(
+                "spotify: session {i} = {app_id} (playing={playing}, followed={})",
+                is_player_app(&app_id)
+            ));
+            if !is_player_app(&app_id) {
+                continue;
+            }
+            let rank = session_rank(playing, is_spotify_app(&app_id));
+            if best.as_ref().is_none_or(|(r, _)| rank < *r) {
+                best = Some((rank, session));
+            }
+        }
+        best.map(|(_, session)| session)
     }
 
     // ── Reading ───────────────────────────────────────────────────────────────
@@ -1622,33 +1789,74 @@ mod win {
     }
 
     fn snapshot(session: &Session) -> windows::core::Result<(Snapshot, MediaProperties)> {
+        // The media properties are the only thing that must be there; a browser
+        // that publishes a track but no timeline (Firefox does) must still show
+        // its title, so everything else falls back instead of failing the read.
         let props = session.TryGetMediaPropertiesAsync()?.get()?;
-        let timeline = session.GetTimelineProperties()?;
-        let start = timeline.StartTime()?.Duration;
-        let duration = ticks_to_secs(timeline.EndTime()?.Duration - start);
+        let info = session.GetPlaybackInfo().ok();
+        let timeline = session.GetTimelineProperties().ok();
+
+        let (position, duration, updated_at) = match &timeline {
+            Some(t) => {
+                let start = t.StartTime().map(|d| d.Duration).unwrap_or(0);
+                (
+                    ticks_to_secs(t.Position().map(|d| d.Duration - start).unwrap_or(0)),
+                    ticks_to_secs(t.EndTime().map(|d| d.Duration - start).unwrap_or(0)),
+                    t.LastUpdatedTime().ok().and_then(|d| windows_time_to_unix_ms(d.UniversalTime)),
+                )
+            }
+            None => (0.0, 0.0, None),
+        };
         let track = windows_track(
             &props.Title()?.to_string_lossy(),
             &props.Artist()?.to_string_lossy(),
             &props.AlbumTitle()?.to_string_lossy(),
             duration,
+            // Which program this is ("Spotify.exe", "MSEdge", "chrome.exe"): the
+            // overlay tells a song from a video by it, and the tags say nothing.
+            session
+                .SourceAppUserModelId()
+                .ok()
+                .map(|id| id.to_string_lossy().to_string())
+                .as_deref(),
         );
-        let info = session.GetPlaybackInfo()?;
         let snapshot = Snapshot {
-            playing: info.PlaybackStatus()? == Status::Playing && track.is_some(),
+            playing: info
+                .as_ref()
+                .and_then(|i| i.PlaybackStatus().ok())
+                .is_some_and(|s| s == Status::Playing)
+                && track.is_some(),
             track,
-            position: ticks_to_secs(timeline.Position()?.Duration - start),
-            updated_at: windows_time_to_unix_ms(timeline.LastUpdatedTime()?.UniversalTime),
-            shuffle: info.IsShuffleActive().and_then(|r| r.Value()).unwrap_or(false),
+            position,
+            updated_at,
+            shuffle: info
+                .as_ref()
+                .and_then(|i| i.IsShuffleActive().ok())
+                .and_then(|r| r.Value().ok())
+                .unwrap_or(false),
             repeat: info
-                .AutoRepeatMode()
-                .and_then(|r| r.Value())
-                .is_ok_and(|mode| mode != MediaPlaybackAutoRepeatMode::None),
+                .as_ref()
+                .and_then(|i| i.AutoRepeatMode().ok())
+                .and_then(|r| r.Value().ok())
+                .is_some_and(|mode| mode != MediaPlaybackAutoRepeatMode::None),
         };
         Ok((snapshot, props))
     }
 
     fn read_and_emit(app: &AppHandle, generation: u64, session: Option<&Session>) {
-        let read = session.and_then(|s| snapshot(s).ok());
+        let read = match session {
+            Some(s) => match snapshot(s) {
+                Ok(r) => Some(r),
+                Err(err) => {
+                    crate::log::line(format!("spotify: could not read the session: {err}"));
+                    None
+                }
+            },
+            None => {
+                crate::log::line("spotify: read with no session bound");
+                None
+            }
+        };
         let volume = read.as_ref().and_then(|_| spotify_volume());
         let now = now_ms();
         let (state, props) = {
@@ -1683,6 +1891,12 @@ mod win {
             (s.state.clone(), props)
         };
         emit_state(app, &state);
+        crate::log::line(format!(
+            "spotify: emit running={} playing={} track={:?}",
+            state.running,
+            state.playing,
+            state.track.as_ref().map(|t| t.title.clone())
+        ));
         if let (Some(props), Some(track)) = (props, state.track.as_ref()) {
             artwork(app, track, &props);
         }
@@ -2080,6 +2294,19 @@ mod tests {
         assert!(is_spotify_app("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify"));
         assert!(!is_spotify_app("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"));
         assert!(!is_spotify_app("chrome.exe"));
+        // Every player is followed now: the browser a song plays in included.
+        assert!(is_player_app("chrome.exe"));
+        assert!(is_player_app("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"));
+        assert!(is_player_app("Spotify.exe"));
+    }
+
+    #[test]
+    fn a_playing_player_beats_a_paused_one_and_spotify_breaks_the_tie() {
+        // Lower is better. Playing wins over paused, Spotify over the rest at
+        // the same status, so an install that only has Spotify is unchanged.
+        assert!(session_rank(true, true) < session_rank(true, false));
+        assert!(session_rank(true, false) < session_rank(false, true));
+        assert!(session_rank(false, true) < session_rank(false, false));
     }
 
     #[test]
@@ -2093,19 +2320,34 @@ mod tests {
 
     #[test]
     fn windows_tags_become_the_track() {
-        let t = windows_track("Song - Remastered 2011", "Artist feat. Someone", "Album", 215.0).unwrap();
+        let t = windows_track("Song - Remastered 2011", "Artist feat. Someone", "Album", 215.0, Some("Spotify.exe")).unwrap();
         assert_eq!(t.title, "Song");
         assert_eq!(t.artist, "Artist");
         assert_eq!(t.album, "Album");
         assert_eq!(t.duration, 215.0);
         assert!(t.id.starts_with("spotify:track:"));
+        // Which program published it reaches the page: the overlay tells a song
+        // from a watched video by it.
+        assert_eq!(t.source.as_deref(), Some("Spotify.exe"));
         // The same tags give the same track, and the cover key follows it.
-        let again = windows_track("Song - Remastered 2011", "Artist feat. Someone", "Album", 215.0).unwrap();
+        let again = windows_track("Song - Remastered 2011", "Artist feat. Someone", "Album", 215.0, Some("Spotify.exe")).unwrap();
         assert_eq!(t.id, again.id);
         assert_eq!(t.art_url, again.art_url);
-        assert_ne!(t.id, windows_track("Other", "Artist", "Album", 1.0).unwrap().id);
+        assert_ne!(t.id, windows_track("Other", "Artist", "Album", 1.0, None).unwrap().id);
         // An ad is a title and nothing else.
-        assert!(windows_track("Spotify", "", "", 30.0).unwrap().id.starts_with("spotify:ad:"));
-        assert_eq!(windows_track("  ", "Artist", "Album", 1.0), None);
+        assert!(windows_track("Spotify", "", "", 30.0, Some("Spotify.exe")).unwrap().id.starts_with("spotify:ad:"));
+        assert_eq!(windows_track("  ", "Artist", "Album", 1.0, None), None);
+        // A blank or missing id is no source at all, never "".
+        assert_eq!(windows_track("Song", "A", "B", 1.0, Some("  ")).unwrap().source, None);
+    }
+
+    #[test]
+    fn a_bus_name_gives_the_program_that_owns_it() {
+        assert_eq!(bus_source("org.mpris.MediaPlayer2.spotify"), "spotify");
+        assert_eq!(bus_source("org.mpris.MediaPlayer2.firefox.instance42"), "firefox");
+        assert_eq!(bus_source("org.mpris.MediaPlayer2.vlc"), "vlc");
+        // A player that names its bus differently still gives something usable.
+        assert_eq!(bus_source("Spotify"), "spotify");
+        assert_eq!(bus_source(""), "");
     }
 }

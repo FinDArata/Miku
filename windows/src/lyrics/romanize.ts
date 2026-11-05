@@ -17,6 +17,7 @@ const HANGUL = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7a3]/;
 const HAN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 
 export type Script = "latin" | "kana" | "hangul" | "han";
+export type JapaneseTokenizer = { tokenize(text: string): Array<{ surface_form: string; reading?: string }> };
 
 /** The script a line is mostly in. Kana wins over Han (a Japanese line has both). */
 export function scriptOf(text: string): Script {
@@ -30,7 +31,7 @@ export function scriptOf(text: string): Script {
 export function romanize(text: string): string {
   const script = scriptOf(text);
   if (script === "latin") return text;
-  if (script === "kana") return romanizeJapanese(text);
+  if (script === "kana") return japaneseReady() ? romanizeJapaneseFull(text) : romanizeJapanese(text);
   if (script === "hangul") return romanizeHangul(text);
   return romanizeChinese(text);
 }
@@ -39,13 +40,19 @@ export function romanize(text: string): string {
  * A mixed line's non-Latin runs, romanised, with the Latin left as it is.
  * `Miku ♪ 私の心` → `Miku ♪ watashi no kokoro`.
  */
-export function romanizeMixed(text: string): string {
+export function romanizeMixed(text: string, language: "japanese" | "chinese" | null = null): string {
   if (scriptOf(text) === "latin") return text;
   // Runs of Latin words and spacing stay; every other run is handed to the
   // script that matches it.
   return text.replace(
     /([A-Za-z0-9'’.,!?…\-–—()\[\]{}"'«»:;\/&%$#@+*=~|\\^_`<>]+|[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u1100-\u11ff\u3130-\u318f\uac00-\ud7a3]+|\s+|[^\s]+)/g,
-    (run) => (scriptOf(run) === "latin" ? run : romanize(run)),
+    (run) => {
+      if (scriptOf(run) === "latin") return run;
+      if (language === "japanese" && (scriptOf(run) === "han" || scriptOf(run) === "kana")) {
+        return japaneseReady() ? romanizeJapaneseFull(run) : romanizeJapanese(run);
+      }
+      return romanize(run);
+    },
   );
 }
 
@@ -224,6 +231,68 @@ export function romanizeHangul(text: string): string {
   // A capital to start a line, as any Latin text has: romanised Korean reads
   // as prose, and a line in all lowercase looks like a mistake.
   return out.replace(/^\s*([a-z])/, (_m, c: string) => c.toUpperCase());
+}
+
+// ── Japanese dictionary readings ───────────────────────────────────────────────
+
+let japaneseTokenizer: JapaneseTokenizer | null = null;
+
+/** Japanese kanji → reading-backed rōmaji. Without a tokenizer, keep the source. */
+export function romanizeJapaneseFull(text: string): string {
+  if (!japaneseTokenizer) return text;
+  return japaneseTokenizer.tokenize(text).map((token) => {
+    const reading = token.reading ? katakanaToHiragana(token.reading) : token.surface_form;
+    return reading === token.surface_form && HAN.test(token.surface_form) ? token.surface_form : romanizeJapanese(reading);
+  }).join("").replace(/\s+/g, " ").trim();
+}
+
+export function useJapanese(tokenizer: JapaneseTokenizer | null) {
+  japaneseTokenizer = tokenizer;
+}
+
+export function japaneseReady(): boolean {
+  return japaneseTokenizer != null;
+}
+
+/** The language a whole song is in, from its lines: one kanji-only line does
+ *  not decide it. Kana outweighing Han means Japanese; Han alone means Chinese. */
+export function languageOfLines(lines: string[]): "japanese" | "chinese" | null {
+  let kana = 0;
+  let han = 0;
+  for (const line of lines) {
+    if (KANA.test(line)) kana++;
+    else if (HAN.test(line)) han++;
+  }
+  return kana > han ? "japanese" : han > 0 ? "chinese" : null;
+}
+
+let japaneseLoad: Promise<boolean> | null = null;
+
+/**
+ * Builds the tokenizer once, from the dictionary Vite copies to /dict/. A
+ * failure is remembered: the page keeps the kanji as written rather than
+ * asking again on every song. Never rejects.
+ */
+export function ensureJapaneseTokenizer(): Promise<boolean> {
+  if (japaneseTokenizer) return Promise.resolve(true);
+  if (japaneseLoad) return japaneseLoad;
+  japaneseLoad = (async () => {
+    try {
+      const mod = await import("@sglkc/kuromoji");
+      const tokenizer = await new Promise<JapaneseTokenizer>((resolve, reject) => {
+        mod.builder({ dicPath: "/dict/" }).build((err: Error | null, built: JapaneseTokenizer) =>
+          err ? reject(err) : resolve(built),
+        );
+      });
+      japaneseTokenizer = tokenizer;
+      return true;
+    } catch {
+      // Without the dictionary Japanese lines show as written: readable, just
+      // not romanised. Nothing here may break the card.
+      return false;
+    }
+  })();
+  return japaneseLoad;
 }
 
 // ── Chinese: Han → pinyin ─────────────────────────────────────────────────────

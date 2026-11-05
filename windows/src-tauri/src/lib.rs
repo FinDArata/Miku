@@ -37,6 +37,7 @@ mod shortcuts;
 mod sounds;
 mod speech;
 mod spotify;
+mod system_health;
 mod tray;
 mod update;
 mod voice;
@@ -137,6 +138,7 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     }
     integrations::settings_saved(&app, &settings.active_integrations);
     spotify::sync(&app, &settings.active_integrations);
+    system_health::sync(&app, &settings.active_integrations);
     whatsapp::sync(&settings.active_integrations);
     if shortcuts_changed {
         shortcuts::apply(&app, &settings.shortcuts);
@@ -162,7 +164,7 @@ fn set_system_languages(app: AppHandle, languages: Vec<String>) {
 fn language_changed(app: &AppHandle) {
     tray::retitle(app);
     if let Some(window) = app.get_webview_window(HUB_LABEL) {
-        let _ = window.set_title("Kanon");
+        let _ = window.set_title("Miku");
     }
 }
 
@@ -757,7 +759,7 @@ fn create_settings_window(app: &AppHandle) {
     let url = settings_page_url(app);
     match WebviewWindowBuilder::new(app, HUB_LABEL, url)
         .additional_browser_args(BROWSER_ARGS)
-        .title("Kanon")
+        .title("Miku")
         .inner_size(1100.0, 720.0)
         .min_inner_size(820.0, 560.0)
         .resizable(true)
@@ -782,7 +784,7 @@ fn create_settings_window(app: &AppHandle) {
                 _ => {}
             });
         }
-        Err(err) => log::line(format!("Kanon window failed: {err}")),
+        Err(err) => log::line(format!("Miku window failed: {err}")),
     }
 }
 
@@ -820,7 +822,7 @@ pub fn show_hub(app: &AppHandle, page: Option<&str>) {
         // Creating it at startup can fail on some machines (WebView2
         // 0x80070578, #775): try again now, on the main thread, where
         // window creation can't deadlock a command.
-        log::line("Kanon window missing, creating it again");
+        log::line("Miku window missing, creating it again");
         let handle = app.clone();
         let _ = app.run_on_main_thread(move || {
             create_settings_window(&handle);
@@ -958,6 +960,12 @@ pub fn run() {
             shortcuts_status,
             shortcuts_suspend,
             lyrics::lyrics_set_visible,
+            lyrics::lyrics_set_placement,
+            lyrics::lyrics_set_look,
+            lyrics::lyrics_window_size,
+            lyrics::lyrics_auto_show,
+            lyrics::lyrics_auto_hide,
+            lyrics::lyrics_resize,
             lyrics::lyrics_visible,
             lyrics::lyrics_prefs,
             lyrics::lyrics_fetch,
@@ -1115,6 +1123,10 @@ pub fn run() {
             integrations::start(handle.clone());
             mail::start(handle.clone());
             spotify::sync(&handle, &loaded.active_integrations);
+            system_health::sync(&handle, &loaded.active_integrations);
+            // Mochi reacts to the charger and to a low battery whether or not
+            // the System pill is declared, so the battery is watched on its own.
+            system_health::start_battery_watch(handle.clone());
             // WhatsApp (experimental): nothing runs unless it is turned on and its pill is active.
             whatsapp::start(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);
@@ -1132,7 +1144,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building Kanon")
+        .expect("error while building Miku")
         .run(|app, event| {
             // Withdraw the phone link's announcement on the local network before the process ends.
             if let tauri::RunEvent::Exit = event {

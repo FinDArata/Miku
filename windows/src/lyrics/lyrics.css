@@ -1,11 +1,27 @@
-/* The floating lyrics overlay (lyrics.html): three lines of a song on a black
-   card that can be dragged anywhere. Its own window is transparent and
-   always-on-top, so what shows is the card and nothing else. */
+/* The floating lyrics overlay (lyrics.html): three lines of a song on a card
+   that can be dragged anywhere. Its own window is transparent and
+   always-on-top, so what shows is the card and nothing else.
+
+   Everything the user can change in Settings arrives as a custom property on
+   <html> (see applyLook in main.ts): the card's colour and opacity, the words'
+   colour, and how big the sung line is. The sizes for the lines around it and
+   the title follow from --lyrics-size, so one slider moves the whole card. */
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+:root {
+  --lyrics-bg: #08090c;
+  --lyrics-opacity: 0.25;
+  --lyrics-ink: #ffffff;
+  --lyrics-size: 16px;
+  /* The quiet lines and the title, derived from the sung line's size. */
+  --lyrics-small: calc(var(--lyrics-size) * 0.72);
+  --lyrics-title: calc(var(--lyrics-size) * 0.58);
+  --lyrics-note: calc(var(--lyrics-size) * 0.76);
 }
 
 html,
@@ -17,22 +33,24 @@ body {
   user-select: none;
   -webkit-user-select: none;
   cursor: default;
-  font: 600 15px system-ui, "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
-  color: #fff;
+  font: 600 var(--lyrics-size) system-ui, "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
+  color: var(--lyrics-ink);
 }
 
 #lyrics {
   position: absolute;
-  inset: 8px;
+  inset: 6px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 16px 20px;
-  border-radius: 16px;
-  background: rgba(8, 9, 12, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  gap: 1px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  /* The card, see-through by the user's own amount; the text's shadow keeps
+     the words readable over whatever shows behind them. */
+  background: color-mix(in srgb, var(--lyrics-bg) calc(var(--lyrics-opacity) * 100%), transparent);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   /* The whole card is the drag handle (data-tauri-drag-region="deep"). */
   cursor: grab;
   overflow: hidden;
@@ -40,37 +58,27 @@ body {
 
 /* The hover adds the one thing the card is missing: it can be moved. */
 #lyrics:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-#lyrics::before {
-  /* The page's colour, breathing in the corner as the island's band does. */
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 70% 120% at 50% -30%, rgba(29, 185, 84, 0.22), transparent 70%);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .row {
   position: relative;
-  min-height: 26px;
+  min-height: calc(var(--lyrics-size) * 1.3);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 /* The line before and the one after: there, and quiet. */
 .row.past,
 .row.next {
-  font-size: 13px;
+  font-size: var(--lyrics-small);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.34);
+  color: color-mix(in srgb, var(--lyrics-ink) 38%, transparent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
   /* A long line is cut, not wrapped: three rows are what fits. */
   white-space: nowrap;
   overflow: hidden;
@@ -80,12 +88,12 @@ body {
 
 /* The line being sung: the brightest thing on screen, and the only big one. */
 .row.current {
-  font-size: 21px;
+  font-size: var(--lyrics-size);
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: #fff;
-  text-shadow: 0 0 22px rgba(29, 185, 84, 0.28);
-  min-height: 34px;
+  color: var(--lyrics-ink);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.55);
+  min-height: calc(var(--lyrics-size) * 1.7);
   max-width: 100%;
 }
 
@@ -100,9 +108,10 @@ body {
 /* The words as written, under a romanised line. */
 .original {
   display: block;
-  font-size: 12px;
+  font-size: var(--lyrics-small);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: color-mix(in srgb, var(--lyrics-ink) 44%, transparent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
   margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -127,9 +136,10 @@ body {
 
 /* Nothing to sing: an advertisement, an instrumental, or no words on LRCLIB. */
 .note {
-  font-size: 13.5px;
+  font-size: var(--lyrics-note);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.42);
+  color: color-mix(in srgb, var(--lyrics-ink) 46%, transparent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
   text-align: center;
   position: relative;
   max-width: 100%;
@@ -141,15 +151,16 @@ body {
 /* The title line, small, at the very top: the one thing that says which song. */
 #song {
   position: absolute;
-  top: 7px;
+  top: 5px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 10.5px;
+  font-size: var(--lyrics-title);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.28);
+  color: color-mix(in srgb, var(--lyrics-ink) 32%, transparent);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -160,4 +171,107 @@ body {
    card the same size it always is. */
 .row:empty {
   display: none;
+}
+
+/* While the menu is up the card keeps its own size and position: the window
+   grew to hold the menu, and the card must not stretch with it. */
+#lyrics.menu-open {
+  inset: auto;
+  height: var(--card-height, 160px);
+  width: var(--card-width, 420px);
+  left: 6px;
+  top: 6px;
+}
+
+/* ── The card's own menu (a right-click) ──────────────────────────────────────
+   Small, opaque enough to read over any wallpaper, and never larger than the
+   card it belongs to: menu.ts keeps it inside the window. */
+
+#lyrics-menu {
+  position: fixed;
+  z-index: 10;
+  width: 210px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 7px;
+  border-radius: 11px;
+  background: rgba(14, 15, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color: #f5f6f8;
+  font: 500 11px system-ui, "Segoe UI", "Noto Sans", sans-serif;
+  cursor: default;
+}
+
+#lyrics-menu[hidden] {
+  display: none;
+}
+
+#lyrics-menu .menu-head {
+  padding: 2px 4px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6b7079;
+}
+
+#lyrics-menu .menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+}
+
+#lyrics-menu .menu-row > label {
+  flex: 0 0 auto;
+  min-width: 62px;
+  color: #9398a1;
+  font-size: 11px;
+}
+
+#lyrics-menu input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 86px;
+  height: 14px;
+  accent-color: #1db954;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-colour {
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-colour::-webkit-color-swatch-wrapper { padding: 1px; }
+#lyrics-menu .menu-colour::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+#lyrics-menu .menu-sep {
+  height: 1px;
+  margin: 6px 2px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+#lyrics-menu .menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #f5f6f8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-item:hover {
+  background: rgba(46, 230, 200, 0.16);
+  color: #63f0d9;
 }

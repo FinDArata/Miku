@@ -7,7 +7,7 @@
 // a few MB, but a library played for months would find its way out of it.
 
 import { Bridge } from "../core/bridge";
-import { cacheKey, mainArtist, readSong, type Song } from "./lrc";
+import { cacheKey, readSong, type Song } from "./lrc";
 
 const KEY = "miku.lyrics.cache";
 const MISS_KEY = "miku.lyrics.misses";
@@ -106,11 +106,17 @@ export async function fetchSong(track: {
   if (missed(key)) return { timed: [], plain: [] };
   if (!track.title.trim()) return { timed: [], plain: [] };
 
-  const res = await Bridge.lyricsFetch(mainArtist(track.artist), track.title, track.album, track.duration);
+  // The whole credit line, not just its first name: Rust needs it to tell a
+  // record that names this very song from one by a cover artist, and a duet's
+  // credit is the artist plus their guests.
+  const res = await Bridge.lyricsFetch(track.artist, track.title, track.album, track.duration);
   // `null` is both "no window to answer" and "nothing found": either way, no words.
   const song = readSong(res?.synced, res?.plain);
   if (!song.timed.length && !song.plain.length) {
-    rememberMiss(key);
+    // The service being busy is not the same as the song having no words: only
+    // a real "no such track" is worth remembering, or a busy minute would hide
+    // this song for a week.
+    if (!res?.busy) rememberMiss(key);
     return song;
   }
   const store = loadStore();

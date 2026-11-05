@@ -57,7 +57,7 @@ fn tools() -> Vec<Value> {
         }),
         json!({
             "name": "service_info",
-            "description": "Read the user's real data that Kanon already has, as JSON: the active pills, the agent sessions (Claude Code, Codex…) and what they are doing, Claude or Codex plan usage, Spotify now playing, and the services' latest data (Stripe, GitHub, Vercel, Resend, n8n, Notion, Cal.com).",
+            "description": "Read the user's real data that Miku already has, as JSON: the active pills, the agent sessions (Claude Code, Codex…) and what they are doing, Claude or Codex plan usage, Spotify now playing, and the services' latest data (Stripe, GitHub, Vercel, Resend, n8n, Notion, Cal.com).",
             "input_schema": { "type": "object", "properties": {} }
         }),
         json!({
@@ -86,7 +86,7 @@ fn system_prompt(pills: &str) -> String {
     let t = crate::platform::local_time();
     let os = if cfg!(windows) { "Windows" } else { "Linux" };
     format!(
-        "You are Kanon, a voice assistant living at the top of the screen of the user's {os} computer, a bit like Jarvis: \
+        "You are Miku, a voice assistant living at the top of the screen of the user's {os} computer, a bit like Jarvis: \
 quick, warm, a little playful. It is {:04}-{:02}-{:02} {:02}:{:02}.\n\
 Everything you write is read aloud: answer in the language the user spoke, in one or two short sentences, \
 no markdown, no lists, no emojis, no links.\n\

@@ -260,7 +260,7 @@ pub fn valid_address(s: &str) -> bool {
 /// Added to the chat's system prompt while the chat's Mail switch is on (same text as the Mac's).
 pub const INSTRUCTIONS: &str = "
 
-The user turned on Mail: you can act on their Outlook through Kanon. Their latest messages are listed under their request, each with a number [n]; some come with their text and attachments.
+The user turned on Mail: you can act on their Outlook through Miku. Their latest messages are listed under their request, each with a number [n]; some come with their text and attachments.
 When they ask you to DO something with their mail, answer in one or two short sentences, then give ONE plan in a fenced code block tagged miku-mail, holding JSON:
 {\"summary\": \"what the plan does, in the user's language\", \"actions\": [ ... ]}
 Actions:

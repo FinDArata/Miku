@@ -63,7 +63,7 @@ pub fn advert(name: &str, port: u16, fingerprint: &str) -> Option<Advert> {
     let instance: String = name.trim().chars().take(48).collect();
     let instance = instance.trim().to_string();
     Some(Advert {
-        instance: if instance.is_empty() { "Kanon".to_string() } else { instance },
+        instance: if instance.is_empty() { "Miku".to_string() } else { instance },
         host: format!("{}.local.", host_label(name)),
         port,
         txt: txt(fingerprint)?,
@@ -223,7 +223,7 @@ pub mod tests {
         assert_eq!(ad.port, 47821);
         assert_eq!(host_label("***"), "kanon");
         assert_eq!(host_label(&"a".repeat(100)).len(), 63);
-        assert_eq!(advert("   ", 1, FP).unwrap().instance, "Kanon");
+        assert_eq!(advert("   ", 1, FP).unwrap().instance, "Miku");
     }
 
     #[test]

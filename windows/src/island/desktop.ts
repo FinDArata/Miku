@@ -9,7 +9,8 @@ import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { desktopDances } from "../core/spotify";
 import {
-  DESKTOP_EVENTS, DesktopMochiController, alertActive, type DesktopSnapshot,
+  DESKTOP_EVENTS, DesktopMochiController, alertActive, batteryReaction,
+  type BatteryReading, type DesktopSnapshot,
 } from "../mochi/desktop-logic";
 import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 
@@ -32,6 +33,9 @@ export class DesktopLink {
 
   /** The pointer is dragging Mochi out of the island. */
   carrying = false;
+
+  /** The last battery reading he reacted to, so each change reacts once. */
+  private battery: BatteryReading | null = null;
 
   private seasons = new SeasonCache();
   /** Which Miku on the desktop: the same choice the island draws. */
@@ -78,6 +82,8 @@ export class DesktopLink {
     await onEvent<null>(DESKTOP_EVENTS.home, () => void this.controller.flyHome());
     await onEvent<null>(DESKTOP_EVENTS.wardrobe, () => this.host.wardrobeFromDesktop());
     await onEvent<null>(DESKTOP_EVENTS.dizzy, () => this.host.dizzyFromDesktop());
+    // The battery, whatever the System pill is doing (system_health.rs).
+    await onEvent<BatteryReading | null>("battery", (b) => this.onBattery(b));
     // The window's page (re)loaded: it knows nothing yet.
     await onEvent<null>(DESKTOP_EVENTS.ready, () => {
       this.pushed = "";
@@ -164,6 +170,27 @@ export class DesktopLink {
     this.controller.updateAlert(alertActive(State));
     this.controller.updateState(State.effectiveState);
     this.push();
+  }
+
+  /**
+   * `battery` (system_health.rs): one event a minute at most, and only when the
+   * reading actually changed. The charger going in is good news he can show;
+   * the battery dropping to the low mark is a startle. Both are edges — each
+   * happens once as the reading crosses, not on every event.
+   */
+  private onBattery(next: BatteryReading | null) {
+    const reaction = batteryReaction(this.battery, next);
+    // Remembering only a real reading keeps the first one a baseline, not a
+    // change: he must not jump the moment Miku starts.
+    if (next && Number.isFinite(next.pct)) this.battery = next;
+    if (!reaction) return;
+    // Only on the desktop: in the island he is drawn by the island's own page,
+    // which would need its own reaction (the desktop window is not even open).
+    if (this.controller.phase !== "onDesktop") return;
+    void emitToWindow(WINDOW, DESKTOP_EVENTS.emote, {
+      emote: reaction,
+      duration: reaction === "surprised" ? 1.8 : 2.2,
+    });
   }
 
   private push() {

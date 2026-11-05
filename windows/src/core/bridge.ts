@@ -460,6 +460,25 @@ export const Bridge = {
   // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
   /** Settings' switch: shows or hides the overlay, and remembers the choice. */
   lyricsSetVisible: (visible: boolean) => call<void>("lyrics_set_visible", { visible }),
+  lyricsSetPlacement: (placement: "island" | "floating") => call<void>("lyrics_set_placement", { placement }),
+  /** Shows the card for a song starting — leaves the switch in Settings alone. */
+  lyricsAutoShow: () => call<void>("lyrics_auto_show"),
+  /** Hides the card because the music stopped — leaves the switch alone. */
+  lyricsAutoHide: () => call<void>("lyrics_auto_hide"),
+  /** Resizes the overlay's window, keeping its top-left corner. */
+  lyricsResize: (width: number, height: number) => call<void>("lyrics_resize", { width, height }),
+  /** Resizes the window for a moment (the right-click menu), saving nothing. */
+  lyricsWindowSize: (width: number, height: number) => call<void>("lyrics_window_size", { width, height }),
+  /** Changes only the card's look, from its own right-click menu. Anything left
+   *  null keeps its value. */
+  lyricsSetLook: (look: {
+    opacity?: number;
+    fontSize?: number;
+    textColor?: string;
+    background?: string;
+    width?: number;
+    height?: number;
+  }) => call<void>("lyrics_set_look", { ...look }),
   /** Whether the overlay is on, for the page's first frame. */
   lyricsVisible: () => call<boolean>("lyrics_visible"),
   /** The overlay's two preferences, for a window that has just opened. */
@@ -600,12 +619,24 @@ export interface LyricsAnswer {
   plain: string | null;
   /** LRCLIB matched the track exactly; false for a search's best guess. */
   exact: boolean;
+  /** The service could not answer (busy, offline): not the same as no words. */
+  busy?: boolean;
 }
 
 /** The floating overlay's two preferences (Settings → General). */
 export interface LyricsPrefs {
   romanize: boolean;
+  placement?: "island" | "floating";
+  /** Ordinary browser videos count as songs (Settings → General). */
+  videos?: boolean;
   showOriginal: boolean;
+  /** The card's see-through amount, 0…1. */
+  opacity: number;
+  /** The sung line's size in px; the ones around it scale with it. */
+  fontSize: number;
+  /** `#rrggbb` for the words, and for the card behind them. */
+  textColor: string;
+  background: string;
 }
 
 export interface HookStatus {

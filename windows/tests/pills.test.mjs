@@ -44,7 +44,9 @@ test("the catalog holds the Mac's pills with the Claude Code label for Windows a
     ["integration_calcom", "Cal.com", "#C9956A", "service", "Integration"],
     ["integration_stripe", "Stripe", "#0570DE", "service", "Integration"],
     ["integration_music", "Apple Music", "#FA2D48", "service", "Integration"],
-    ["integration_spotify", "Spotify", "#1DB954", "service", "Integration"],
+    ["integration_spotify", "Music", "#1DB954", "service", "Integration"],
+    // Windows and Linux only: the Mac has no system health pill.
+    ["integration_system", "System", "#38BDF8", "service", "Integration"],
     ["integration_mail", "Mail", "#2F8CFF", "service", "Integration"],
     ["integration_whatsapp", "WhatsApp", "#25D366", "service", "Integration"],
   ];

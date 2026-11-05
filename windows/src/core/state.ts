@@ -112,8 +112,24 @@ export interface Settings {
   closedIsland: string;
   /** Japanese, Korean and Chinese lyric lines are shown romanised (the overlay). */
   lyricsRomanize: boolean;
+  /** Allow ordinary browser videos to participate in lyric detection. */
+  lyricsVideos: boolean;
+  /** Rust-owned lyrics switch and placement, mirrored from settings.json. */
+  lyrics?: { shown: boolean; placement: "island" | "floating"; spot: [number, number] | null };
+  /** Convenience mirror used by existing island rendering code. */
+  lyricsPlacement?: "island" | "floating";
   /** Under a romanised lyric line, the words as they are written. */
   lyricsShowOriginal: boolean;
+  /** The overlay card's see-through amount, 0…1 (0.25 shows the wallpaper). */
+  lyricsOpacity: number;
+  /** The sung line's size in px; the lines around it scale with it. */
+  lyricsFontSize: number;
+  /** The card's size in px. */
+  lyricsWidth: number;
+  lyricsHeight: number;
+  /** `#RRGGBB` for the words, and for the card behind them. */
+  lyricsTextColor: string;
+  lyricsBackground: string;
   absenceInterval: number;
   /** Declared pills next to the main one (at most 4), in the order they were added. */
   activeIntegrations: string[];
@@ -193,7 +209,15 @@ export const DEFAULT_SETTINGS: Settings = {
   showClock: false,
   closedIsland: "mochi",
   lyricsRomanize: true,
+  lyricsVideos: false,
+  lyricsPlacement: "island",
   lyricsShowOriginal: true,
+  lyricsOpacity: 0.25,
+  lyricsFontSize: 16,
+  lyricsWidth: 420,
+  lyricsHeight: 160,
+  lyricsTextColor: "#ffffff",
+  lyricsBackground: "#08090c",
   absenceInterval: 180,
   activeIntegrations: [
     "integration_resend", "integration_n8n", "integration_vercel", "integration_github",

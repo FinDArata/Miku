@@ -21,6 +21,7 @@
     "vite": "^6"
   },
   "dependencies": {
+    "@sglkc/kuromoji": "^1.1.0",
     "@tauri-apps/api": "^2",
     "pinyin-pro": "^3.29.5"
   }

@@ -19,8 +19,10 @@ import type { Settings } from "../core/state";
 import { t } from "../i18n/i18n";
 import { cachedSong, fetchSong, knownMissing } from "./fetch";
 import { lineIndexAt, type Song } from "./lrc";
-import { pinyinReady, romanizeMixed, scriptOf, usePinyin } from "./romanize";
-import { DEFAULT_PREFS, prefsFrom } from "./state";
+import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, pinyinReady, romanizeMixed, scriptOf, usePinyin } from "./romanize";
+import { looksLikeSong } from "./song";
+import { DEFAULT_PREFS, HIDE_AFTER_PAUSE_MS, autoAction, prefsFrom } from "./state";
+import { buildContextMenu, type LookValues } from "./menu";
 
 /** How often the line is re-read inside a song, in ms: a line lasts seconds. */
 const TICK_MS = 200;
@@ -57,6 +59,7 @@ export function trackKey(track: { artist: string; title: string; duration: numbe
 function reset() {
   song = EMPTY;
   songFor = "";
+  songLanguage = null;
   shownIndex = Number.NaN;
 }
 
@@ -72,6 +75,15 @@ async function syncSong() {
   // Already this song: nothing to ask anybody.
   if (key === songFor) return;
 
+  // A video is not a song: no words, and no question for LRCLIB either (the
+  // card should not even be up — autoShowOrHide keeps it away).
+  if (!looksLikeSong(track, currentLyricsVideos())) {
+    generation++;
+    reset();
+    draw();
+    return;
+  }
+
   const known = cachedSong(track);
   if (known || knownMissing(track)) {
     generation++;
@@ -80,7 +92,7 @@ async function syncSong() {
     songFor = key;
     shownIndex = Number.NaN;
     draw();
-    if (song.timed.length || song.plain.length) void ensurePinyin();
+    if (song.timed.length || song.plain.length) void ensureRomanisation();
     return;
   }
 
@@ -96,17 +108,28 @@ async function syncSong() {
   loading = false;
   song = answer;
   draw();
-  if (song.timed.length || song.plain.length) void ensurePinyin();
+  if (song.timed.length || song.plain.length) void ensureRomanisation();
 }
 
-// ── Pinyin, when a line needs it ─────────────────────────────────────────────
+// ── Romaji, pinyin, when a line needs them ───────────────────────────────────
 
+let japaneseAsked = false;
 let pinyinAsked = false;
 
-/** Loads the pinyin library the first time a Chinese line is there to show. */
-async function ensurePinyin() {
-  if (pinyinReady() || pinyinAsked) return;
+/** Reads every line of the song once: its language, and the library it needs. */
+async function ensureRomanisation() {
   const lines = [...song.timed.map((l) => l.text), ...song.plain];
+  songLanguage = languageOfLines(lines);
+  if (songLanguage === "japanese") {
+    if (japaneseReady() || japaneseAsked) return;
+    japaneseAsked = true;
+    if (await ensureJapaneseTokenizer()) {
+      shownIndex = Number.NaN;
+      draw();
+    }
+    return;
+  }
+  if (songLanguage !== "chinese" || pinyinReady() || pinyinAsked) return;
   if (!lines.some((line) => scriptOf(line) === "han")) return;
   pinyinAsked = true;
   try {
@@ -122,10 +145,12 @@ async function ensurePinyin() {
 // ── Drawing ──────────────────────────────────────────────────────────────────
 
 /** The line as it should be read on screen: romanised, or as written. */
+let songLanguage: "japanese" | "chinese" | null = null;
+
 function display(text: string): { line: string; original: string | null } {
   if (!prefs.romanize) return { line: text, original: null };
   if (scriptOf(text) === "latin") return { line: text, original: null };
-  const romanised = romanizeMixed(text);
+  const romanised = romanizeMixed(text, songLanguage);
   const original = prefs.showOriginal && romanised !== text ? text : null;
   return { line: romanised, original };
 }
@@ -183,7 +208,6 @@ function draw() {
   const state = Spotify.state;
   const track = state.track;
   songEl.textContent = track && !isAd(track) ? [track.title, track.artist].filter(Boolean).join(" — ") : "";
-
   // No player, no song, an advertisement: a line saying so, never a blank card.
   if (!state.running || !track) {
     shownIndex = Number.NaN;
@@ -193,6 +217,13 @@ function draw() {
   if (isAd(track)) {
     shownIndex = Number.NaN;
     rowsEl.replaceChildren(note(t("Advertisement")));
+    return;
+  }
+  // A video (a talk, a reaction, a film) has no lyrics and no card of its own:
+  // said plainly for the moment before the card hides itself.
+  if (!looksLikeSong(track, currentLyricsVideos())) {
+    shownIndex = Number.NaN;
+    rowsEl.replaceChildren(note(t("This is not a song")));
     return;
   }
   if (loading) {
@@ -239,6 +270,7 @@ function stopClock() {
 function apply(state: SpotifyState) {
   Spotify.state = state;
   playing = state.playing && state.track != null;
+  autoShowOrHide();
   // Hidden, the card is not on screen and nothing it would draw is seen: the
   // state is kept (the next show reads it), and the words are asked for then.
   if (!up) {
@@ -249,6 +281,82 @@ function apply(state: SpotifyState) {
   if (playing) startClock();
   else stopClock();
   draw();
+}
+
+// ── Opening and closing by itself ────────────────────────────────────────────
+//
+// A song starting brings the card up; a pause that lasts past its grace, or a
+// stop, takes it away. The switch in Settings still decides whether any of this
+// happens at all (state.ts holds the rule, tested on its own).
+
+/** The auto behaviour is on only when the user turned the overlay on. */
+let autoEnabled = false;
+let hideTimer: number | null = null;
+let lyricsVideos = false;
+
+function currentLyricsVideos(): boolean {
+  return lyricsVideos;
+}
+
+/** Where the app draws lyrics now; the floating page stays out of the way in the island. */
+function lyricsPlacement(): "island" | "floating" {
+  return prefs.placement ?? "island";
+}
+
+function clearHideTimer() {
+  if (hideTimer != null) {
+    window.clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+}
+
+/** Shows the card for a song that just started; hides it when nothing plays. */
+function autoShowOrHide() {
+  const track = Spotify.state.track;
+  // The island draws a playing song: the floating card stays out of the way.
+  if (lyricsPlacement() === "island") {
+    if (up) hideForNow();
+    return;
+  }
+  const action = autoAction({
+    enabled: autoEnabled,
+    up,
+    waiting: hideTimer != null,
+    playing,
+    hasSong: track != null && !isAd(track) && looksLikeSong(track, currentLyricsVideos()),
+  });
+  // Playback resumed inside the grace period: the hide that was counted down
+  // for the pause must not fire on a song that is playing again.
+  if (hideTimer != null && playing && track != null) clearHideTimer();
+  switch (action) {
+    case "show":
+      up = true;
+      clearHideTimer();
+      void Bridge.lyricsAutoShow();
+      void syncSong();
+      startClock();
+      draw();
+      break;
+    case "hide":
+      clearHideTimer();
+      hideForNow();
+      break;
+    case "wait":
+      hideTimer = window.setTimeout(() => {
+        hideTimer = null;
+        hideForNow();
+      }, HIDE_AFTER_PAUSE_MS);
+      break;
+    case "stay":
+      break;
+  }
+}
+
+/** Takes the card off screen without turning the switch in Settings off. */
+function hideForNow() {
+  up = false;
+  stopClock();
+  void Bridge.lyricsAutoHide();
 }
 
 function setVisible(on: boolean) {
@@ -268,19 +376,128 @@ function setVisible(on: boolean) {
 }
 
 void onEvent<SpotifyState>("spotify", (s) => apply(s));
-void onEvent<boolean>("lyrics-visible", (on) => setVisible(on));
+// Rust parked or brought back the window by itself (a song started, the music
+// stopped): the page follows without touching the switch in Settings.
+void onEvent<boolean>("lyrics-shown", (on) => setVisible(on));
+void onEvent<boolean>("lyrics-visible", (on) => {
+  // The switch in Settings is the master, both ways: turned off, nothing
+  // reopens the card by itself; turned on, it follows the music again.
+  autoEnabled = on;
+  if (!on) clearHideTimer();
+  setVisible(on);
+});
 // The preferences live in the app's settings: changing them repaints at once.
 void onEvent<Settings>("settings-changed", (s) => {
+  lyricsVideos = s.lyricsVideos === true;
   Object.assign(prefs, prefsFrom(s));
+  prefs.placement = s.lyrics?.placement ?? (s as { lyricsPlacement?: "island" | "floating" }).lyricsPlacement ?? "island";
+  applyLook(s);
   shownIndex = Number.NaN;
   draw();
 });
 
+// ── The card's own menu (a right-click) ─────────────────────────────────────
+//
+// The six values below are the ones the card owns; everything else is a step
+// away, in Settings. `lastLook` is what the page was last told, so the menu
+// opens on the values actually in force rather than on a guess.
+
+let lastLook: Partial<LookValues> = {};
+
+const menu = buildContextMenu({
+  look: () => ({
+    opacity: lastLook.opacity ?? 0.25,
+    fontSize: lastLook.fontSize ?? 16,
+    textColor: lastLook.textColor ?? "#ffffff",
+    background: lastLook.background ?? "#08090c",
+    width: lastLook.width ?? 420,
+    height: lastLook.height ?? 170,
+  }),
+  apply: (patch) => {
+    lastLook = { ...lastLook, ...patch };
+    applyLook(lastLook);
+    // Rust writes only these fields, and every window hears the result.
+    void Bridge.lyricsSetLook(patch);
+  },
+  openSettings: () => void Bridge.openSettingsWindow(),
+  placement: () => lyricsPlacement(),
+  setPlacement: (placement) => {
+    prefs.placement = placement;
+    void Bridge.lyricsSetPlacement(placement);
+    if (placement === "island") autoShowOrHide();
+  },
+  // The menu is taller than the card, so the window grows for it and shrinks
+  // back afterwards. Neither is saved: the card's own size is the setting.
+  grow: (width, height) => void Bridge.lyricsWindowSize(width, height),
+  shrink: () => void Bridge.lyricsWindowSize(lastLook.width ?? 420, lastLook.height ?? 170),
+});
+
+document.addEventListener("contextmenu", (e) => {
+  // The card is the whole window: anywhere on it is the right place.
+  e.preventDefault();
+  menu.open(e.clientX, e.clientY);
+});
+
+/**
+ * Dresses the card from a set of look settings. Both shapes reach this: the
+ * window's own `LyricsPrefs` at launch (camelCase, `textColor`) and the app's
+ * `Settings` after a change (flat, `lyricsTextColor`). Every value is already
+ * checked by Rust, and each only lands in a custom property, never in markup.
+ */
+function applyLook(look: {
+  opacity?: number;
+  fontSize?: number;
+  textColor?: string;
+  background?: string;
+  lyricsOpacity?: number;
+  lyricsFontSize?: number;
+  lyricsTextColor?: string;
+  lyricsBackground?: string;
+} | null | undefined) {
+  if (!look) return;
+  const root = document.documentElement;
+  const opacity = look.opacity ?? look.lyricsOpacity;
+  const size = look.fontSize ?? look.lyricsFontSize;
+  const ink = look.textColor ?? look.lyricsTextColor;
+  const bg = look.background ?? look.lyricsBackground;
+  if (typeof opacity === "number" && Number.isFinite(opacity)) {
+    root.style.setProperty("--lyrics-opacity", String(Math.min(1, Math.max(0, opacity))));
+  }
+  if (typeof size === "number" && Number.isFinite(size)) {
+    root.style.setProperty("--lyrics-size", `${Math.min(40, Math.max(10, size))}px`);
+  }
+  if (isHex(ink)) root.style.setProperty("--lyrics-ink", ink);
+  if (isHex(bg)) root.style.setProperty("--lyrics-bg", bg);
+  // The menu opens on what is in force, so keep the last values applied.
+  lastLook = {
+    ...lastLook,
+    ...(typeof opacity === "number" && Number.isFinite(opacity) ? { opacity } : {}),
+    ...(typeof size === "number" && Number.isFinite(size) ? { fontSize: size } : {}),
+    ...(isHex(ink) ? { textColor: ink } : {}),
+    ...(isHex(bg) ? { background: bg } : {}),
+  };
+}
+
+/** `#RRGGBB` only: anything else is ignored rather than pasted into a style. */
+function isHex(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
 async function start() {
-  const [on, saved] = await Promise.all([Bridge.lyricsVisible(), Bridge.lyricsPrefs()]);
-  if (saved) Object.assign(prefs, prefsFrom({ lyricsRomanize: saved.romanize, lyricsShowOriginal: saved.showOriginal }));
+  const [on, saved] = await Promise.all([Bridge.lyricsVisible(), Bridge.lyricsPrefs(), Bridge.spotifyRefresh()]);
+  if (saved) {
+    Object.assign(prefs, prefsFrom({ lyricsRomanize: saved.romanize, lyricsShowOriginal: saved.showOriginal }));
+    prefs.placement = saved.placement ?? "island";
+  }
+  lyricsVideos = saved?.videos === true;
+  applyLook(saved ?? null);
+  // The switch in Settings is the master: on, the card opens and closes with the
+  // music by itself; off, it never appears on its own.
+  autoEnabled = on === true;
   draw();
   setVisible(on === true);
+  // Read the player once so a song already playing opens the card.
+  if (autoEnabled) void Bridge.spotifyRefresh().then((s) => s && apply(s));
 }
 
 void start();

@@ -1,0 +1,168 @@
+// Which tracks the lyrics card belongs to. A browser playing YouTube looks the
+// same as one playing YouTube Music when only the tags are read, so the rules
+// here are what keep a film or a podcast from pulling up a lyrics card — and
+// what keep a real song from being turned away.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+const { looksLikeSong, songVerdict, MIN_SONG_SECONDS, MAX_SONG_SECONDS } = await import("../src/lyrics/song.ts");
+
+/** A track as the player reports it, with only what a case cares about set.
+ *  The id is Windows' own hash, not a Spotify URI, so the title and length
+ *  rules are what decide unless a case says otherwise. */
+const track = (o = {}) => ({
+  id: "windows:track:3f2c1a9e7b4d6c8a",
+  title: "Song",
+  artist: "Artist",
+  duration: 210,
+  source: null,
+  ...o,
+});
+
+// ── The program that publishes it ─────────────────────────────────────────────
+
+test("Spotify is a song, whatever the program id looks like", () => {
+  assert.equal(songVerdict(track({ source: "Spotify.exe" })), "music-source");
+  assert.equal(songVerdict(track({ source: "spotify" })), "music-source");
+  // The Microsoft Store package id.
+  assert.equal(songVerdict(track({ source: "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify" })), "music-source");
+});
+
+test("a player whose name says music is a song by the source alone", () => {
+  // YouTube Music as a PWA reports its own origin; so do other music players.
+  for (const source of ["music.youtube.com", "Music", "com.spotify.Client"]) {
+    assert.equal(songVerdict(track({ source })), "music-source", source);
+    assert.equal(looksLikeSong(track({ source })), true, source);
+  }
+});
+
+test("ordinary browsers need music evidence, while local players remain trusted", () => {
+  for (const source of ["chrome.exe", "MSEdge", "firefox", "brave", "opera", "vivaldi"]) {
+    assert.equal(songVerdict(track({ source, title: "Some song", album: "" })), "browser-video", source);
+    assert.equal(looksLikeSong(track({ source, title: "Some song", album: "" })), false, source);
+    assert.equal(songVerdict(track({ source, title: "How to fix a bike — tutorial" })), "video-title", source);
+  }
+  for (const source of ["vlc", "mpv", "foobar2000", "potplayer"]) {
+    assert.equal(songVerdict(track({ source, title: "Some song" })), "music-source", source);
+    assert.equal(looksLikeSong(track({ source, title: "Some song" })), true, source);
+  }
+});
+
+test("browser music evidence accepts official uploads and artist-title tracks", () => {
+  for (const title of [
+    "Adele - Hello (Official Music Video)",
+    "Adele - Hello official audio",
+    "Adele - Hello [lyrics]",
+    "Adele - Hello (M/V)",
+    "Adele - Hello Topic",
+    "Adele - Hello single",
+  ]) {
+    assert.equal(songVerdict(track({ source: "chrome.exe", title, album: "" })), "music-evidence", title);
+    assert.equal(looksLikeSong(track({ source: "chrome.exe", title, album: "" })), true, title);
+  }
+  assert.equal(songVerdict(track({ source: "chrome.exe", title: "Adele - Hello", album: "25" })), "music-evidence");
+  assert.equal(songVerdict(track({ source: "chrome.exe", title: "Adele - Hello", duration: 12 * 60, album: "" })), "music-evidence");
+});
+
+test("browser video override accepts otherwise ordinary videos", () => {
+  const video = track({ source: "chrome.exe", title: "Some song", album: "" });
+  assert.equal(looksLikeSong(video), false);
+  assert.equal(looksLikeSong(video, true), true);
+});
+
+// ── The title ────────────────────────────────────────────────────────────────
+
+test("a word that names a video in the title makes it a video", () => {
+  const cases = [
+    "Best of 2024 #shorts",
+    "SEVENTEEN - HOT (reaction)",
+    "Episode 12: the reunion",
+    "The Full Movie",
+    "Late night podcast, hour 3",
+    "Mukbang: 10 pounds of noodles",
+    "Final Highlights — Game 7",
+    "Tutorial: mixing at home",
+    "Best solos (compilation)",
+    "Official Trailer",
+  ];
+  for (const title of cases) {
+    assert.equal(songVerdict(track({ title })), "video-title", title);
+    assert.equal(looksLikeSong(track({ title })), false, title);
+  }
+});
+
+test("the title is matched without regard to case", () => {
+  assert.equal(songVerdict(track({ title: "WEEKEND REACTION" })), "video-title");
+  assert.equal(songVerdict(track({ title: "#Shorts — a moment" })), "video-title");
+});
+
+test("a video word inside another word is not a video", () => {
+  // The words are matched as written, so only the real ones fire: a song is not
+  // turned into a video by a coincidence of letters.
+  assert.equal(songVerdict(track({ title: "Untrailed" })), "default");
+  assert.equal(songVerdict(track({ title: "Dancing Queen" })), "default");
+  assert.equal(songVerdict(track({ title: "Nightdrive" })), "default");
+});
+
+// ── The length ───────────────────────────────────────────────────────────────
+
+test("a length no song has is not a song", () => {
+  assert.equal(MIN_SONG_SECONDS, 45);
+  assert.equal(MAX_SONG_SECONDS, 900);
+  assert.equal(songVerdict(track({ duration: 30 })), "wrong-length");
+  assert.equal(songVerdict(track({ duration: 44.9 })), "wrong-length");
+  assert.equal(songVerdict(track({ duration: 15 * 60 + 1 })), "wrong-length");
+  assert.equal(songVerdict(track({ duration: 3600 })), "wrong-length");
+  // The bounds themselves are songs: a short interlude, a long live take.
+  assert.equal(songVerdict(track({ duration: MIN_SONG_SECONDS })), "default");
+  assert.equal(songVerdict(track({ duration: MAX_SONG_SECONDS })), "default");
+});
+
+test("a duration nobody reported does not turn a song into a video", () => {
+  for (const duration of [0, null, undefined, Number.NaN, -5]) {
+    assert.equal(songVerdict(track({ duration })), "default", String(duration));
+    assert.equal(looksLikeSong(track({ duration })), true, String(duration));
+  }
+});
+
+// ── A Spotify id ─────────────────────────────────────────────────────────────
+
+test("a Spotify id is a song even when the program name is unknown", () => {
+  // 22 base62 characters after the type, as the player gives them.
+  assert.equal(songVerdict(track({ id: "spotify:track:6rqhFgbbKwnb9MLmUQDhG6", source: "something.exe" })), "spotify-id");
+  // An episode is the player's own podcast: still worth words when it has any.
+  assert.equal(looksLikeSong(track({ id: "spotify:episode:512ojhOuo1ktJprKbVcKyQ" })), true);
+  // An ad never reaches this function (isAd runs first), but it must not crash.
+  assert.equal(typeof songVerdict(track({ id: "spotify:ad:abc" })), "string");
+});
+
+test("an id that only looks like a Spotify id is not one", () => {
+  assert.equal(songVerdict(track({ id: "6rqhFgbbKwnb9MLmUQDhG6", source: "chrome.exe" })), "browser-video");
+  assert.equal(songVerdict(track({ id: "spotify:track:short", source: "chrome.exe" })), "browser-video");
+});
+
+// ── Nothing at all ───────────────────────────────────────────────────────────
+
+test("no track is not a song", () => {
+  assert.equal(looksLikeSong(null), false);
+  assert.equal(looksLikeSong(undefined), false);
+  assert.equal(songVerdict(null), "video-title");
+});
+
+test("the verdicts that pass are exactly the ones a card is shown for", () => {
+  const pass = ["music-source", "spotify-id", "music-evidence", "default"];
+  const fail = ["video-title", "wrong-length", "browser-video"];
+  const sample = (verdict) =>
+    ({
+      "music-source": track({ source: "Spotify.exe" }),
+      "spotify-id": track({ id: "spotify:track:6rqhFgbbKwnb9MLmUQDhG6", source: "x.exe" }),
+      default: track(),
+      "music-evidence": track({ source: "chrome.exe", title: "Artist - Song", album: "" }),
+      "browser-video": track({ source: "chrome.exe", title: "Some song", album: "" }),
+      "video-title": track({ title: "Official Trailer" }),
+      "wrong-length": track({ duration: 3 }),
+    })[verdict];
+  for (const verdict of pass) assert.equal(looksLikeSong(sample(verdict)), true, verdict);
+  for (const verdict of fail) assert.equal(looksLikeSong(sample(verdict)), false, verdict);
+});

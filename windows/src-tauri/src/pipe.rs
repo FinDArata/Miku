@@ -121,7 +121,7 @@ pub fn start(app: AppHandle) {
         // first_pipe_instance on Windows, we refuse to serve on top of it.
         if path.exists() {
             if std::os::unix::net::UnixStream::connect(&path).is_ok() {
-                log::line("another Kanon already serves the relay socket");
+                log::line("another Miku already serves the relay socket");
                 return;
             }
             let _ = std::fs::remove_file(&path);

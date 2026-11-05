@@ -134,9 +134,16 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
     subtitle: N_("Integration"), source: "n8n", support: "yes", connect: key("stripe-api-key") },
   { id: "integration_music", name: "Apple Music", color: "#FA2D48", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "no", connect: none },
-  // Spotify through MPRIS on Linux and the system media controls on Windows
-  // (src-tauri/src/spotify.rs).
-  { id: "integration_spotify", name: "Spotify", color: "#1DB954", category: "service",
+  // Any player the system reports: Spotify, YouTube Music in a browser, Apple
+  // Music, foobar2000, VLC… through MPRIS on Linux and the system media
+  // controls on Windows (src-tauri/src/spotify.rs). The id stays
+  // "integration_spotify" so an existing install keeps its choice.
+  { id: "integration_spotify", name: "Music", color: "#1DB954", category: "service",
+    subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
+  // System health: CPU, memory and, on a laptop, the battery, read on this
+  // computer every three seconds (src-tauri/src/system_health.rs). Nothing to
+  // set up, and nothing leaves the machine.
+  { id: "integration_system", name: "System", color: "#38BDF8", category: "service",
     subtitle: N_("Integration"), source: "n8n", support: "yes", connect: none },
   // Mail: classic Outlook on Windows, driven on this computer through its COM objects
   // (src-tauri/src/mail). The new Outlook has none, and Linux has no Outlook.

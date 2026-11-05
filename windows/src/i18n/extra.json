@@ -211,6 +211,21 @@
       "ko": "고급: 내 게이트웨이 쓰기",
       "ja": "詳細設定：自分のゲートウェイ"
     },
+    "All settings…": {
+      "zh-Hans": "所有设置…",
+      "hi": "सभी सेटिंग्स…",
+      "es": "Todos los ajustes…",
+      "ar": "كل الإعدادات…",
+      "fr": "Tous les réglages…",
+      "bn": "সব সেটিংস…",
+      "pt-BR": "Todos os ajustes…",
+      "ru": "Все настройки…",
+      "id": "Semua pengaturan…",
+      "de": "Alle Einstellungen…",
+      "tr": "Tüm ayarlar…",
+      "ko": "모든 설정…",
+      "ja": "すべての設定…"
+    },
     "Allow on the phone asks for the fingerprint or the screen lock. Deny does not.": {
       "zh-Hans": "在手机上点“允许”需要指纹或锁屏验证；“拒绝”则不需要。",
       "hi": "फ़ोन पर अनुमति देने के लिए फ़िंगरप्रिंट या स्क्रीन लॉक माँगा जाता है। अस्वीकार के लिए नहीं।",
@@ -541,6 +556,21 @@
       "ko": "기본 인증  (user:password, 설정한 경우)",
       "ja": "Basic 認証（user:password、設定している場合）"
     },
+    "Battery": {
+      "zh-Hans": "电池",
+      "hi": "बैटरी",
+      "es": "Batería",
+      "ar": "البطارية",
+      "fr": "Batterie",
+      "bn": "ব্যাটারি",
+      "pt-BR": "Bateria",
+      "ru": "Батарея",
+      "id": "Baterai",
+      "de": "Akku",
+      "tr": "Pil",
+      "ko": "배터리",
+      "ja": "バッテリー"
+    },
     "Bottom-left": {
       "zh-Hans": "左下",
       "hi": "नीचे-बाएँ",
@@ -570,6 +600,21 @@
       "tr": "Sağ alt",
       "ko": "오른쪽 아래",
       "ja": "右下"
+    },
+    "CPU": {
+      "zh-Hans": "处理器",
+      "hi": "सीपीयू",
+      "es": "CPU",
+      "ar": "المعالج",
+      "fr": "Processeur",
+      "bn": "সিপিইউ",
+      "pt-BR": "CPU",
+      "ru": "ЦП",
+      "id": "CPU",
+      "de": "CPU",
+      "tr": "İşlemci",
+      "ko": "CPU",
+      "ja": "CPU"
     },
     "Can't read {path}: {error}": {
       "zh-Hans": "无法读取 {path}：{error}",
@@ -645,6 +690,36 @@
       "tr": "{path} okunamıyor: {error}",
       "ko": "{path}을(를) 읽을 수 없어요: {error}",
       "ja": "{path} を読み取れません：{error}"
+    },
+    "Card colour": {
+      "zh-Hans": "卡片颜色",
+      "hi": "कार्ड का रंग",
+      "es": "Color de la tarjeta",
+      "ar": "لون البطاقة",
+      "fr": "Couleur de la carte",
+      "bn": "কার্ডের রং",
+      "pt-BR": "Cor do cartão",
+      "ru": "Цвет карточки",
+      "id": "Warna kartu",
+      "de": "Kartenfarbe",
+      "tr": "Kart rengi",
+      "ko": "카드 색상",
+      "ja": "カードの色"
+    },
+    "Charging": {
+      "zh-Hans": "充电中",
+      "hi": "चार्ज हो रहा है",
+      "es": "Cargando",
+      "ar": "يشحن",
+      "fr": "En charge",
+      "bn": "চার্জ হচ্ছে",
+      "pt-BR": "Carregando",
+      "ru": "Заряжается",
+      "id": "Mengisi daya",
+      "de": "Lädt",
+      "tr": "Şarj oluyor",
+      "ko": "충전 중",
+      "ja": "充電中"
     },
     "Chat providers": {
       "zh-Hans": "聊天服务商",
@@ -1771,6 +1846,96 @@
       "ko": "떠 있는 가사",
       "ja": "フローティング歌詞"
     },
+    "Detach from top": {
+      "zh-Hans": "从顶部脱离",
+      "hi": "ऊपर से अलग करें",
+      "es": "Separar de arriba",
+      "ar": "فصل عن الأعلى",
+      "fr": "Détacher du haut",
+      "bn": "উপর থেকে আলাদা করুন",
+      "pt-BR": "Separar do topo",
+      "ru": "Открепить сверху",
+      "id": "Lepas dari atas",
+      "de": "Von oben lösen",
+      "tr": "Üstten ayır",
+      "ko": "상단에서 분리",
+      "ja": "上部から切り離す"
+    },
+    "Return to top": {
+      "zh-Hans": "返回顶部",
+      "hi": "ऊपर लौटाएँ",
+      "es": "Volver arriba",
+      "ar": "العودة إلى الأعلى",
+      "fr": "Revenir en haut",
+      "bn": "উপরে ফিরিয়ে নিন",
+      "pt-BR": "Voltar ao topo",
+      "ru": "Вернуть наверх",
+      "id": "Kembalikan ke atas",
+      "de": "Nach oben zurück",
+      "tr": "Üste geri dön",
+      "ko": "상단으로 되돌리기",
+      "ja": "上部に戻す"
+    },
+    "Floating": {
+      "zh-Hans": "悬浮",
+      "hi": "तैरता हुआ",
+      "es": "Flotante",
+      "ar": "عائم",
+      "fr": "Flottant",
+      "bn": "ভাসমান",
+      "pt-BR": "Flutuante",
+      "ru": "Плавающий",
+      "id": "Melayang",
+      "de": "Schwebend",
+      "tr": "Yüzen",
+      "ko": "플로팅",
+      "ja": "フローティング"
+    },
+    "In the top pill": {
+      "zh-Hans": "在顶部胶囊中",
+      "hi": "ऊपर की पिल में",
+      "es": "En la píldora superior",
+      "ar": "في الحبة العلوية",
+      "fr": "Dans la pastille supérieure",
+      "bn": "উপরের পিলে",
+      "pt-BR": "Na pílula superior",
+      "ru": "В верхней капсуле",
+      "id": "Di pill atas",
+      "de": "In der oberen Pill",
+      "tr": "Üst pillde",
+      "ko": "상단 필에",
+      "ja": "上部ピル"
+    },
+    "Placement": {
+      "zh-Hans": "位置",
+      "hi": "स्थान",
+      "es": "Ubicación",
+      "ar": "الموضع",
+      "fr": "Emplacement",
+      "bn": "অবস্থান",
+      "pt-BR": "Posição",
+      "ru": "Размещение",
+      "id": "Penempatan",
+      "de": "Platzierung",
+      "tr": "Yerleşim",
+      "ko": "배치",
+      "ja": "配置"
+    },
+    "Show lyrics for videos too": {
+      "zh-Hans": "也为视频显示歌词",
+      "hi": "वीडियो के लिए भी बोल दिखाएँ",
+      "es": "Mostrar letras también para vídeos",
+      "ar": "إظهار الكلمات لمقاطع الفيديو أيضًا",
+      "fr": "Afficher aussi les paroles pour les vidéos",
+      "bn": "ভিডিওর জন্যও গানের কথা দেখান",
+      "pt-BR": "Mostrar letras também para vídeos",
+      "ru": "Показывать текст и для видео",
+      "id": "Tampilkan lirik untuk video juga",
+      "de": "Liedtexte auch für Videos anzeigen",
+      "tr": "Videolar için de şarkı sözlerini göster",
+      "ko": "동영상에도 가사 표시",
+      "ja": "動画にも歌詞を表示"
+    },
     "Folders can't be dropped yet.": {
       "zh-Hans": "暂时还不能拖放文件夹。",
       "hi": "फ़ोल्डर अभी नहीं छोड़े जा सकते।",
@@ -1950,6 +2115,21 @@
       "tr": "« OK Miku » ifadesini burada, internet olmadan duyar.",
       "ko": "인터넷 없이 여기서 « OK Miku »를 알아들어요.",
       "ja": "インターネットなしで、ここで「OK Miku」を聞き取ります。"
+    },
+    "Height": {
+      "zh-Hans": "高度",
+      "hi": "ऊँचाई",
+      "es": "Alto",
+      "ar": "الارتفاع",
+      "fr": "Hauteur",
+      "bn": "উচ্চতা",
+      "pt-BR": "Altura",
+      "ru": "Высота",
+      "id": "Tinggi",
+      "de": "Höhe",
+      "tr": "Yükseklik",
+      "ko": "높이",
+      "ja": "高さ"
     },
     "Hide project names": {
       "zh-Hans": "隐藏项目名称",
@@ -2641,6 +2821,21 @@
       "ko": "가사를 찾는 중…",
       "ja": "歌詞を探しています…"
     },
+    "Lower lets the wallpaper show through the card; the words keep their shadow.": {
+      "zh-Hans": "调低可让壁纸透出卡片；文字仍保留阴影。",
+      "hi": "कम करने पर वॉलपेपर कार्ड से दिखता है; शब्दों की छाया बनी रहती है।",
+      "es": "Más bajo deja ver el fondo de pantalla a través de la tarjeta; las palabras conservan su sombra.",
+      "ar": "خفض القيمة يُظهر خلفية الشاشة من خلال البطاقة؛ وتبقى للكلمات ظلالها.",
+      "fr": "Plus bas laisse voir le fond d'écran à travers la carte ; les mots gardent leur ombre.",
+      "bn": "কম করলে কার্ডের ভেতর দিয়ে ওয়ালপেপার দেখা যায়; শব্দের ছায়া থাকে।",
+      "pt-BR": "Mais baixo deixa o papel de parede aparecer através do cartão; as palavras mantêm a sombra.",
+      "ru": "Ниже — обои видны сквозь карточку; у слов остаётся тень.",
+      "id": "Lebih rendah membuat wallpaper terlihat menembus kartu; kata tetap punya bayangan.",
+      "de": "Niedriger lässt das Hintergrundbild durch die Karte scheinen; die Wörter behalten ihren Schatten.",
+      "tr": "Daha düşük, duvar kağıdının karttan görünmesini sağlar; sözcükler gölgesini korur.",
+      "ko": "낮출수록 카드 너머로 배경이 보입니다. 글자의 그림자는 유지됩니다.",
+      "ja": "低くすると壁紙がカード越しに見えます。文字の影は残ります。"
+    },
     "Main display": {
       "zh-Hans": "主显示器",
       "hi": "मुख्य डिस्प्ले",
@@ -2715,6 +2910,21 @@
       "tr": "Toplantı",
       "ko": "회의",
       "ja": "会議"
+    },
+    "Memory": {
+      "zh-Hans": "内存",
+      "hi": "मेमोरी",
+      "es": "Memoria",
+      "ar": "الذاكرة",
+      "fr": "Mémoire",
+      "bn": "মেমরি",
+      "pt-BR": "Memória",
+      "ru": "Память",
+      "id": "Memori",
+      "de": "Arbeitsspeicher",
+      "tr": "Bellek",
+      "ko": "메모리",
+      "ja": "メモリ"
     },
     "Message": {
       "zh-Hans": "消息",
@@ -3060,6 +3270,21 @@
       "tr": "Pazartesi",
       "ko": "월요일",
       "ja": "月曜日"
+    },
+    "Music": {
+      "zh-Hans": "音乐",
+      "hi": "संगीत",
+      "es": "Música",
+      "ar": "الموسيقى",
+      "fr": "Musique",
+      "bn": "সংগীত",
+      "pt-BR": "Música",
+      "ru": "Музыка",
+      "id": "Musik",
+      "de": "Musik",
+      "tr": "Müzik",
+      "ko": "음악",
+      "ja": "音楽"
     },
     "Mute": {
       "zh-Hans": "静音",
@@ -3736,6 +3961,21 @@
       "ko": "지금부터 도착하는 메일만, 모든 Outlook 계정에서 정리합니다. 클래식 Outlook이 열려 있어야 합니다.",
       "ja": "今から届くメールのみ、すべての Outlook アカウントが対象です。クラシック版 Outlook を開いておく必要があります。"
     },
+    "Opacity": {
+      "zh-Hans": "不透明度",
+      "hi": "अपारदर्शिता",
+      "es": "Opacidad",
+      "ar": "العتامة",
+      "fr": "Opacité",
+      "bn": "অস্বচ্ছতা",
+      "pt-BR": "Opacidade",
+      "ru": "Непрозрачность",
+      "id": "Opasitas",
+      "de": "Deckkraft",
+      "tr": "Opaklık",
+      "ko": "불투명도",
+      "ja": "不透明度"
+    },
     "Open Outlook (the classic one) to see your mail here.": {
       "zh-Hans": "打开 Outlook（经典版），即可在这里看到你的邮件。",
       "hi": "अपने मेल यहाँ देखने के लिए Outlook (क्लासिक) खोलें।",
@@ -4245,6 +4485,21 @@
       "tr": "Aktarıcıya bağlanılıyor…",
       "ko": "릴레이에 연결하는 중…",
       "ja": "リレーに接続中…"
+    },
+    "Reading…": {
+      "zh-Hans": "正在读取…",
+      "hi": "पढ़ रहा है…",
+      "es": "Leyendo…",
+      "ar": "جارٍ القراءة…",
+      "fr": "Lecture…",
+      "bn": "পড়া হচ্ছে…",
+      "pt-BR": "Lendo…",
+      "ru": "Чтение…",
+      "id": "Membaca…",
+      "de": "Wird gelesen…",
+      "tr": "Okunuyor…",
+      "ko": "읽는 중…",
+      "ja": "読み取り中…"
     },
     "Ready": {
       "zh-Hans": "就绪",
@@ -5206,6 +5461,21 @@
       "ko": "연결 테스트",
       "ja": "接続をテスト"
     },
+    "Text colour": {
+      "zh-Hans": "文字颜色",
+      "hi": "पाठ का रंग",
+      "es": "Color del texto",
+      "ar": "لون النص",
+      "fr": "Couleur du texte",
+      "bn": "লেখার রং",
+      "pt-BR": "Cor do texto",
+      "ru": "Цвет текста",
+      "id": "Warna teks",
+      "de": "Textfarbe",
+      "tr": "Metin rengi",
+      "ko": "글자 색상",
+      "ja": "文字の色"
+    },
     "Text only": {
       "zh-Hans": "仅文字",
       "hi": "केवल टेक्स्ट",
@@ -5220,6 +5490,21 @@
       "tr": "Yalnızca metin",
       "ko": "텍스트만",
       "ja": "テキストのみ"
+    },
+    "Text size": {
+      "zh-Hans": "文字大小",
+      "hi": "पाठ का आकार",
+      "es": "Tamaño del texto",
+      "ar": "حجم النص",
+      "fr": "Taille du texte",
+      "bn": "লেখার আকার",
+      "pt-BR": "Tamanho do texto",
+      "ru": "Размер текста",
+      "id": "Ukuran teks",
+      "de": "Textgröße",
+      "tr": "Metin boyutu",
+      "ko": "글자 크기",
+      "ja": "文字の大きさ"
     },
     "That key can't be used in a shortcut.": {
       "zh-Hans": "这个键不能用于快捷键。",
@@ -5280,6 +5565,21 @@
       "tr": "Arama 4 saattir kaydediliyor: Miku kaydı durdurdu.",
       "ko": "통화를 4시간 동안 녹음해 Miku가 녹음을 멈췄습니다.",
       "ja": "通話を 4 時間録音したため、Miku は録音を止めました。"
+    },
+    "The card": {
+      "zh-Hans": "卡片",
+      "hi": "कार्ड",
+      "es": "La tarjeta",
+      "ar": "البطاقة",
+      "fr": "La carte",
+      "bn": "কার্ড",
+      "pt-BR": "O cartão",
+      "ru": "Карточка",
+      "id": "Kartu",
+      "de": "Die Karte",
+      "tr": "Kart",
+      "ko": "카드",
+      "ja": "カード"
     },
     "The clean-up uses your Claude key. Add it in Notch → Chat.": {
       "zh-Hans": "清理功能使用你的 Claude 密钥。请在“Notch → 聊天”中添加。",
@@ -5986,6 +6286,21 @@
       "ko": "이 코드에는 릴레이 {host}의 액세스 키와 종단간 키도 들어 있어요. '다시 페어링'하면 새 키와 새 방이 만들어져요.",
       "ja": "このコードにはリレー {host} のアクセスキーとエンドツーエンドの鍵も含まれています。「もう一度ペアリング」で新しい鍵と新しいルームが作られます。"
     },
+    "This computer": {
+      "zh-Hans": "这台电脑",
+      "hi": "यह कंप्यूटर",
+      "es": "Este equipo",
+      "ar": "هذا الحاسوب",
+      "fr": "Cet ordinateur",
+      "bn": "এই কম্পিউটার",
+      "pt-BR": "Este computador",
+      "ru": "Этот компьютер",
+      "id": "Komputer ini",
+      "de": "Dieser Computer",
+      "tr": "Bu bilgisayar",
+      "ko": "이 컴퓨터",
+      "ja": "このコンピューター"
+    },
     "This is exactly what changes for {name}. Nothing else is touched.": {
       "zh-Hans": "这正是 {name} 将发生的改动。其他内容不会被触碰。",
       "hi": "{name} के लिए ठीक यही बदलेगा। और कुछ नहीं छुआ जाता।",
@@ -6030,6 +6345,21 @@
       "tr": "Yapılacak değişiklik tam olarak bu: yalnızca durum satırı. Mevcut bir durum satırın varsa çalışmaya devam eder; Miku'nun aracısı onu senin için çalıştırır.",
       "ko": "바뀌는 건 딱 상태 표시줄뿐이에요. 이미 쓰고 있는 게 있으면 Miku 릴레이가 대신 실행해 줘서 계속 잘 돌아가요.",
       "ja": "変わるのはステータスラインだけです。すでにある場合もそのまま動作し、Miku のリレーが代わりに実行します。"
+    },
+    "This is not a song": {
+      "zh-Hans": "这不是歌曲",
+      "hi": "यह गाना नहीं है",
+      "es": "Esto no es una canción",
+      "ar": "هذا ليس أغنية",
+      "fr": "Ce n'est pas une chanson",
+      "bn": "এটি গান নয়",
+      "pt-BR": "Isto não é uma música",
+      "ru": "Это не песня",
+      "id": "Ini bukan lagu",
+      "de": "Das ist kein Lied",
+      "tr": "Bu bir şarkı değil",
+      "ko": "노래가 아니에요",
+      "ja": "これは曲ではありません"
     },
     "This pairing is in use somewhere else. Press Pair again.": {
       "zh-Hans": "此配对正在别处使用。请点击“重新配对”。",
@@ -6585,6 +6915,21 @@
       "tr": "WhatsApp (deneysel)",
       "ko": "WhatsApp (실험적)",
       "ja": "WhatsApp（実験的）"
+    },
+    "Width": {
+      "zh-Hans": "宽度",
+      "hi": "चौड़ाई",
+      "es": "Ancho",
+      "ar": "العرض",
+      "fr": "Largeur",
+      "bn": "প্রস্থ",
+      "pt-BR": "Largura",
+      "ru": "Ширина",
+      "id": "Lebar",
+      "de": "Breite",
+      "tr": "Genişlik",
+      "ko": "너비",
+      "ja": "幅"
     },
     "Windows blocked the installer. Get the new version from its release page instead.": {
       "zh-Hans": "Windows 阻止了安装程序。请改从发布页面获取新版本。",

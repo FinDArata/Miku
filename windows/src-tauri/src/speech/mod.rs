@@ -206,7 +206,7 @@ async fn download_all(app: &AppHandle) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(20))
         .read_timeout(Duration::from_secs(60))
-        .user_agent(concat!("Kanon/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("Miku/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| e.to_string())?;
     let mut last_emit = Instant::now();

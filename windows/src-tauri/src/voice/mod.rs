@@ -70,7 +70,7 @@ pub fn sync(app: &AppHandle) {
             std::thread::Builder::new().name("miku-voice".into()).spawn(move || run(app2, stop2)).ok();
             *running = Some(Running { stop });
             speech::preload();
-            crate::log::line("voice: « OK Kanon » listening");
+            crate::log::line("voice: « OK Miku » listening");
         }
         (false, true) => {
             if let Some(r) = running.take() {
@@ -80,7 +80,7 @@ pub fn sync(app: &AppHandle) {
             if !dictation && !crate::notes::is_recording(app) {
                 speech::unload();
             }
-            crate::log::line("voice: « OK Kanon » off");
+            crate::log::line("voice: « OK Miku » off");
         }
         _ => {}
     }
@@ -177,7 +177,7 @@ fn run(app: AppHandle, stop: Arc<AtomicBool>) {
             let question = match &mut mode {
                 Mode::Wake => match wake::after_wake(&heard) {
                     Some(rest) => {
-                        crate::log::line("voice: « OK Kanon » heard");
+                        crate::log::line("voice: « OK Miku » heard");
                         hide_at = None;
                         if crate::flow::text::word_count(&rest) >= 2 {
                             Some(rest)
