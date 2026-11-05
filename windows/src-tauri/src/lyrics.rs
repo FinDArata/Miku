@@ -150,9 +150,11 @@ pub fn setup(app: &AppHandle) {
     }
     match builder.build() {
         Ok(win) => {
-            // Keep the Music event source alive whenever lyrics are enabled,
-            // including the island placement. The top pill consumes those events.
-            crate::settings::declare_music_pill(app);
+            // The remembered spot, whether or not the card is up yet: a drag
+            // that only lands the window when it is first shown would lose it.
+            place(app, &win, pref.spot, &screen);
+            // The window only appears where the words are drawn in it: in the
+            // island, the top pill follows the same Music events instead.
             if pref.shown && pref.placement == "floating" {
                 show_window(app, true, pref.spot.as_ref(), &screen);
             }
