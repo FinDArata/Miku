@@ -5,11 +5,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { parseLrc, readSong, lineIndexAt, cacheKey, mainArtist } = await import("../src/lyrics/lrc.ts");
+const { parseLrc, readSong, lineIndexAt, nextSungLine, previousSungLine, cacheKey, mainArtist } = await import("../src/lyrics/lrc.ts");
 const { romanizeJapanese, romanizeHangul, romanizeMixed, scriptOf, romanize, useJapanese, romanizeJapaneseFull, languageOfLines, japaneseReady } = await import(
   "../src/lyrics/romanize.ts"
 );
-const { prefsFrom, DEFAULT_PREFS, autoAction, HIDE_AFTER_PAUSE_MS } = await import("../src/lyrics/state.ts");
+const { prefsFrom, DEFAULT_PREFS, autoAction, HIDE_AFTER_PAUSE_MS, HOLD_MAX_MS, holdStillUp } = await import("../src/lyrics/state.ts");
 
 // ── LRC ───────────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,38 @@ test("the sung line is the last one that has started", () => {
   assert.equal(lineIndexAt(lines, 19.9), 0);
   assert.equal(lineIndexAt(lines, 20), 1);
   assert.equal(lineIndexAt(lines, 999), 2);
+});
+
+test("a stamped gap holds the line before it instead of blanking the card", () => {
+  // LRCLIB's real LRC for "Heart of Lahai-Roi" carries "[00:04.29] " for the
+  // intro. Reading that gap as the current line left the card showing a title
+  // and no words at all, for as long as the break lasted.
+  const lines = parseLrc("[00:00.99]Eclipse\n[00:04.29] \n[00:18.94]Elevate\n[00:49.70] ");
+  assert.equal(lines.length, 4, "the gap is still a line in the file");
+  assert.equal(lines[1].text, "");
+  // Before the first line there is nothing to hold.
+  assert.equal(lineIndexAt(lines, 0.5), -1);
+  // The first line, then the gap: the words stay.
+  assert.equal(lineIndexAt(lines, 1), 0);
+  assert.equal(lineIndexAt(lines, 5), 0);
+  assert.equal(lineIndexAt(lines, 10), 0);
+  // Past the second gap, the line before it holds too.
+  assert.equal(lineIndexAt(lines, 19), 2, "skips the gap stamped at 4.29");
+  assert.equal(lineIndexAt(lines, 50), 2);
+});
+
+test("the lines around the sung one skip the gaps", () => {
+  // The card shows "past" and "next"; both must be real lines.
+  const lines = parseLrc("[00:01.00]one\n[00:05.00] \n[00:10.00]two\n[00:15.00] \n[00:20.00]three");
+  const at = lineIndexAt(lines, 10);
+  assert.equal(lines[at].text, "two");
+  const before = previousSungLine(lines, at);
+  const after = nextSungLine(lines, at);
+  assert.equal(lines[before].text, "one", "skips the 05:00 gap");
+  assert.equal(lines[after].text, "three", "skips the 15:00 gap");
+  // The ends have nothing beyond them.
+  assert.equal(previousSungLine(lines, 0), -1);
+  assert.equal(nextSungLine(lines, lines.length - 1), -1);
 });
 
 test("a guest is cut off an artist, but a duo is not", () => {
@@ -250,7 +282,52 @@ test("nothing loaded hides at once, without a grace period", () => {
   assert.equal(auto({ up: false }), "stay");
 });
 
+test("a video never opens the card, and never closes one the user detached", () => {
+  // A YouTube video or Short: something is loaded, but it is not a song. It
+  // must not take away a card the user asked for by detaching it.
+  const video = { playing: true, hasTrack: true, hasSong: false };
+  assert.equal(auto({ ...video, up: true, waiting: false }), "stay");
+  // Nor does it open one of its own.
+  assert.equal(auto({ ...video, up: false }), "stay");
+  // Paused on a video: still nothing to hide.
+  assert.equal(auto({ ...video, playing: false, up: true }), "stay");
+});
+
+test("a stop is still a stop, even with the card up", () => {
+  // Nothing loaded at all: the player closed, or released the session.
+  assert.equal(auto({ up: true, hasTrack: false, hasSong: false }), "hide");
+});
+
 test("the switch in Settings is the master: off, nothing happens on its own", () => {
   assert.equal(auto({ enabled: false, playing: true, hasSong: true }), "stay");
   assert.equal(auto({ enabled: false, up: true }), "stay");
+});
+
+// ── Holding the words while a video owns the session ─────────────────────────
+//
+// One browser publishes one media session for all its tabs, so switching to a
+// YouTube video while a song plays replaces the song's report with the video's.
+// The pill keeps its words through a glance, but not through a film.
+
+test("a glance at another tab keeps the words", () => {
+  assert.equal(HOLD_MAX_MS, 20_000);
+  const since = 1_000_000;
+  assert.equal(holdStillUp(since, since), true);
+  assert.equal(holdStillUp(since, since + 5_000), true);
+  assert.equal(holdStillUp(since, since + 19_999), true);
+});
+
+test("watching a video takes the words away with the song", () => {
+  const since = 1_000_000;
+  // Past the grace period the lyrics go, even though the video is still playing
+  // and nothing about the session says the song stopped.
+  assert.equal(holdStillUp(since, since + 20_000), false);
+  assert.equal(holdStillUp(since, since + 60_000), false);
+  assert.equal(holdStillUp(since, since + 3_600_000), false);
+});
+
+test("no takeover is no hold, and a clock that jumps back does not pin it", () => {
+  assert.equal(holdStillUp(null, 1_000_000), false);
+  // A suspend or a time change must not leave the pill up for ever.
+  assert.equal(holdStillUp(1_000_000, 900_000), false);
 });

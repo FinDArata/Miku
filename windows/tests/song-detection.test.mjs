@@ -38,14 +38,29 @@ test("a player whose name says music is a song by the source alone", () => {
 });
 
 test("ordinary browsers need music evidence, while local players remain trusted", () => {
+  // A page reporting no length is a video: measured live, a YouTube video
+  // reports 0 while YouTube Music reports the track's own length.
   for (const source of ["chrome.exe", "MSEdge", "firefox", "brave", "opera", "vivaldi"]) {
-    assert.equal(songVerdict(track({ source, title: "Some song", album: "" })), "browser-video", source);
-    assert.equal(looksLikeSong(track({ source, title: "Some song", album: "" })), false, source);
+    assert.equal(songVerdict(track({ source, title: "Some song", album: "", duration: 0 })), "browser-video", source);
+    assert.equal(looksLikeSong(track({ source, title: "Some song", album: "", duration: 0 })), false, source);
     assert.equal(songVerdict(track({ source, title: "How to fix a bike — tutorial" })), "video-title", source);
   }
   for (const source of ["vlc", "mpv", "foobar2000", "potplayer"]) {
     assert.equal(songVerdict(track({ source, title: "Some song" })), "music-source", source);
     assert.equal(looksLikeSong(track({ source, title: "Some song" })), true, source);
+  }
+});
+
+test("a browser that reports a track's length is playing one", () => {
+  // The measurement this rule is built on: YouTube Music reported 205.98 s for
+  // a song and no length at all for a video.
+  for (const source of ["chrome.exe", "firefox", "Mozilla Firefox"]) {
+    const song = track({ source, title: "Heart of Lahai-Roi", album: "", duration: 205.98 });
+    assert.equal(songVerdict(song), "music-evidence", source);
+    assert.equal(looksLikeSong(song), true, source);
+    // A length no song has still rules it out.
+    assert.equal(songVerdict(track({ source, title: "Song", duration: 20 })), "wrong-length", source);
+    assert.equal(songVerdict(track({ source, title: "Song", duration: 3600 })), "wrong-length", source);
   }
 });
 
@@ -66,7 +81,8 @@ test("browser music evidence accepts official uploads and artist-title tracks", 
 });
 
 test("browser video override accepts otherwise ordinary videos", () => {
-  const video = track({ source: "chrome.exe", title: "Some song", album: "" });
+  // No length: a video, unless the setting says videos may show words too.
+  const video = track({ source: "chrome.exe", title: "Some song", album: "", duration: 0 });
   assert.equal(looksLikeSong(video), false);
   assert.equal(looksLikeSong(video, true), true);
 });
@@ -138,8 +154,9 @@ test("a Spotify id is a song even when the program name is unknown", () => {
 });
 
 test("an id that only looks like a Spotify id is not one", () => {
-  assert.equal(songVerdict(track({ id: "6rqhFgbbKwnb9MLmUQDhG6", source: "chrome.exe" })), "browser-video");
-  assert.equal(songVerdict(track({ id: "spotify:track:short", source: "chrome.exe" })), "browser-video");
+  // No length, so the browser rules decide and there is no music evidence.
+  assert.equal(songVerdict(track({ id: "6rqhFgbbKwnb9MLmUQDhG6", source: "chrome.exe", duration: 0 })), "browser-video");
+  assert.equal(songVerdict(track({ id: "spotify:track:short", source: "chrome.exe", duration: 0 })), "browser-video");
 });
 
 // ── Nothing at all ───────────────────────────────────────────────────────────
@@ -150,18 +167,124 @@ test("no track is not a song", () => {
   assert.equal(songVerdict(null), "video-title");
 });
 
+// ── A page that plays YouTube and YouTube Music both ─────────────────────────
+//
+// Read live from this machine: the session reported the title of an ordinary
+// video, the channel as the artist, and no album and no length. The source was
+// an opaque app user model id, which is why the browser rules never ran and the
+// video read as a song.
+
+/** What Rust sends now: the executable that owns the session, not the raw id. */
+const page = (o = {}) => track({ source: "firefox.exe", artist: "Quick Fact Room", album: "", duration: 0, ...o });
+
+test("a YouTube page with no evidence of music is not a song", () => {
+  const video = page({ title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(video), "browser-video");
+  assert.equal(looksLikeSong(video), false);
+});
+
+test("the same page playing YouTube Music is a song", () => {
+  // YouTube Music names the record as the album; an ordinary video names none.
+  const music = page({ title: "Voyaging Star's Farewell", artist: "Wuthering Waves", album: "Voyaging Star's Farewell", duration: 225 });
+  assert.equal(songVerdict(music), "music-evidence");
+  assert.equal(looksLikeSong(music), true);
+});
+
+test("a YouTube Short is not a song, and a video's own words still win", () => {
+  assert.equal(songVerdict(page({ title: "Blade Got A New Weapon #hsr", duration: 30 })), "wrong-length");
+  assert.equal(songVerdict(page({ title: "SPY×FAMILY Episode 1 Reaction Mashup", duration: 300 })), "video-title");
+});
+
+test("an opaque source id is read as a browser, not as a player", () => {
+  // Before the id is resolved to a name it still arrives sometimes: the lookup
+  // found nothing. It must not read as a song.
+  const unresolved = track({ source: "308046B0AF4A39CB", artist: "Quick Fact Room", album: "", duration: 0, title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(unresolved), "browser-video");
+  assert.equal(looksLikeSong(unresolved), false);
+  // A player we know is still a player, whatever its id looks like.
+  assert.equal(songVerdict(track({ source: "Spotify.exe" })), "music-source");
+});
+
+test("the name Windows registers for the id is what the rules read", () => {
+  // Rust resolves the id to this registry DisplayName: "Mozilla Firefox".
+  const video = track({ source: "Mozilla Firefox", artist: "Quick Fact Room", album: "", duration: 0, title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(video), "browser-video");
+  assert.equal(looksLikeSong(video), false);
+  // And the same program playing YouTube Music has the record as its album.
+  const music = { ...video, title: "Voyaging Star's Farewell", artist: "Wuthering Waves", album: "Voyaging Star's Farewell", duration: 225 };
+  assert.equal(songVerdict(music), "music-evidence");
+  assert.equal(looksLikeSong(music), true);
+});
+
+// ── A feed app's own session ─────────────────────────────────────────────────
+
+/** What Instagram publishes while a clip plays: the app's name, nothing else. */
+const feed = (o = {}) => track({
+  id: "spotify:track:9a1b2c3d4e5f6071",
+  title: "Instagram",
+  artist: "",
+  album: "",
+  duration: 0,
+  source: "Instagram.exe",
+  ...o,
+});
+
+test("scrolling Instagram is not a song, whatever the player reports", () => {
+  // This is what put a lyrics pill on screen for a photo feed: the title was the
+  // app's own name, with no artist, album or length to say otherwise.
+  assert.equal(songVerdict(feed()), "feed-app");
+  assert.equal(looksLikeSong(feed()), false);
+  // "Show lyrics for videos too" must not bring it back: a feed is not a concert.
+  assert.equal(looksLikeSong(feed(), true), false);
+});
+
+test("the other feeds are the same, and so is a name followed by its screen", () => {
+  for (const title of ["Instagram", "TikTok", "Facebook", "Twitter", "Snapchat", "Threads", "Reddit"]) {
+    assert.equal(songVerdict(feed({ title })), "feed-app", title);
+    assert.equal(looksLikeSong(feed({ title })), false, title);
+  }
+  for (const title of ["Instagram — Reels", "TikTok | For You", "Facebook: Video"]) {
+    assert.equal(songVerdict(feed({ title })), "feed-app", title);
+  }
+  // Case and stray spacing are not a way out.
+  assert.equal(songVerdict(feed({ title: "  instagram  " })), "feed-app");
+});
+
+test("feed metadata never turns a feed session into a song", () => {
+  // An app may populate artist or album with its own collection metadata, and a
+  // clip knows its own length. The source is still a feed session, not a player.
+  assert.equal(looksLikeSong(feed({ title: "Threads", artist: "Now, Now" })), false);
+  assert.equal(looksLikeSong(feed({ title: "Instagram", album: "Album" })), false);
+  assert.equal(songVerdict(feed({ title: "Instagram", duration: 210 })), "feed-app");
+  // Whatever the title says, a feed's session is never a song — not even an
+  // "official audio" clip, because scrolling a feed is not watching a concert.
+  assert.equal(songVerdict(feed({ title: "Instagram (Official Audio)" })), "feed-app");
+});
+
+test("a feed name inside a longer title on a feed's own session is still a video", () => {
+  // The source is still Instagram, so the session is a feed's whatever the
+  // title: it never opens a card. (A song named after a feed, playing in a
+  // player, is not this case.)
+  assert.equal(songVerdict(feed({ title: "Instagram Eyes" })), "feed-app");
+  assert.equal(songVerdict(feed({ title: "Reddit Girl" })), "feed-app");
+  // In an ordinary browser, the same titles are just videos with no music.
+  assert.equal(songVerdict(track({ source: "chrome.exe", title: "Instagram Eyes", album: "", duration: 0 })), "browser-video");
+  assert.equal(songVerdict(track({ source: "chrome.exe", title: "Reddit Girl", album: "", duration: 0 })), "browser-video");
+});
+
 test("the verdicts that pass are exactly the ones a card is shown for", () => {
   const pass = ["music-source", "spotify-id", "music-evidence", "default"];
-  const fail = ["video-title", "wrong-length", "browser-video"];
+  const fail = ["video-title", "wrong-length", "browser-video", "feed-app"];
   const sample = (verdict) =>
     ({
       "music-source": track({ source: "Spotify.exe" }),
       "spotify-id": track({ id: "spotify:track:6rqhFgbbKwnb9MLmUQDhG6", source: "x.exe" }),
       default: track(),
-      "music-evidence": track({ source: "chrome.exe", title: "Artist - Song", album: "" }),
-      "browser-video": track({ source: "chrome.exe", title: "Some song", album: "" }),
+      "music-evidence": track({ source: "chrome.exe", title: "Artist - Song", album: "", duration: 210 }),
+      "browser-video": track({ source: "chrome.exe", title: "Some song", album: "", duration: 0 }),
       "video-title": track({ title: "Official Trailer" }),
       "wrong-length": track({ duration: 3 }),
+      "feed-app": track({ source: "Instagram.exe", title: "Instagram", artist: "", album: "", duration: 0 }),
     })[verdict];
   for (const verdict of pass) assert.equal(looksLikeSong(sample(verdict)), true, verdict);
   for (const verdict of fail) assert.equal(looksLikeSong(sample(verdict)), false, verdict);

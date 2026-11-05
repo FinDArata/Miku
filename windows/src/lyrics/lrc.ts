@@ -81,6 +81,12 @@ export function parseLrc(text: string): LyricsLine[] {
 /**
  * The line being sung at `seconds`: the last one that has started. -1 before
  * the first. Two lines stamped the same instant count as one.
+ *
+ * A stamped line with no words is a gap, not a line: LRCLIB's LRC files carry
+ * them for instrumental breaks ("[00:04.29] "). Returning that index left the
+ * card showing a title and no words at all for the length of the gap, which is
+ * what a song's intro and middle look like. The scan therefore keeps the most
+ * recent line that has words, so a gap holds the line before it.
  */
 export function lineIndexAt(lines: readonly LyricsLine[], seconds: number): number {
   let lo = 0;
@@ -95,7 +101,34 @@ export function lineIndexAt(lines: readonly LyricsLine[], seconds: number): numb
       hi = mid - 1;
     }
   }
+  // Walk back over any gap to the last line with words. The walk is bounded by
+  // the number of consecutive blank stamps, which is a handful in any real file.
+  for (let i = found; i >= 0; i--) {
+    if (lines[i].text.trim()) return i;
+  }
   return found;
+}
+
+/**
+ * The next line with words after `index`, or -1. Gaps sit between verses, so
+ * the line shown as "next" has to skip over them the same way lineIndexAt does.
+ */
+export function nextSungLine(lines: readonly LyricsLine[], index: number): number {
+  for (let i = index + 1; i < lines.length; i++) {
+    if (lines[i].text.trim()) return i;
+  }
+  return -1;
+}
+
+/**
+ * The last line with words before `index`, or -1. The backwards twin of
+ * nextSungLine, for the line shown above the one being sung.
+ */
+export function previousSungLine(lines: readonly LyricsLine[], index: number): number {
+  for (let i = index - 1; i >= 0; i--) {
+    if (lines[i].text.trim()) return i;
+  }
+  return -1;
 }
 
 /**

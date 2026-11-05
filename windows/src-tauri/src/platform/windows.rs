@@ -8,7 +8,7 @@ use std::process::Command;
 
 use tauri::{AppHandle, Manager, WebviewWindow};
 
-use ::windows::core::{w, BOOL, PWSTR};
+use ::windows::core::{w, BOOL, PCWSTR, PWSTR};
 use ::windows::Win32::Foundation::{
     CloseHandle, HANDLE, HLOCAL, HWND, LPARAM, LocalFree, POINT, RPC_E_CHANGED_MODE,
 };
@@ -22,6 +22,10 @@ use ::windows::Win32::System::Diagnostics::ToolHelp::{
 };
 use ::windows::Win32::System::Ole::RevokeDragDrop;
 use ::windows::Win32::System::Pipes::GetNamedPipeClientProcessId;
+use ::windows::Win32::System::Registry::{
+    RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER, KEY_READ,
+    REG_VALUE_TYPE,
+};
 use ::windows::Win32::System::SystemInformation::GetLocalTime;
 use ::windows::Win32::System::Threading::{
     AttachThreadInput, GetCurrentProcess, GetCurrentThreadId, OpenProcessToken,
@@ -408,6 +412,125 @@ fn process_table() -> HashMap<u32, Proc> {
 /// The ancestors of a process, nearest first, below the desktop shell.
 pub fn process_ancestors(pid: u32) -> Vec<u32> {
     session_window::ancestors(&process_table(), pid)
+}
+
+/// The readable name of the program that publishes a media session, from its app
+/// user model id.
+///
+/// The system media controls only hand over the id, and for a desktop browser
+/// that id is an opaque hash — Firefox reports "308046B0AF4A39CB". Windows keeps
+/// the name beside it: `HKCU\Software\Classes\AppUserModelId\<name>-<id>` has a
+/// `DisplayName` ("Mozilla Firefox") for every program that registers one, and
+/// Firefox's key is "FirefoxToast-308046B0AF4A39CB". This looks for a key that
+/// ends in the id — the id alone, or after a prefix — and returns that name.
+/// `None` when nothing registered it: the page then reads an unknown program as
+/// a browser, which is the safe answer with less to go on.
+pub fn program_for_app_user_model_id(id: &str) -> Option<String> {
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    let root = reg_open_key(HKEY_CURRENT_USER, r"Software\Classes\AppUserModelId")?;
+    let found = reg_subkeys(root)
+        .into_iter()
+        .find(|sub| sub.eq_ignore_ascii_case(id) || sub.to_ascii_lowercase().ends_with(&format!("-{}", id.to_ascii_lowercase())));
+    let name = found.and_then(|sub| {
+        let hkey = reg_open_key(root, &sub)?;
+        let name = reg_read_string(hkey, "DisplayName");
+        let _ = unsafe { RegCloseKey(hkey) };
+        name
+    });
+    let _ = unsafe { RegCloseKey(root) };
+    name.filter(|n| !n.trim().is_empty())
+}
+
+/// The names of the subkeys of an open key, in the order Windows lists them.
+fn reg_subkeys(key: HKEY) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut index: u32 = 0;
+    loop {
+        let mut name = vec![0u16; 512];
+        let mut len = name.len() as u32;
+        let status = unsafe {
+            RegEnumKeyExW(key, index, Some(PWSTR(name.as_mut_ptr())), &mut len, None, None, None, None)
+        };
+        // ERROR_NO_MORE_ITEMS (259) ends the walk.
+        if status.0 != 0 {
+            break;
+        }
+        out.push(String::from_utf16_lossy(&name[..len as usize]));
+        index += 1;
+        if index > 4096 {
+            break;
+        }
+    }
+    out
+}
+
+/// `HKCU\…` → an open key, or None.
+fn reg_open_key(root: HKEY, sub: &str) -> Option<HKEY> {
+    let wide: Vec<u16> = sub.encode_utf16().chain(std::iter::once(0)).collect();
+    let mut out = HKEY::default();
+    // A WIN32_ERROR of 0 is success: it is not a Result, and `is_ok` would read
+    // every non-zero code — including success's siblings — as a failure.
+    let status = unsafe { RegOpenKeyExW(root, PCWSTR(wide.as_ptr()), Some(0), KEY_READ, &mut out) };
+    (status.0 == 0).then_some(out)
+}
+
+/// A `REG_SZ` (or `REG_EXPAND_SZ`) value from an open key.
+fn reg_read_string(key: HKEY, name: &str) -> Option<String> {
+    let wide: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+    let mut kind = REG_VALUE_TYPE::default();
+    let mut len: u32 = 0;
+    // Measure first: the value's size is the only way to size the buffer.
+    let status = unsafe {
+        RegQueryValueExW(key, PCWSTR(wide.as_ptr()), None, Some(&mut kind), None, Some(&mut len))
+    };
+    // ERROR_SUCCESS (0) or ERROR_MORE_DATA (234) both mean the size was written.
+    if (status.0 != 0 && status.0 != 234) || len == 0 {
+        return None;
+    }
+    let mut buf = vec![0u8; len as usize];
+    let status = unsafe {
+        RegQueryValueExW(
+            key,
+            PCWSTR(wide.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(buf.as_mut_ptr()),
+            Some(&mut len),
+        )
+    };
+    if status.0 != 0 {
+        return None;
+    }
+    // Both string kinds are UTF-16 with a trailing NUL, in bytes.
+    let words: Vec<u16> = buf
+        .chunks_exact(2)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .collect();
+    let text = String::from_utf16_lossy(&words);
+    Some(text.trim_end_matches('\0').trim().to_string())
+}
+
+#[cfg(test)]
+mod aumid_lookup {
+    /// A live probe: the Firefox id this machine reports resolves to its program
+    /// name, which is what spotify.rs sends to the page. Run with
+    /// `cargo test --lib aumid_lookup -- --nocapture` while a browser is open.
+    #[test]
+    fn an_id_from_a_running_program_resolves_to_a_name() {
+        // A machine with no browser running has nothing to find, and that must
+        // not fail the suite. The printed line is the evidence.
+        let firefox = super::program_for_app_user_model_id("308046B0AF4A39CB");
+        let unknown = super::program_for_app_user_model_id("this-id-belongs-to-nobody");
+        eprintln!("308046B0AF4A39CB -> {firefox:?}");
+        eprintln!("unknown           -> {unknown:?}");
+        // An id nobody registered is None, never a wrong program.
+        assert_eq!(unknown, None);
+        // An empty id is never a lookup.
+        assert_eq!(super::program_for_app_user_model_id("  "), None);
+    }
 }
 
 /// Visible top-level windows that are nobody's dialog and have a title:

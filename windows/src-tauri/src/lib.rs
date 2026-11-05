@@ -159,6 +159,13 @@ fn set_system_languages(app: AppHandle, languages: Vec<String>) {
     }
 }
 
+/// Whether the lyrics overlay is on, as settings.json has it. Read at launch
+/// to know whether the Music pill must be declared before anything plays.
+fn lyrics_on(app: &AppHandle) -> bool {
+    app.try_state::<Shared>()
+        .is_some_and(|s| s.settings.lock().unwrap().lyrics.shown)
+}
+
 /// What Rust labels itself follows the new language: the tray menu and the
 /// settings window's title. The webviews switch on their own.
 fn language_changed(app: &AppHandle) {
@@ -1122,6 +1129,13 @@ pub fn run() {
             phone_link::start_if_enabled(&handle);
             integrations::start(handle.clone());
             mail::start(handle.clone());
+            // Lyrics are on by default, and the island draws them from the
+            // Music pill's events: without that pill declared at launch there
+            // are no events at all, and the top pill would sit empty.
+            // declare_music_pill syncs the player itself.
+            if lyrics_on(&handle) {
+                settings::declare_music_pill(&handle);
+            }
             spotify::sync(&handle, &loaded.active_integrations);
             system_health::sync(&handle, &loaded.active_integrations);
             // Mochi reacts to the charger and to a low battery whether or not

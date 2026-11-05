@@ -18,7 +18,7 @@ import { Spotify, isAd, spotifyPosition, type SpotifyState } from "../core/spoti
 import type { Settings } from "../core/state";
 import { t } from "../i18n/i18n";
 import { cachedSong, fetchSong, knownMissing } from "./fetch";
-import { lineIndexAt, type Song } from "./lrc";
+import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "./lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, pinyinReady, romanizeMixed, scriptOf, usePinyin } from "./romanize";
 import { looksLikeSong } from "./song";
 import { DEFAULT_PREFS, HIDE_AFTER_PAUSE_MS, autoAction, prefsFrom } from "./state";
@@ -26,8 +26,6 @@ import { buildContextMenu, type LookValues } from "./menu";
 
 /** How often the line is re-read inside a song, in ms: a line lasts seconds. */
 const TICK_MS = 200;
-/** Lines shown around the current one, above and below. */
-const NEIGHBOURS = 1;
 
 const rowsEl = document.getElementById("rows")!;
 const songEl = document.getElementById("song")!;
@@ -75,14 +73,11 @@ async function syncSong() {
   // Already this song: nothing to ask anybody.
   if (key === songFor) return;
 
-  // A video is not a song: no words, and no question for LRCLIB either (the
-  // card should not even be up — autoShowOrHide keeps it away).
-  if (!looksLikeSong(track, currentLyricsVideos())) {
-    generation++;
-    reset();
-    draw();
-    return;
-  }
+  // A video is not a song: no words to fetch, and no question for LRCLIB. The
+  // words already on the card stay, though: the user detached this card and a
+  // video starting in another tab is not a reason to blank it. `songFor` is
+  // left alone, so the same song coming back redraws without a second query.
+  if (!looksLikeSong(track, currentLyricsVideos())) return;
 
   const known = cachedSong(track);
   if (known || knownMissing(track)) {
@@ -194,19 +189,27 @@ function rowsFor(index: number): HTMLElement[] {
     return song.plain.map((line, i) => row(i === 0 ? "current" : "next", line));
   }
   const out: HTMLElement[] = [];
-  for (let k = index - NEIGHBOURS; k < index; k++) {
-    out.push(k >= 0 ? row("past", song.timed[k].text) : blank("past"));
-  }
+  // The lines around the sung one skip the instrumental gaps LRCLIB stamps, so
+  // a verse's first line is not shown with an empty line above it.
+  const before = previousSungLine(song.timed, index);
+  const after = nextSungLine(song.timed, index);
+  out.push(before >= 0 ? row("past", song.timed[before].text) : blank("past"));
   out.push(row("current", song.timed[Math.max(0, index)].text));
-  for (let k = index + 1; k <= index + NEIGHBOURS; k++) {
-    out.push(k < song.timed.length ? row("next", song.timed[k].text) : blank("next"));
-  }
+  out.push(after >= 0 ? row("next", song.timed[after].text) : blank("next"));
   return out;
 }
 
 function draw() {
   const state = Spotify.state;
   const track = state.track;
+  // A video (a talk, a reaction, a film) has no lyrics of its own. It never
+  // opens a card, but a card already up keeps the words and the title it had
+  // rather than being blanked by whatever else started in another tab — the
+  // clock is stopped for it, so the line it reached stays where it was.
+  if (track != null && !isAd(track) && !looksLikeSong(track, currentLyricsVideos())
+    && (song.timed.length || song.plain.length)) {
+    return;
+  }
   songEl.textContent = track && !isAd(track) ? [track.title, track.artist].filter(Boolean).join(" — ") : "";
   // No player, no song, an advertisement: a line saying so, never a blank card.
   if (!state.running || !track) {
@@ -219,8 +222,6 @@ function draw() {
     rowsEl.replaceChildren(note(t("Advertisement")));
     return;
   }
-  // A video (a talk, a reaction, a film) has no lyrics and no card of its own:
-  // said plainly for the moment before the card hides itself.
   if (!looksLikeSong(track, currentLyricsVideos())) {
     shownIndex = Number.NaN;
     rowsEl.replaceChildren(note(t("This is not a song")));
@@ -323,6 +324,8 @@ function autoShowOrHide() {
     up,
     waiting: hideTimer != null,
     playing,
+    // A detached card is explicit: ordinary videos must not make it disappear.
+    hasTrack: track != null && !isAd(track),
     hasSong: track != null && !isAd(track) && looksLikeSong(track, currentLyricsVideos()),
   });
   // Playback resumed inside the grace period: the hide that was counted down

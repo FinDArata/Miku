@@ -30,6 +30,26 @@ export class IslandStateMachine {
   /** An alert waiting for an answer stays open, even when the mouse leaves. */
   pinned = false;
   /**
+   * The compact island is showing something of its own that must not vanish on
+   * a timer — the lyrics pill. While this is set the petit→hidden countdown does
+   * not run, as if the pointer were still on the island. `lastActivity` is the
+   * time it was last set, so a held-open island can still be told to fold after
+   * a long quiet spell rather than staying for ever.
+   */
+  private held = false;
+  /** Sets the hold; turning it on cancels a hide already counted down, turning
+   *  it off starts a fresh countdown (the pill's own pause grace must survive
+   *  the pointer leaving). */
+  setHeldOpen(on: boolean) {
+    if (this.held === on) return;
+    this.held = on;
+    if (on) this.clear("petitHide");
+    else if (this.state === "petit" && !this.pinned) this.schedulePetitHide();
+  }
+  get heldOpen(): boolean {
+    return this.held;
+  }
+  /**
    * Hovering opens the island all the way instead of peeking (Settings →
    * General → Open on hover, off by default), as IslandStateMachine.openOnHover.
    */
@@ -162,11 +182,12 @@ export class IslandStateMachine {
   private schedulePetitHide() {
     this.clear("petitHide");
     // A card folded away while it waits for an answer keeps the compact island
-    // on screen, so it can be reopened (isHeldOpen on macOS).
-    if (this.pinned) return;
+    // on screen, so it can be reopened (isHeldOpen on macOS). So does the lyrics
+    // pill: retracting the island would take the words with it.
+    if (this.pinned || this.held) return;
     this.petitHide = window.setTimeout(() => {
       this.petitHide = null;
-      if (this.state === "petit" && !this.pinned) this.transition("hidden");
+      if (this.state === "petit" && !this.pinned && !this.held) this.transition("hidden");
     }, this.petitToHiddenDelay * 1000);
   }
 

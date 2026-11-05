@@ -216,6 +216,38 @@ test("the cover arrives on its own event", () => {
   assert.equal(currentArtwork(), "data:image/png;base64,AA");
 });
 
+test("a folded island comes back for the words when a feed app held the session", () => {
+  // The song was playing, then Instagram took the one session a browser
+  // publishes: the island folded while the scrolling went on. The song coming
+  // back keeps `playing` true throughout, so the not-playing → playing rule
+  // never fires; the words themselves are what bring the island back.
+  State.mode = "hidden";
+  let wants = true;
+  const host = { reveals: 0, revealSilently() { this.reveals += 1; }, wantsLyricsPill: () => wants };
+  registerSpotifyHandlers(host);
+
+  emit("spotify", playing());
+  assert.equal(host.reveals, 1, "the song starting wakes it");
+
+  // No words to show: nothing is woken.
+  host.reveals = 0;
+  wants = false;
+  emit("spotify", playing({ track: track({ title: "Instagram", artist: "", album: "", duration: 0 }) }));
+  assert.equal(host.reveals, 0);
+
+  // Words again, and the island is still folded: this report wakes it, even
+  // though nothing went from not-playing to playing.
+  wants = true;
+  emit("spotify", playing({ position: 40 }));
+  assert.equal(host.reveals, 1);
+
+  // Paused, the user asked for quiet: the island stays folded.
+  host.reveals = 0;
+  State.paused = true;
+  emit("spotify", playing({ position: 50 }));
+  assert.equal(host.reveals, 0);
+});
+
 test("the card reads the player again each time it comes on screen", () => {
   const before = sent("spotify_refresh").length;
   State.mode = "expanded";

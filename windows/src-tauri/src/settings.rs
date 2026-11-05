@@ -1134,6 +1134,27 @@ mod tests {
     }
 
     #[test]
+    fn lyrics_are_on_and_in_the_island_by_default() {
+        // Lyrics draw in the top island from the first launch.
+        let fresh = Settings::default();
+        assert!(fresh.lyrics.shown);
+        assert_eq!(fresh.lyrics.placement, "island");
+
+        // A file from the build that had `shown` and `spot`, but no `placement`.
+        let bytes = custom_with("lyrics", Some(serde_json::json!({ "shown": true, "spot": null })));
+        assert_eq!(parse(&bytes).unwrap().lyrics.placement, "island");
+
+        // An empty or unknown value is the island, not a placement nothing draws in.
+        for value in ["", "  ", "sideways"] {
+            let bytes = custom_with("lyrics", Some(serde_json::json!({ "shown": true, "placement": value })));
+            assert_eq!(parse(&bytes).unwrap().lyrics.placement, "island", "for {value:?}");
+        }
+        // The one other placement it knows still survives the round trip.
+        let bytes = custom_with("lyrics", Some(serde_json::json!({ "shown": true, "placement": "floating" })));
+        assert_eq!(parse(&bytes).unwrap().lyrics.placement, "floating");
+    }
+
+    #[test]
     fn concurrent_saves_never_collide() {
         let (dir, file) = scratch("concurrent");
         let handles: Vec<_> = (0..20)
