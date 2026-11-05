@@ -233,11 +233,6 @@ export class IslandStateMachine {
     if (which === "homeCollapse") this.homeCollapseDueAt = null;
   }
 
-  /** Keeps the compact island visible while the lyrics pill owns it. */
-  cancelPetitHide() {
-    this.clear("petitHide");
-  }
-
   cancelTimers() {
     this.clear("hoverOpen");
     this.clear("petitHide");

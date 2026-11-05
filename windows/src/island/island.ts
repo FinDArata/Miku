@@ -102,6 +102,9 @@ export class Island {
   private lyricsPill!: HTMLElement;
   private lyricsSong: Song = { timed: [], plain: [] };
   private lyricsKey = "";
+  /** A feed app (Instagram, TikTok) has taken the session the song was on: the
+   *  words stay up, frozen, until the song reports again. */
+  private lyricsFeedHold = false;
   /** A song whose words could not be had: the key and when to ask again. */
   private lyricsRetryKey = "";
   private lyricsRetryAt = 0;
@@ -923,12 +926,28 @@ export class Island {
     }, 2500 + Math.random() * 3500);
   }
 
+  /** Whether the words belong on screen, asked before the island is woken for
+   *  them: a hidden island is not "compact", so the usual gate cannot be used. */
+  wantsLyricsPill(): boolean {
+    if (!this.lyricsInIsland() || !this.lyricsShown() || !this.lyricsSong.timed.length) return false;
+    if (this.lyricsFeedHold) return true;
+    const track = Spotify.state.track;
+    if (track == null || !looksLikeSong(track, State.settings.lyricsVideos)) return false;
+    return Spotify.state.playing || this.lyricsPausedAt == null;
+  }
+
   private lyricsActive(): boolean {
     const s = Spotify.state;
     if (State.mode !== "compact" || !this.lyricsInIsland() || !this.lyricsShown()) return false;
-    if (this.lyricsSong.timed.length > 0) this.fsm.cancelPetitHide();
-    if (s.track == null || !looksLikeSong(s.track, State.settings.lyricsVideos)) return false;
     if (!this.lyricsSong.timed.length) return false;
+    // A feed app holds the session the song was on: the words stay up, frozen on
+    // the line they reached, and the island stays with them. The song was never
+    // stopped, so this is not a stop.
+    if (this.lyricsFeedHold) {
+      this.lyricsPausedAt = null;
+      return true;
+    }
+    if (s.track == null || !looksLikeSong(s.track, State.settings.lyricsVideos)) return false;
     // A pause keeps the pill for its grace period, exactly like the floating
     // card: a skip back is not the end of the song.
     if (s.playing) {
@@ -958,10 +977,22 @@ export class Island {
     // report come back to it.
     if (!this.lyricsPill) return;
     const track = s.track;
-    if (!track || !this.lyricsInIsland() || !this.lyricsShown() || !looksLikeSong(track, State.settings.lyricsVideos)) {
+    if (!track || !this.lyricsInIsland() || !this.lyricsShown()) {
       this.hideLyricsPill();
       return;
     }
+    // A feed app (Instagram, TikTok) takes over the one media session a browser
+    // publishes, so the reports flip between the song and the app's own name.
+    // The scrolling is not a stop: the song is still loaded, and its words stay
+    // on the pill, frozen on the line it reached, until it reports again or the
+    // user really stops. Hiding here would wipe the words and let the island
+    // fold, which is what made the lyrics need a manual pause/play to come back.
+    if (!looksLikeSong(track, State.settings.lyricsVideos)) {
+      this.lyricsFeedHold = true;
+      this.refreshLyricsPill();
+      return;
+    }
+    this.lyricsFeedHold = false;
     const key = `${track.artist}\u0000${track.title}\u0000${Math.round(track.duration)}`;
     if (key === this.lyricsKey) {
       this.drawLyricsPill(s);
@@ -971,6 +1002,7 @@ export class Island {
     // every tick, only once the cooldown is over.
     if (key === this.lyricsRetryKey && Date.now() < this.lyricsRetryAt) return;
     this.lyricsKey = key;
+    this.lyricsTitle = track.title;
     const mine = ++this.lyricsGeneration;
     const cached = cachedSong(track);
     if (!cached && this.lyricsLoading) {
@@ -1025,6 +1057,8 @@ export class Island {
   }
 
   private lyricsLanguage: "japanese" | "chinese" | null = null;
+  /** The title the words belong to, kept across a feed app's takeover. */
+  private lyricsTitle = "";
   private lyricsPausedAt: number | null = null;
   private lyricsEls: { title: HTMLElement; past: HTMLElement; current: HTMLElement; next: HTMLElement } | null = null;
 
@@ -1046,7 +1080,9 @@ export class Island {
     const index = Math.max(0, lineIndexAt(lines, Math.max(0, spotifyPosition(s, Date.now()))));
     const text = (i: number) => (i >= 0 && i < lines.length ? lines[i].text : "");
     const read = (i: number) => romanizeMixed(text(i), this.lyricsLanguage);
-    els.title.textContent = s.track?.title ?? "";
+    // The pill wears the song's own title, never the name of whatever took the
+    // session over: a feed app's title belongs to the feed, not to these words.
+    els.title.textContent = this.lyricsTitle || (s.track?.title ?? "");
     els.past.textContent = read(index - 1);
     els.current.textContent = read(index);
     els.next.textContent = read(index + 1);
@@ -1076,6 +1112,8 @@ export class Island {
     this.lyricsRetryAt = 0;
     this.lyricsGeneration++;
     this.lyricsSong = { timed: [], plain: [] };
+    this.lyricsFeedHold = false;
+    this.lyricsTitle = "";
     this.lyricsPausedAt = null;
     this.lyricsPill.replaceChildren();
     this.lyricsEls = null;

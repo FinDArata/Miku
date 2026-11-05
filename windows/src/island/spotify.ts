@@ -13,6 +13,9 @@ import { t } from "../i18n/i18n";
 export interface SpotifyHost {
   /** Compact island from hidden, no peek sound. */
   revealSilently(): void;
+  /** Whether the lyrics pill has words to show right now, so the island that
+   *  folded can be brought back for them. */
+  wantsLyricsPill?(): boolean;
 }
 
 export function registerSpotifyHandlers(island: SpotifyHost) {
@@ -32,9 +35,15 @@ export function applySpotify(island: SpotifyHost, next: SpotifyState) {
   const wasPlaying = State.spotifyPlaying;
   Spotify.state = next;
   syncPillName();
-  // Only on not playing → playing (SpotifyController.setPlaying).
-  if (!wasPlaying && State.spotifyPlaying && !State.paused && State.mode === "hidden") {
-    island.revealSilently();
+  if (State.mode === "hidden" && !State.paused) {
+    // A song starting brings the compact island back, silently
+    // (SpotifyController.setPlaying).
+    const started = !wasPlaying && State.spotifyPlaying;
+    // A feed app (Instagram, TikTok) keeps the session marked playing while the
+    // song waits in another tab, so `started` stays false when the song comes
+    // back and the island has folded meanwhile. The words belong on screen
+    // exactly then, so that report wakes it too.
+    if (started || island.wantsLyricsPill?.() === true) island.revealSilently();
   }
   State.notify();
 }
