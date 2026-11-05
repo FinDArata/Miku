@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### ZCode agent integration
+
+- Added **ZCode** to Settings → Agents and the agent pill catalog.
+- Miku can preview, install, and uninstall ZCode process hooks in `~/.zcode/cli/config.json` without replacing the user's plugins, MCP servers, or existing hooks. The hook uses argv directly, forwards `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `Stop`, and preserves the user's watchdog Stop hook.
+- ZCode hooks are read when a new task starts; existing tasks keep their current hook set. The relay is fire-and-forget and does not answer permission requests on ZCode's behalf.
+
 ### Lyrics: on from the first launch, in the top pill
 
 - `lyrics.shown` now defaults to **on** (it was off), with `placement` still `island`: a song that starts draws its words in the compact island without anyone opening Settings first. Settings → General → Floating lyrics is where they are turned off.
