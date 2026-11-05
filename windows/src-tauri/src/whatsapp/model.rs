@@ -1,4 +1,4 @@
-// WhatsApp in the island: what Kanon keeps of the conversations, in memory only, and the
+// WhatsApp in the island: what Miku keeps of the conversations, in memory only, and the
 // rules that decide what reaches the pill. Port of WhatsAppModels.swift (the Mac's spec):
 // same rules, same limits. Nothing here is ever written to disk or to a log.
 
@@ -296,7 +296,7 @@ impl Inbox {
         }
     }
 
-    /// Everything goes (Kanon quits, WhatsApp turned off).
+    /// Everything goes (Miku quits, WhatsApp turned off).
     pub fn clear(&mut self) {
         self.conversations.clear();
         self.seen.clear();
@@ -332,7 +332,7 @@ pub fn check_reply(text: &str, chat: &str, inbox: &Inbox) -> Option<Refusal> {
     None
 }
 
-/// A few sends a minute at most, whatever is clicked: Kanon is no bulk sender.
+/// A few sends a minute at most, whatever is clicked: Miku is no bulk sender.
 pub struct RateLimit {
     limit: usize,
     window: Duration,

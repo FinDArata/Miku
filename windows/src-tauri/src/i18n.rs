@@ -254,7 +254,7 @@ mod tests {
         // From the Mac's catalog.
         assert_eq!(t("Allow"), "Autoriser");
         // From extra.json.
-        assert_eq!(t("Open Kanon"), "Ouvrir Kanon");
+        assert_eq!(t("Open the chat"), "Ouvrir le chat");
         assert_eq!(t("A string nobody translated"), "A string nobody translated");
         assert_eq!(tf("Open {name}", &[("name", "Vercel")]), "Ouvrir Vercel");
         set_for_test("en");

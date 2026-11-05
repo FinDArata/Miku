@@ -5,10 +5,10 @@
 // the credential store, and file bytes never cross the IPC boundary.
 //
 // Without a key, the chat and the one-shot answers go to the user's own Claude
-// Code instead (claude_code.rs); « OK Kanon » still needs the key, its tools
-// being Kanon's own.
+// Code instead (claude_code.rs); « OK Miku » still needs the key, its tools
+// being Miku's own.
 //
-// KANON_ANTHROPIC_BASE_URL points the chat at an Anthropic-compatible gateway
+// MIKU_ANTHROPIC_BASE_URL points the chat at an Anthropic-compatible gateway
 // instead (issue #180). Only that variable is read: Claude Code's own
 // ANTHROPIC_BASE_URL may name a proxy the user never meant to hand this key to.
 
@@ -25,7 +25,7 @@ use crate::{claude_code, net, secrets};
 /// Credential store entry of the Anthropic API key.
 pub const KEY: &str = "anthropic-api-key";
 const DEFAULT_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
-const BASE_URL_VAR: &str = "KANON_ANTHROPIC_BASE_URL";
+const BASE_URL_VAR: &str = "MIKU_ANTHROPIC_BASE_URL";
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 /// Server-side fallback: on a policy decline the API retries the same request on
 /// a fallback model inside the same call, so the island never shows a dead end.
@@ -46,7 +46,7 @@ pub fn uses_relay() -> bool {
     !secrets::present(KEY) && claude_code::available()
 }
 
-/// The Messages endpoint: Anthropic's, or the gateway in KANON_ANTHROPIC_BASE_URL.
+/// The Messages endpoint: Anthropic's, or the gateway in MIKU_ANTHROPIC_BASE_URL.
 /// Read once; the gateway's host (never the key) goes to the log once.
 fn endpoint() -> Result<Url, String> {
     static ENDPOINT: OnceLock<Result<Url, String>> = OnceLock::new();
@@ -206,7 +206,7 @@ pub async fn complete(model: &str, system: &str, user: &str, max_tokens: u32, ti
     Ok(text)
 }
 
-/// One turn of « OK Kanon »'s conversation with tools: the API's whole answer
+/// One turn of « OK Miku »'s conversation with tools: the API's whole answer
 /// (content blocks and stop_reason).
 pub async fn voice_turn(model: &str, system: &str, messages: &[Value], tools: &[Value]) -> Result<Value, String> {
     let key = secrets::get(KEY).ok_or_else(|| t("API key missing. Open settings."))?;

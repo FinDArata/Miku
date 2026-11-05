@@ -15,11 +15,16 @@ import {
 } from "../core/layout";
 import { Sound } from "../core/sound";
 import { State } from "../core/state";
-import { SPOTIFY_ID, Spotify, islandDances } from "../core/spotify";
+import { SPOTIFY_ID, Spotify, islandDances, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { cachedSong, fetchSong } from "../lyrics/fetch";
+import { lineIndexAt, type Song } from "../lyrics/lrc";
+import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
+import { looksLikeSong } from "../lyrics/song";
+import { HIDE_AFTER_PAUSE_MS } from "../lyrics/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
 import { syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
-import { SeasonCache, parseOutfit } from "../mochi/wardrobe";
+import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { dominantPct, planColor } from "../core/plan";
@@ -49,6 +54,9 @@ const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading"
 
 /** Seconds between the drop and the moment the progress bar starts filling. */
 const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
+
+/** How often the island's lyric line is re-read while a song plays, in ms. */
+const TICK_MS = 200;
 
 const modeOrder = (m: IslandMode) => (m === "hidden" ? 0 : m === "compact" ? 1 : 2);
 
@@ -86,6 +94,12 @@ export class Island {
   private compactPlanDot!: HTMLElement;
   private compactPlanLabel!: HTMLElement;
   private wakeStrip!: HTMLElement;
+  private lyricsPill!: HTMLElement;
+  private lyricsSong: Song = { timed: [], plain: [] };
+  private lyricsKey = "";
+  private lyricsLoading = false;
+  private lyricsGeneration = 0;
+  private lyricsTicker: number | null = null;
 
   private header!: ViewHost;
   private views!: Map<IslandViewName, ViewHost>;
@@ -102,6 +116,8 @@ export class Island {
   private greeting = new Greeting();
   private greetingShown = false;
   private seasons = new SeasonCache();
+  /** "auto" → which Miku the season dresses her as, remembered for the day. */
+  private variants = new VariantCache();
 
   private running = false;
   private lastFrame = 0;
@@ -161,6 +177,7 @@ export class Island {
     };
     State.subscribe(() => {
       this.dirty = true;
+      this.syncLyricsPill(Spotify.state).catch(() => undefined);
       this.ensureRunning();
     });
   }
@@ -291,6 +308,18 @@ export class Island {
         State.wardrobePreview = outfit;
         State.notify();
       },
+      chooseVariant: (selection) => {
+        if (parseVariant(State.settings.mikuVariant) === selection) return;
+        State.settings.mikuVariant = selection;
+        void Bridge.saveSettings(State.settings);
+        Sound.play("pop");
+        this.engine.triggerEmote("proud");
+        State.notify();
+      },
+      previewVariant: (variant) => {
+        State.variantPreview = variant;
+        State.notify();
+      },
       keyboard: (on) => {
         // The chat view manages the keyboard on its own.
         if (on) void Bridge.focusWindow(true);
@@ -310,6 +339,18 @@ export class Island {
     };
 
     this.wakeStrip = h("div", { id: "wake-strip" });
+    this.lyricsPill = h("div", { id: "lyrics-pill" });
+    this.lyricsPill.hidden = true;
+    // Right-click is the card's own: detach it from the top edge. It must not
+    // also reach the island's press handler, which would open the card first.
+    this.lyricsPill.addEventListener("mousedown", (e) => {
+      if (e.button === 2) e.stopPropagation();
+    });
+    this.lyricsPill.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void Bridge.lyricsSetPlacement("floating");
+    });
     this.closedDot = h("span", { class: "dot" });
     this.closedText = h("span", { class: "text" });
     this.closedEl = h("div", { id: "island-closed" }, this.closedDot, this.closedText);
@@ -382,6 +423,7 @@ export class Island {
     this.greetingCanvas.style.height = "150px";
 
     this.root.append(this.wakeStrip, this.islandEl);
+    this.islandEl.append(this.lyricsPill);
     this.applyGeometry();
   }
 
@@ -392,16 +434,16 @@ export class Island {
     this.fsm.openOnHover = State.settings.openOnHover;
     this.fsm.onTransition = (from, to) => {
       // The greeting is over, however it ended: back to his desktop spot.
-      if (from === "kanon" && to !== "kanon") this.desktop.launch();
+      if (from === "miku" && to !== "miku") this.desktop.launch();
       switch (to) {
         case "hidden":
           this.setMode("hidden");
           break;
         case "petit":
-          if (from === "kanon") this.greeting.interrupt();
+          if (from === "miku") this.greeting.interrupt();
           else if (from === "hidden" && !this.silentReveal) Sound.play("peek");
           this.setMode("compact");
-          if (from === "kanon") State.view = State.defaultView();
+          if (from === "miku") State.view = State.defaultView();
           if (!this.wasInIsland) this.fsm.mouseLeft();
           break;
         case "home":
@@ -411,7 +453,7 @@ export class Island {
           // say so on the next open, without polling while the island is shut.
           void refreshHookPills();
           break;
-        case "kanon":
+        case "miku":
           this.expand("greeting");
           this.greeting.start();
           break;
@@ -454,6 +496,9 @@ export class Island {
     this.scheduleClosedLife();
     this.updateWindowCollapsed();
     this.animateGeometry(modeOrder(mode) < modeOrder(prev));
+    // The lyric lines belong to the compact pill alone: an open card, a hidden
+    // island and the drop sequence all step over them.
+    this.refreshLyricsPill();
     State.notify();
   }
 
@@ -527,14 +572,14 @@ export class Island {
     this.expand(view);
   }
 
-  /** A new Kanon waits and Mochi has nothing else to say (he is blue). */
+  /** A new Miku waits and Mochi has nothing else to say (he is blue). */
   private updateHintOn(): boolean {
     return !State.paused && showsUpdateHint(Updates.waiting(), State.effectiveState, State.pendingApproval != null);
   }
 
   /**
    * What a click or a hover opens on: while Mochi is blue, the new version
-   * ("Kanon X is out", Update now); otherwise the usual view. A waiting
+   * ("Miku X is out", Update now); otherwise the usual view. A waiting
    * permission or question always comes first.
    */
   private openingView(): IslandViewName {
@@ -764,7 +809,8 @@ export class Island {
     if (State.mode === "hidden" && this.closedShows) {
       return { w: this.closedW, h: CLOSED_H, r: 10 };
     }
-    let { w, h } = islandSize(State.mode, State.view, State.chatHistory.length);
+    const lyrics = this.lyricsActive();
+    let { w, h } = islandSize(State.mode, State.view, State.chatHistory.length, lyrics);
     if (State.mode === "expanded" && State.view === "question" && State.pendingApproval?.questions) {
       h = QUESTION_PICKER_H;
     }
@@ -825,6 +871,7 @@ export class Island {
       this.collapseTimer = null;
     }
     if (State.mode === "hidden") {
+      this.stopLyricsTicker();
       // Let the island finish folding, then shrink the window to it — to the
       // closed island, or to the wake strip when that shows nothing: from
       // there nothing polls the cursor at all.
@@ -866,6 +913,147 @@ export class Island {
       this.ensureRunning();
       this.scheduleClosedLife();
     }, 2500 + Math.random() * 3500);
+  }
+
+  private lyricsActive(): boolean {
+    const s = Spotify.state;
+    if (State.mode !== "compact" || !this.lyricsInIsland() || !this.lyricsShown()) return false;
+    if (s.track == null || !looksLikeSong(s.track, State.settings.lyricsVideos)) return false;
+    if (!this.lyricsSong.timed.length) return false;
+    // A pause keeps the pill for its grace period, exactly like the floating
+    // card: a skip back is not the end of the song.
+    if (s.playing) {
+      this.lyricsPausedAt = null;
+      return true;
+    }
+    this.lyricsPausedAt ??= Date.now();
+    return Date.now() - this.lyricsPausedAt < HIDE_AFTER_PAUSE_MS;
+  }
+
+  private lyricsShown(): boolean {
+    return State.settings.lyrics?.shown === true;
+  }
+
+  private lyricsInIsland(): boolean {
+    return State.settings.lyrics?.placement === "island" || (!State.settings.lyrics && State.settings.lyricsPlacement !== "floating");
+  }
+
+  /** Fetches the words once per track and keeps the pill's three lines current. */
+  private async syncLyricsPill(s: SpotifyState) {
+    const track = s.track;
+    if (!track || !this.lyricsInIsland() || !this.lyricsShown() || !looksLikeSong(track, State.settings.lyricsVideos)) {
+      this.hideLyricsPill();
+      return;
+    }
+    const key = `${track.artist}\u0000${track.title}\u0000${Math.round(track.duration)}`;
+    if (key === this.lyricsKey) {
+      this.drawLyricsPill(s);
+      return;
+    }
+    this.lyricsKey = key;
+    const mine = ++this.lyricsGeneration;
+    const cached = cachedSong(track);
+    if (!cached && this.lyricsLoading) return;
+    this.lyricsSong = { timed: [], plain: [] };
+    this.lyricsPausedAt = null;
+    this.refreshLyricsPill();
+    if (!cached) this.lyricsLoading = true;
+    let words = cached;
+    try {
+      words = cached ?? await fetchSong(track);
+    } catch {
+      // LRCLIB unreachable: no words this time, and the next report tries again.
+      this.lyricsLoading = false;
+      if (mine === this.lyricsGeneration) this.lyricsKey = "";
+      return;
+    }
+    this.lyricsLoading = false;
+    if (mine !== this.lyricsGeneration) return;
+    this.lyricsSong = words ?? { timed: [], plain: [] };
+    if (!this.lyricsSong.timed.length) return;
+    // A Japanese song's kanji need the dictionary; until it lands the lines
+    // show as written, then the pill redraws itself.
+    const lines = this.lyricsSong.timed.map((l) => l.text);
+    if (languageOfLines(lines) === "japanese" && !japaneseReady()) {
+      const ready = await ensureJapaneseTokenizer();
+      if (mine !== this.lyricsGeneration) return;
+      if (ready) this.lyricsLanguage = "japanese";
+    }
+    this.lyricsLanguage = languageOfLines(lines);
+    this.drawLyricsPill(Spotify.state);
+    this.refreshLyricsPill();
+  }
+
+  private lyricsLanguage: "japanese" | "chinese" | null = null;
+  private lyricsPausedAt: number | null = null;
+  private lyricsEls: { title: HTMLElement; past: HTMLElement; current: HTMLElement; next: HTMLElement } | null = null;
+
+  private buildLyricsPill() {
+    if (this.lyricsEls) return this.lyricsEls;
+    const title = h("span", { class: "lyrics-pill-title" });
+    const past = h("span", { class: "lyrics-pill-row past" });
+    const current = h("span", { class: "lyrics-pill-row current" });
+    const next = h("span", { class: "lyrics-pill-row next" });
+    this.lyricsPill.replaceChildren(title, past, current, next);
+    this.lyricsEls = { title, past, current, next };
+    return this.lyricsEls;
+  }
+
+  private drawLyricsPill(s: SpotifyState) {
+    const lines = this.lyricsSong.timed;
+    if (!lines.length) return;
+    const els = this.buildLyricsPill();
+    const index = Math.max(0, lineIndexAt(lines, Math.max(0, spotifyPosition(s, Date.now()))));
+    const text = (i: number) => (i >= 0 && i < lines.length ? lines[i].text : "");
+    const read = (i: number) => romanizeMixed(text(i), this.lyricsLanguage);
+    els.title.textContent = s.track?.title ?? "";
+    els.past.textContent = read(index - 1);
+    els.current.textContent = read(index);
+    els.next.textContent = read(index + 1);
+  }
+
+  /** Shows the pill only while it belongs on screen: the island is compact. */
+  private refreshLyricsPill() {
+    const active = this.lyricsActive();
+    const was = !this.lyricsPill.hidden;
+    this.lyricsPill.hidden = !active;
+    if (active) {
+      this.drawLyricsPill(Spotify.state);
+      this.startLyricsTicker();
+    } else {
+      this.stopLyricsTicker();
+    }
+    if (was !== active) this.animateGeometry(!active);
+  }
+
+  private hideLyricsPill() {
+    this.lyricsKey = "";
+    this.lyricsGeneration++;
+    this.lyricsSong = { timed: [], plain: [] };
+    this.lyricsPausedAt = null;
+    this.lyricsPill.replaceChildren();
+    this.lyricsEls = null;
+    this.stopLyricsTicker();
+    const was = !this.lyricsPill.hidden;
+    this.lyricsPill.hidden = true;
+    if (was) this.animateGeometry(true);
+  }
+
+  private startLyricsTicker() {
+    if (this.lyricsTicker != null) return;
+    this.lyricsTicker = window.setInterval(() => {
+      if (!this.lyricsActive()) {
+        this.refreshLyricsPill();
+        return;
+      }
+      this.drawLyricsPill(Spotify.state);
+    }, TICK_MS);
+  }
+
+  private stopLyricsTicker() {
+    if (this.lyricsTicker == null) return;
+    window.clearInterval(this.lyricsTicker);
+    this.lyricsTicker = null;
   }
 
   /** The pointer is on the folded window (Rust's `closed-hover`): the island wakes. */
@@ -1058,7 +1246,7 @@ export class Island {
     const wasIn = this.wasInIsland;
     this.wasInIsland = inIsland;
     if (inIsland && !wasIn) {
-      if (this.fsm.state === "kanon") this.greeting.hover();
+      if (this.fsm.state === "miku") this.greeting.hover();
       this.fsm.mouseEntered();
     }
     if (!inIsland && wasIn) {
@@ -1281,7 +1469,7 @@ export class Island {
     if (!ctx) return;
 
     const focus = State.focusTask;
-    // A new Kanon waits: over an idle or sleeping Mochi, the blue and the arrow
+    // A new Miku waits: over an idle or sleeping Mochi, the blue and the arrow
     // badge (whats-new.ts). Anything Mochi has to say comes first.
     this.engine.setUpdateHint(this.updateHintOn() ? UPDATE_BLUE_RGB : null);
     // While a plan card is open Mochi wears the plan's colour, like its pill.
@@ -1313,6 +1501,10 @@ export class Island {
     const showOutfit = mainFocused || State.mode !== "expanded" || inWardrobe;
     const outfit = State.wardrobePreview ?? this.seasons.get(parseOutfit(State.settings.mochiOutfit));
     this.engine.setOutfit(showOutfit ? outfit : "none", !inWardrobe);
+    // Which Miku: the wardrobe's choice, or the season's. Asked every frame, so
+    // picking one in the wardrobe shows at once.
+    this.engine.setVariant(State.variantPreview
+      ?? this.variants.get(parseVariant(State.settings.mikuVariant)));
     // Dances while music plays: always in the compact island, expanded only on
     // the music pill's card (BotCanvasView, macOS). Asked every frame.
     this.engine.setDancing(islandDances({
@@ -1431,6 +1623,9 @@ export class Island {
     this.updateClosed();
     const on = State.mode === "compact" && State.settings.showClock;
     this.clockEl.style.opacity = on ? "1" : "0";
+    // The compact island is only as wide as the notch now: when the plan
+    // gauge takes the right side, the clock yields to it instead of overlapping.
+    this.clockEl.style.right = claudeCompactPillVisible() ? "86px" : "56px";
     if (!on) return;
     const now = new Date();
     const date = now.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });

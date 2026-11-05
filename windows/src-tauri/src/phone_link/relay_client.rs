@@ -315,7 +315,7 @@ async fn connect(target: &Target, creds: &Credentials) -> Result<Ws, Failure> {
         headers.insert("Authorization", format!("Bearer {}", creds.access).parse().map_err(bad)?);
         headers.insert(
             "Sec-WebSocket-Protocol",
-            format!("kanon.v1, kanon.join.{}", crypto::join_proof(&creds.key)).parse().map_err(bad)?,
+            format!("miku.v1, miku.join.{}", crypto::join_proof(&creds.key)).parse().map_err(bad)?,
         );
         let config = WebSocketConfig::default().max_message_size(Some(crypto::MAX_FRAME + 1024)).max_frame_size(Some(crypto::MAX_FRAME + 1024));
         match tokio_tungstenite::client_async_with_config(request, stream, Some(config)).await {
@@ -548,7 +548,7 @@ mod tests {
                         *r.status_mut() = StatusCode::from_u16(code).unwrap();
                         return Err(r);
                     }
-                    resp.headers_mut().insert("sec-websocket-protocol", "kanon.v1".parse().unwrap());
+                    resp.headers_mut().insert("sec-websocket-protocol", "miku.v1".parse().unwrap());
                     Ok(resp)
                 };
                 if let Ok(ws) = tokio_tungstenite::accept_hdr_async(tcp, callback).await {
@@ -730,7 +730,7 @@ mod tests {
             let mut rig = Rig::start().await;
             let _ws = rig.socket().await;
             assert_eq!(rig.seen.auth.lock().unwrap()[0], format!("Bearer {}", rig.access));
-            assert_eq!(rig.seen.protocols.lock().unwrap()[0], format!("kanon.v1, kanon.join.{}", crypto::join_proof(&rig.key())));
+            assert_eq!(rig.seen.protocols.lock().unwrap()[0], format!("miku.v1, miku.join.{}", crypto::join_proof(&rig.key())));
             assert_eq!(rig.seen.paths.lock().unwrap()[0], format!("/v1/room/{}?role=pc", rig.room));
             rig.wait_state(State::Waiting).await;
             rig.handle.stop();

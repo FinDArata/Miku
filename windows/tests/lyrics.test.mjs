@@ -6,10 +6,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 const { parseLrc, readSong, lineIndexAt, cacheKey, mainArtist } = await import("../src/lyrics/lrc.ts");
-const { romanizeJapanese, romanizeHangul, romanizeMixed, scriptOf, romanize } = await import(
+const { romanizeJapanese, romanizeHangul, romanizeMixed, scriptOf, romanize, useJapanese, romanizeJapaneseFull, languageOfLines, japaneseReady } = await import(
   "../src/lyrics/romanize.ts"
 );
-const { prefsFrom, DEFAULT_PREFS } = await import("../src/lyrics/state.ts");
+const { prefsFrom, DEFAULT_PREFS, autoAction, HIDE_AFTER_PAUSE_MS } = await import("../src/lyrics/state.ts");
 
 // ── LRC ───────────────────────────────────────────────────────────────────────
 
@@ -75,14 +75,27 @@ test("the sung line is the last one that has started", () => {
   assert.equal(lineIndexAt(lines, 999), 2);
 });
 
-test("a track is asked about by its main artist, and cached by all of it", () => {
+test("a guest is cut off an artist, but a duo is not", () => {
   assert.equal(mainArtist("A feat. B"), "A");
-  assert.equal(mainArtist("A, B & C"), "A");
+  assert.equal(mainArtist("A ft. B"), "A");
+  assert.equal(mainArtist("A featuring B"), "A");
+  assert.equal(mainArtist("A, B feat. C"), "A, B");
   assert.equal(mainArtist("  A  "), "A");
+  // A duo is one artist: cutting at "&" filed "Simon & Garfunkel" and Simon's
+  // solo work under the same name.
+  assert.equal(mainArtist("Simon & Garfunkel"), "Simon & Garfunkel");
+  assert.equal(mainArtist("Charli xcx"), "Charli xcx");
+  assert.equal(mainArtist("Florence + the Machine"), "Florence + the Machine");
+});
+
+test("a track is cached under its whole credit line", () => {
   const key = cacheKey({ artist: "A feat. B", title: "Song", duration: 200.4 });
-  assert.equal(key, "a|song|200");
-  // The same song with another featured artist is the same cache entry.
-  assert.equal(cacheKey({ artist: "A feat. C", title: "song", duration: 200 }), key);
+  assert.equal(key, "a feat. b|song|200");
+  // Another guest is another entry now: the words of "A feat. B" are not the
+  // words of "A feat. C" (different verse, different mix).
+  assert.notEqual(cacheKey({ artist: "A feat. C", title: "song", duration: 200 }), key);
+  // The same credit line and title is the same entry, whatever the case.
+  assert.equal(cacheKey({ artist: "A FEAT. B", title: "SONG", duration: 200 }), key);
 });
 
 // ── Romanisation ──────────────────────────────────────────────────────────────
@@ -109,6 +122,57 @@ test("a held vowel gets a macron", () => {
 test("kanji is left as it is, so a line is never emptied", () => {
   assert.equal(romanizeJapanese("東京タワー"), "東京tawā");
   assert.equal(romanizeJapanese("私の心"), "私no心");
+});
+
+/** A fixed tokenizer shaped like kuromoji's: greedy words, the readings a real
+ *  dictionary gives (は as the particle is ワ, 晴れ is one word). */
+const fakeTokenizer = (map) => ({
+  tokenize: (text) => {
+    const words = Object.keys(map).sort((a, b) => b.length - a.length);
+    const out = [];
+    for (let i = 0; i < text.length;) {
+      const word = words.find((w) => text.startsWith(w, i));
+      if (word) {
+        out.push({ surface_form: word, reading: map[word] });
+        i += word.length;
+      } else {
+        out.push({ surface_form: text[i], reading: null });
+        i++;
+      }
+    }
+    return out;
+  },
+});
+
+test("with a dictionary, kanji reads as full rōmaji", () => {
+  useJapanese(fakeTokenizer({
+    私: "ワタシ", の: "ノ", 心: "ココロ",
+    今日: "キョウ", は: "ワ", 晴れ: "ハレ",
+    東京: "トウキョウ", タワー: "タワー",
+  }));
+  assert.equal(japaneseReady(), true);
+  assert.equal(romanizeJapaneseFull("私の心"), "watashinokokoro");
+  assert.equal(romanizeJapaneseFull("今日は晴れ"), "kyouwahare");
+  assert.equal(romanizeJapaneseFull("東京タワー"), "toukyoutawā");
+});
+
+test("a Korean line still goes the Hangul way while Japanese is ready", () => {
+  assert.equal(romanizeMixed("사랑해"), "Saranghae");
+});
+
+test("without a dictionary, Japanese kanji stays as written", () => {
+  useJapanese(null);
+  assert.equal(japaneseReady(), false);
+  assert.equal(romanizeJapaneseFull("私の心"), "私の心");
+  assert.equal(romanizeMixed("Kanon ♪ 私の心", "japanese"), "Kanon ♪ 私no心");
+});
+
+test("a song's language is decided by its lines, not by one of them", () => {
+  assert.equal(languageOfLines(["私の心", "東京へ", "今日は晴れ"]), "japanese");
+  assert.equal(languageOfLines(["月亮", "天空", "你好"]), "chinese");
+  // One kanji-only line in a kana song does not send it to pinyin.
+  assert.equal(languageOfLines(["さようなら", "またね", "私"]), "japanese");
+  assert.equal(languageOfLines(["Hello", "world"]), null);
 });
 
 test("Hangul reads as Revised Romanization, with the final carried over", () => {
@@ -146,8 +210,47 @@ test("Chinese is left alone until the pinyin library is there", () => {
 // ── Preferences ───────────────────────────────────────────────────────────────
 
 test("preferences default to on, and a stored false is respected", () => {
-  assert.deepEqual(prefsFrom(null), DEFAULT_PREFS);
-  assert.deepEqual(prefsFrom({}), DEFAULT_PREFS);
-  assert.deepEqual(prefsFrom({ lyricsRomanize: false }), { romanize: false, showOriginal: true });
-  assert.deepEqual(prefsFrom({ lyricsShowOriginal: false }), { romanize: true, showOriginal: false });
+  const romanizeOf = (p) => ({ romanize: p.romanize, showOriginal: p.showOriginal });
+  assert.deepEqual(romanizeOf(prefsFrom(null)), romanizeOf(DEFAULT_PREFS));
+  assert.deepEqual(romanizeOf(prefsFrom({})), romanizeOf(DEFAULT_PREFS));
+  assert.deepEqual(romanizeOf(prefsFrom({ lyricsRomanize: false })), { romanize: false, showOriginal: true });
+  assert.deepEqual(romanizeOf(prefsFrom({ lyricsShowOriginal: false })), { romanize: true, showOriginal: false });
+  // The look's four values always come with defaults, whatever the caller knew.
+  assert.deepEqual(
+    { opacity: prefsFrom({}).opacity, fontSize: prefsFrom({}).fontSize },
+    { opacity: 0.25, fontSize: 16 },
+  );
+  assert.equal(prefsFrom({}).textColor, "#ffffff");
+  assert.equal(prefsFrom({}).background, "#08090c");
+});
+
+// ── Opening and closing by itself ─────────────────────────────────────────────
+
+const auto = (o) => autoAction({ enabled: true, up: false, waiting: false, playing: false, hasSong: false, ...o });
+
+test("a pause keeps the card ten seconds, so a skip back is not a stop", () => {
+  assert.equal(HIDE_AFTER_PAUSE_MS, 10_000);
+});
+
+test("a song starting opens the card, and a song already playing changes nothing", () => {
+  assert.equal(auto({ playing: true, hasSong: true }), "show");
+  assert.equal(auto({ playing: true, hasSong: true, up: true }), "stay");
+});
+
+test("a pause waits once, then the caller hides it", () => {
+  assert.equal(auto({ playing: false, hasSong: true, up: true }), "wait");
+  // Already counting: a second event must not restart the grace period.
+  assert.equal(auto({ playing: false, hasSong: true, up: true, waiting: true }), "stay");
+  // Hidden already, nothing to wait for.
+  assert.equal(auto({ playing: false, hasSong: true, up: false }), "stay");
+});
+
+test("nothing loaded hides at once, without a grace period", () => {
+  assert.equal(auto({ up: true }), "hide");
+  assert.equal(auto({ up: false }), "stay");
+});
+
+test("the switch in Settings is the master: off, nothing happens on its own", () => {
+  assert.equal(auto({ enabled: false, playing: true, hasSong: true }), "stay");
+  assert.equal(auto({ enabled: false, up: true }), "stay");
 });

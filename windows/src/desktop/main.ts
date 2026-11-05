@@ -11,10 +11,11 @@ import { Bridge, emitToWindow, onEvent, type DesktopMode } from "../core/bridge"
 import type { BotEmoteName } from "../core/layout";
 import { Sound } from "../core/sound";
 import { BotEngine } from "../mochi/engine";
+import { DEFAULT_VARIANT } from "../mochi/variants";
 import {
-  DESKTOP_EVENTS, DOUBLE_CLICK_MS, DRAG_THRESHOLD, PANEL_SIZE, agentActive, gaze, isOverBody,
-  layerDragTopLeft, lookOrigin, pointerDistance, shouldSleep, windowDragTopLeft,
-  type DesktopSnapshot, type Point,
+  DESKTOP_EVENTS, DOUBLE_CLICK_MS, DRAG_THRESHOLD, IDLE_ANTIC_AFTER_MS, PANEL_SIZE, agentActive, freeForAntics,
+  gaze, idleAntic, isOverBody, layerDragTopLeft, lookOrigin, nextAnticDelay, pointerDistance, shouldSleep, timeMood,
+  windowDragTopLeft, type DesktopSnapshot, type Point,
 } from "../mochi/desktop-logic";
 
 const ISLAND = "island";
@@ -29,6 +30,8 @@ const SIDE = (PANEL_SIZE - DRAW_W) / 2;
 /** Frame pacing: TimelineView(minimumInterval: 1/30) awake; asleep, barely. */
 const AWAKE_FRAME_MS = 1000 / 30;
 const ASLEEP_FRAME_MS = 250;
+/** How often the clock is read for the time of day: a mood lasts an hour. */
+const MOOD_CHECK_MS = 5 * 60 * 1000;
 
 class DesktopMochi {
   private engine = new BotEngine();
@@ -36,7 +39,8 @@ class DesktopMochi {
   private mode: DesktopMode = "off";
 
   private snap: DesktopSnapshot = {
-    state: "idle", outfit: "none", soundEnabled: true, soundVolume: 0.12, paused: false, dancing: false,
+    state: "idle", outfit: "none", variant: DEFAULT_VARIANT,
+    soundEnabled: true, soundVolume: 0.12, paused: false, dancing: false,
   };
 
   private visible = false;
@@ -50,6 +54,17 @@ class DesktopMochi {
 
   private timer: number | null = null;
   private lastDraw = 0;
+
+  /** The clock's own timers: his time-of-day mood, and the idle antics. */
+  private moodTimer: number | null = null;
+  /** The morning wave is a greeting, not a tic: once a day. */
+  private morningGreeted: string | null = null;
+  private anticTimer: number | null = null;
+  /**
+   * While an antic has his eyes away from the pointer, the frame loop must not
+   * snap them back: the cursor is the ordinary rule, this is the exception.
+   */
+  private driftingUntil = 0;
 
   /** Canvas offset inside the window: non-zero only in a layer-shell drag. */
   private offset: Point = { x: 0, y: 0 };
@@ -97,6 +112,11 @@ class DesktopMochi {
       this.canvas.style.opacity = "1";
     });
     await emitToWindow(ISLAND, DESKTOP_EVENTS.ready);
+
+    // A life of his own, independent of what the island reports: the hour's
+    // mood, and a small antic now and then while nothing needs him.
+    this.startMoodClock();
+    this.scheduleAntic();
   }
 
   // ── State ───────────────────────────────────────────────────────────────────
@@ -106,6 +126,7 @@ class DesktopMochi {
     this.informed = true;
     Sound.setEnabled(s.soundEnabled);
     Sound.setVolume(s.soundVolume);
+    this.engine.setVariant(s.variant);
     if (agentActive(s.state)) this.lastAgentActive = performance.now();
     if (!this.asleep) this.engine.setState(s.state);
     this.updateSleep(performance.now());
@@ -122,6 +143,7 @@ class DesktopMochi {
       this.asleep = false;
       this.engine.setState(this.snap.state, true);
       this.engine.setOutfit(this.snap.outfit, false);
+      this.engine.setVariant(this.snap.variant);
       this.schedule();
       return;
     }
@@ -155,6 +177,99 @@ class DesktopMochi {
   private wake() {
     if (!this.asleep) return;
     this.updateSleep(performance.now());
+  }
+
+  // ── A life of his own ───────────────────────────────────────────────────────
+  //
+  // Two clocks that have nothing to do with the island: the hour, which decides
+  // his mood, and the quiet moments, which he fills with a small antic. Both
+  // are quiet by design — a mascot that moves constantly is a mascot you turn
+  // off.
+
+  /** Reads the hour every five minutes and reacts when it changes. */
+  private startMoodClock() {
+    if (this.moodTimer != null) window.clearInterval(this.moodTimer);
+    const tick = () => this.hourChanged();
+    tick();
+    this.moodTimer = window.setInterval(tick, MOOD_CHECK_MS);
+  }
+
+  private hourChanged() {
+    if (!this.visible || this.asleep) return;
+    const now = new Date();
+    const mood = timeMood(now.getHours());
+    // A morning greeting is once a day, not every five minutes all morning.
+    const today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    if (mood === "happy" && this.morningGreeted !== today) {
+      this.morningGreeted = today;
+      // A wave: the same happy arc he gives a finished task, a little longer.
+      this.engine.triggerEmote("happy", 2.4);
+      this.lastAgentActive = performance.now();
+      this.schedule();
+      return;
+    }
+    // Late at night he settles down by himself. This is a mood, not sleep: the
+    // ordinary sleep rules still decide that (updateSleep), so the pointer
+    // near him or a task running brings him straight back.
+    if (mood === "sleeping" && !this.snap.dancing) {
+      this.engine.triggerEmote("yawn", 2.2);
+      this.schedule();
+      return;
+    }
+    // The after-lunch dip, now and then rather than every check.
+    if (mood === "yawn" && Math.random() < 0.35) {
+      this.engine.triggerEmote("yawn", 1.8);
+      this.schedule();
+    }
+  }
+
+  /** Plans the next quiet-moment antic. */
+  private scheduleAntic() {
+    if (this.anticTimer != null) window.clearTimeout(this.anticTimer);
+    this.anticTimer = window.setTimeout(() => {
+      this.anticTimer = null;
+      this.maybeAntic();
+      this.scheduleAntic();
+    }, nextAnticDelay(Math.random));
+  }
+
+  private maybeAntic() {
+    const idleFor = performance.now() - this.lastAgentActive;
+    const free = freeForAntics({
+      visible: this.visible,
+      asleep: this.asleep,
+      dancing: this.snap.dancing,
+      paused: this.snap.paused,
+      dragging: this.dragging,
+    });
+    // Sleepy hours: his antics would look like a second, wrong sleep.
+    if (!free || idleFor < IDLE_ANTIC_AFTER_MS) return;
+    const antic = idleAntic(Math.random);
+    switch (antic) {
+      // Not an emote: the eyes drift away for a moment. No emote would be right
+      // here, and the eyes are what read as "looking around". `driftingUntil`
+      // holds it, since draw() puts the eyes back on the pointer every frame.
+      case "lookDrift": {
+        this.engine.lookX = (Math.random() - 0.5) * 1.6;
+        this.engine.lookY = (Math.random() - 0.5) * 0.8;
+        this.driftingUntil = performance.now() + 1800;
+        window.setTimeout(() => {
+          this.driftingUntil = 0;
+        }, 1800);
+        this.schedule();
+        return;
+      }
+      case "wink":
+        this.engine.triggerEmote("wink", 1.0);
+        break;
+      case "proud":
+        this.engine.triggerEmote("proud", 1.6);
+        break;
+      case "yawn":
+        this.engine.triggerEmote("yawn", 1.8);
+        break;
+    }
+    this.schedule();
   }
 
   /** Pointer in window coordinates: his eyes, and waking up. */
@@ -202,9 +317,13 @@ class DesktopMochi {
     if (!this.asleep) {
       // Windows: the global cursor. Linux: only while the pointer is over him.
       const fresh = this.mode === "poll" || now - this.lastPointer < 1500;
-      const g = this.cursor && fresh ? gaze(lookOrigin(0, 0), this.cursor) : { lookX: 0, lookY: 0 };
-      engine.lookX = g.lookX;
-      engine.lookY = g.lookY;
+      // An antic may have sent his eyes somewhere else for a moment: that wins
+      // over the pointer, or the drift would last a single frame.
+      if (now >= this.driftingUntil) {
+        const g = this.cursor && fresh ? gaze(lookOrigin(0, 0), this.cursor) : { lookX: 0, lookY: 0 };
+        engine.lookX = g.lookX;
+        engine.lookY = g.lookY;
+      }
     }
     // Dances while Spotify plays, by the compact island's rules.
     engine.setDancing(this.snap.dancing && !this.asleep);

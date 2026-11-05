@@ -9,6 +9,7 @@ import { Sound } from "../core/sound";
 import type { BotEmoteName, BotStateName } from "../core/layout";
 import { drawOutfitBehind, drawOutfitFront, makeHead } from "./outfits";
 import type { Outfit } from "./wardrobe";
+import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,45 +63,59 @@ interface Particle {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-// (Mochi's squircle constants retired with the Kanon chibi; see K_* below.)
+// (Mochi's squircle constants retired with the Miku chibi; see K_* below.)
 
 const MINI_INK = "rgb(16,19,26)"; // #10131A
 
-// ── Kanon (花音) — chibi ala Mai Kawasumi (design/prototype/kanon.html v4.3) ──
-const K_HAIR: RGB = [0.227, 0.275, 0.408];   // #3A4668
-const K_HAIR_D: RGB = [0.165, 0.2, 0.314];   // #2A3350
-const K_HAIR_HI = "rgba(92,108,150,0.55)";
-const K_BOW: RGB = [0.604, 0.635, 0.878];    // #9AA2E0
-const K_BOW_D: RGB = [0.482, 0.514, 0.784];  // #7B83C8
-const K_SKIN: RGB = [1, 0.914, 0.863];       // #FFE9DC
-const K_EYE_G1: RGB = [0.341, 0.851, 0.604]; // #57D99A
-const K_EYE_G2: RGB = [0.051, 0.478, 0.322]; // #0D7A52
-const K_EYE_INK = "rgb(28,43,38)";           // #1C2B26
-const K_DRESS: RGB = [0.576, 0.224, 0.29];   // #93394A
-const K_DRESS_D: RGB = [0.478, 0.173, 0.235];// #7A2C3C
-const K_CAPE: RGB = [0.957, 0.957, 0.973];   // #F4F4F8
-const K_CAPE_B: RGB = [0.886, 0.89, 0.941];
-const K_TRIM: RGB = [0.545, 0.576, 0.839];   // #8B93D6
-const K_SAKURA: RGB = [0.957, 0.447, 0.714]; // #F472B6
-const K_GOLD = "rgb(245,200,110)";
-const K_BLADE = "rgb(201,204,216)";
-const K_INK = "rgb(32,36,46)";
+// ── Miku — chibi drawn in code, in three official variants ───────────────────
+//
+// The palette used to be constants here (the earlier fork's Miku chibi). It now
+// comes from ./variants.ts, one MikuVariant per look: classic, Snow and Sakura
+// share every shape and differ in colour, plus the few ornaments the variant
+// paints itself through `extra`. `engine.setVariant()` swaps it at runtime.
+//
+// Coordinates below are the 0..300 prototype space, character centred on
+// (150, ~150) — the same system the old chibi used, so outfits and the mini bots
+// keep working untouched.
+const INK = "rgb(32,36,46)";
 
 function mixRGB(a: RGB, b: RGB, k: number): RGB {
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
 }
 
-/** Jepit not ♪ — tanda tangan merek Kanon, digambar di kode. */
-function kanonNote(x: CanvasRenderingContext2D, px: number, py: number, s: number, col: string, rot: number) {
-  x.save(); x.translate(px, py); x.rotate(rot); x.fillStyle = col;
-  x.beginPath(); x.ellipse(0, s * 0.32, s * 0.36, s * 0.26, -0.3, 0, Math.PI * 2); x.fill();
-  x.fillRect(s * 0.3, -s * 0.95, s * 0.13, s * 1.27);
-  x.beginPath(); x.moveTo(s * 0.43, -s * 0.95);
-  x.quadraticCurveTo(s * 0.95, -s * 0.82, s * 0.9, -s * 0.3);
-  x.quadraticCurveTo(s * 0.66, -s * 0.52, s * 0.43, -s * 0.42);
-  x.closePath(); x.fill();
-  x.restore();
+/**
+ * The headset's mic boom: a thin arm from the right ear down to a small capsule
+ * by the mouth. Shared by the three variants, coloured by `headset`.
+ */
+function micBoom(x: CanvasRenderingContext2D, col: RGB) {
+  x.strokeStyle = rgba(col);
+  x.lineWidth = 2.4;
+  x.lineCap = "round";
+  x.beginPath();
+  x.moveTo(150 + 80, 92);
+  x.quadraticCurveTo(150 + 84, 116, 150 + 62, 124);
+  x.stroke();
+  x.fillStyle = rgba(col);
+  x.beginPath();
+  x.ellipse(150 + 58, 125, 4.6, 3.8, -0.5, 0, Math.PI * 2);
+  x.fill();
 }
+
+/**
+ * The "01" tattooed on the left sleeve — the one mark every Miku wears, and the
+ * reason the armband is drawn on the body rather than with the outfit.
+ */
+function armband(x: CanvasRenderingContext2D, col: RGB, plate: RGB) {
+  x.fillStyle = rgba(plate);
+  roundRectPath(x, 96, 158, 20, 22, 4);
+  x.fill();
+  x.fillStyle = rgba(col);
+  x.font = `700 13px ${FONT}`;
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  x.fillText("01", 106, 169);
+}
+
 
 const C = {
   idle: [0.902, 0.914, 0.933] as RGB,
@@ -226,11 +241,17 @@ export function danceTransform(seconds: number, level: number, R: number) {
 
 export class BotEngine {
   isMini = false;
-  /** Solid body colour for mini bots / integration pills (null = Mochi gradient). */
+  /** Solid body colour for mini bots / integration pills (null = the variant's own palette). */
   bodyColor: RGB | null = null;
   /**
-   * A new Kanon waits (whats-new/whats-new.ts): while Mochi is idle or asleep
-   * he wears the up-arrow badge. The island turns his body blue alongside.
+   * Which Miku is drawn: classic, Snow or Sakura. The wardrobe sets it from the
+   * user's choice (or the season); every surface — island, mini bots, desktop,
+   * greeting, recap — reads the same engine, so they always agree.
+   */
+  variant: MikuVariant = MIKU_VARIANTS[DEFAULT_VARIANT];
+  /**
+   * A new version waits (whats-new/whats-new.ts): while Miku is idle or asleep
+   * the up-arrow badge shows. The island turns the body blue alongside.
    */
   private updateHint: RGB | null = null;
 
@@ -306,6 +327,41 @@ export class BotEngine {
   onDizzy: (() => void) | null = null;
 
   // ── Public API ──────────────────────────────────────────────────────────────
+
+  /** Draws `id` from now on. Cheap: the next frame picks the new palette up. */
+  setVariant(id: MikuVariantId) {
+    const v = MIKU_VARIANTS[id];
+    if (v && v !== this.variant) this.variant = v;
+  }
+
+  /**
+   * The launch greeting drives the pose itself (drop, bounce, slide, wave,
+   * settle) and hands the result here each frame, so it draws the same Miku with
+   * the same eye shapes as everything else instead of its own copy of the face.
+   */
+  syncGreeting(p: {
+    eye: "dot" | "happy" | "content";
+    open: number;
+    lookX: number;
+    lookY: number;
+    tint: number;
+  }) {
+    this.state = "idle";
+    this.cfg = BOT_STATES.idle;
+    this.permanentEye = null;
+    this.eyeOverride = p.eye === "dot" ? "pill" : p.eye === "happy" ? "happy" : "closed";
+    this.open = Math.max(0.05, p.open);
+    this.lookX = p.lookX;
+    this.lookY = p.lookY;
+    this.tint = p.tint;
+    // The greeting bobs the body through its own transform, so the engine's
+    // spring-driven offset stays neutral.
+    this.oy = 0;
+    this.ox = 0;
+    this.tilt = 0;
+    this.sx = 1;
+    this.sy = 1;
+  }
 
   setState(next: BotStateName, force = false) {
     if (this.state === next && !force) return;
@@ -426,7 +482,7 @@ export class BotEngine {
     this.anim("roll", [[Math.PI * 2 * turns, durationMs, Ease.inOut]], () => { this.roll = 0; });
   }
 
-  /** Peek wave — the "kanon". Timings from BotEngine.greet(). */
+  /** Peek wave — the "miku". Timings from BotEngine.greet(). */
   greet() {
     const t = now();
     const tok = ++this.greetToken;
@@ -847,7 +903,7 @@ export class BotEngine {
     if (this.tilt !== 0) x.rotate(this.tilt);
     x.scale(this.sx, this.sy);
 
-    // Kanon: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
+    // Miku: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
     // sementara TIDAK digambar sampai diadaptasi ke kepala chibi (fase lanjut).
     // Tanpa ini, topi melayang di posisi lama dan terlihat seperti kepala terbelah.
     const dressed = false;
@@ -872,7 +928,7 @@ export class BotEngine {
     }
 
     this.drawEyes(x, body, R, rx, ry);
-    this.drawKanonFront(x, R, rx, ry);
+    this.drawMikuFront(x, R, rx, ry);
 
     if (head) drawOutfitFront(x, this.outfit, head, outfitState);
 
@@ -913,160 +969,276 @@ export class BotEngine {
     return p;
   }
 
-  /** How much of the pumpkin's orange shows on the body (it comes and goes with the outfit). */
-  /** Chibi Kanon utuh — lapisan belakang (rambut/pita) sampai badan; wajah di drawEyes.
-   *  Semua koordinat 0-relatif terhadap pusat karakter (satu sistem, tanpa translate). */
+  /** The whole chibi, back layer to body; the face is drawEyes, the front hair
+   *  and the ornaments drawMikuFront. All coordinates are the 0..300 prototype
+   *  space, the character centred on (150, ~150), one system with no translate. */
   private drawBody(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
     const u = R / 158;
     const t = now();
     const state = this.state;
     const tint = Math.min(1, this.tint);
-    // Semua koordinat di bawah: ruang proto 0..300, pusat karakter di (150, ~150).
+    const v = this.variant;
     x.save();
     x.scale(u, u);
     x.translate(-150, -150);
 
     if (this.isMini) {
-      // Mini bot: kepala saja, rambut mewarnai pill
-      const hair = this.bodyColor ? mixRGB(K_HAIR, this.bodyColor, 0.62) : K_HAIR;
+      // Mini bot: head only, the pill's colour melting into the hair.
+      const hair = this.bodyColor ? mixRGB(v.hair, this.bodyColor, 0.62) : v.hair;
       x.fillStyle = rgba(hair);
       x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
-      this.kanonHeadMass(x, hair);
+      this.mikuHeadMass(x, hair);
       x.restore();
       return;
     }
 
-    // ── lapisan belakang: tirai rambut panjang + ekor kuda + pita belakang ──
     const sway = this.isDancing ? Math.sin(t * 6) * 6
       : state === "dizzy" ? Math.sin(t * 9) * 5 : Math.sin(t * 1.6) * 1.8;
+
+    // Whatever only this variant has, behind the body: Snow's snowflakes.
+    v.extra?.behind?.(x, v, t);
+
+    // ── back hair: the cap, then the two twin-tails ──
     const hg = x.createLinearGradient(0, 10, 0, 260);
-    hg.addColorStop(0, rgba(K_HAIR));
-    hg.addColorStop(1, rgba(K_HAIR_D));
+    hg.addColorStop(0, rgba(v.hair));
+    hg.addColorStop(1, rgba(v.hairDark));
     x.fillStyle = hg;
     x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
+
+    // Twin-tails: Miku's signature. Each is gathered high at the side of the
+    // head, swells outward past the shoulder and tapers to a point near the hem.
+    // They sway with the dance, so they read as hair and not as a cape: the
+    // outer edge is drawn first, then a lighter inner mass on top of it, which
+    // is what gives the tail a rounded volume instead of a flat drape.
     for (const s of [-1, 1]) {
+      const sd = s * sway;
+      (x as CanvasRenderingContext2D).save();
+      // The mass of one tail, from a scale of x (right/left of centre).
+      const tail = (k: number) => {
+        x.beginPath();
+        x.moveTo(150 + s * (62 * k) + sd * 0.35, 56);
+        x.bezierCurveTo(
+          150 + s * (104 * k) + sd * 0.7, 74,
+          150 + s * (126 * k) + sd, 128,
+          150 + s * (124 * k) + sd, 186,
+        );
+        x.bezierCurveTo(
+          150 + s * (122 * k) + sd, 232,
+          150 + s * (112 * k) + sd, 268,
+          150 + s * (96 * k) + sd, 292,
+        );
+        // The inner edge climbs back up, tucking behind the shoulder and the
+        // jaw. It runs well inside the torso (x≈100) so the tail and the body
+        // overlap: a gap here would show the background as a dark wedge.
+        x.bezierCurveTo(
+          150 + s * (58 * k) + sd * 0.7, 256,
+          150 + s * (44 * k) + sd * 0.6, 176,
+          150 + s * (56 * k) + sd * 0.4, 96,
+        );
+        x.closePath();
+      };
+      // Outer mass, in the darker shade.
+      const og = x.createLinearGradient(150 + s * 40, 60, 150 + s * 100, 280);
+      og.addColorStop(0, rgba(v.hair));
+      og.addColorStop(1, rgba(v.hairDark));
+      x.fillStyle = og;
+      tail(1);
+      x.fill();
+      // Inner mass, lighter and narrower: the highlight that rounds it out.
+      x.globalAlpha = 0.55;
+      x.fillStyle = rgba(v.hair);
+      tail(0.72);
+      x.fill();
+      x.globalAlpha = 1;
+      // The tie: the band that gathers the tail, near the top.
+      x.fillStyle = rgba(v.hairDark);
       x.beginPath();
-      x.moveTo(150 + s * 80 + sway, 90);
-      x.quadraticCurveTo(150 + s * 86 + sway, 190, 150 + s * 66 + sway, 246);
-      x.quadraticCurveTo(150 + s * 40 + sway, 252, 150 + s * 30 + sway, 236);
-      x.quadraticCurveTo(150 + s * 52 + sway, 180, 150 + s * 46 + sway, 96);
-      x.closePath(); x.fill();
-    }
-    x.save(); x.translate(150 + 56 + sway * 0.6, 108); x.rotate(0.12 + sway * 0.02);
-    x.fillStyle = rgba(K_HAIR_D);
-    x.beginPath(); x.moveTo(-16, 0);
-    x.quadraticCurveTo(30, 60, 10, 150);
-    x.quadraticCurveTo(-6, 158, -18, 148);
-    x.quadraticCurveTo(2, 70, -34, 10);
-    x.closePath(); x.fill();
-    x.restore();
-    // pita belakang: ekor menggantung + loop mengintip dua sisi kepala
-    x.fillStyle = rgba(K_BOW_D);
-    for (const s of [-1, 1]) {
+      x.ellipse(150 + s * 70, 66, 13, 17, s * 0.3, 0, Math.PI * 2);
+      x.fill();
+      x.fillStyle = "rgba(255,255,255,0.3)";
       x.beginPath();
-      x.moveTo(150 + s * 66, 100);
-      x.quadraticCurveTo(150 + s * 82, 132, 150 + s * 70, 170);
-      x.quadraticCurveTo(150 + s * 62, 165, 150 + s * 57, 150);
-      x.quadraticCurveTo(150 + s * 63, 122, 150 + s * 56, 104);
-      x.closePath(); x.fill();
-    }
-    x.fillStyle = rgba(K_BOW);
-    for (const s of [-1, 1]) {
-      x.save(); x.translate(150 + s * 86, 92); x.rotate(s * 0.55);
-      x.beginPath(); x.moveTo(0, 0);
-      x.quadraticCurveTo(s * 26, -20, s * 32, 0);
-      x.quadraticCurveTo(s * 26, 16, 0, 8);
-      x.closePath(); x.fill();
+      x.ellipse(150 + s * 70, 62, 8, 10, s * 0.3, 0, Math.PI * 2);
+      x.fill();
       x.restore();
     }
 
-    // ── gaun marun ──
-    const dg = x.createLinearGradient(0, 120, 0, 258);
-    dg.addColorStop(0, rgba(K_DRESS));
-    dg.addColorStop(1, rgba(K_DRESS_D));
-    x.fillStyle = dg;
-    x.beginPath(); x.moveTo(150 - 46, 124);
-    x.quadraticCurveTo(150 - 62, 200, 150 - 54, 248);
-    x.quadraticCurveTo(150, 260, 150 + 54, 248);
-    x.quadraticCurveTo(150 + 62, 200, 150 + 46, 124);
-    x.closePath(); x.fill();
-    x.strokeStyle = "rgba(255,255,255,0.85)"; x.lineWidth = 3;
-    x.beginPath(); x.moveTo(150 - 52, 244); x.quadraticCurveTo(150, 256, 150 + 52, 244); x.stroke();
+    // ── the body: white shirt, teal tie, pleated skirt ──
+    // Shirt first, so the skirt and the sleeves sit on it.
+    const shirt = mixRGB(v.shirt, this.col, tint * 0.34);
+    x.fillStyle = rgba(shirt);
+    x.beginPath();
+    x.moveTo(150 - 44, 126);
+    x.quadraticCurveTo(150 - 54, 172, 150 - 46, 196);
+    x.lineTo(150 + 46, 196);
+    x.quadraticCurveTo(150 + 54, 172, 150 + 44, 126);
+    x.quadraticCurveTo(150, 140, 150 - 44, 126);
+    x.closePath();
+    x.fill();
 
-    // ── lengan ──
-    x.fillStyle = rgba(K_DRESS);
+    // Skirt: a modest A-line, grey pleats and a pale hem. It starts under the
+    // shirt and stops inside the shoulder line, so the silhouette stays narrow
+    // at the top and the twin-tails remain the widest thing on the character.
+    const sg = x.createLinearGradient(0, 186, 0, 254);
+    sg.addColorStop(0, rgba(v.skirt));
+    sg.addColorStop(1, rgba(v.skirtShade));
+    x.fillStyle = sg;
+    x.beginPath();
+    x.moveTo(150 - 40, 188);
+    x.quadraticCurveTo(150 - 54, 224, 150 - 52, 248);
+    x.quadraticCurveTo(150, 259, 150 + 52, 248);
+    x.quadraticCurveTo(150 + 54, 224, 150 + 40, 188);
+    x.closePath();
+    x.fill();
+    // Pleats: a few darker creases, longer in the middle.
+    x.strokeStyle = "rgba(0,0,0,0.16)";
+    x.lineWidth = 2;
+    for (const px of [-26, -13, 0, 13, 26]) {
+      x.beginPath();
+      x.moveTo(150 + px * 0.86, 190);
+      x.lineTo(150 + px * 1.06, 246 - Math.abs(px) * 0.16);
+      x.stroke();
+    }
+    x.strokeStyle = rgba(v.trim, 0.95);
+    x.lineWidth = 3.4;
+    x.beginPath();
+    x.moveTo(150 - 51, 244);
+    x.quadraticCurveTo(150, 255, 150 + 51, 244);
+    x.stroke();
+
+    // ── legs ──
+    // Below the skirt, so the chibi is a whole figure and not a bust: a sliver
+    // of thigh, then the black thigh-highs Miku wears. The thigh starts up
+    // inside the skirt's hem (y≈244) so no gap shows between them.
+    for (const s of [-1, 1]) {
+      const lx = 150 + s * 20;
+      x.fillStyle = rgba(v.skin);
+      x.beginPath();
+      x.ellipse(lx, 246, 12, 14, 0, 0, Math.PI * 2);
+      x.fill();
+      // The stockings, from just under the hem down to the ankle.
+      x.fillStyle = rgba(v.gloves);
+      x.beginPath();
+      x.moveTo(lx - 12, 248);
+      x.quadraticCurveTo(lx - 10, 274, lx - 9, 284);
+      x.lineTo(lx + 9, 284);
+      x.quadraticCurveTo(lx + 10, 274, lx + 12, 248);
+      x.closePath();
+      x.fill();
+      // The band at the top of the stocking.
+      x.fillStyle = "rgba(255,255,255,0.22)";
+      x.beginPath();
+      x.ellipse(lx, 250, 12, 3.4, 0, 0, Math.PI * 2);
+      x.fill();
+      // The shoe.
+      x.fillStyle = rgba(v.gloves);
+      x.beginPath();
+      x.ellipse(lx + s * 1.5, 288, 13, 7, 0, 0, Math.PI * 2);
+      x.fill();
+    }
+
+    // ── arms ──
+    // The left arm is the one with the "01"; the right one carries the pose.
+    x.fillStyle = rgba(shirt);
     if (state === "working") {
       x.beginPath(); x.ellipse(150 - 30, 172, 16, 30, 0.4, 0, Math.PI * 2); x.fill();
       x.beginPath(); x.ellipse(150 + 30, 172, 16, 30, -0.4, 0, Math.PI * 2); x.fill();
-      x.fillStyle = "#fff";
-      x.beginPath(); x.ellipse(150 - 14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(150 + 14, 198, 9, 8, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = rgba(K_SKIN);
+      // Black forearm sleeves, both hands on the keyboard.
+      x.fillStyle = rgba(v.gloves);
+      x.beginPath(); x.ellipse(150 - 16, 196, 11, 12, 0.2, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(150 + 16, 196, 11, 12, -0.2, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(v.skin);
       x.beginPath(); x.ellipse(150, 204, 12, 6, 0, 0, Math.PI * 2); x.fill();
     } else {
       x.beginPath(); x.ellipse(150 - 34, 168, 17, 34, 0.35, 0, Math.PI * 2); x.fill();
       x.beginPath(); x.ellipse(150 + 50, 172, 15, 30, -0.5, 0, Math.PI * 2); x.fill();
-      x.fillStyle = "#fff";
+      // The left forearm sleeve, the black band Miku wears under the "01".
+      x.fillStyle = rgba(v.gloves);
+      x.beginPath(); x.ellipse(150 - 41, 192, 11, 13, 0.32, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(v.skin);
+      x.beginPath(); x.ellipse(150 - 35, 202, 7, 6.5, 0, 0, Math.PI * 2); x.fill();
+      // The right hand, resting in front of the skirt.
+      x.fillStyle = rgba(v.gloves);
       x.beginPath(); x.ellipse(150 + 62, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = rgba(K_SKIN);
-      x.beginPath(); x.ellipse(150 + 74, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = rgba(v.skin);
+      x.beginPath(); x.ellipse(150 + 73, 205, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
+    }
+    if (!this.isMini) armband(x, v.armband, v.trim);
+
+    // ── collar and tie ──
+    // A winter outfit closes with a fur collar instead of an open neckline.
+    if (v.furCollar) {
+      x.fillStyle = rgba(v.trim);
+      x.beginPath();
+      x.moveTo(150 - 50, 132);
+      x.quadraticCurveTo(150, 116, 150 + 50, 132);
+      x.quadraticCurveTo(150, 156, 150 - 50, 132);
+      x.closePath();
+      x.fill();
+      // The fur itself: small overlapping puffs along the band.
+      x.fillStyle = "rgba(255,255,255,0.97)";
+      for (let i = -4; i <= 4; i++) {
+        const px = 150 + i * 12.5;
+        const py = 133 - Math.cos((i / 4) * (Math.PI / 2)) * 8;
+        x.beginPath();
+        x.arc(px, py, 9.5, 0, Math.PI * 2);
+        x.fill();
+      }
+      x.fillStyle = "rgba(214,232,248,0.85)";
+      for (let i = -3; i <= 3; i++) {
+        x.beginPath();
+        x.arc(150 + i * 16, 141, 5.5, 0, Math.PI * 2);
+        x.fill();
+      }
     }
 
-    // ── cape putih — warna state melebur di sini ──
-    const capeTop = mixRGB(K_CAPE, this.col, tint * 0.5);
-    const capeBot = mixRGB(K_CAPE_B, this.col, tint * 0.32);
-    const cg = x.createLinearGradient(0, 118, 0, 176);
-    cg.addColorStop(0, rgba(capeTop));
-    cg.addColorStop(1, rgba(capeBot));
-    x.fillStyle = cg;
-    x.beginPath(); x.moveTo(150 - 58, 120);
-    x.quadraticCurveTo(150 - 66, 168, 150 - 44, 176);
-    x.lineTo(150 + 44, 176);
-    x.quadraticCurveTo(150 + 66, 168, 150 + 58, 120);
-    x.quadraticCurveTo(150, 136, 150 - 58, 120);
+    // The collar is the shirt's, in trim; the tie is Miku's colour.
+    x.fillStyle = rgba(v.trim);
+    x.beginPath(); x.moveTo(150 - 18, 128);
+    x.lineTo(150, 146); x.lineTo(150 + 18, 128);
+    x.quadraticCurveTo(150, 138, 150 - 18, 128);
+    x.closePath();
+    x.fill();
+    x.fillStyle = rgba(v.tie);
+    // The knot, then the two blades.
+    x.beginPath(); x.moveTo(150, 143); x.lineTo(150 - 6, 150); x.lineTo(150, 157); x.lineTo(150 + 6, 150);
     x.closePath(); x.fill();
-    x.strokeStyle = rgba(K_TRIM, 0.9); x.lineWidth = 3;
-    x.beginPath(); x.moveTo(150 - 60, 128); x.quadraticCurveTo(150 - 64, 164, 150 - 44, 174);
-    x.lineTo(150 + 44, 174); x.quadraticCurveTo(150 + 64, 164, 150 + 60, 128); x.stroke();
+    x.beginPath();
+    x.moveTo(150 - 5, 156);
+    x.quadraticCurveTo(150 - 10, 176, 150 - 7, 190);
+    x.lineTo(150 + 7, 190);
+    x.quadraticCurveTo(150 + 10, 176, 150 + 5, 156);
+    x.closePath();
+    x.fill();
 
-    // ── pita leher ──
-    x.fillStyle = rgba(K_DRESS);
-    roundRectPath(x, 150 - 15, 136, 30, 9, 3); x.fill();
-    x.fillStyle = "#6b83d9";
-    x.beginPath(); x.moveTo(150, 150); x.quadraticCurveTo(150 - 24, 139, 150 - 31, 150);
-    x.quadraticCurveTo(150 - 24, 163, 150, 159); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(150, 150); x.quadraticCurveTo(150 + 24, 139, 150 + 31, 150);
-    x.quadraticCurveTo(150 + 24, 163, 150, 159); x.closePath(); x.fill();
-    x.beginPath(); x.ellipse(150, 152, 6.5, 5, 0, 0, Math.PI * 2); x.fill();
-    x.fillStyle = "#5a72c4";
-    x.beginPath(); x.moveTo(150 - 3, 157); x.quadraticCurveTo(150 - 9, 172, 150 - 15, 181);
-    x.lineTo(150 - 6, 179); x.quadraticCurveTo(150 - 1, 166, 150 + 3, 157); x.closePath(); x.fill();
-
-    // ── kepala: wajah + poni + side locks ──
-    this.kanonHeadMass(x, K_HAIR);
+    // ── head: face, bangs, side locks ──
+    this.mikuHeadMass(x, v.hair);
     x.restore();
   }
 
-  /** Wajah + poni + side locks (dipakai chibi penuh dan mini). */
-  private kanonHeadMass(x: CanvasRenderingContext2D, hair: RGB) {
-    x.fillStyle = rgba(K_SKIN);
+  /** Face, bangs and side locks — used by the full chibi and the mini bot. */
+  private mikuHeadMass(x: CanvasRenderingContext2D, hair: RGB) {
+    const v = this.variant;
+    x.fillStyle = rgba(v.skin);
     x.beginPath(); x.ellipse(150, 76, 64, 60, 0, 0, Math.PI * 2); x.fill();
     x.fillStyle = rgba(hair);
+    // Bangs: the same five-lobe fringe, a touch flatter than the old chibi's —
+    // Miku's is cut straight across, not parted.
     for (let i = -2; i <= 2; i++) {
-      x.save(); x.translate(150 + i * 28, 38 + Math.abs(i) * 3); x.rotate(i * 0.05);
-      x.beginPath(); x.ellipse(0, 0, 24, 27, 0, 0, Math.PI * 2); x.fill();
+      x.save(); x.translate(150 + i * 27, 36 + Math.abs(i) * 2); x.rotate(i * 0.04);
+      x.beginPath(); x.ellipse(0, 0, 25, 26, 0, 0, Math.PI * 2); x.fill();
       x.restore();
     }
-    x.fillStyle = K_HAIR_HI; x.globalAlpha = 0.55;
-    x.beginPath(); x.ellipse(116, 26, 6, 15, 0.25, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.ellipse(182, 24, 5.5, 14, -0.2, 0, Math.PI * 2); x.fill();
+    x.fillStyle = v.hairHi; x.globalAlpha = 0.6;
+    x.beginPath(); x.ellipse(116, 24, 6, 15, 0.25, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(182, 22, 5.5, 14, -0.2, 0, Math.PI * 2); x.fill();
     x.globalAlpha = 1;
-    x.fillStyle = rgba(K_HAIR_D);
-    x.beginPath(); x.ellipse(84, 96, 13, 52, 0.08, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.ellipse(216, 96, 13, 52, -0.08, 0, Math.PI * 2); x.fill();
+    // Side locks, shorter than the old chibi's: they stop at the jaw.
+    x.fillStyle = rgba(v.hairDark);
+    x.beginPath(); x.ellipse(84, 96, 13, 48, 0.08, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(216, 96, 13, 48, -0.08, 0, Math.PI * 2); x.fill();
   }
 
-  /** Wajah Kanon: alis, mata (half-lidded stoic + emote), mulut, kacamata. */
+  /** Wajah Miku: alis, mata (half-lidded stoic + emote), mulut, kacamata. */
   private drawEyes(x: CanvasRenderingContext2D, _body: Path2D, R: number, _rx: number, _ry: number) {
     let shape: EyeShape = this.eyeOverride ?? this.cfg.eye;
     if (this.isDancing && this.dancingLevel > 0.15 && !this.isMini && (this.state === "idle" || this.state === "finished")) {
@@ -1074,7 +1246,7 @@ export class BotEngine {
     }
     const u = R / 158;
     const state = this.state;
-    const ink = this.isMini ? MINI_INK : K_EYE_INK;
+    const ink = this.isMini ? MINI_INK : this.variant.eyeInk;
     const es = this.es;
     const blink = this.open < 0.22;
 
@@ -1118,10 +1290,10 @@ export class BotEngine {
         roundRectPath(x, ex - 11, ey - 2, 22, 5, 2.5); x.fill();
         return;
       }
-      // iris gradien zamrud
+      // The iris: a gradient, light at the top and dark at the bottom.
       const iris = x.createLinearGradient(0, ey - EH, 0, ey + EH);
-      iris.addColorStop(0, rgba(K_EYE_G1));
-      iris.addColorStop(1, rgba(K_EYE_G2));
+      iris.addColorStop(0, rgba(this.variant.eye1));
+      iris.addColorStop(1, rgba(this.variant.eye2));
       x.fillStyle = iris;
       x.beginPath(); x.ellipse(ex, ey, EW, EH, 0, 0, Math.PI * 2); x.fill();
       x.strokeStyle = ink; x.lineWidth = 1.9;
@@ -1138,7 +1310,7 @@ export class BotEngine {
       }
       // kelopak atas menutup ~1/3 iris — tatapan tenang (tired berhenti di cabang flat di atas)
       const lidH = EH * 0.62;
-      x.fillStyle = rgba(K_SKIN);
+      x.fillStyle = rgba(this.variant.skin);
       x.fillRect(ex - EW - 3, ey - EH - 6, (EW + 3) * 2, lidH);
       x.strokeStyle = ink; x.lineWidth = 3.4;
       const lidY = ey - EH + lidH;
@@ -1192,31 +1364,47 @@ export class BotEngine {
     x.restore();
   }
 
-  /** Lapisan paling depan: ahoge, jepit not, katana/laptop. */
-  private drawKanonFront(x: CanvasRenderingContext2D, R: number, _rx: number, _ry: number) {
+  /** The front-most layer: headset, ahoge, the laptop, and the variant's own ornaments. */
+  private drawMikuFront(x: CanvasRenderingContext2D, R: number, _rx: number, _ry: number) {
     if (this.isMini) return;
     const u = R / 158;
     const t = now();
     const state = this.state;
+    const v = this.variant;
     x.save();
     x.scale(u, u);
     x.translate(-150, -150);
 
-    // ahoge — antena sakura, tenang kecuali sedang joget/cegang
+    // The headset: a small earpiece clamped to the side of the head, with the
+    // mic boom. Kept narrow and mostly off the face — a big ring there reads as
+    // a monocle rather than an earpiece.
+    x.save();
+    x.strokeStyle = rgba(v.headset);
+    x.lineWidth = 4.5;
+    x.beginPath();
+    x.ellipse(150 + 84, 84, 9, 12, -0.1, 0, Math.PI * 2);
+    x.stroke();
+    x.fillStyle = "rgba(255,255,255,0.24)";
+    x.beginPath();
+    x.ellipse(150 + 84, 84, 5.5, 8, -0.1, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+    micBoom(x, v.headset);
+
+    // Ahoge — the one strand that never lies flat; it follows the dance.
     const sway = state === "dizzy" ? Math.sin(t * 9) * 8
       : this.isDancing ? Math.sin(t * 6) * 11 : Math.sin(t * 1.8) * 2;
-    x.strokeStyle = rgba(K_SAKURA); x.lineWidth = 3; x.lineCap = "round";
+    x.strokeStyle = rgba(v.hairDark); x.lineWidth = 3.4; x.lineCap = "round";
     x.beginPath(); x.moveTo(150, 12);
-    x.quadraticCurveTo(153, -2, 160 + sway, -6);
-    x.quadraticCurveTo(169 + sway * 1.5, -6, 163 + sway * 1.5, 5);
+    x.quadraticCurveTo(152, -4, 158 + sway, -9);
+    x.quadraticCurveTo(168 + sway * 1.5, -10, 164 + sway * 1.6, 2);
     x.stroke();
-    kanonNote(x, 54, 90, 16, rgba(K_SAKURA), 0.2);
 
     if (state === "working") {
-      // laptop di pelukan + petir error kecil
-      x.fillStyle = K_INK;
+      // A laptop in the lap, plus the little error bolt.
+      x.fillStyle = INK;
       roundRectPath(x, 110, 186, 80, 44, 8); x.fill();
-      x.fillStyle = "#22d3ee"; x.globalAlpha = 0.8;
+      x.fillStyle = rgba(v.tie); x.globalAlpha = 0.85;
       for (let i = 0; i < 3; i++) x.fillRect(118, 198 + i * 9, 44, 4);
       x.globalAlpha = 1;
       if ((t % 1.2) < 0.5) {
@@ -1225,27 +1413,16 @@ export class BotEngine {
         x.lineTo(198, 240); x.lineTo(226, 184); x.lineTo(211, 184); x.lineTo(223, 146);
         x.closePath(); x.fill();
       }
-    } else if (this.outfit === "none" && R >= 30) {
-      // katana di sisi kanan, digenggam tangan yang sudah digambar di badan
-      x.save(); x.translate(224, 158); x.rotate(0.09);
-      x.fillStyle = K_BLADE;
-      x.beginPath(); x.moveTo(-4, 190); x.lineTo(4, 190); x.lineTo(3, 42); x.lineTo(0, 32);
-      x.lineTo(-3, 42); x.closePath(); x.fill();
-      x.fillStyle = K_GOLD;
-      roundRectPath(x, -9, 190, 18, 6, 2); x.fill();
-      x.fillStyle = K_INK;
-      roundRectPath(x, -4, 196, 8, 28, 3); x.fill();
-      x.restore();
-      x.fillStyle = "#fff";
-      x.beginPath(); x.ellipse(212, 199, 9, 8, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = rgba(K_SKIN);
-      x.beginPath(); x.ellipse(224, 206, 7.5, 6.5, 0, 0, Math.PI * 2); x.fill();
     }
+
+    // Whatever only this variant wears, over the face: Snow's snowflakes,
+    // Sakura's blossoms and petals.
+    v.extra?.front?.(x, v, t);
 
     x.restore();
   }
 
-  /** Kanon: moe-sode — tangan tak terlihat; gestur sapa jadi anggukan kepala. */
+  /** The moe-sleeve hands stay hidden; a greeting is a nod and a head tilt. */
   private drawHandsBehind(
     _x: CanvasRenderingContext2D,
     _R: number, _rx: number, _ry: number, _cx: number, _cy: number,
@@ -1292,7 +1469,7 @@ export class BotEngine {
         }
       }
     } else if (badge.kind === "arrow") {
-      // The "!" badge's ring and disc, with a white up-arrow: a new Kanon is out.
+      // The "!" badge's ring and disc, with a white up-arrow: a new Miku is out.
       x.fillStyle = "#000";
       x.beginPath();
       x.arc(0, 0, R * 0.3, 0, Math.PI * 2);

@@ -3,9 +3,9 @@
 
 use keyring::Entry;
 
-const SERVICE: &str = "com.findarata.kanon";
+const SERVICE: &str = "com.findarata.miku";
 
-/// Every key Kanon may store. Anything outside this list is refused.
+/// Every key Miku may store. Anything outside this list is refused.
 pub const KNOWN_KEYS: &[&str] = &[
     "anthropic-api-key",
     "openai-api-key",
@@ -24,7 +24,7 @@ pub const KNOWN_KEYS: &[&str] = &[
     "resend-api-key",
     "notion-api-key",
     "calcom-api-key",
-    // « OK Kanon »'s answers in an ElevenLabs voice.
+    // « OK Miku »'s answers in an ElevenLabs voice.
     "elevenlabs-api-key",
 ];
 
@@ -136,7 +136,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn a_certificate_sized_secret_round_trips_through_credential_manager() {
-        let entry = keyring::Entry::new("com.findarata.kanon.test", "phone-link-size-check").unwrap();
+        let entry = keyring::Entry::new("com.findarata.miku.test", "phone-link-size-check").unwrap();
         let big: String = (0..1_200).map(|i| char::from(b"0123456789abcdef"[i % 16])).collect();
         entry.set_password(&big).expect("Credential Manager refused a certificate-sized secret");
         let back = entry.get_password().expect("could not read it back");

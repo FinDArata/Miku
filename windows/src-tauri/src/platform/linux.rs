@@ -23,7 +23,7 @@ use tauri::{AppHandle, WebviewWindow};
 use super::{home_dir, LocalTime};
 
 /// File name of the Claude Code relay.
-pub const HOOK_EXE: &str = "kanon-hook";
+pub const HOOK_EXE: &str = "miku-hook";
 
 /// Environment variable holding the home directory.
 pub const HOME_VAR: &str = "HOME";
@@ -39,16 +39,16 @@ fn xdg(var: &str, fallback: &str) -> PathBuf {
         .unwrap_or_else(|| home_dir().join(fallback))
 }
 
-/// ~/.config/kanon — preferences.
+/// ~/.config/miku — preferences.
 pub fn config_dir() -> PathBuf {
-    xdg("XDG_CONFIG_HOME", ".config").join("kanon")
+    xdg("XDG_CONFIG_HOME", ".config").join("miku")
 }
 
-/// ~/.local/share/kanon — where kanon-hook, the inbox and the log live. The
+/// ~/.local/share/miku — where miku-hook, the inbox and the log live. The
 /// relay has to sit at a stable path: an AppImage is mounted somewhere new on
 /// every launch.
 pub fn local_dir() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("kanon")
+    xdg("XDG_DATA_HOME", ".local/share").join("miku")
 }
 
 /// Where a saved image goes, best first: the XDG pictures folder named in
@@ -90,7 +90,7 @@ fn xdg_user_dir(text: &str, key: &str, home: &Path) -> Option<PathBuf> {
 /// keeps its plugin registry in ~/.cache/gstreamer-1.0 by default — the same
 /// file the system's GStreamer uses. The AppImage is mounted somewhere new on
 /// every launch, so each launch would rewrite the system's registry with
-/// plugin paths that vanish once Kanon quits. Give ours its own file.
+/// plugin paths that vanish once Miku quits. Give ours its own file.
 pub fn prepare_environment() {
     let _ = INHERITED.set(OWN_OVERRIDES.iter().map(|k| (*k, std::env::var_os(k))).collect());
     prefer_x11_on_gnome();
@@ -98,7 +98,7 @@ pub fn prepare_environment() {
     if std::env::var_os("APPIMAGE").is_none() || std::env::var_os("GST_REGISTRY").is_some() {
         return;
     }
-    let cache = xdg("XDG_CACHE_HOME", ".cache").join("kanon");
+    let cache = xdg("XDG_CACHE_HOME", ".cache").join("miku");
     if std::fs::create_dir_all(&cache).is_ok() {
         std::env::set_var("GST_REGISTRY", cache.join("gstreamer-registry.bin"));
     }
@@ -201,8 +201,8 @@ fn is_private_dir(dir: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Where kanon-hook finds us: `$XDG_RUNTIME_DIR/kanon.sock`, or
-/// `/run/user/<uid>/kanon.sock` when the variable is missing. A directory
+/// Where miku-hook finds us: `$XDG_RUNTIME_DIR/miku.sock`, or
+/// `/run/user/<uid>/miku.sock` when the variable is missing. A directory
 /// that is not ours and private means no relay at all — never a fallback to a
 /// shared place like /tmp. Must match `socket_path()` in hook/src/unix.rs
 /// exactly.
@@ -211,7 +211,7 @@ pub fn relay_socket_path() -> Option<PathBuf> {
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())
         .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })));
-    is_private_dir(&dir).then(|| dir.join("kanon.sock"))
+    is_private_dir(&dir).then(|| dir.join("miku.sock"))
 }
 
 // ── Who we are ────────────────────────────────────────────────────────────────
@@ -240,7 +240,7 @@ pub fn process_running(_exe: &str) -> bool {
     false
 }
 
-/// What the variables Kanon sets for itself (prepare_environment) were when it
+/// What the variables Miku sets for itself (prepare_environment) were when it
 /// started, so its children get the user's own values back.
 static INHERITED: std::sync::OnceLock<Vec<(&'static str, Option<std::ffi::OsString>)>> = std::sync::OnceLock::new();
 /// Set or changed by prepare_environment for this process only.
@@ -250,7 +250,7 @@ const OWN_OVERRIDES: [&str; 3] = ["GDK_BACKEND", "GDK_DPI_SCALE", "GST_REGISTRY"
 const APPIMAGE_GST: [&str; 3] = ["GST_REGISTRY_1_0", "GST_PLUGIN_SYSTEM_PATH", "GST_PLUGIN_SYSTEM_PATH_1_0"];
 
 /// The changes a child's environment needs: `Some` sets the value back, `None`
-/// removes the variable. Nothing for a variable Kanon left as it found it.
+/// removes the variable. Nothing for a variable Miku left as it found it.
 fn child_env(
     inherited: &[(&str, Option<std::ffi::OsString>)],
     current: impl Fn(&str) -> Option<std::ffi::OsString>,
@@ -272,7 +272,7 @@ fn child_env(
     out
 }
 
-/// Prepares a command to launch a child process: Kanon's own GDK and
+/// Prepares a command to launch a child process: Miku's own GDK and
 /// GStreamer settings (GDK_BACKEND=x11 on GNOME, GDK_DPI_SCALE, the AppImage's
 /// GStreamer paths) go back to what the user had, so they do not leak into the
 /// browser, the editor or the apps it opens (#859).
@@ -953,7 +953,7 @@ mod tests {
                 _ => None,
             }
         };
-        // Kanon forced x11 over the user's wayland, and set the other two itself.
+        // Miku forced x11 over the user's wayland, and set the other two itself.
         let inherited = [("GDK_BACKEND", Some(OsString::from("wayland"))), ("GDK_DPI_SCALE", None), ("GST_REGISTRY", None)];
         let fixes = child_env(&inherited, current, Some(OsStr::new("/tmp/.mount_KanonX")));
         assert_eq!(fixes, vec![
@@ -962,7 +962,7 @@ mod tests {
             ("GST_REGISTRY".to_string(), None),
             ("GST_PLUGIN_SYSTEM_PATH_1_0".to_string(), None),
         ]);
-        // Values the user set and Kanon kept (an explicit GDK_DPI_SCALE) stay.
+        // Values the user set and Miku kept (an explicit GDK_DPI_SCALE) stay.
         let kept = [("GDK_BACKEND", Some(OsString::from("x11"))), ("GDK_DPI_SCALE", Some(OsString::from("0.8")))];
         assert!(child_env(&kept, current, None).is_empty());
     }

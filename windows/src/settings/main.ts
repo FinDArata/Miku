@@ -1,4 +1,4 @@
-// The Kanon window (settings.html): Flow dictation, the Notetaker and, under
+// The Miku window (settings.html): Flow dictation, the Notetaker and, under
 // Notch, every setting of the island — the place where anything that writes to
 // disk is confirmed. The window's frame and the Flow pages live in ../hub; the
 // island's settings are drawn here, one Notch page at a time.
@@ -86,7 +86,7 @@ const HOOKS_CHANGE: Change = {
   preview: Bridge.hooksPreview,
   apply: Bridge.hooksApply,
   get installText() { return t("This is exactly what will change in your settings.json. Your own hooks are left untouched."); },
-  get removeText() { return t("This removes Kanon's entries only. Your own hooks are left untouched."); },
+  get removeText() { return t("This removes Miku's entries only. Your own hooks are left untouched."); },
   get installButton() { return t("Back up and write"); },
   get removeButton() { return t("Back up and remove"); },
   done: (backup) => backup
@@ -97,7 +97,7 @@ const HOOKS_CHANGE: Change = {
 const STATUS_LINE_CHANGE: Change = {
   preview: Bridge.statusLinePreview,
   apply: Bridge.statusLineApply,
-  get installText() { return t("This is exactly what will change: only the status line. If you already have one it keeps working, Kanon's relay runs it for you."); },
+  get installText() { return t("This is exactly what will change: only the status line. If you already have one it keeps working, Miku's relay runs it for you."); },
   get removeText() { return t("This puts your previous status line back, or removes the entry if there was none."); },
   get installButton() { return t("Back up and write"); },
   get removeButton() { return t("Back up and remove"); },
@@ -193,7 +193,7 @@ function claudeSection(status: HookStatus): HTMLElement {
       h("div", {
         class: "hint",
         text: status.installed
-          ? t("Kanon is hooked into your Claude Code sessions. Tool calls, questions and permission requests show up in the island, and you can answer them there.")
+          ? t("Miku is hooked into your Claude Code sessions. Tool calls, questions and permission requests show up in the island, and you can answer them there.")
           : t("Install the hooks to see your Claude Code sessions in the island and approve permissions without leaving what you are doing."),
       }),
       h("div", { class: "row" },
@@ -210,7 +210,7 @@ function claudeSection(status: HookStatus): HTMLElement {
     if (!status.hookReady) {
       body.append(h("div", {
         class: "notice warn",
-        text: t("kanon-hook.exe is not in place yet. Restart Kanon; if it still fails, build it with `cargo build -p kanon-hook`."),
+        text: t("miku-hook.exe is not in place yet. Restart Miku; if it still fails, build it with `cargo build -p miku-hook`."),
       }));
     }
 
@@ -250,11 +250,11 @@ function claudeSection(status: HookStatus): HTMLElement {
  * that has been confirmed. A status line the user had keeps working.
  */
 const PLAN_SETTINGS_TEXT = {
-  get claude() { return t("Shows your Claude plan usage (5-hour and weekly limits) in the island's header. Kanon adds a status line relay in ~/.claude/settings.json. If you already have a status line, it keeps working as before. Pro and Max plans only."); },
+  get claude() { return t("Shows your Claude plan usage (5-hour and weekly limits) in the island's header. Miku adds a status line relay in ~/.claude/settings.json. If you already have a status line, it keeps working as before. Pro and Max plans only."); },
   get claudeCli() { return t("The numbers come from the Claude Code command-line tool. The Claude desktop app does not report them, so the gauge stays empty if you only use the desktop app."); },
   get showClaude() { return t("Show in notch"); },
   get showClaudeCompact() { return t("Show in compact island"); },
-  get codex() { return t("Shows your Codex plan usage (weekly limit and free resets left) in the island's header. Kanon asks the Codex CLI (codex app-server) when the pill shows; nothing is installed. Codex must be signed in with ChatGPT."); },
+  get codex() { return t("Shows your Codex plan usage (weekly limit and free resets left) in the island's header. Miku asks the Codex CLI (codex app-server) when the pill shows; nothing is installed. Codex must be signed in with ChatGPT."); },
   get showCodex() { return t("Show Codex plan in the notch"); },
 };
 
@@ -335,7 +335,7 @@ function planSection(status: HookStatus): HTMLElement {
               onclick: () => void reviewChange(body, STATUS_LINE_CHANGE, true, redraw, () => void rebuild()),
             }),
       ),
-      // Codex: nothing to install, Kanon asks the Codex CLI when the pill shows.
+      // Codex: nothing to install, Miku asks the Codex CLI when the pill shows.
       h("div", { class: "hint", text: PLAN_SETTINGS_TEXT.codex }),
       h("div", { class: "row" },
         h("label", { text: PLAN_SETTINGS_TEXT.showCodex }),
@@ -407,7 +407,7 @@ function subscriptionsSection(): HTMLElement {
     h("h2", { text: t("Your AI subscriptions") }),
     h("div", {
       class: "hint",
-      text: t("Chat on the plan you already pay for. Kanon asks your AI's official terminal tool, signed in with your own account: it never sees your password or your key."),
+      text: t("Chat on the plan you already pay for. Miku asks your AI's official terminal tool, signed in with your own account: it never sees your password or your key."),
     }),
     list,
   );
@@ -568,7 +568,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("Active pills") })),
-    h("div", { class: "hint", text: t("Choose the tools you use. Kanon only shows what you declare here.") }),
+    h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here.") }),
     slots,
     h("div", { class: "row" }, h("label", { text: t("Main tool") }), main),
     groups,
@@ -878,8 +878,11 @@ const INTEGRATIONS: IntegrationDef[] = [
     fields: [{ key: "notion-api-key", label: N_("Integration token"), placeholder: "ntn_…", secret: true }] },
   { id: "integration_calcom", name: "Cal.com", color: "#C9956A",
     fields: [{ key: "calcom-api-key", label: N_("API key"), placeholder: "cal_…", secret: true }] },
-  // Nothing to enter: Spotify is read from the OS (src-tauri/src/spotify.rs).
-  { id: "integration_spotify", name: "Spotify", color: "#1DB954", fields: [] },
+  // Nothing to enter: the player is read from the OS (src-tauri/src/spotify.rs).
+  { id: "integration_spotify", name: t("Music"), color: "#1DB954", fields: [] },
+  // Nothing to enter either: CPU, memory and the battery are read on this
+  // computer (src-tauri/src/system_health.rs).
+  { id: "integration_system", name: t("System"), color: "#38BDF8", fields: [] },
 ];
 
 const MAX_ACTIVE = MAX_DECLARED;
@@ -898,7 +901,7 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
 
   function updateNote() {
     const used = settings.activeIntegrations.length;
-    note.textContent = t("Pick up to {max} pills to show next to Mochi — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
+    note.textContent = t("Pick up to {max} pills to show next to Miku — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
   }
   declaredViews.push(updateNote);
 
@@ -1036,7 +1039,7 @@ function generalSection(): HTMLElement {
   // The closed island (core/closed.ts): what stays at the top of the screen.
   const closed = h("select", {}) as HTMLSelectElement;
   closed.append(
-    h("option", { value: "mochi", text: t("Mochi, as on a Mac without a notch") }),
+    h("option", { value: "mochi", text: t("Miku, as on a Mac without a notch") }),
     h("option", { value: "time", text: t("The time") }),
     h("option", { value: "datetime", text: t("The date and the time") }),
     h("option", { value: "claude", text: t("Claude usage") }),
@@ -1086,7 +1089,7 @@ function generalSection(): HTMLElement {
       volume,
     ),
     h("div", { class: "row" }, soundsFolder, reloadSounds, customCount),
-    h("div", { class: "hint", text: t("Drop a file named like one of Mochi's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
+    h("div", { class: "hint", text: t("Drop a file named like one of Miku's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
     h("div", { class: "row" },
       h("label", { text: t("Open on hover") }),
       toggle(settings.openOnHover, (v) => { settings.openOnHover = v; void save(); }),
@@ -1106,7 +1109,7 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Closed island shows") }),
       closed,
     ),
-    h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Kanon back. Hidden, move the pointer to the very top of the screen.") }),
+    h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Miku back. Hidden, move the pointer to the very top of the screen.") }),
     h("div", { class: "row" },
       h("label", { text: t("Auto-close") }),
       autoClose,
@@ -1129,7 +1132,9 @@ function generalSection(): HTMLElement {
 
 /**
  * Settings → General → Floating lyrics: the switch asks Rust (lyrics.rs), which
- * owns the overlay's window and remembers whether it is on.
+ * owns the overlay's window and remembers whether it is on. The card's size,
+ * the words' size and colour, and how see-through it is live here, in the
+ * settings every window already reads.
  */
 function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTMLElement): HTMLElement[] {
   const el = toggle(false, (v) => void Bridge.lyricsSetVisible(v));
@@ -1137,14 +1142,70 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
     el.classList.toggle("on", shown === true);
     el.setAttribute("aria-pressed", String(shown === true));
   });
+
+  /** A labelled slider that writes `apply` on every move, so the card follows. */
+  const slider = (
+    label: string,
+    min: number,
+    max: number,
+    step: number,
+    read: () => number,
+    write: (v: number) => void,
+  ): HTMLElement => {
+    const input = h("input", {
+      type: "range",
+      min: String(min),
+      max: String(max),
+      step: String(step),
+      value: String(read()),
+      class: "lyrics-slider",
+    }) as HTMLInputElement;
+    input.addEventListener("input", () => {
+      write(Number(input.value));
+      void save();
+    });
+    return h("div", { class: "row" }, h("label", { text: label }), input);
+  };
+
+  /** A colour well: the browser's own picker, stored as #rrggbb. */
+  const colour = (label: string, read: () => string, write: (v: string) => void): HTMLElement => {
+    const input = h("input", { type: "color", value: read(), class: "lyrics-colour" }) as HTMLInputElement;
+    input.addEventListener("input", () => {
+      write(input.value);
+      void save();
+    });
+    return h("div", { class: "row" }, h("label", { text: label }), input);
+  };
+
+  const placement = h("select", {}) as HTMLSelectElement;
+  placement.append(
+    h("option", { value: "island", text: t("In the top pill") }),
+    h("option", { value: "floating", text: t("Floating") }),
+  );
+  placement.value = settings.lyrics?.placement ?? settings.lyricsPlacement ?? "island";
+  placement.addEventListener("change", () => {
+    const value = placement.value === "floating" ? "floating" : "island";
+    settings.lyricsPlacement = value;
+    if (settings.lyrics) settings.lyrics.placement = value;
+    void Bridge.lyricsSetPlacement(value);
+  });
+
   return [
     h("div", { class: "row" },
       h("label", { text: t("Floating lyrics") }),
       el,
     ),
     h("div", { class: "row" },
+      h("label", { text: t("Placement") }),
+      placement,
+    ),
+    h("div", { class: "row" },
       h("label", { text: t("Romanise the lyrics") }),
       toggle(settings.lyricsRomanize, (v) => { settings.lyricsRomanize = v; void save(); }),
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Show lyrics for videos too") }),
+      toggle(settings.lyricsVideos, (v) => { settings.lyricsVideos = v; void save(); }),
     ),
     h("div", { class: "hint", text: t("Japanese, Korean and Chinese lines are shown in the letters you read: rōmaji, latin and pinyin.") }),
     h("div", { class: "row" },
@@ -1152,13 +1213,27 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
       toggle(settings.lyricsShowOriginal, (v) => { settings.lyricsShowOriginal = v; void save(); }),
     ),
     h("div", { class: "hint", text: t("Under a romanised line, the original is kept in smaller type.") }),
+    h("div", { class: "subhead", text: t("The card") }),
+    slider(t("Opacity"), 0, 1, 0.05, () => settings.lyricsOpacity, (v) => { settings.lyricsOpacity = v; }),
+    h("div", { class: "hint", text: t("Lower lets the wallpaper show through the card; the words keep their shadow.") }),
+    slider(t("Text size"), 10, 40, 1, () => settings.lyricsFontSize, (v) => { settings.lyricsFontSize = v; }),
+    slider(t("Width"), 200, 900, 10, () => settings.lyricsWidth, (v) => {
+      settings.lyricsWidth = v;
+      void Bridge.lyricsResize(settings.lyricsWidth, settings.lyricsHeight);
+    }),
+    slider(t("Height"), 90, 400, 10, () => settings.lyricsHeight, (v) => {
+      settings.lyricsHeight = v;
+      void Bridge.lyricsResize(settings.lyricsWidth, settings.lyricsHeight);
+    }),
+    colour(t("Text colour"), () => settings.lyricsTextColor, (v) => { settings.lyricsTextColor = v; }),
+    colour(t("Card colour"), () => settings.lyricsBackground, (v) => { settings.lyricsBackground = v; }),
     h("div", { class: "hint", text: t("A small window that follows what Spotify plays and shows the line being sung, with the ones around it. Drag it anywhere; it stays where you leave it.") }),
   ];
 }
 
 /**
  * Settings → General → Language, as on the Mac: "System" follows the
- * system's language when Kanon has it (else English), or one of the ten.
+ * system's language when Miku has it (else English), or one of the ten.
  * Both windows and the tray switch in place, without a restart.
  */
 function languageRow(): HTMLElement {
@@ -1449,7 +1524,7 @@ function applyLanguage() {
 
 function applyDirection() {
   document.documentElement.dir = isRtl() ? "rtl" : "ltr";
-  document.title = "Kanon";
+  document.title = t("Miku");
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

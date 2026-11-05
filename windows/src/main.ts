@@ -18,7 +18,7 @@ import { Updates } from "./island/update";
 import { WhatsNew } from "./whats-new/controller";
 import { onLanguageChange, resolveLanguage, setLanguage, systemLanguages } from "./i18n/i18n";
 
-/** Shows the language Settings asks for ("" = the system's, when Kanon has it). */
+/** Shows the language Settings asks for ("" = the system's, when Miku has it). */
 function applyLanguage() {
   setLanguage(resolveLanguage(State.settings.language, systemLanguages()));
 }
@@ -47,7 +47,7 @@ async function main() {
 
   const boot = await Bridge.boot();
   if (boot) {
-    State.settings = { ...State.settings, ...boot.settings };
+    State.settings = { ...State.settings, ...boot.settings, lyricsPlacement: boot.settings.lyrics?.placement ?? boot.settings.lyricsPlacement ?? "island" };
   }
   // A language change redraws the island in place: the texts given as tl(…)
   // relabel themselves (views/dom.ts) and the views redraw the rest on this
@@ -90,7 +90,7 @@ async function main() {
         setPaused(false);
         island.alert("wardrobe");
         break;
-      // "Update Kanon to X…", only in the menu while a new version is out.
+      // "Update Miku to X…", only in the menu while a new version is out.
       case "update":
         setPaused(false);
         Updates.show();
@@ -149,7 +149,7 @@ async function main() {
   // The settings window writes preferences; apply them here without a restart.
   await onEvent<Settings>("settings-changed", (s) => {
     const previousMain = State.mainPillId;
-    State.settings = { ...State.settings, ...s };
+    State.settings = { ...State.settings, ...s, lyricsPlacement: s.lyrics?.placement ?? s.lyricsPlacement ?? State.settings.lyricsPlacement ?? "island" };
     applyLanguage();
     island.applySettings();
     State.loadIntegrationTasks();

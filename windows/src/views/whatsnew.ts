@@ -1,6 +1,6 @@
 // What's new after an update (whats-new/controller.ts decides when): first
 // what this version brings — an icon, a title and a line per item — then
-// "Your Kanon so far", the numbers this computer kept, and Buy Mochi a
+// "Your Miku so far", the numbers this computer kept, and Buy Mochi a
 // coffee. Same left inset as the other cards, Mochi on the left.
 
 import { h, clear, svg } from "./dom";
@@ -63,7 +63,7 @@ export function buildWhatsNew(): ViewHost {
     }
     const page = releasePage(Updates.status.platform, release.version);
     stack.append(
-      h("div", { class: "title one-line", text: t("You're on Kanon {version}", { version: release.version }) }),
+      h("div", { class: "title one-line", text: t("You're on Miku {version}", { version: release.version }) }),
       grid,
       h("div", { class: "actions" },
         btn(t("Next"), "primary", () => WhatsNew.next()),
@@ -83,12 +83,12 @@ export function buildWhatsNew(): ViewHost {
         ),
       ));
     }
-    stack.append(h("div", { class: "title one-line", text: t("Your Kanon so far") }));
+    stack.append(h("div", { class: "title one-line", text: t("Your Miku so far") }));
     if (WhatsNew.stats.length > 0) stack.append(chips);
     stack.append(
-      h("div", { class: "sub whatsnew-thanks", text: t("Kanon is free and open source. If it saves you time, you can buy Mochi a coffee.") }),
+      h("div", { class: "sub whatsnew-thanks", text: t("Miku is free and open source. If it saves you time, you can buy Miku a coffee.") }),
       h("div", { class: "actions" },
-        btn(`☕ ${t("Buy Mochi a coffee")}`, "primary", () => WhatsNew.openCoffee(COFFEE_URL)),
+        btn(`☕ ${t("Buy Miku a coffee")}`, "primary", () => WhatsNew.openCoffee(COFFEE_URL)),
         btn(t("OK"), "secondary", () => WhatsNew.done()),
       ),
     );

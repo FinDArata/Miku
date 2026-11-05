@@ -1,13 +1,13 @@
 [package]
-name = "kanon"
-description = "Kanon for Windows and Linux — Mochi lives at the top of your screen"
+name = "miku"
+description = "Miku for Windows and Linux — live at the top of your screen"
 authors = ["Louis Raille"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [lib]
-name = "kanon_lib"
+name = "miku_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -57,6 +57,10 @@ miniz_oxide = "0.8"
 # (mail/pdf.rs), as the Mac does with PDFKit; Windows has no PDF library of its own. MIT, pure
 # Rust, default features (clock, rayon) off.
 lopdf = { version = "0.46", default-features = false }
+# The system health pill (system_health.rs): CPU, memory, and a laptop's battery.
+# MIT, pure Rust. Only `system` and `multithread`: no disk, network or component
+# walk, since nothing in this pill reads a disk or a socket.
+sysinfo = { version = "0.33", default-features = false, features = ["system", "multithread"] }
 
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
@@ -83,6 +87,8 @@ windows = { version = "0.61", features = [
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_Ole",
   "Win32_System_Pipes",
+  # The System pill: the battery, on a laptop.
+  "Win32_System_Power",
   "Win32_System_Registry",
   "Win32_System_SystemInformation",
   "Win32_System_Threading",

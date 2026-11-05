@@ -1,5 +1,5 @@
 {
-  "name": "kanon-windows",
+  "name": "miku-windows",
   "private": true,
   "version": "0.5.9",
   "type": "module",
@@ -11,8 +11,8 @@
     "icons": "node scripts/gen-icons.mjs",
     "sounds": "node scripts/gen-sounds.mjs --style=chimes",
     "tauri": "tauri",
-    "predev": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p kanon-hook",
-    "prebuild": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p kanon-hook",
+    "predev": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p miku-hook",
+    "prebuild": "node scripts/gen-sounds.mjs --style=chimes && cargo build --release -p miku-hook",
     "pack": "tauri build && node scripts/pack.mjs"
   },
   "devDependencies": {
@@ -21,6 +21,7 @@
     "vite": "^6"
   },
   "dependencies": {
+    "@sglkc/kuromoji": "^1.1.0",
     "@tauri-apps/api": "^2",
     "pinyin-pro": "^3.29.5"
   }

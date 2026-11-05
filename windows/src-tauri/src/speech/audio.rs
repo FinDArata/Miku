@@ -547,7 +547,7 @@ mod tests {
 
     #[test]
     fn a_wav_reads_back_what_was_written() {
-        let path = std::env::temp_dir().join(format!("kanon-wav-{}.wav", std::process::id()));
+        let path = std::env::temp_dir().join(format!("miku-wav-{}.wav", std::process::id()));
         let _cleanup = TempFile(path.clone());
         let mut w = WavWriter::create(&path).unwrap();
         w.write(&[0.0, 0.5, -0.5, 1.0]).unwrap();

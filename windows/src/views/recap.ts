@@ -11,17 +11,23 @@ import { Bridge } from "../core/bridge";
 import { washRGBA } from "../core/layout";
 import { Recap } from "../recap/recap";
 import { renderShareImage, toPngBlob, toPngDataUrl } from "../recap/share";
+import { VariantCache, parseVariant } from "../mochi/wardrobe";
+import { State } from "../core/state";
 import {
   dayKey, formatCount, formatDuration, weekRangeLabel, type WeeklySummary,
 } from "../recap/summary";
 import type { ViewActions, ViewHost } from "./views";
 import { onLanguageChange, t, tl, type Msg } from "../i18n/i18n";
 
+/** "auto" → the season's Miku, remembered for the day. */
+const variants = new VariantCache();
+const activeVariant = () => variants.get(parseVariant(State.settings.mikuVariant));
+
 /** User-visible strings, in the current language (src/i18n). */
 const T = {
   get title() { return t("Weekly recap"); },
   get noActivity() { return t("No activity last week"); },
-  get noActivitySub() { return t("Kanon counts your agent sessions as they happen — check back next Monday."); },
+  get noActivitySub() { return t("Miku counts your agent sessions as they happen — check back next Monday."); },
   get coding() { return t("coding"); },
   get session() { return t("session"); },
   get sessions() { return t("sessions"); },
@@ -144,7 +150,7 @@ export function buildRecap(actions: ViewActions): ViewHost {
     const sw = h("button", { class: Recap.prefs.hideProjects ? "switch on" : "switch" });
 
     const draw = () => {
-      shareCanvas = renderShareImage(s, Recap.prefs.hideProjects);
+      shareCanvas = renderShareImage(s, Recap.prefs.hideProjects, activeVariant());
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       thumb.width = Math.round(64 * dpr);
       thumb.height = Math.round(114 * dpr);

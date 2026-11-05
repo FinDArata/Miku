@@ -117,7 +117,7 @@ fn is_terminal(id: &str) -> bool {
 // ── Setup, on and off ─────────────────────────────────────────────────────────
 
 pub fn setup(app: &AppHandle) {
-    // Sound left muted by a Kanon that quit while listening comes back.
+    // Sound left muted by a Miku that quit while listening comes back.
     hush::setup();
     let flow = Arc::new(Flow { store: Mutex::new(Store::load()), running: Mutex::new(None) });
     app.manage(flow.clone());
@@ -198,7 +198,7 @@ fn disable(app: &AppHandle, flow: &Arc<Flow>) {
 
 struct Listening {
     capture: audio::Capture,
-    /// The other apps are silent while Kanon listens (hush.rs); dropped with it.
+    /// The other apps are silent while Miku listens (hush.rs); dropped with it.
     _hush: Option<hush::Guard>,
     take: Arc<Mutex<audio::Take>>,
     started: Instant,
@@ -297,7 +297,7 @@ fn run(app: AppHandle, flow: Arc<Flow>, rx: mpsc::Receiver<(KeyEvent, Instant)>)
         if let Some(l) = &listening {
             let levels = l.take.lock().unwrap().meter.levels;
             let _ = app.emit_to(pill::LABEL, "pill-bands", levels);
-            // The Kanon window's bands breathe with the voice while it is on screen.
+            // The Miku window's bands breathe with the voice while it is on screen.
             if crate::hub_is_shown() {
                 let _ = app.emit_to(crate::HUB_LABEL, "flow-bands", levels);
             }
@@ -313,7 +313,7 @@ fn begin(app: &AppHandle, flow: &Arc<Flow>) -> Option<Listening> {
             app,
             "download",
             "#3B9EFF",
-            t("Download the voice model first, in Kanon → Settings → Recognition."),
+            t("Download the voice model first, in Miku → Settings → Recognition."),
             Some((t("Open Settings"), "openSettings")),
             10,
         );
@@ -347,7 +347,7 @@ fn begin(app: &AppHandle, flow: &Arc<Flow>) -> Option<Listening> {
                 app,
                 "mic",
                 "#FF6B6B",
-                t("Kanon can't hear you: the microphone is not allowed or not available."),
+                t("Miku can't hear you: the microphone is not allowed or not available."),
                 None,
                 8,
             );
@@ -462,7 +462,7 @@ pub struct FlowStatus {
     has_claude_key: bool,
     mics: Vec<audio::InputDevice>,
     platform: &'static str,
-    /// Kanon started with the computer.
+    /// Miku started with the computer.
     autostarted: bool,
     /// The user's first name, for "Hello Louis".
     user_name: Option<String>,

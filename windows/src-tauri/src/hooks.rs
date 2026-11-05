@@ -3,7 +3,7 @@
 // The rule from CLAUDE.md is strict and is followed to the letter:
 // read %USERPROFILE%\.claude\settings.json, take a dated backup, merge without
 // touching anybody else's hooks, show the diff, and write only after an explicit
-// click. Uninstall removes Kanon's entries and nothing else.
+// click. Uninstall removes Miku's entries and nothing else.
 //
 // The command is only the quoted exe path in forward slashes plus the event name:
 // on Windows Claude Code runs hook commands through Git Bash, and anything with
@@ -38,14 +38,25 @@ pub const HOOK_EVENTS: &[(&str, u64)] = &[
     ("SubagentStop", 10),
 ];
 
-/// Marker that identifies a Kanon entry inside settings.json.
-const MARKER: &str = "kanon-hook";
+/// Marker that identifies this app's entries inside settings.json: the relay's
+/// file name.
+const MARKER: &str = "miku-hook";
+
+/// What those entries said before the rebrand. A settings.json written by Miku
+/// has to be recognised as ours too, or updating would leave its hooks behind
+/// and add Miku's beside them — every event would then run two relays.
+const LEGACY_MARKER: &str = "kanon-hook";
+
+/// Whether `command` runs our relay, under either name.
+fn is_ours(command: &str) -> bool {
+    command.contains(MARKER) || command.contains(LEGACY_MARKER)
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HookStatus {
     pub installed: bool,
-    /// Kanon's status line relay (plan usage) is the one in settings.json.
+    /// Miku's status line relay (plan usage) is the one in settings.json.
     pub plan_relay_installed: bool,
     pub settings_path: String,
     pub hook_path: String,
@@ -101,20 +112,20 @@ fn entry_is_ours(entry: &Value) -> bool {
             hooks.iter().any(|h| {
                 h.get("command")
                     .and_then(Value::as_str)
-                    .map(|c| c.contains(MARKER))
+                    .map(|c| is_ours(c))
                     .unwrap_or(false)
             })
         })
         .unwrap_or(false)
 }
 
-/// The status line in settings.json is Kanon's relay (old installs wrote
-/// `kanon-hook StatusLine`, new ones `kanon-hook --statusline`; both match).
+/// The status line in settings.json is Miku's relay (old installs wrote
+/// `miku-hook StatusLine`, new ones `miku-hook --statusline`; both match).
 fn status_line_is_ours(v: &Value) -> bool {
-    v.get("command").and_then(Value::as_str).is_some_and(|c| c.contains(MARKER))
+    v.get("command").and_then(Value::as_str).is_some_and(is_ours)
 }
 
-/// Settings with Kanon's hooks added; everything else is left untouched. A
+/// Settings with Miku's hooks added; everything else is left untouched. A
 /// `hooks` (or one of its events) that is not what Claude Code documents is
 /// refused rather than replaced.
 fn merged(existing: &Value) -> Result<Value, String> {
@@ -147,10 +158,10 @@ fn merged(existing: &Value) -> Result<Value, String> {
 }
 
 fn unexpected(what: &str) -> String {
-    crate::i18n::tf("settings.json: {what} has an unexpected type — Kanon has not touched it.", &[("what", what)])
+    crate::i18n::tf("settings.json: {what} has an unexpected type — Miku has not touched it.", &[("what", what)])
 }
 
-/// Settings with every Kanon entry removed, and nothing else changed.
+/// Settings with every Miku entry removed, and nothing else changed.
 fn without_ours(existing: &Value) -> Result<Value, String> {
     let mut root = existing.as_object().cloned().unwrap_or_default();
     let hooks = match root.get("hooks") {
@@ -240,7 +251,7 @@ pub fn write(install: bool, fingerprint: &str) -> Result<String, String> {
 
 // ── Status line (plan usage) ──────────────────────────────────────────────────
 //
-// Claude Code runs one `statusLine` command and hands it the plan limits. Kanon
+// Claude Code runs one `statusLine` command and hands it the plan limits. Miku
 // puts its relay there; a status line the user already had is kept in
 // statusline-previous.json in local_dir() (outside bin/, surviving uninstaller),
 // and the relay still runs it, so it keeps working. Installing and removing it
@@ -272,7 +283,7 @@ fn migrate_status_line_previous(legacy: &Path, new: &Path) {
     }
 }
 
-/// True when the `statusLine` in settings.json is Kanon's relay.
+/// True when the `statusLine` in settings.json is Miku's relay.
 pub fn plan_relay_installed(settings: &Value) -> bool {
     settings.get("statusLine").is_some_and(status_line_is_ours)
 }
@@ -365,7 +376,7 @@ fn save_status_line_previous(status_line: &Value) -> std::io::Result<()> {
     config_file::write_like(&path, &path, config_file::pretty(status_line).as_bytes())
 }
 
-/// Copies the relay (kanon-hook.exe / kanon-hook) into the local data dir's
+/// Copies the relay (miku-hook.exe / miku-hook) into the local data dir's
 /// bin/ on launch. In a bundled install it comes from the app resources; in
 /// `tauri dev` it sits next to the app binary in the workspace target directory.
 ///
@@ -584,7 +595,7 @@ mod tests {
     /// the home directory at a temp directory, and that is process-wide.
     #[test]
     fn writing_backs_up_preserves_and_refuses_a_changed_file() {
-        let tmp = std::env::temp_dir().join(format!("kanon-hooks-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("miku-hooks-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(tmp.join(".claude")).unwrap();
         std::env::set_var(platform::HOME_VAR, &tmp);
@@ -602,7 +613,7 @@ mod tests {
 
         // Install.
         let plan = preview(true).expect("a BOM must not stop the preview");
-        assert!(plan.diff.contains("kanon-hook"), "the diff must show what changes");
+        assert!(plan.diff.contains("miku-hook"), "the diff must show what changes");
         let backup = write(true, &plan.fingerprint).expect("install should succeed");
 
         // The backup holds the original bytes, BOM and all.

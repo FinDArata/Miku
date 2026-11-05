@@ -1,4 +1,4 @@
-// The Flow pages of the Kanon window, by id (shell.ts draws the Notch ones
+// The Flow pages of the Miku window, by id (shell.ts draws the Notch ones
 // from the island's settings).
 
 import type { FlowPageRenderer, PageId } from "./shell";

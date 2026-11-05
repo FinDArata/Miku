@@ -41,15 +41,15 @@ const IFACE: &str = "org.freedesktop.portal.GlobalShortcuts";
 const REQUEST: &str = "org.freedesktop.portal.Request";
 const SESSION: &str = "org.freedesktop.portal.Session";
 /// Tauri's identifier. Told to the portal so the desktop files the shortcuts
-/// under Kanon rather than under an unnamed app.
-const APP_ID: &str = "com.findarata.kanon";
+/// under Miku rather than under an unnamed app.
+const APP_ID: &str = "com.findarata.miku";
 /// For the calls themselves, which answer at once: the user's answer comes
 /// later, in a Response signal.
 const CALL_TIMEOUT: Duration = Duration::from_secs(10);
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
-/// Kanon's accelerator ("Ctrl+Alt+Space") → the XDG shortcuts spec's trigger
+/// Miku's accelerator ("Ctrl+Alt+Space") → the XDG shortcuts spec's trigger
 /// ("CTRL+ALT+space"): modifiers CTRL, ALT, SHIFT, LOGO, then an xkb keysym
 /// name. `None` for a binding that isn't a shortcut, or whose key has no
 /// keysym here; the desktop then picks the key, or lets the user pick one.

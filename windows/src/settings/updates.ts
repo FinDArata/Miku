@@ -44,12 +44,12 @@ export function updateRows(toggle: Toggle, version: string): HTMLElement[] {
     }
     check.disabled = status.check === "checking" || isBusy(status.phase);
     feedback.textContent =
-      status.check === "upToDate" ? t("Kanon is up to date")
+      status.check === "upToDate" ? t("Miku is up to date")
         : status.check === "unreachable" ? t("Couldn't reach GitHub")
           : "";
     footer.textContent = status.platform === "linux"
-      ? t("Kanon looks at its own releases on GitHub a few times a day and tells you when one is out. Update it the way you installed it: AppImage, .deb, .rpm or your package manager.")
-      : t("Kanon looks at its own releases on GitHub a few times a day. An update is installed only after your click, once its SHA-256 matches the one GitHub publishes.");
+      ? t("Miku looks at its own releases on GitHub a few times a day and tells you when one is out. Update it the way you installed it: AppImage, .deb, .rpm or your package manager.")
+      : t("Miku looks at its own releases on GitHub a few times a day. An update is installed only after your click, once its SHA-256 matches the one GitHub publishes.");
     current.textContent = t("You have {version}", { version: status.current || version });
   }
 

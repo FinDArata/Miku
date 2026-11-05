@@ -26,10 +26,12 @@ import { buildWhatsNew } from "./whatsnew";
 import { buildSpotifyCard, buildSpotifyPill, type SpotifyPillHost } from "./spotify";
 import { SPOTIFY_ID } from "../core/spotify";
 import { buildWhatsAppCard } from "./whatsapp";
+import { buildSystemCard, SYSTEM_ID } from "./system";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
-import type { Outfit, OutfitSelection } from "../mochi/wardrobe";
+import type { Outfit, OutfitSelection, VariantSelection } from "../mochi/wardrobe";
+import type { MikuVariantId } from "../mochi/variants";
 import { language, t, tl, type Msg } from "../i18n/i18n";
 import type { ViewCommand } from "../island/shortcuts";
 
@@ -57,8 +59,12 @@ export interface ViewActions {
   blip(): void;
   /** Wardrobe click: keeps the outfit ("auto" and "none" included). */
   chooseOutfit(selection: OutfitSelection): void;
-  /** Wardrobe hover: shows an outfit on Mochi without keeping it; null ends it. */
+  /** Wardrobe hover: shows an outfit on Miku without keeping it; null ends it. */
   previewOutfit(outfit: Outfit | null): void;
+  /** Wardrobe click: keeps the variant ("auto" follows the season). */
+  chooseVariant(selection: VariantSelection): void;
+  /** Wardrobe hover: shows a variant without keeping it; null ends it. */
+  previewVariant(variant: MikuVariantId | null): void;
   /** The island takes the keyboard (a text field in a card) or gives it back. */
   keyboard(on: boolean): void;
   /** Something is being typed in a card: the island stays open until it is sent or cleared. */
@@ -216,6 +222,9 @@ function buildOverview(actions: ViewActions): ViewHost {
   // WhatsApp's card too: its reply field keeps the draft and the keyboard while messages arrive.
   // Mail's card too (classic Outlook): the search field keeps its text and the keyboard.
   const mailCard = buildMailCard({ keyboard: (on) => actions.keyboard(on) });
+  // The System pill's card: its numbers change every three seconds, so it is
+  // kept and updated in place rather than rebuilt.
+  const systemCard = buildSystemCard();
   const whatsappCard = buildWhatsAppCard({
     openSettings: () => actions.openSettingsWindow(),
     keyboard: (on) => actions.keyboard(on),
@@ -230,7 +239,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "system" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
@@ -387,6 +396,16 @@ function buildOverview(actions: ViewActions): ViewHost {
           cardKey = "";
         }
         spotifyCard.sync();
+      } else if (task && task.id === SYSTEM_ID) {
+        // The gauges are redrawn in place: the card's own copy of the reading
+        // is what changed, three seconds at a time.
+        if (mode !== "system") {
+          clear(leftBody);
+          leftBody.append(systemCard.el);
+          mode = "system";
+          cardKey = "";
+        }
+        systemCard.sync();
       } else if (task && task.id === MAIL_ID) {
         if (mode !== "mail") {
           clear(leftBody);

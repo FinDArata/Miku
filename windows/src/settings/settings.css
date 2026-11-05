@@ -431,3 +431,26 @@ html[dir="rtl"] :is(.diff, .path, .keycap, input[type="password"], input[type="t
 /* Settings → Android phone: the pairing QR code (an SVG from Rust, black on white). */
 .qr { width: 220px; max-width: 100%; background: #fff; border-radius: 8px; padding: 4px; }
 .qr svg { display: block; width: 100%; height: auto; }
+
+/* Settings → General → Floating lyrics: the card's look. A slider and a colour
+   well sit where the toggle does, at the right of their row. */
+.lyrics-slider {
+  flex: 1 1 200px;
+  min-width: 160px;
+  height: 18px;
+  accent-color: #1db954;
+  cursor: pointer;
+}
+
+.lyrics-colour {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lyrics-colour::-webkit-color-swatch-wrapper { padding: 2px; }
+.lyrics-colour::-webkit-color-swatch { border: none; border-radius: 5px; }

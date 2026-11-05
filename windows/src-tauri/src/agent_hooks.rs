@@ -1,12 +1,12 @@
 // Whether each hook-driven pill is connected.
 //
 // A pill fed by hook events has no key: it is connected once the agent's config
-// routes its events to kanon-hook (Mac #183 — the idle card used to say "Key
+// routes its events to miku-hook (Mac #183 — the idle card used to say "Key
 // not configured" for these). Only reads; nothing here ever writes.
 //
 // Claude Code is read here, with the Mac's own rule. Every other agent is read
 // by agents.rs — the code that writes their configs is the one source of truth
-// for where those files are and what Kanon's entries look like, so the pill
+// for where those files are and what Miku's entries look like, so the pill
 // and Settings → Agents always agree.
 
 use std::collections::HashMap;
@@ -15,11 +15,12 @@ use std::path::PathBuf;
 use serde_json::Value;
 
 
-/// Port of `kanonHooksPresent(inSettings:)` (ClaudeHookDetection.swift): true
+/// Port of `mikuHooksPresent(inSettings:)` (ClaudeHookDetection.swift): true
 /// when a parsed `~/.claude/settings.json` routes Claude Code's SessionStart
-/// events to Kanon. The command text is what tells: Kanon's relay here is
-/// `kanon-hook`, the Mac's is `~/.claude/kanon/nb-hook` (or NotchBuddy in the
-/// App Store build), so a settings file shared between machines reads the same.
+/// events to this app. The command text is what tells: this build's relay is
+/// `miku-hook`, an install from before the rebrand still runs `kanon-hook`, and
+/// the Mac's is `~/.claude/kanon/nb-hook` (or NotchBuddy in the App Store
+/// build), so a settings file shared between machines reads the same.
 pub fn claude_hooks_present(settings: &Value) -> bool {
     let Some(groups) = settings
         .get("hooks")
@@ -33,7 +34,11 @@ pub fn claude_hooks_present(settings: &Value) -> bool {
             hooks.iter().any(|hook| {
                 hook.get("command")
                     .and_then(Value::as_str)
-                    .is_some_and(|c| c.contains("NotchBuddy") || c.contains("kanon"))
+                    .is_some_and(|c| {
+                        c.contains("NotchBuddy")
+                            || c.contains("miku")
+                            || c.contains("kanon")
+                    })
             })
         })
     })
@@ -77,7 +82,21 @@ mod tests {
     // The ten cases of tests/ClaudeHookDetectionTests.swift, plus this build's relay.
 
     #[test]
-    fn the_hook_kanon_writes_is_installed() {
+    fn the_hook_this_app_writes_is_installed() {
+        assert!(claude_hooks_present(&settings(
+            r#"{"hooks":{"SessionStart":[{"hooks":[
+              {"type":"command","command":"\"C:/Users/me/AppData/Local/Miku/bin/miku-hook.exe\" SessionStart"}]}]}}"#
+        )));
+        assert!(claude_hooks_present(&settings(
+            r#"{"hooks":{"SessionStart":[{"hooks":[
+              {"type":"command","command":"'/home/me/.local/share/miku/bin/miku-hook' SessionStart"}]}]}}"#
+        )));
+    }
+
+    #[test]
+    fn an_install_from_before_the_rebrand_still_counts_as_connected() {
+        // Its command names the old folders and the old relay; the pill has to
+        // read as connected until the installer rewrites the entry.
         assert!(claude_hooks_present(&settings(
             r#"{"hooks":{"SessionStart":[{"hooks":[
               {"type":"command","command":"\"C:/Users/me/AppData/Local/Kanon/bin/kanon-hook.exe\" SessionStart"}]}]}}"#

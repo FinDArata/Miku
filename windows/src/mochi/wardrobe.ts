@@ -1,9 +1,10 @@
-// Mochi's wardrobe — the pure logic, port of NotchBuddy/Sources/KanonKit/MochiWardrobe.swift.
+// Mochi's wardrobe — the pure logic, port of NotchBuddy/Sources/MikuKit/MochiWardrobe.swift.
 // What Mochi wears is picked in the wardrobe view (right-click on Mochi, or the
 // tray menu) and stored in the preferences as `mochiOutfit`. The drawing lives
 // in ./outfits.ts.
 
 import { N_, labels, t } from "../i18n/i18n";
+import { DEFAULT_VARIANT, MIKU_VARIANT_IDS, seasonalVariant, type MikuVariantId } from "./variants";
 
 /** Every outfit, plus "auto" (dress for the season) and "none". Order of the wardrobe. */
 export const OUTFIT_SELECTIONS = [
@@ -137,6 +138,67 @@ export class SeasonCache {
     if (key !== this.key) {
       this.key = key;
       this.value = seasonalOutfit(date);
+    }
+    return this.value;
+  }
+}
+
+// ── Which Miku ────────────────────────────────────────────────────────────────
+//
+// The outfit above dresses the character; this chooses the character itself.
+// Both are picked in the wardrobe, both have an "auto" that follows the season,
+// and both are stored as they come so a value from another build reads as auto.
+
+/** Every variant, plus "auto" (follows the season). Order of the wardrobe. */
+export const VARIANT_SELECTIONS = ["auto", ...MIKU_VARIANT_IDS] as const;
+export type VariantSelection = (typeof VARIANT_SELECTIONS)[number];
+
+export const DEFAULT_VARIANT_SELECTION: VariantSelection = "auto";
+
+/** The wardrobe's names for them; "Miku" is the classic one. */
+export const VARIANT_KEYS: Record<VariantSelection, string> = {
+  auto: N_("Auto (seasons)"),
+  classic: N_("Miku"),
+  snow: N_("Snow Miku"),
+  sakura: N_("Sakura Miku"),
+};
+
+export const VARIANT_LABELS: Record<VariantSelection, string> = labels(VARIANT_KEYS);
+
+const VARIANT_SET: ReadonlySet<string> = new Set(VARIANT_SELECTIONS);
+
+/** A stored preference → a selection; anything unknown means "auto". */
+export function parseVariant(raw: unknown): VariantSelection {
+  return typeof raw === "string" && VARIANT_SET.has(raw) ? (raw as VariantSelection) : DEFAULT_VARIANT_SELECTION;
+}
+
+/** "auto" → the season's Miku; anything else is drawn as chosen. */
+export function resolveVariant(selection: VariantSelection, date: Date): MikuVariantId {
+  return selection === "auto" ? seasonalVariant(date) : selection;
+}
+
+/** The hover/now text for the variant picker, like wardrobeHeader's. */
+export function variantHeader(hovered: VariantSelection | null, selection: VariantSelection, date: Date): string {
+  const season = VARIANT_LABELS[seasonalVariant(date)];
+  if (hovered) {
+    return hovered === "auto"
+      ? t("Auto · follows the seasons (now: {variant})", { variant: season })
+      : VARIANT_LABELS[hovered];
+  }
+  return selection === "auto" ? t("Auto · {variant}", { variant: season }) : VARIANT_LABELS[selection];
+}
+
+/** resolveVariant, remembered for the day — it is asked every frame too. */
+export class VariantCache {
+  private key = "";
+  private value: MikuVariantId = DEFAULT_VARIANT;
+
+  get(selection: VariantSelection, date = new Date()): MikuVariantId {
+    if (selection !== "auto") return selection;
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    if (key !== this.key) {
+      this.key = key;
+      this.value = seasonalVariant(date);
     }
     return this.value;
   }

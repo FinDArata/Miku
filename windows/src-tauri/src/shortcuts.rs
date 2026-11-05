@@ -89,10 +89,10 @@ pub fn description(id: &str) -> &'static str {
         "attachFrontWindow" => n_("Attach the front window to the chat"),
         "nextPill" => n_("Next pill"),
         "prevPill" => n_("Previous pill"),
-        "muteToggle" => n_("Mute or unmute Mochi"),
-        "desktopToggle" => n_("Send Mochi to the desktop"),
+        "muteToggle" => n_("Mute or unmute Miku"),
+        "desktopToggle" => n_("Send Miku to the desktop"),
         "wardrobeToggle" => n_("Open the wardrobe"),
-        _ => "Kanon",
+        _ => "Miku",
     }
 }
 
@@ -133,7 +133,7 @@ pub enum Status {
     Off,
     /// Another app already holds this combination.
     InUse,
-    /// Another Kanon shortcut has the same combination.
+    /// Another Miku shortcut has the same combination.
     Duplicate,
     /// Not a combination the OS can register.
     Invalid,
@@ -173,7 +173,7 @@ pub struct ActionStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typed: Option<String>,
     /// Wayland: the keys the desktop says run it, in its own words. It may
-    /// let the user pick other keys than the ones Kanon asked for.
+    /// let the user pick other keys than the ones Miku asked for.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger: Option<String>,
 }
@@ -329,7 +329,7 @@ pub fn dispatch<R: Runtime>(app: &AppHandle<R>, action: &str) {
     }
 }
 
-/// Unregisters everything Kanon holds.
+/// Unregisters everything Miku holds.
 fn release<R: Runtime>(app: &AppHandle<R>) {
     if let Some(gs) = app.try_state::<GlobalShortcut<R>>() {
         if let Err(err) = gs.unregister_all() {
@@ -395,7 +395,7 @@ pub fn apply<R: Runtime>(app: &AppHandle<R>, stored: &Bindings) {
 }
 
 /// Lets go of every shortcut while a new one is being recorded in Settings,
-/// so pressing a combination Kanon already holds records it instead of
+/// so pressing a combination Miku already holds records it instead of
 /// running it.
 pub fn suspend<R: Runtime>(app: &AppHandle<R>) {
     release(app);
@@ -422,7 +422,7 @@ fn launch_command() -> String {
         .map(std::path::PathBuf::from)
         .or_else(|| std::env::current_exe().ok())
         .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| "kanon".to_string());
+        .unwrap_or_else(|| "miku".to_string());
     if exe.contains(' ') {
         format!("\"{exe}\"")
     } else {
@@ -678,7 +678,7 @@ mod wayland {
         #[test]
         fn every_action_has_a_description() {
             for def in ACTIONS {
-                assert_ne!(description(def.id), "Kanon", "{}", def.id);
+                assert_ne!(description(def.id), "Miku", "{}", def.id);
             }
         }
     }
@@ -850,12 +850,12 @@ mod tests {
     #[test]
     fn the_command_line_names_an_action() {
         let args = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-        assert_eq!(from_args(&args(&["kanon", "--shortcut", "openChat"])), Some("openChat"));
-        assert_eq!(from_args(&args(&["kanon", "--shortcut", "wardrobeToggle"])), Some("wardrobeToggle"));
-        assert_eq!(from_args(&args(&["kanon", "--shortcut"])), None);
-        assert_eq!(from_args(&args(&["kanon", "--shortcut", "rm -rf"])), None);
-        assert_eq!(from_args(&args(&["kanon", "--shortcut", "desktopToggle"])), Some("desktopToggle"));
-        assert_eq!(from_args(&args(&["kanon", "--shortcut", "attachFrontWindow"])), None);
-        assert_eq!(from_args(&args(&["kanon"])), None);
+        assert_eq!(from_args(&args(&["miku", "--shortcut", "openChat"])), Some("openChat"));
+        assert_eq!(from_args(&args(&["miku", "--shortcut", "wardrobeToggle"])), Some("wardrobeToggle"));
+        assert_eq!(from_args(&args(&["miku", "--shortcut"])), None);
+        assert_eq!(from_args(&args(&["miku", "--shortcut", "rm -rf"])), None);
+        assert_eq!(from_args(&args(&["miku", "--shortcut", "desktopToggle"])), Some("desktopToggle"));
+        assert_eq!(from_args(&args(&["miku", "--shortcut", "attachFrontWindow"])), None);
+        assert_eq!(from_args(&args(&["miku"])), None);
     }
 }

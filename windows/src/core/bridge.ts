@@ -19,7 +19,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T |
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    console.error(`[kanon] ${cmd} failed`, err);
+    console.error(`[miku] ${cmd} failed`, err);
     return null;
   }
 }
@@ -267,12 +267,12 @@ export const Bridge = {
 
   openSettingsWindow: () => call<void>("open_settings_window"),
 
-  /** Writes to %LOCALAPPDATA%\Kanon\kanon.log, next to the Rust lines. */
+  /** Writes to %LOCALAPPDATA%\Miku\miku.log, next to the Rust lines. */
   log: (message: string) => call<void>("log_line", { message }),
 
   // ── Claude Code hooks ─────────────────────────────────────────────────────
   hooksStatus: () => call<HookStatus>("hooks_status"),
-  /** Pill ID → whether that agent's hooks reach Kanon (read-only, Mac #183). */
+  /** Pill ID → whether that agent's hooks reach Miku (read-only, Mac #183). */
   agentHooksStatus: () => call<Record<string, boolean>>("agent_hooks_status"),
   /** Diff to show before anything is written. `install: false` previews removal. */
   hooksPreview: (install: boolean) => callOrThrow<HookPreview>("hooks_preview", { install }),
@@ -318,7 +318,7 @@ export const Bridge = {
   /** "Nobody can act on this" — Claude Code asks in the terminal right away. */
   approvalDecline: (requestId: string) => call<void>("approval_decline", { requestId }),
 
-  // ── Phone link (Kanon for Android) ───────────────────────────────────────
+  // ── Phone link (Miku for Android) ───────────────────────────────────────
   phoneLinkStatus: () => call<PhoneLinkStatus>("phone_link_status"),
   /** Only ever from the switch in Settings. Throws with the reason if it cannot start. */
   phoneLinkSetEnabled: (enabled: boolean) => callOrThrow<PhoneLinkStatus>("phone_link_set_enabled", { enabled }),
@@ -460,6 +460,25 @@ export const Bridge = {
   // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
   /** Settings' switch: shows or hides the overlay, and remembers the choice. */
   lyricsSetVisible: (visible: boolean) => call<void>("lyrics_set_visible", { visible }),
+  lyricsSetPlacement: (placement: "island" | "floating") => call<void>("lyrics_set_placement", { placement }),
+  /** Shows the card for a song starting — leaves the switch in Settings alone. */
+  lyricsAutoShow: () => call<void>("lyrics_auto_show"),
+  /** Hides the card because the music stopped — leaves the switch alone. */
+  lyricsAutoHide: () => call<void>("lyrics_auto_hide"),
+  /** Resizes the overlay's window, keeping its top-left corner. */
+  lyricsResize: (width: number, height: number) => call<void>("lyrics_resize", { width, height }),
+  /** Resizes the window for a moment (the right-click menu), saving nothing. */
+  lyricsWindowSize: (width: number, height: number) => call<void>("lyrics_window_size", { width, height }),
+  /** Changes only the card's look, from its own right-click menu. Anything left
+   *  null keeps its value. */
+  lyricsSetLook: (look: {
+    opacity?: number;
+    fontSize?: number;
+    textColor?: string;
+    background?: string;
+    width?: number;
+    height?: number;
+  }) => call<void>("lyrics_set_look", { ...look }),
   /** Whether the overlay is on, for the page's first frame. */
   lyricsVisible: () => call<boolean>("lyrics_visible"),
   /** The overlay's two preferences, for a window that has just opened. */
@@ -493,7 +512,7 @@ export const Bridge = {
 
   // ── New versions (src-tauri/src/update.rs) ────────────────────────────────
   updateStatus: () => call<UpdateStatus>("update_status"),
-  /** The island's question or Settings' toggle: may Kanon look at GitHub on its own? */
+  /** The island's question or Settings' toggle: may Miku look at GitHub on its own? */
   updateSetConsent: (allowed: boolean) => call<void>("update_set_consent", { allowed }),
   /** "Check now": one look at GitHub, the toggle on or off. */
   updateCheck: () => call<UpdateStatus>("update_check"),
@@ -545,7 +564,7 @@ export async function emitToWindow(label: string, event: string, payload?: unkno
   try {
     await emitTo(label, event, payload);
   } catch (err) {
-    console.error(`[kanon] emit ${event} failed`, err);
+    console.error(`[miku] emit ${event} failed`, err);
   }
 }
 
@@ -600,17 +619,29 @@ export interface LyricsAnswer {
   plain: string | null;
   /** LRCLIB matched the track exactly; false for a search's best guess. */
   exact: boolean;
+  /** The service could not answer (busy, offline): not the same as no words. */
+  busy?: boolean;
 }
 
 /** The floating overlay's two preferences (Settings → General). */
 export interface LyricsPrefs {
   romanize: boolean;
+  placement?: "island" | "floating";
+  /** Ordinary browser videos count as songs (Settings → General). */
+  videos?: boolean;
   showOriginal: boolean;
+  /** The card's see-through amount, 0…1. */
+  opacity: number;
+  /** The sung line's size in px; the ones around it scale with it. */
+  fontSize: number;
+  /** `#rrggbb` for the words, and for the card behind them. */
+  textColor: string;
+  background: string;
 }
 
 export interface HookStatus {
   installed: boolean;
-  /** Kanon's status line relay (plan usage) is the status line in settings.json. */
+  /** Miku's status line relay (plan usage) is the status line in settings.json. */
   planRelayInstalled: boolean;
   settingsPath: string;
   hookPath: string;
@@ -623,7 +654,7 @@ export interface AgentHookStatus {
   id: string;
   name: string;
   installed: boolean;
-  /** The file (or files, one per line) Kanon writes. */
+  /** The file (or files, one per line) Miku writes. */
   path: string;
   hookReady: boolean;
   /** The island can allow or deny this agent's permission requests. */
@@ -650,7 +681,7 @@ export interface HookPreview {
 
 /** Same as `call`, but surfaces the error so the UI can show what went wrong. */
 async function callOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (!IS_TAURI) throw new Error("not running inside Kanon");
+  if (!IS_TAURI) throw new Error("not running inside Miku");
   return invoke<T>(cmd, args);
 }
 
@@ -714,7 +745,7 @@ export async function onDragDrop(handler: (e: DragDropPayload) => void) {
       handler({ type: "drop", paths: [] });
       return;
     }
-    webview.postMessageWithAdditionalObjects("kanon-file-drop", files);
+    webview.postMessageWithAdditionalObjects("miku-file-drop", files);
   };
 
   window.addEventListener("dragenter", onEnter);

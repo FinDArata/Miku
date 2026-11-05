@@ -1,14 +1,14 @@
-// Silence while you speak to Kanon: the other apps' sound (a video, music, a
-// call) is muted from the moment Kanon listens until it has heard you, so
+// Silence while you speak to Miku: the other apps' sound (a video, music, a
+// call) is muted from the moment Miku listens until it has heard you, so
 // nothing playing gets in the way of your voice. Windows mutes each app's
-// session in the mixer, never Kanon's own; only the sessions Kanon muted are
+// session in the mixer, never Miku's own; only the sessions Miku muted are
 // given their sound back, and a list on disk does it at the next launch if
-// Kanon quit in between. Elsewhere it does nothing.
+// Miku quit in between. Elsewhere it does nothing.
 
 use std::sync::mpsc::{self, Sender};
 use std::sync::{Mutex, OnceLock};
 
-/// Held while Kanon listens: dropping the last one gives the sound back.
+/// Held while Miku listens: dropping the last one gives the sound back.
 pub struct Guard(());
 
 impl Drop for Guard {
@@ -62,14 +62,14 @@ pub fn hush(on: bool) -> Option<Guard> {
     Some(Guard(()))
 }
 
-/// At launch: a silence left by a Kanon that quit while listening is undone.
+/// At launch: a silence left by a Miku that quit while listening is undone.
 pub fn setup() {
     if imp::SUPPORTED {
         send(Job::Restore);
     }
 }
 
-/// The sessions Kanon muted, by their instance id, kept on disk until given back.
+/// The sessions Miku muted, by their instance id, kept on disk until given back.
 fn list_path() -> std::path::PathBuf {
     crate::settings::local_dir().join("hushed.json")
 }
@@ -130,7 +130,7 @@ mod imp {
         out
     }
 
-    /// Kanon itself, or one of its webviews: its own sounds keep playing.
+    /// Miku itself, or one of its webviews: its own sounds keep playing.
     fn is_ours(pid: u32) -> bool {
         let me = std::process::id();
         pid == me || crate::platform::process_ancestors(pid).contains(&me)

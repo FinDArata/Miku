@@ -11,6 +11,7 @@ import type { ProviderId } from "./providers";
 import type { FileDiff } from "./diff";
 import type { Bindings } from "./shortcuts";
 import { DEFAULT_OUTFIT, type Outfit } from "../mochi/wardrobe";
+import type { MikuVariantId } from "../mochi/variants";
 import { pillColor } from "./pill-colors";
 import { Spotify, musicPlaying } from "./spotify";
 
@@ -111,8 +112,24 @@ export interface Settings {
   closedIsland: string;
   /** Japanese, Korean and Chinese lyric lines are shown romanised (the overlay). */
   lyricsRomanize: boolean;
+  /** Allow ordinary browser videos to participate in lyric detection. */
+  lyricsVideos: boolean;
+  /** Rust-owned lyrics switch and placement, mirrored from settings.json. */
+  lyrics?: { shown: boolean; placement: "island" | "floating"; spot: [number, number] | null };
+  /** Convenience mirror used by existing island rendering code. */
+  lyricsPlacement?: "island" | "floating";
   /** Under a romanised lyric line, the words as they are written. */
   lyricsShowOriginal: boolean;
+  /** The overlay card's see-through amount, 0…1 (0.25 shows the wallpaper). */
+  lyricsOpacity: number;
+  /** The sung line's size in px; the lines around it scale with it. */
+  lyricsFontSize: number;
+  /** The card's size in px. */
+  lyricsWidth: number;
+  lyricsHeight: number;
+  /** `#RRGGBB` for the words, and for the card behind them. */
+  lyricsTextColor: string;
+  lyricsBackground: string;
   absenceInterval: number;
   /** Declared pills next to the main one (at most 4), in the order they were added. */
   activeIntegrations: string[];
@@ -128,7 +145,7 @@ export interface Settings {
   showPlanInNotch: boolean;
   /** Show the Claude plan percentage in the compact island next to the agent dots. */
   showPlanInCompactIsland: boolean;
-  /** Kanon's status line relay is installed in Claude Code's settings. */
+  /** Miku's status line relay is installed in Claude Code's settings. */
   planRelayInstalled: boolean;
   /** Show the Codex plan pill in the island's header. */
   showCodexPlanInNotch: boolean;
@@ -145,10 +162,15 @@ export interface Settings {
   /** Global shortcuts the user changed, by action id (see core/shortcuts.ts). */
   shortcuts: Bindings;
   /**
-   * Mochi's outfit: "auto" (dresses for the season), "none" or an outfit id.
+   * Miku's outfit: "auto" (dresses for the season), "none" or an outfit id.
    * Same raw values as the Mac's "mochiOutfit"; read it through parseOutfit.
    */
   mochiOutfit: string;
+  /**
+   * Which Miku is drawn: "auto" (follows the season — snow in winter, sakura in
+   * spring), or a variant id. Read it through parseVariant in mochi/wardrobe.ts.
+   */
+  mikuVariant: string;
   /**
    * A colour of the user's own for a pill's Mochi, by pill ID ("#RRGGBB").
    * Empty means the catalog's colours; read it through core/pill-colors.ts.
@@ -156,12 +178,12 @@ export interface Settings {
    */
   pillColors: Record<string, string>;
   /**
-   * Interface language: "" follows the system (when Kanon has its language,
+   * Interface language: "" follows the system (when Miku has its language,
    * else English), or one of src/i18n's ten codes ("fr", "pt-BR", "zh-Hans"…).
    */
   language: string;
   /**
-   * The phone link for Kanon for Android is on. Rust owns it (only the switch in
+   * The phone link for Miku for Android is on. Rust owns it (only the switch in
    * Settings → Android phone turns it on): whatever the page sends back is ignored.
    */
   phoneLink?: boolean;
@@ -187,7 +209,15 @@ export const DEFAULT_SETTINGS: Settings = {
   showClock: false,
   closedIsland: "mochi",
   lyricsRomanize: true,
+  lyricsVideos: false,
+  lyricsPlacement: "island",
   lyricsShowOriginal: true,
+  lyricsOpacity: 0.25,
+  lyricsFontSize: 16,
+  lyricsWidth: 420,
+  lyricsHeight: 160,
+  lyricsTextColor: "#ffffff",
+  lyricsBackground: "#08090c",
   absenceInterval: 180,
   activeIntegrations: [
     "integration_resend", "integration_n8n", "integration_vercel", "integration_github",
@@ -209,6 +239,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customUrl: "",
   shortcuts: {},
   mochiOutfit: DEFAULT_OUTFIT,
+  mikuVariant: "auto",
   pillColors: {},
   language: "",
 };
@@ -277,8 +308,11 @@ class AppState {
    */
   mochiOnDesktop = false;
 
-  /** Outfit shown on Mochi while the pointer rests on a wardrobe button. */
+  /** Outfit shown on Miku while the pointer rests on a wardrobe button. */
   wardrobePreview: Outfit | null = null;
+
+  /** Variant shown on Miku while the pointer rests on a wardrobe swatch. */
+  variantPreview: MikuVariantId | null = null;
 
   lastActivity = performance.now();
 

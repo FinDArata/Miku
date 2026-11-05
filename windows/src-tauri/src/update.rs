@@ -1,17 +1,17 @@
-// "Kanon 0.6.0 is out" in the island, and on Windows one click to install it.
+// "Miku 0.6.0 is out" in the island, and on Windows one click to install it.
 // Port of MacUpdate.swift / MacUpdater.swift (the Mac's GitHub build).
 //
 // Nothing is asked of GitHub before the user says yes: the island asks once
 // (again a day later at most if the card was left unanswered), or Settings →
 // General → Updates. "Check now" is a click, so it works either way. Once
-// allowed, Kanon looks at launch and every 6 hours: one unauthenticated
+// allowed, Miku looks at launch and every 6 hours: one unauthenticated
 // `GET /repos/FinDArata/kanon/releases`, no cookies, nothing about the user.
 //
 // Windows: the installer this copy came from — the per-user setup.exe in
-// %LOCALAPPDATA%\Kanon, the per-machine .msi under Program Files — is
+// %LOCALAPPDATA%\Miku, the per-machine .msi under Program Files — is
 // downloaded from GitHub only (redirects to github.com, api.github.com and
 // *.githubusercontent.com, nothing else), checked against the SHA-256 GitHub
-// publishes for that asset, then run; Kanon quits and the installer starts it
+// publishes for that asset, then run; Miku quits and the installer starts it
 // again. Anything else (the portable exe, every Linux package) gets the
 // release page: people update those the way they installed them.
 //
@@ -50,7 +50,7 @@ pub const ASK_AGAIN: i64 = 24 * 3600;
 const FIRST_TICK: Duration = Duration::from_secs(30);
 /// How often the schedule is looked at; GitHub is only called when `should_check` says so.
 const TICK: Duration = Duration::from_secs(3600);
-/// An installer bigger than this is not Kanon's (0.5.0's .msi is 14 MB).
+/// An installer bigger than this is not Miku's (0.5.0's .msi is 14 MB).
 const MAX_INSTALLER: u64 = 512 * 1024 * 1024;
 
 // ── Releases ──────────────────────────────────────────────────────────────────
@@ -189,9 +189,9 @@ pub fn parse_digest(digest: &str) -> Option<String> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InstallKind {
-    /// The per-user setup.exe (NSIS): %LOCALAPPDATA%\Kanon.
+    /// The per-user setup.exe (NSIS): %LOCALAPPDATA%\Miku.
     Setup,
-    /// The per-machine .msi (WiX): Program Files\Kanon.
+    /// The per-machine .msi (WiX): Program Files\Miku.
     Msi,
     /// Anything else — the portable exe, a build, Linux: the release page only.
     Manual,
@@ -203,8 +203,8 @@ fn win_path(p: &str) -> String {
 }
 
 /// The installer that put `exe` where it is, from its folder alone: Tauri's
-/// NSIS installer (per user) uses %LOCALAPPDATA%\Kanon, its MSI (per machine)
-/// Program Files\Kanon. `has_uninstaller` is whether NSIS's uninstall.exe sits
+/// NSIS installer (per user) uses %LOCALAPPDATA%\Miku, its MSI (per machine)
+/// Program Files\Miku. `has_uninstaller` is whether NSIS's uninstall.exe sits
 /// next to it, so a portable exe someone copied into that folder isn't taken
 /// for an installed one.
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -212,11 +212,11 @@ pub fn install_kind(exe: &str, has_uninstaller: bool, local_app_data: Option<&st
     let exe = win_path(exe);
     let Some((dir, _)) = exe.rsplit_once('\\') else { return InstallKind::Manual };
     if let Some(local) = local_app_data.filter(|l| !l.trim().is_empty()) {
-        if dir == format!("{}\\kanon", win_path(local)) {
+        if dir == format!("{}\\miku", win_path(local)) {
             return if has_uninstaller { InstallKind::Setup } else { InstallKind::Manual };
         }
     }
-    if program_files.iter().filter(|p| !p.trim().is_empty()).any(|p| dir == format!("{}\\kanon", win_path(p))) {
+    if program_files.iter().filter(|p| !p.trim().is_empty()).any(|p| dir == format!("{}\\miku", win_path(p))) {
         return InstallKind::Msi;
     }
     InstallKind::Manual
@@ -226,8 +226,8 @@ pub fn install_kind(exe: &str, has_uninstaller: bool, local_app_data: Option<&st
 /// workflow publishes, nothing else.
 pub fn asset_name(kind: InstallKind, version: &str) -> Option<String> {
     match kind {
-        InstallKind::Setup => Some(format!("Kanon-Windows-{version}-setup.exe")),
-        InstallKind::Msi => Some(format!("Kanon-Windows-{version}.msi")),
+        InstallKind::Setup => Some(format!("Miku-Windows-{version}-setup.exe")),
+        InstallKind::Msi => Some(format!("Miku-Windows-{version}.msi")),
         InstallKind::Manual => None,
     }
 }
@@ -240,7 +240,7 @@ pub fn pick_asset(release: &Release, kind: InstallKind) -> Option<&Asset> {
 /// What runs the downloaded installer. The setup.exe with Tauri's own update
 /// flags: `/P` passive (a progress bar, no questions), `/UPDATE` (no "reinstall
 /// or uninstall?" step, the old uninstaller never runs, shortcuts are left as
-/// they are), `/R` (start Kanon again once done). The MSI through msiexec,
+/// they are), `/R` (start Miku again once done). The MSI through msiexec,
 /// passive, with Tauri's `AUTOLAUNCHAPP` to start it again; being per machine
 /// it asks for admin rights, as installing it by hand does.
 pub fn installer_command(kind: InstallKind, file: &Path, system_root: Option<&str>) -> Option<(PathBuf, Vec<String>)> {
@@ -273,7 +273,7 @@ pub fn should_ask(asked_at: Option<i64>, now: i64) -> bool {
     due(asked_at, now, ASK_AGAIN)
 }
 
-/// Whether Mochi says "Kanon X is out": newer than what runs, and not shown
+/// Whether Mochi says "Miku X is out": newer than what runs, and not shown
 /// or put off for that version in the last day.
 pub fn should_announce(version: &str, current: &str, snoozed_version: Option<&str>, snoozed_at: Option<i64>, now: i64) -> bool {
     if !is_newer(version, current) {
@@ -288,7 +288,7 @@ pub fn should_announce(version: &str, current: &str, snoozed_version: Option<&st
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 struct Prefs {
-    /// None: not asked yet. true: Kanon may look at GitHub. false: never on its own.
+    /// None: not asked yet. true: Miku may look at GitHub. false: never on its own.
     consent: Option<bool>,
     last_check: Option<i64>,
     snoozed_version: Option<String>,
@@ -430,7 +430,7 @@ pub fn status() -> Status {
     }
 }
 
-/// Tells both windows, and the tray's "Update Kanon to X…".
+/// Tells both windows, and the tray's "Update Miku to X…".
 fn changed(app: &AppHandle) {
     let status = status();
     crate::tray::set_update(app, status.latest.as_ref().map(|l| l.version.as_str()));
@@ -514,7 +514,7 @@ fn github_client(timeout: Duration) -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(15))
         .timeout(timeout)
-        .user_agent("Kanon")
+        .user_agent("Miku")
         .redirect(policy)
         .build()
         .map_err(|e| e.to_string())
@@ -586,12 +586,12 @@ pub async fn check(app: &AppHandle, manual: bool) {
 
 // ── Install (Windows) ─────────────────────────────────────────────────────────
 
-/// Old downloads left in the temp folder by an update that ran: Kanon quits
+/// Old downloads left in the temp folder by an update that ran: Miku quits
 /// before the installer is done with its file, so they go at the next launch.
 fn remove_old_downloads() {
     let Ok(entries) = std::fs::read_dir(std::env::temp_dir()) else { return };
     for entry in entries.flatten() {
-        if entry.file_name().to_string_lossy().starts_with("kanon-update-") {
+        if entry.file_name().to_string_lossy().starts_with("miku-update-") {
             let _ = std::fs::remove_dir_all(entry.path());
         }
     }
@@ -620,7 +620,7 @@ pub fn install(app: &AppHandle) {
             Ok(()) => {
                 crate::log::line(format!("update: running the {kind:?} installer for {}, quitting", release.version));
                 set_phase(&app, Phase::Installing);
-                // Long enough for the card to say so; the installer closes a Kanon still open.
+                // Long enough for the card to say so; the installer closes a Miku still open.
                 tokio::time::sleep(Duration::from_millis(1200)).await;
                 app.exit(0);
             }
@@ -643,7 +643,7 @@ async fn run(app: &AppHandle, release: &Release, kind: InstallKind) -> Result<()
         return Err(t("The download isn't the file GitHub published for this version, so nothing was installed."));
     }
     let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos()).unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("kanon-update-{}-{nonce}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("miku-update-{}-{nonce}", std::process::id()));
     std::fs::create_dir_all(&dir).map_err(|_| t("The download failed. Try again, or get the new version on GitHub."))?;
     let path = dir.join(&asset.name);
 
@@ -823,16 +823,16 @@ mod tests {
               "html_url": "https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.0",
               "body": "Kanon for Windows 0.5.0 — Mochi at the top of your screen.\n\n## What's new\n\n- **Flow dictation** on Windows — hold right Ctrl\n- Other things",
               "assets": [
-                { "name": "Kanon-Windows-0.5.0-setup.exe", "size": 10950620,
-                  "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-v0.5.0/Kanon-Windows-0.5.0-setup.exe",
+                { "name": "Miku-Windows-0.5.0-setup.exe", "size": 10950620,
+                  "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-v0.5.0/Miku-Windows-0.5.0-setup.exe",
                   "digest": "sha256:e8234a092e8fe1bf6eed0395e6db13052be8fe47413949c2b7fa368467342337" },
-                { "name": "Kanon-Windows-0.5.0.msi", "size": 14086144,
-                  "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-v0.5.0/Kanon-Windows-0.5.0.msi",
+                { "name": "Miku-Windows-0.5.0.msi", "size": 14086144,
+                  "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-v0.5.0/Miku-Windows-0.5.0.msi",
                   "digest": "sha256:79bced83c414722e84d47e99005a37910147624dc5e4edf55aa66ff6462cd09f" }] },
             { "tag_name": "windows-latest", "draft": false, "prerelease": false,
               "html_url": "https://github.com/FinDArata/kanon/releases/tag/windows-latest",
-              "assets": [{ "name": "Kanon-Windows-setup.exe", "size": 10950620,
-                "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-latest/Kanon-Windows-setup.exe",
+              "assets": [{ "name": "Miku-Windows-setup.exe", "size": 10950620,
+                "browser_download_url": "https://github.com/FinDArata/kanon/releases/download/windows-latest/Miku-Windows-setup.exe",
                 "digest": "sha256:e8234a092e8fe1bf6eed0395e6db13052be8fe47413949c2b7fa368467342337" }] },
             { "tag_name": "linux-v0.5.0", "draft": false, "prerelease": false,
               "html_url": "https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.0", "body": "Kanon for Linux 0.5.0",
@@ -926,36 +926,52 @@ mod tests {
         let local = Some(r"C:\Users\Ana\AppData\Local");
         let pf = vec![r"C:\Program Files".to_string(), r"C:\Program Files (x86)".to_string()];
         let kind = |exe: &str, uninst: bool| install_kind(exe, uninst, local, &pf);
-        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Kanon\kanon.exe", true), InstallKind::Setup);
-        assert_eq!(kind(r"c:\users\ana\appdata\local\KANON\Kanon.exe", true), InstallKind::Setup);
+        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Miku\miku.exe", true), InstallKind::Setup);
+        assert_eq!(kind(r"c:\users\ana\appdata\local\MIKU\Miku.exe", true), InstallKind::Setup);
         // A portable exe copied there: no NSIS uninstaller next to it.
-        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Kanon\kanon.exe", false), InstallKind::Manual);
-        assert_eq!(kind(r"C:\Program Files\Kanon\kanon.exe", false), InstallKind::Msi);
-        assert_eq!(kind(r"C:\Program Files (x86)\Kanon\kanon.exe", false), InstallKind::Msi);
+        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Miku\miku.exe", false), InstallKind::Manual);
+        assert_eq!(kind(r"C:\Program Files\Miku\miku.exe", false), InstallKind::Msi);
+        assert_eq!(kind(r"C:\Program Files (x86)\Miku\miku.exe", false), InstallKind::Msi);
         // The portable exe, a build, a folder that only looks alike.
-        assert_eq!(kind(r"C:\Users\Ana\Downloads\kanon.exe", true), InstallKind::Manual);
-        assert_eq!(kind(r"C:\dev\kanon\windows\target\release\kanon.exe", false), InstallKind::Manual);
-        assert_eq!(kind(r"C:\Program Files\Kanon\bin\kanon.exe", false), InstallKind::Manual);
-        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Kanon\bin\kanon-hook.exe", true), InstallKind::Manual);
-        assert_eq!(kind("kanon.exe", true), InstallKind::Manual);
-        assert_eq!(install_kind(r"C:\Program Files\Kanon\kanon.exe", false, None, &[]), InstallKind::Manual);
-        assert_eq!(install_kind("/opt/Kanon/kanon", false, Some(""), &[String::new()]), InstallKind::Manual);
+        assert_eq!(kind(r"C:\Users\Ana\Downloads\miku.exe", true), InstallKind::Manual);
+        assert_eq!(kind(r"C:\dev\miku\windows\target\release\miku.exe", false), InstallKind::Manual);
+        assert_eq!(kind(r"C:\Program Files\Miku\bin\miku.exe", false), InstallKind::Manual);
+        assert_eq!(kind(r"C:\Users\Ana\AppData\Local\Miku\bin\miku-hook.exe", true), InstallKind::Manual);
+        assert_eq!(kind("miku.exe", true), InstallKind::Manual);
+        assert_eq!(install_kind(r"C:\Program Files\Miku\miku.exe", false, None, &[]), InstallKind::Manual);
+        assert_eq!(install_kind("/opt/Miku/miku", false, Some(""), &[String::new()]), InstallKind::Manual);
     }
 
     #[test]
     fn the_asset_is_the_exact_installer_for_the_kind() {
         let w = latest(&fixture(), "windows-v").unwrap();
-        assert_eq!(pick_asset(&w, InstallKind::Setup).unwrap().name, "Kanon-Windows-0.5.0-setup.exe");
-        assert_eq!(pick_asset(&w, InstallKind::Msi).unwrap().name, "Kanon-Windows-0.5.0.msi");
+        assert_eq!(pick_asset(&w, InstallKind::Setup).unwrap().name, "Miku-Windows-0.5.0-setup.exe");
+        assert_eq!(pick_asset(&w, InstallKind::Msi).unwrap().name, "Miku-Windows-0.5.0.msi");
         assert_eq!(pick_asset(&w, InstallKind::Manual), None);
         // A look-alike name, or one served from elsewhere, is never picked.
         let mut odd = w.clone();
         odd.assets = vec![
-            Asset { name: "Kanon-Windows-setup.exe".into(), url: w.assets[0].url.clone(), size: 1, digest: None },
-            Asset { name: "Kanon-Windows-0.5.0.msi".into(), url: "https://evil.example.com/x.msi".into(), size: 1, digest: None },
+            Asset { name: "Miku-Windows-setup.exe".into(), url: w.assets[0].url.clone(), size: 1, digest: None },
+            Asset { name: "Miku-Windows-0.5.0.msi".into(), url: "https://evil.example.com/x.msi".into(), size: 1, digest: None },
         ];
         assert_eq!(pick_asset(&odd, InstallKind::Setup), None);
         assert_eq!(pick_asset(&odd, InstallKind::Msi), None);
+    }
+
+    #[test]
+    fn the_old_brand_s_installer_is_not_offered() {
+        // A release published before the rebrand carries "Kanon-…" assets. Now
+        // that this build looks for "Miku-…", it must not pick them up.
+        let mut old = latest(&fixture(), "windows-v").unwrap();
+        old.version = "0.5.0".into();
+        old.assets = vec![Asset {
+            name: "Kanon-Windows-0.5.0-setup.exe".into(),
+            url: "https://github.com/FinDArata/kanon/releases/download/windows-v0.5.0/Miku-Windows-0.5.0-setup.exe".into(),
+            size: 1,
+            digest: None,
+        }];
+        assert_eq!(pick_asset(&old, InstallKind::Setup), None);
+        assert_eq!(pick_asset(&old, InstallKind::Msi), None);
     }
 
     #[test]
@@ -972,14 +988,14 @@ mod tests {
 
     #[test]
     fn installers_run_with_tauris_update_flags() {
-        let file = Path::new(r"C:\Temp\kanon-update-1\Kanon-Windows-0.6.0-setup.exe");
+        let file = Path::new(r"C:\Temp\miku-update-1\Kanon-Windows-0.6.0-setup.exe");
         let (program, args) = installer_command(InstallKind::Setup, file, Some(r"C:\Windows")).unwrap();
         assert_eq!(program, file);
         assert_eq!(args, ["/P", "/UPDATE", "/R"]);
-        let msi = Path::new(r"C:\Temp\kanon-update-1\Kanon-Windows-0.6.0.msi");
+        let msi = Path::new(r"C:\Temp\miku-update-1\Kanon-Windows-0.6.0.msi");
         let (program, args) = installer_command(InstallKind::Msi, msi, Some(r"C:\Windows\")).unwrap();
         assert_eq!(program, PathBuf::from(r"C:\Windows\System32\msiexec.exe"));
-        assert_eq!(args, ["/i", r"C:\Temp\kanon-update-1\Kanon-Windows-0.6.0.msi", "/passive", "AUTOLAUNCHAPP=True"]);
+        assert_eq!(args, ["/i", r"C:\Temp\miku-update-1\Kanon-Windows-0.6.0.msi", "/passive", "AUTOLAUNCHAPP=True"]);
         assert_eq!(installer_command(InstallKind::Msi, msi, None).unwrap().0, PathBuf::from("msiexec.exe"));
         assert_eq!(installer_command(InstallKind::Manual, file, None), None);
     }

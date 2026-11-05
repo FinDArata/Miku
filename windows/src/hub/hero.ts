@@ -1,4 +1,4 @@
-// The coloured band on top of each page of the Kanon window: a deep black
+// The coloured band on top of each page of the Miku window: a deep black
 // with the page's colour breathing in a corner, and particles that drift all
 // the time and move away from the pointer. Also the glowing cards and the
 // Mochis of empty pages. Port of FlowHubMochis.swift.
@@ -8,8 +8,10 @@
 // scrolled out of sight.
 
 import { BotEngine, hexToRGB } from "../mochi/engine";
+import { VariantCache, parseVariant } from "../mochi/wardrobe";
 import { onScreen, shouldAnimate } from "./frames";
 import type { BotStateName } from "../core/layout";
+import { State } from "../core/state";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -27,7 +29,7 @@ let fallback: number | null = null;
 let starved = false;
 let last = performance.now();
 const start = performance.now();
-/** The Kanon window is on screen, as Rust last said (`setWindowShown`). */
+/** The Miku window is on screen, as Rust last said (`setWindowShown`). */
 let windowShown = true;
 
 function running(): boolean {
@@ -267,9 +269,13 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
 
 // ── The Mochi ─────────────────────────────────────────────────────────────────
 
-/** One Mochi alone (the sidebar's logo, an empty page). */
+/** "auto" → the season's Miku, remembered for the day. */
+const variants = new VariantCache();
+
+/** One Miku alone (the sidebar's logo, an empty page), in the user's variant. */
 export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: BotStateName = "idle") {
   const engine = new BotEngine();
+  engine.setVariant(variants.get(parseVariant(State.settings.mikuVariant)));
   engine.bodyColor = hexToRGB(color);
   engine.setState(state, true);
   canvas.addEventListener("click", () => engine.slap());

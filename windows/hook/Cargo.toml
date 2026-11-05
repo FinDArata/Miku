@@ -1,12 +1,12 @@
 [package]
-name = "kanon-hook"
-description = "Relays Claude Code hook events to Kanon over a named pipe (Windows) or a Unix socket (Linux)"
+name = "miku-hook"
+description = "Relays Claude Code hook events to Miku over a named pipe (Windows) or a Unix socket (Linux)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "kanon-hook"
+name = "miku-hook"
 path = "src/main.rs"
 
 [dependencies]

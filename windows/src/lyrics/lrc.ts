@@ -98,9 +98,20 @@ export function lineIndexAt(lines: readonly LyricsLine[], seconds: number): numb
   return found;
 }
 
-/** The artist's first name only: "A feat. B" matches far more recordings. */
+/**
+ * The artist's first name only: "A feat. B" matches far more recordings.
+ *
+ * Only a guest is cut off, never a comma or an "&": "Simon & Garfunkel" is one
+ * artist, and cutting at the & would file their songs and Simon's solo work
+ * under the same name.
+ */
 export function mainArtist(artist: string): string {
-  return (artist || "").split(/\s*(?:,|feat\.|ft\.|&|×|x)\s+/i)[0].trim();
+  const credit = (artist || "").trim();
+  // A guest comes after "feat.", "ft." or "featuring": cut there first, so the
+  // names of the main act that come before it stay.
+  const guest = credit.search(/\s(?:feat|ft|featuring)\.?\s/i);
+  if (guest > 0) return credit.slice(0, guest).trim().replace(/,$/, "");
+  return credit;
 }
 
 /**
@@ -108,7 +119,9 @@ export function mainArtist(artist: string): string {
  * cached under.
  */
 export function cacheKey(track: { artist: string; title: string; duration: number }): string {
-  const artist = mainArtist(track.artist).toLowerCase();
+  // The whole credit line is the key: two artists on one song are their own
+  // entry, and a guest singer does not move it to the first artist's.
+  const artist = (track.artist || "").trim().toLowerCase();
   const title = (track.title || "").trim().toLowerCase();
   return [artist, title, String(Math.round(track.duration || 0))].join("|");
 }

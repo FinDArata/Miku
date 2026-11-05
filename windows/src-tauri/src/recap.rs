@@ -6,7 +6,7 @@
 // component. Never a command, a file path, file contents or a prompt.
 //
 // The history lives in recap.json under platform::local_dir()
-// (%LOCALAPPDATA%\Kanon on Windows, ~/.local/share/kanon on Linux), keeps a
+// (%LOCALAPPDATA%\Miku on Windows, ~/.local/share/kanon on Linux), keeps a
 // 12-week rolling window and a hard cap on its length, and is written whole to
 // a temporary file then renamed over the old one, so a crash never leaves half
 // a file. Nothing in it ever leaves the machine.
@@ -469,11 +469,11 @@ fn text<'a>(payload: &'a Value, key: &str) -> &'a str {
 }
 
 /// Same routing as hooks.ts, so a turn counts for the pill it showed on: a
-/// valid `kanon_agent` → `agent_<name>` (every agent the relay normalises,
+/// valid `miku_agent` → `agent_<name>` (every agent the relay normalises,
 /// Claude Desktop included); otherwise Claude Code's own pill — Cursor's when
 /// it runs in Cursor's terminal, VS Code's else. "claude" is reserved.
 fn agent_id(payload: &Value) -> String {
-    let raw = text(payload, "kanon_agent");
+    let raw = text(payload, "miku_agent");
     let valid = !raw.is_empty()
         && raw.len() <= 24
         && raw != "claude"
@@ -662,9 +662,9 @@ fn save_png(dirs: &[PathBuf], data: &str, week: &str) -> Result<PathBuf, String>
         .find(|d| d.is_dir())
         .ok_or_else(|| crate::i18n::t("No Pictures or Downloads folder to save into."))?;
     let stem = if is_week_key(week) {
-        format!("Kanon weekly recap {week}")
+        format!("Miku weekly recap {week}")
     } else {
-        "Kanon weekly recap".to_string()
+        "Miku weekly recap".to_string()
     };
     write_unique(dir, &stem, &bytes)
         .map_err(|err| crate::i18n::tf("Could not save the image: {error}", &[("error", &err.to_string())]))
@@ -839,10 +839,10 @@ mod tests {
         let dir = scratch("sessions");
         let mut r = Recap::load(dir.join("recap.json"), T0);
         r.observe(&event("UserPromptSubmit", "a", json!({})), T0);
-        r.observe(&event("UserPromptSubmit", "b", json!({ "kanon_agent": "gemini", "cwd": "C:\\Users\\me\\side-project\\" })), T0 + 60);
-        r.observe(&event("PreToolUse", "b", json!({ "kanon_agent": "gemini", "tool_name": "run_shell_command" })), T0 + 70);
+        r.observe(&event("UserPromptSubmit", "b", json!({ "miku_agent": "gemini", "cwd": "C:\\Users\\me\\side-project\\" })), T0 + 60);
+        r.observe(&event("PreToolUse", "b", json!({ "miku_agent": "gemini", "tool_name": "run_shell_command" })), T0 + 70);
         r.observe(&event("Stop", "a", json!({})), T0 + 120);
-        r.observe(&event("Stop", "b", json!({ "kanon_agent": "gemini" })), T0 + 180);
+        r.observe(&event("Stop", "b", json!({ "miku_agent": "gemini" })), T0 + 180);
         let turns = r.view(0).turns;
         assert_eq!(turns.len(), 2);
         assert_eq!((turns[0].agent.as_str(), turns[0].commands_run), ("integration_claude", 0));
@@ -855,9 +855,9 @@ mod tests {
     #[test]
     fn invalid_or_reserved_agent_tags_fall_back_to_claude_code() {
         for tag in ["claude", "Gemini", "has space", "a-very-long-agent-name-over-24"] {
-            assert_eq!(agent_id(&json!({ "kanon_agent": tag })), "integration_claude", "{tag}");
+            assert_eq!(agent_id(&json!({ "miku_agent": tag })), "integration_claude", "{tag}");
         }
-        assert_eq!(agent_id(&json!({ "kanon_agent": "codex" })), "agent_codex");
+        assert_eq!(agent_id(&json!({ "miku_agent": "codex" })), "agent_codex");
     }
 
     #[test]
@@ -865,8 +865,8 @@ mod tests {
         // Claude Code in Cursor's terminal is the Cursor pill, as in hooks.ts.
         assert_eq!(agent_id(&json!({ "term_editor": "cursor" })), "agent_cursor");
         // An explicit agent wins over the terminal it runs in.
-        assert_eq!(agent_id(&json!({ "kanon_agent": "claude-desktop", "term_editor": "cursor" })), "agent_claude-desktop");
-        assert_eq!(agent_id(&json!({ "kanon_agent": "copilot" })), "agent_copilot");
+        assert_eq!(agent_id(&json!({ "miku_agent": "claude-desktop", "term_editor": "cursor" })), "agent_claude-desktop");
+        assert_eq!(agent_id(&json!({ "miku_agent": "copilot" })), "agent_copilot");
         assert_eq!(agent_id(&json!({})), "integration_claude");
     }
 
@@ -888,7 +888,7 @@ mod tests {
     fn decisions_are_recorded_with_the_agent_that_asked() {
         let dir = scratch("decisions");
         let mut r = Recap::load(dir.join("recap.json"), T0);
-        r.note_request("r1", &json!({ "kanon_agent": "codex" }));
+        r.note_request("r1", &json!({ "miku_agent": "codex" }));
         r.record_decision("r1", "always", T0);
         r.record_decision("unknown", "deny", T0 + 1);
         r.record_decision("r3", "maybe", T0 + 2);
@@ -1036,11 +1036,11 @@ mod tests {
         let png = "data:image/png;base64,iVBORw0KGgo=";
         let first = save_png(&[missing.clone(), dir.clone()], png, "2026-10-05").unwrap();
         let second = save_png(&[dir.clone()], png, "2026-10-05").unwrap();
-        assert_eq!(first, dir.join("Kanon weekly recap 2026-10-05.png"));
-        assert_eq!(second, dir.join("Kanon weekly recap 2026-10-05 (2).png"));
+        assert_eq!(first, dir.join("Miku weekly recap 2026-10-05.png"));
+        assert_eq!(second, dir.join("Miku weekly recap 2026-10-05 (2).png"));
         // The week is a date or nothing: no path tricks through it.
         let third = save_png(&[dir.clone()], png, "../../x").unwrap();
-        assert_eq!(third, dir.join("Kanon weekly recap.png"));
+        assert_eq!(third, dir.join("Miku weekly recap.png"));
         // Not a PNG: refused.
         assert!(save_png(&[dir.clone()], "data:image/png;base64,aGVsbG8=", "").is_err());
         assert!(save_png(&[missing], png, "").is_err());

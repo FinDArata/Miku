@@ -1,4 +1,4 @@
-// « OK Kanon »: hearing the wake phrase in what Parakeet wrote, and telling
+// « OK Miku »: hearing the wake phrase in what Parakeet wrote, and telling
 // speech from silence on the microphone. Nothing here touches the OS.
 
 /// Lower case, accents gone, everything but letters and digits a space.
@@ -27,17 +27,17 @@ fn is_ok(word: &str) -> bool {
     matches!(word, "ok" | "okay" | "oke" | "okey" | "hey")
 }
 
-/// How Parakeet may write "kanon", in one word.
-fn is_kanon(word: &str) -> bool {
-    matches!(
-        word,
-        "kanon" | "kanons" | "cuckoo" | "cucu" | "kuku" | "koukou" | "cookoo" | "coocoo" | "cocou" | "kukuu" | "couscous"
-    )
+/// How Parakeet may write "miku", in one word.
+///
+/// An English recogniser usually keeps "Miku" as a name; a Japanese, French or
+/// Spanish one may spell what it hears instead ("micu", "mikku", "mikou").
+fn is_miku(word: &str) -> bool {
+    matches!(word, "miku" | "mikus" | "micu" | "mikku" | "mikuu" | "mikou" | "micou")
 }
 
-/// …or in two.
-fn is_kanon_pair(a: &str, b: &str) -> bool {
-    matches!((a, b), ("cou", "cou") | ("coo", "coo") | ("ku", "ku") | ("cu", "cu") | ("koo", "koo") | ("cuck", "oo"))
+/// …or in two, which is how a recogniser splits a name it does not know.
+fn is_miku_pair(a: &str, b: &str) -> bool {
+    matches!((a, b), ("mi", "ku") | ("mi", "kuu") | ("mi", "cou") | ("mik", "u"))
 }
 
 /// When `text` holds the wake phrase, what was said after it (maybe nothing).
@@ -55,22 +55,22 @@ pub fn after_wake(text: &str) -> Option<String> {
             ok_end = Some(if norm[i] == "o" { i + 2 } else { i + 1 });
         }
         if let Some(j) = ok_end {
-            // A word made of two ("ok kanon" written as one token is rare but happens).
+            // A word made of two ("ok miku" written as one token is rare but happens).
             if let Some(w) = norm.get(j) {
                 let parts: Vec<&str> = w.split(' ').collect();
-                if parts.len() == 1 && is_kanon(parts[0]) {
+                if parts.len() == 1 && is_miku(parts[0]) {
                     return Some(words[j + 1..].join(" ").trim_start_matches([',', '.', '!', ' ']).trim().to_string());
                 }
                 if let Some(next) = norm.get(j + 1) {
-                    if is_kanon_pair(w, next) {
+                    if is_miku_pair(w, next) {
                         return Some(words[j + 2..].join(" ").trim_start_matches([',', '.', '!', ' ']).trim().to_string());
                     }
                 }
             }
         }
-        // "okkanon" in one piece.
+        // "okmiku" in one piece.
         if let Some(rest) = norm[i].strip_prefix("okay").or_else(|| norm[i].strip_prefix("ok")) {
-            if is_kanon(rest.trim()) {
+            if is_miku(rest.trim()) {
                 return Some(words[i + 1..].join(" ").trim().to_string());
             }
         }
@@ -169,7 +169,7 @@ impl Vad {
         done
     }
 
-    /// Forgets what is being heard (Kanon speaks, or dictation starts).
+    /// Forgets what is being heard (Miku speaks, or dictation starts).
     pub fn reset(&mut self) {
         self.in_speech = false;
         self.speech_frames = 0;
@@ -195,13 +195,14 @@ mod tests {
 
     #[test]
     fn the_wake_phrase_however_parakeet_writes_it() {
-        assert_eq!(after_wake("OK Kanon, play some music.").as_deref(), Some("play some music."));
-        assert_eq!(after_wake("Okay, kanon! Quelle heure est-il ?").as_deref(), Some("Quelle heure est-il ?"));
-        assert_eq!(after_wake("O.K. Cuckoo what's the weather").as_deref(), Some("what's the weather"));
-        assert_eq!(after_wake("ok cou cou ajoute Stripe").as_deref(), Some("ajoute Stripe"));
-        assert_eq!(after_wake("OK Kanon.").as_deref(), Some(""));
-        assert_eq!(after_wake("Hey kanon, ça va ?").as_deref(), Some("ça va ?"));
-        assert_eq!(after_wake("on a dit kanon à Paul"), None);
+        assert_eq!(after_wake("OK Miku, play some music.").as_deref(), Some("play some music."));
+        assert_eq!(after_wake("Okay, miku! Quelle heure est-il ?").as_deref(), Some("Quelle heure est-il ?"));
+        assert_eq!(after_wake("O.K. Micu what's the weather").as_deref(), Some("what's the weather"));
+        assert_eq!(after_wake("ok mi ku ajoute Stripe").as_deref(), Some("ajoute Stripe"));
+        assert_eq!(after_wake("OK Miku.").as_deref(), Some(""));
+        assert_eq!(after_wake("Hey miku, ça va ?").as_deref(), Some("ça va ?"));
+        assert_eq!(after_wake("okmiku joue de la musique").as_deref(), Some("joue de la musique"));
+        assert_eq!(after_wake("on a dit miku à Paul"), None);
         assert_eq!(after_wake("ok let's go"), None);
         assert_eq!(normalize("Ça VA, Élodie ?"), "ca va elodie");
     }

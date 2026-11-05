@@ -1,5 +1,5 @@
-// The chat's mail actions: the plan the AI writes (a ```kanon-mail JSON block in its
-// answer), what Kanon tells the AI, and the matching of PDF pages to recipients. Port of
+// The chat's mail actions: the plan the AI writes (a ```miku-mail JSON block in its
+// answer), what Miku tells the AI, and the matching of PDF pages to recipients. Port of
 // MailPlan.swift; pure, tested on any machine. Nothing in a plan happens until the user
 // clicks Run on its card (mod.rs).
 
@@ -61,7 +61,7 @@ pub struct Plan {
     pub steps: Vec<Step>,
 }
 
-pub const FENCE: &str = "```kanon-mail";
+pub const FENCE: &str = "```miku-mail";
 
 /// The answer without its plan block, the plan, and why the block could not be read.
 pub fn extract(text: &str) -> (String, Option<Plan>, Option<String>) {
@@ -260,8 +260,8 @@ pub fn valid_address(s: &str) -> bool {
 /// Added to the chat's system prompt while the chat's Mail switch is on (same text as the Mac's).
 pub const INSTRUCTIONS: &str = "
 
-The user turned on Mail: you can act on their Outlook through Kanon. Their latest messages are listed under their request, each with a number [n]; some come with their text and attachments.
-When they ask you to DO something with their mail, answer in one or two short sentences, then give ONE plan in a fenced code block tagged kanon-mail, holding JSON:
+The user turned on Mail: you can act on their Outlook through Miku. Their latest messages are listed under their request, each with a number [n]; some come with their text and attachments.
+When they ask you to DO something with their mail, answer in one or two short sentences, then give ONE plan in a fenced code block tagged miku-mail, holding JSON:
 {\"summary\": \"what the plan does, in the user's language\", \"actions\": [ ... ]}
 Actions:
 - {\"type\": \"flag\" | \"junk\" | \"read\" | \"move\", \"messages\": [n, ...], \"mailbox\": \"only for move\"}
@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn plans_are_read_from_the_answer() {
-        let answer = "Je prépare les envois.\n\n```kanon-mail\n{\"summary\": \"3 mails\", \"actions\": [\n\
+        let answer = "Je prépare les envois.\n\n```miku-mail\n{\"summary\": \"3 mails\", \"actions\": [\n\
             {\"type\": \"junk\", \"messages\": [2, 3]},\n\
             {\"type\": \"move\", \"messages\": 4, \"mailbox\": \"Compta\"},\n\
             {\"type\": \"reply\", \"message\": 1, \"body\": \"Merci !\"},\n\
@@ -348,7 +348,7 @@ mod tests {
             {\"type\": \"save_attachments\", \"message\": 1, \"folder\": \"C:\\\\Plans\"}\n]}\n```\nClique sur Lancer.";
         let (prose, plan, error) = extract(answer);
         assert_eq!(error, None);
-        assert!(prose.starts_with("Je prépare") && prose.ends_with("Clique sur Lancer.") && !prose.contains("kanon-mail"));
+        assert!(prose.starts_with("Je prépare") && prose.ends_with("Clique sur Lancer.") && !prose.contains("miku-mail"));
         let plan = plan.unwrap();
         assert_eq!(plan.summary, "3 mails");
         assert_eq!(plan.steps[0], Step::Sort(Action::Junk, vec![2, 3]));
@@ -362,9 +362,9 @@ mod tests {
         assert!(m.match_by_key && m.split_pages);
         assert_eq!(plan.steps[5], Step::SaveAttachments(1, "C:\\Plans".into()));
         // Still streaming, broken, and an action that does not exist.
-        assert_eq!(extract("Ok\n```kanon-mail\n{\"actions\": ["), ("Ok".into(), None, None));
-        assert!(extract("```kanon-mail\n{\"actions\": [{\"type\": \"send\"}]}\n```").2.unwrap().contains("needs \"to\""));
-        assert!(extract("```kanon-mail\n{\"actions\": [{\"type\": \"delete\", \"messages\": [1]}]}\n```").2.unwrap().contains("unknown type"));
+        assert_eq!(extract("Ok\n```miku-mail\n{\"actions\": ["), ("Ok".into(), None, None));
+        assert!(extract("```miku-mail\n{\"actions\": [{\"type\": \"send\"}]}\n```").2.unwrap().contains("needs \"to\""));
+        assert!(extract("```miku-mail\n{\"actions\": [{\"type\": \"delete\", \"messages\": [1]}]}\n```").2.unwrap().contains("unknown type"));
     }
 
     #[test]
@@ -393,7 +393,7 @@ mod tests {
         let s = snapshot(&lines, &[("Pro".into(), "louis@pro.fr".into())]);
         assert!(s.contains("Accounts: Pro <louis@pro.fr>") && s.contains("[1] 2026-10-30 09:00 · unread"));
         assert!(s.contains("attachments: plans.pdf") && s.contains("text: Voici les plans") && s.ends_with("</mail>"));
-        assert!(INSTRUCTIONS.contains("kanon-mail") && INSTRUCTIONS.contains("Never invent an address"));
+        assert!(INSTRUCTIONS.contains("miku-mail") && INSTRUCTIONS.contains("Never invent an address"));
         let hits = mentioned("le mail de Martin avec les plans", &["Anne <a@x.fr>".into(), "Martin <m@archi.fr>".into(), "Paul".into()],
             &["Plans".into(), "Plans franchisés".into(), "Hello".into()], 3);
         assert_eq!(hits, vec![1, 0]);

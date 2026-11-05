@@ -314,7 +314,7 @@ export function buildSpotifyCard(): SpotifyCardHost {
   idleAction.addEventListener("click", () => void Bridge.spotifyOpen());
   const idleSub = h("span");
   const idleEl = h("div", { class: "int-card" },
-    h("div", { class: "int-head" }, dot(green, 7), h("b", { text: "Spotify" }), idleSub),
+    h("div", { class: "int-head" }, dot(green, 7), h("b", { text: t("Music") }), idleSub),
     h("div", { class: "int-status" }, idleDot, idleText),
     h("div", { class: "int-actions" }, idleAction),
   );

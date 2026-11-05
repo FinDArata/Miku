@@ -2,6 +2,8 @@ import { defineConfig, type Plugin } from "vite";
 import { existsSync, mkdirSync, readdirSync, copyFileSync, createReadStream } from "node:fs";
 import { resolve, join, extname } from "node:path";
 
+const KUROMOJI_DIR = resolve(__dirname, "node_modules/@sglkc/kuromoji/dict");
+
 // ───────────────────────────────────────────────────────────────────────────────
 // THE one and only place the shared sound folder is declared.
 // Kanon's 29 WAVs are GENERATED (scripts/gen-sounds.mjs --style=chimes) into
@@ -13,6 +15,35 @@ export const SOUNDS_DIR = resolve(__dirname, "sounds");
  * Serves SOUNDS_DIR at /sounds/*.wav in dev, and copies it into dist/sounds on build.
  * Keeps the WAVs out of windows/ while still shipping them inside the installer.
  */
+function kuromojiDictionary(): Plugin {
+  const prefix = "/dict/";
+  return {
+    name: "miku-kuromoji-dictionary",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (!req.url?.startsWith(prefix)) return next();
+        const name = decodeURIComponent(req.url.slice(prefix.length).split("?")[0]);
+        if (name.includes("/") || name.includes("\\") || !name.endsWith(".dat.gz")) return next();
+        const file = join(KUROMOJI_DIR, name);
+        if (!existsSync(file)) return next();
+        res.setHeader("Content-Type", "application/gzip");
+        createReadStream(file).pipe(res);
+      });
+    },
+    closeBundle() {
+      const out = resolve(__dirname, "dist/dict");
+      if (!existsSync(KUROMOJI_DIR)) {
+        this.warn(`kuromoji dictionary not found at ${KUROMOJI_DIR}`);
+        return;
+      }
+      mkdirSync(out, { recursive: true });
+      for (const f of readdirSync(KUROMOJI_DIR)) {
+        if (f.endsWith(".dat.gz")) copyFileSync(join(KUROMOJI_DIR, f), join(out, f));
+      }
+    },
+  };
+}
+
 function sharedSounds(): Plugin {
   const prefix = "/sounds/";
   return {
@@ -43,7 +74,7 @@ function sharedSounds(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [sharedSounds()],
+  plugins: [sharedSounds(), kuromojiDictionary()],
   clearScreen: false,
   server: {
     port: 1420,

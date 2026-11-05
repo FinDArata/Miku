@@ -9,12 +9,15 @@
 
 import type { BotEmoteName, BotStateName } from "../core/layout";
 import type { Outfit } from "./wardrobe";
+import type { MikuVariantId } from "./variants";
 
 /** What the island tells the desktop window, whenever it changes. */
 export interface DesktopSnapshot {
   state: BotStateName;
-  /** He is always the main Mochi, so always dressed (try-ons included). */
+  /** Always the main Miku, so always dressed (try-ons included). */
   outfit: Outfit;
+  /** Which Miku: the wardrobe's choice, or the season's. */
+  variant: MikuVariantId;
   soundEnabled: boolean;
   soundVolume: number;
   /** Tray → Pause: he dozes off and stays asleep. */
@@ -162,6 +165,93 @@ export function windowDragTopLeft(origin: Point, screen: Point, screenAtPress: P
     y: origin.y + (screen.y - screenAtPress.y) * dpr,
   };
 }
+
+// ── A life of his own (time of day, idle antics, the battery) ────────────────
+
+/** What the time of day makes him feel, if anything. */
+export type TimeMood = "happy" | "sleeping" | "yawn" | null;
+
+/**
+ * The hour's mood. Mornings he greets you, late nights he is sleepy, and right
+ * after lunch he yawns once in a while; the afternoon and evening are ordinary.
+ *
+ * Pure, and deliberately quiet: the caller decides how often to ask, and a
+ * mood is only shown once per occasion (Mochi's own greeting), or at random.
+ */
+export function timeMood(hour: number): TimeMood {
+  if (!Number.isFinite(hour)) return null;
+  const h = ((Math.floor(hour) % 24) + 24) % 24;
+  // 5–11: morning. 12–13: the after-lunch dip. 22–4: night.
+  if (h >= 5 && h < 12) return "happy";
+  if (h >= 22 || h < 5) return "sleeping";
+  if (h === 12 || h === 13) return "yawn";
+  return null;
+}
+
+/** The emotes he does when nothing is happening, and nothing needs him. */
+export const IDLE_ANTICS = ["lookDrift", "wink", "proud", "yawn"] as const;
+export type IdleAntic = (typeof IDLE_ANTICS)[number];
+
+/**
+ * One small thing to do while he sits there. `rng` is injected (0…1) so the
+ * choice is testable; a weighted pick, not a uniform one — a glance around is
+ * the ordinary case, a yawn the rare one.
+ */
+export function idleAntic(rng: () => number): IdleAntic {
+  const r = rng();
+  if (r < 0.45) return "lookDrift";
+  if (r < 0.7) return "wink";
+  if (r < 0.9) return "proud";
+  return "yawn";
+}
+
+/** How long he goes without an antic before he starts doing them. */
+export const IDLE_ANTIC_AFTER_MS = 90_000;
+/** The gap between two antics, at the shortest and the longest. */
+export const IDLE_ANTIC_EVERY_MS: readonly [number, number] = [20_000, 45_000];
+
+/** The next antic's delay, from an injected 20…45 s. */
+export function nextAnticDelay(rng: () => number): number {
+  const [lo, hi] = IDLE_ANTIC_EVERY_MS;
+  return Math.round(lo + (hi - lo) * Math.min(1, Math.max(0, rng())));
+}
+
+/** Whether he is free to be silly: on screen, awake, not dancing, not paused. */
+export function freeForAntics(o: {
+  visible: boolean;
+  asleep: boolean;
+  dancing: boolean;
+  paused: boolean;
+  dragging: boolean;
+}): boolean {
+  return o.visible && !o.asleep && !o.dancing && !o.paused && !o.dragging;
+}
+
+/** A battery reading, as the island's System pill reports it. */
+export interface BatteryReading {
+  pct: number;
+  charging: boolean;
+}
+
+/** What a new battery reading makes him do, if anything. */
+export type BatteryReaction = "surprised" | "love" | null;
+
+/**
+ * The reaction to the battery having changed. The rule is about edges, not
+ * levels: the moment it drops to 20% he is startled, and the moment the
+ * charger goes in he is delighted — once each, not on every reading.
+ */
+export function batteryReaction(previous: BatteryReading | null, next: BatteryReading | null): BatteryReaction {
+  if (!next || !Number.isFinite(next.pct)) return null;
+  const was = previous && Number.isFinite(previous.pct) ? previous : null;
+  // Plugged in: once, the first time it is seen charging.
+  if (next.charging && !(was?.charging ?? false)) return "love";
+  // Dropped to the low mark: once, at the crossing.
+  const low = 20;
+  if (next.pct <= low && (was == null || was.pct > low)) return "surprised";
+  return null;
+}
+
 
 // ── Life cycle (DesktopMochiController) ──────────────────────────────────────
 

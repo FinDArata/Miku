@@ -11,8 +11,8 @@
   --hub-body: #e1e3e6;
   --hub-secondary: #8e939c;
   --hub-muted: #6b7079;
-  --hub-accent: #fb923c;
-  --hub-on-accent: #170c04;
+  --hub-accent: #2ee6c8;
+  --hub-on-accent: #04231f;
   --hub-green: #34d399;
   --hub-red: #ff453a;
 }
@@ -71,7 +71,7 @@ body.hub-window {
 }
 
 .hub-search:focus-within {
-  border-color: rgba(110, 86, 207, 0.6);
+  border-color: rgba(46, 230, 200, 0.55);
 }
 
 .hub-search svg.hub-search-icon {
@@ -215,10 +215,10 @@ body.hub-window {
     box-shadow: 0 0 0 0 transparent;
   }
   30% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #6e56cf), 0 0 16px rgba(110, 86, 207, 0.6);
+    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
   }
   75% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #6e56cf), 0 0 16px rgba(110, 86, 207, 0.6);
+    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
@@ -490,7 +490,7 @@ button.hub-btn.primary {
 }
 
 button.hub-btn.primary:hover:not(:disabled) {
-  background: #fdab63;
+  background: #63f0d9;
 }
 
 button.hub-btn.danger {
