@@ -1506,12 +1506,12 @@ pub fn windows_time_to_unix_ms(universal: i64) -> Option<f64> {
     (universal > 0).then(|| (universal - UNIX_EPOCH_TICKS) as f64 / 10_000.0)
 }
 
-/// The id with the owning program's executable when it can be found, else the id
-/// itself. Kept pure-ish and separate so the fallback is obvious: an id nobody
-/// claims still reaches the page, and the page reads an unknown one as a browser.
-fn desktop_exe_for(app_user_model_id: &str) -> String {
-    crate::platform::exe_for_app_user_model_id(app_user_model_id)
-        .filter(|exe| !exe.trim().is_empty())
+/// The readable name of the program that owns this media session, when Windows
+/// knows one, else the raw id. An id nobody registered still reaches the page,
+/// and the page reads an unknown program as a browser.
+fn desktop_program_for(app_user_model_id: &str) -> String {
+    crate::platform::program_for_app_user_model_id(app_user_model_id)
+        .filter(|name| !name.trim().is_empty())
         .unwrap_or_else(|| app_user_model_id.to_string())
 }
 
@@ -1817,7 +1817,7 @@ mod win {
             None => (0.0, 0.0, None),
         };
         let source = session.SourceAppUserModelId().ok().map(|id| id.to_string_lossy().to_string());
-        let resolved = source.as_deref().map(desktop_exe_for);
+        let resolved = source.as_deref().map(desktop_program_for);
         let track = windows_track(
             &props.Title()?.to_string_lossy(),
             &props.Artist()?.to_string_lossy(),
@@ -1904,10 +1904,14 @@ mod win {
         };
         emit_state(app, &state);
         crate::log::line(format!(
-            "spotify: emit running={} playing={} track={:?}",
+            "spotify: emit running={} playing={} track={:?} from={:?}",
             state.running,
             state.playing,
-            state.track.as_ref().map(|t| t.title.clone())
+            state.track.as_ref().map(|t| t.title.clone()),
+            // Which program the report came from, as the page reads it: this is
+            // what tells a song from a video, and the one line to look at when
+            // a card appears for something that is not music.
+            state.track.as_ref().and_then(|t| t.source.clone())
         ));
         if let (Some(props), Some(track)) = (props, state.track.as_ref()) {
             artwork(app, track, &props);

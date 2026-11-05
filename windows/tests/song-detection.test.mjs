@@ -179,13 +179,24 @@ test("a YouTube Short is not a song, and a video's own words still win", () => {
 });
 
 test("an opaque source id is read as a browser, not as a player", () => {
-  // Before the id is resolved to an executable it still arrives sometimes: the
-  // publisher exited between the read and the lookup. It must not read as a song.
+  // Before the id is resolved to a name it still arrives sometimes: the lookup
+  // found nothing. It must not read as a song.
   const unresolved = track({ source: "308046B0AF4A39CB", artist: "Quick Fact Room", album: "", duration: 0, title: "That's an Insane Amount of Chili!" });
   assert.equal(songVerdict(unresolved), "browser-video");
   assert.equal(looksLikeSong(unresolved), false);
   // A player we know is still a player, whatever its id looks like.
   assert.equal(songVerdict(track({ source: "Spotify.exe" })), "music-source");
+});
+
+test("the name Windows registers for the id is what the rules read", () => {
+  // Rust resolves the id to this registry DisplayName: "Mozilla Firefox".
+  const video = track({ source: "Mozilla Firefox", artist: "Quick Fact Room", album: "", duration: 0, title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(video), "browser-video");
+  assert.equal(looksLikeSong(video), false);
+  // And the same program playing YouTube Music has the record as its album.
+  const music = { ...video, title: "Voyaging Star's Farewell", artist: "Wuthering Waves", album: "Voyaging Star's Farewell", duration: 225 };
+  assert.equal(songVerdict(music), "music-evidence");
+  assert.equal(looksLikeSong(music), true);
 });
 
 // ── A feed app's own session ─────────────────────────────────────────────────
