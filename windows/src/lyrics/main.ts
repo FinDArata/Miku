@@ -18,7 +18,7 @@ import { Spotify, isAd, spotifyPosition, type SpotifyState } from "../core/spoti
 import type { Settings } from "../core/state";
 import { t } from "../i18n/i18n";
 import { cachedSong, fetchSong, knownMissing } from "./fetch";
-import { lineIndexAt, type Song } from "./lrc";
+import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "./lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, pinyinReady, romanizeMixed, scriptOf, usePinyin } from "./romanize";
 import { looksLikeSong } from "./song";
 import { DEFAULT_PREFS, HIDE_AFTER_PAUSE_MS, autoAction, prefsFrom } from "./state";
@@ -26,8 +26,6 @@ import { buildContextMenu, type LookValues } from "./menu";
 
 /** How often the line is re-read inside a song, in ms: a line lasts seconds. */
 const TICK_MS = 200;
-/** Lines shown around the current one, above and below. */
-const NEIGHBOURS = 1;
 
 const rowsEl = document.getElementById("rows")!;
 const songEl = document.getElementById("song")!;
@@ -191,13 +189,13 @@ function rowsFor(index: number): HTMLElement[] {
     return song.plain.map((line, i) => row(i === 0 ? "current" : "next", line));
   }
   const out: HTMLElement[] = [];
-  for (let k = index - NEIGHBOURS; k < index; k++) {
-    out.push(k >= 0 ? row("past", song.timed[k].text) : blank("past"));
-  }
+  // The lines around the sung one skip the instrumental gaps LRCLIB stamps, so
+  // a verse's first line is not shown with an empty line above it.
+  const before = previousSungLine(song.timed, index);
+  const after = nextSungLine(song.timed, index);
+  out.push(before >= 0 ? row("past", song.timed[before].text) : blank("past"));
   out.push(row("current", song.timed[Math.max(0, index)].text));
-  for (let k = index + 1; k <= index + NEIGHBOURS; k++) {
-    out.push(k < song.timed.length ? row("next", song.timed[k].text) : blank("next"));
-  }
+  out.push(after >= 0 ? row("next", song.timed[after].text) : blank("next"));
   return out;
 }
 

@@ -17,7 +17,7 @@ import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { SPOTIFY_ID, Spotify, islandDances, spotifyPosition, type SpotifyState } from "../core/spotify";
 import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
-import { lineIndexAt, type Song } from "../lyrics/lrc";
+import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "../lyrics/lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
 import { looksLikeSong } from "../lyrics/song";
 import { HIDE_AFTER_PAUSE_MS } from "../lyrics/state";
@@ -1079,14 +1079,19 @@ export class Island {
     if (!lines.length) return;
     const els = this.buildLyricsPill();
     const index = Math.max(0, lineIndexAt(lines, Math.max(0, spotifyPosition(s, Date.now()))));
+    // The neighbours skip the instrumental gaps LRCLIB stamps: a verse's first
+    // line would otherwise have an empty line above it, and a gap would leave
+    // the whole pill wordless.
+    const before = previousSungLine(lines, index);
+    const after = nextSungLine(lines, index);
     const text = (i: number) => (i >= 0 && i < lines.length ? lines[i].text : "");
     const read = (i: number) => romanizeMixed(text(i), this.lyricsLanguage);
     // The pill wears the song's own title, never the name of whatever took the
     // session over: a feed app's title belongs to the feed, not to these words.
     els.title.textContent = this.lyricsTitle || (s.track?.title ?? "");
-    els.past.textContent = read(index - 1);
+    els.past.textContent = read(before);
     els.current.textContent = read(index);
-    els.next.textContent = read(index + 1);
+    els.next.textContent = read(after);
   }
 
   /** Shows the pill only while it belongs on screen: the island is compact. */

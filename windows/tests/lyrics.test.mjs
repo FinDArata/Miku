@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { parseLrc, readSong, lineIndexAt, cacheKey, mainArtist } = await import("../src/lyrics/lrc.ts");
+const { parseLrc, readSong, lineIndexAt, nextSungLine, previousSungLine, cacheKey, mainArtist } = await import("../src/lyrics/lrc.ts");
 const { romanizeJapanese, romanizeHangul, romanizeMixed, scriptOf, romanize, useJapanese, romanizeJapaneseFull, languageOfLines, japaneseReady } = await import(
   "../src/lyrics/romanize.ts"
 );
@@ -73,6 +73,38 @@ test("the sung line is the last one that has started", () => {
   assert.equal(lineIndexAt(lines, 19.9), 0);
   assert.equal(lineIndexAt(lines, 20), 1);
   assert.equal(lineIndexAt(lines, 999), 2);
+});
+
+test("a stamped gap holds the line before it instead of blanking the card", () => {
+  // LRCLIB's real LRC for "Heart of Lahai-Roi" carries "[00:04.29] " for the
+  // intro. Reading that gap as the current line left the card showing a title
+  // and no words at all, for as long as the break lasted.
+  const lines = parseLrc("[00:00.99]Eclipse\n[00:04.29] \n[00:18.94]Elevate\n[00:49.70] ");
+  assert.equal(lines.length, 4, "the gap is still a line in the file");
+  assert.equal(lines[1].text, "");
+  // Before the first line there is nothing to hold.
+  assert.equal(lineIndexAt(lines, 0.5), -1);
+  // The first line, then the gap: the words stay.
+  assert.equal(lineIndexAt(lines, 1), 0);
+  assert.equal(lineIndexAt(lines, 5), 0);
+  assert.equal(lineIndexAt(lines, 10), 0);
+  // Past the second gap, the line before it holds too.
+  assert.equal(lineIndexAt(lines, 19), 2, "skips the gap stamped at 4.29");
+  assert.equal(lineIndexAt(lines, 50), 2);
+});
+
+test("the lines around the sung one skip the gaps", () => {
+  // The card shows "past" and "next"; both must be real lines.
+  const lines = parseLrc("[00:01.00]one\n[00:05.00] \n[00:10.00]two\n[00:15.00] \n[00:20.00]three");
+  const at = lineIndexAt(lines, 10);
+  assert.equal(lines[at].text, "two");
+  const before = previousSungLine(lines, at);
+  const after = nextSungLine(lines, at);
+  assert.equal(lines[before].text, "one", "skips the 05:00 gap");
+  assert.equal(lines[after].text, "three", "skips the 15:00 gap");
+  // The ends have nothing beyond them.
+  assert.equal(previousSungLine(lines, 0), -1);
+  assert.equal(nextSungLine(lines, lines.length - 1), -1);
 });
 
 test("a guest is cut off an artist, but a duo is not", () => {
