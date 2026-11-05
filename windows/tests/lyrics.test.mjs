@@ -250,6 +250,22 @@ test("nothing loaded hides at once, without a grace period", () => {
   assert.equal(auto({ up: false }), "stay");
 });
 
+test("a video never opens the card, and never closes one the user detached", () => {
+  // A YouTube video or Short: something is loaded, but it is not a song. It
+  // must not take away a card the user asked for by detaching it.
+  const video = { playing: true, hasTrack: true, hasSong: false };
+  assert.equal(auto({ ...video, up: true, waiting: false }), "stay");
+  // Nor does it open one of its own.
+  assert.equal(auto({ ...video, up: false }), "stay");
+  // Paused on a video: still nothing to hide.
+  assert.equal(auto({ ...video, playing: false, up: true }), "stay");
+});
+
+test("a stop is still a stop, even with the card up", () => {
+  // Nothing loaded at all: the player closed, or released the session.
+  assert.equal(auto({ up: true, hasTrack: false, hasSong: false }), "hide");
+});
+
 test("the switch in Settings is the master: off, nothing happens on its own", () => {
   assert.equal(auto({ enabled: false, playing: true, hasSong: true }), "stay");
   assert.equal(auto({ enabled: false, up: true }), "stay");

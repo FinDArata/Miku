@@ -926,6 +926,7 @@ export class Island {
   private lyricsActive(): boolean {
     const s = Spotify.state;
     if (State.mode !== "compact" || !this.lyricsInIsland() || !this.lyricsShown()) return false;
+    if (this.lyricsSong.timed.length > 0) this.fsm.cancelPetitHide();
     if (s.track == null || !looksLikeSong(s.track, State.settings.lyricsVideos)) return false;
     if (!this.lyricsSong.timed.length) return false;
     // A pause keeps the pill for its grace period, exactly like the floating
@@ -1056,6 +1057,10 @@ export class Island {
     const active = this.lyricsActive();
     const was = !this.lyricsPill.hidden;
     this.lyricsPill.hidden = !active;
+    // While the words are up, the compact island does not fold on its own: the
+    // pill lives inside it, and retracting the island would take it away
+    // mid-song. The pointer leaving is not a stop.
+    this.fsm.setHeldOpen(active);
     if (active) {
       this.drawLyricsPill(Spotify.state);
       this.startLyricsTicker();
@@ -1077,6 +1082,9 @@ export class Island {
     this.stopLyricsTicker();
     const was = !this.lyricsPill.hidden;
     this.lyricsPill.hidden = true;
+    // No words any more: the island may fold on its own timer again, starting
+    // from now rather than from whenever the pointer last left it.
+    this.fsm.setHeldOpen(false);
     if (was) this.animateGeometry(true);
   }
 
@@ -1084,6 +1092,8 @@ export class Island {
     if (this.lyricsTicker != null) return;
     this.lyricsTicker = window.setInterval(() => {
       if (!this.lyricsActive()) {
+        // The pause grace ran out, the song ended, or the player stopped:
+        // refreshLyricsPill hides the pill and releases the island's hold.
         this.refreshLyricsPill();
         return;
       }
