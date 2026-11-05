@@ -400,3 +400,58 @@ test("open on hover: an island opened by an alert keeps the normal delay", () =>
   seconds(2);
   assert.equal(fsm.state, "petit");
 });
+
+// ── Held open (the lyrics pill) ───────────────────────────────────────────────
+
+test("a held-open compact island does not fold, however long the pointer is away", () => {
+  fsm.mouseEntered();
+  fsm.setHeldOpen(true);
+  fsm.mouseLeft();
+  seconds(600);
+  assert.equal(fsm.state, "petit");
+});
+
+test("holding open cancels a hide already counted down", () => {
+  fsm.mouseEntered();
+  fsm.mouseLeft();
+  seconds(30);
+  fsm.setHeldOpen(true);
+  seconds(600);
+  assert.equal(fsm.state, "petit");
+});
+
+test("releasing the hold starts a fresh countdown, not a finished one", () => {
+  fsm.mouseEntered();
+  fsm.setHeldOpen(true);
+  fsm.mouseLeft();
+  seconds(600);
+  fsm.setHeldOpen(false);
+  seconds(59);
+  assert.equal(fsm.state, "petit");
+  seconds(1);
+  assert.equal(fsm.state, "hidden");
+});
+
+test("a held-open island still opens on a click, and the hold does not pin it", () => {
+  fsm.mouseEntered();
+  fsm.setHeldOpen(true);
+  fsm.click();
+  assert.equal(fsm.state, "home");
+  fsm.mouseLeft();
+  seconds(15);
+  // The open island keeps its own auto-close; the hold is about the pill.
+  assert.equal(fsm.state, "petit");
+  assert.equal(fsm.heldOpen, true);
+});
+
+test("a pinned island folds to the compact island and stays, hold or not", () => {
+  fsm.mouseEntered();
+  fsm.setHeldOpen(true);
+  fsm.mouseLeft();
+  seconds(600);
+  assert.equal(fsm.state, "petit");
+  fsm.pinned = true;
+  fsm.setHeldOpen(false);
+  seconds(600);
+  assert.equal(fsm.state, "petit");
+});
