@@ -981,12 +981,13 @@ export class Island {
       this.hideLyricsPill();
       return;
     }
-    // A feed app (Instagram, TikTok) takes over the one media session a browser
-    // publishes, so the reports flip between the song and the app's own name.
-    // The scrolling is not a stop: the song is still loaded, and its words stay
-    // on the pill, frozen on the line it reached, until it reports again or the
-    // user really stops. Hiding here would wipe the words and let the island
-    // fold, which is what made the lyrics need a manual pause/play to come back.
+    // Something that is not a song has taken the session: an Instagram feed, a
+    // YouTube video, a Short. A browser publishes one media session for all of
+    // its tabs, so these reports alternate with the song's while it plays on.
+    // That is not a stop: the words stay on the pill, frozen on the line they
+    // reached, until the song reports again or the user really stops. Hiding
+    // here wiped them and let the island fold, which is why the lyrics needed a
+    // manual pause/play to come back.
     if (!looksLikeSong(track, State.settings.lyricsVideos)) {
       this.lyricsFeedHold = true;
       this.refreshLyricsPill();

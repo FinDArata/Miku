@@ -3,13 +3,16 @@
 // Miku follows every player the system reports, not only Spotify: a browser
 // watching YouTube looks exactly like one playing YouTube Music, and both look
 // like a song when only the tags are read. The lyrics card is for songs, so it
-// asks this first: a spoken-word video gets no card and no LRCLIB query.
+// asks this first: a video gets no card and no LRCLIB query.
 //
 // The rules are only hints, and they are meant to be quiet: Spotify and any id
 // of its own are a song; the words a video's title carries ("reaction", "full
 // movie", "podcast") are not; a length no song has — under 45 s, over 15 min —
-// is not. Everything else is a song, because a wrong "yes" only shows a card
-// with no words, while a wrong "no" hides the lyrics of a real song.
+// is not. A program we cannot place is treated as a browser, because on Windows
+// the media session only carries an app user model id, which for a desktop
+// browser is an opaque hash ("308046B0AF4A39CB" is Firefox) with nothing to read
+// in it. A wrong "yes" puts a card over a video someone is watching; a wrong "no"
+// only asks a music upload to name itself.
 
 import type { SpotifyTrack } from "../core/spotify";
 
@@ -35,24 +38,36 @@ const VIDEO_WORDS = [
 /** Sources that identify a music player rather than a general browser. */
 const MUSIC_SOURCES = [
   "spotify", "music", "music.youtube.com", "apple music", "applemusic", "rhythmbox",
-  "vlc", "mpv", "foobar2000", "potplayer",
+  "vlc", "mpv", "foobar2000", "potplayer", "zunemusic", "groove", "deezer", "tidal",
+  "soundcloud", "itunes", "aimp", "winamp",
 ];
-/** Browsers report ordinary YouTube and YouTube Music with the same executable. */
-const BROWSER_SOURCES = ["chrome", "msedge", "edge", "firefox", "brave", "opera", "vivaldi"];
-/** Title evidence used only when a browser is the media source. */
+/**
+ * Browsers, by executable or name. Windows hands over an app user model id that
+ * spotify.rs resolves to the owning executable ("firefox.exe", "chrome.exe"), so
+ * these words are what a recognised browser matches on.
+ */
+const BROWSER_SOURCES = ["chrome", "msedge", "edge", "firefox", "brave", "opera", "vivaldi", "safari"];
+
+/**
+ * Evidence that a browser is playing a music upload rather than a video. The
+ * album is the strongest one: YouTube Music reports the record's name, while an
+ * ordinary YouTube video reports none — checked against live media sessions on
+ * this machine. A title that says so ("official audio", "[Lyrics]") and the
+ * "Artist - Title" shape of a music video count too.
+ */
 const MUSIC_EVIDENCE = [
   "official audio", "official video", "official music video", "lyrics", "lyric video",
-  "audio", "mv", "m/v", "topic", "single", "album", "track",
+  "audio", "mv", "m/v", "topic", "single",
 ];
 
 /**
  * Feed apps that publish a media session of their own. Scrolling one plays a
  * clip for a few seconds at a time, and what the session reports is the app's
- * own name — "Instagram", "TikTok" — with no artist, album or length. That is
- * not a track, and it must never pull up a lyrics card.
+ * own name — "Instagram", "TikTok" — with no length. That is not a track, and it
+ * must never pull up a lyrics card.
  */
 const FEED_APPS = [
-  "instagram", "tiktok", "facebook", "snapchat", "twitter", "x", "threads",
+  "instagram", "tiktok", "facebook", "snapchat", "twitter", "threads",
   "reddit", "discord", "telegram", "whatsapp", "netflix", "twitch",
 ];
 
@@ -78,13 +93,13 @@ export type SongVerdict =
   | "video-title"
   /** Too short or too long to be a song. */
   | "wrong-length"
-  /** Browser evidence says a video is probably a music upload. */
+  /** Browser evidence says this is a music upload. */
   | "music-evidence"
-  /** A browser with no positive music evidence. */
+  /** A browser, or a program we cannot place, with no evidence of music. */
   | "browser-video"
   /** A feed app's own session: Instagram scrolling, never a track. */
   | "feed-app"
-  /** Nothing said otherwise, for an unknown source. */
+  /** Nothing said otherwise: no source at all. */
   | "default";
 
 function isBrowser(source: string): boolean {
@@ -92,28 +107,40 @@ function isBrowser(source: string): boolean {
 }
 
 /**
- * The session's title is only the app's name, with nothing else attached: what
- * Instagram, TikTok and the other feeds publish while a clip plays. A real track
- * called "Threads" is spared, because it comes with an artist, an album or a
- * length, and this asks for all of them to be missing.
+ * A program we cannot place: not one of the music players, not a browser we
+ * know by name. On Windows that is most desktop programs, since the source is an
+ * app user model id. Treated like a browser, so it needs evidence to show words.
+ */
+function isUnknownProgram(source: string): boolean {
+  if (!source) return false;
+  return !MUSIC_SOURCES.some((word) => source.includes(word)) && !isBrowser(source);
+}
+
+/**
+ * The session's title is only the app's own name, with nothing else attached:
+ * what Instagram, TikTok and the other feeds publish while a clip plays. A
+ * length is what spares a real track whose title happens to be "Threads".
  */
 function namesOnlyItsApp(track: Candidate): boolean {
+  const source = (track.source ?? "").toLowerCase();
   const title = (track.title ?? "").trim().toLowerCase();
+  // Only a feed app's own session can be one of these: a song called
+  // "Instagram" in Spotify is a song.
+  if (!FEED_APPS.some((app) => source.includes(app))) return false;
+  if (Number.isFinite(track.duration) && track.duration > 0) return false;
   if (!title) return true;
-  const bare = !(track.artist ?? "").trim()
-    && !(track.album ?? "").trim()
-    && !(Number.isFinite(track.duration) && track.duration > 0);
-  if (!bare) return false;
   // "Instagram" itself, or "Instagram — Reels": the app name, perhaps followed
   // by the name of the screen the clip is on.
   const first = title.split(/\s*[-–—:|·/]\s*/)[0].trim();
   return FEED_APPS.includes(first) || FEED_APPS.includes(title);
 }
 
+/** Whether a browser is playing music rather than a video. */
 function hasMusicEvidence(title: string, album: string | null | undefined, duration: number): boolean {
   if (MUSIC_EVIDENCE.some((word) => title.includes(word))) return true;
-  if (album?.trim()) return true;
-  return /\s-\s/.test(title) && Number.isFinite(duration) && duration <= 12 * 60;
+  // An album: YouTube Music names the record, an ordinary video names none.
+  if ((album ?? "").trim()) return true;
+  return /\s+[-–—]\s+/.test(title) && Number.isFinite(duration) && duration > 0 && duration <= 12 * 60;
 }
 
 /** The first rule that applies, in order. Pure: the same track, the same word. */
@@ -122,14 +149,21 @@ export function songVerdict(track: Candidate | null | undefined): SongVerdict {
   const source = (track.source ?? "").toLowerCase();
   if (source && MUSIC_SOURCES.some((word) => source.includes(word))) return "music-source";
   if (SPOTIFY_ID.test(track.id)) return "spotify-id";
-  // A feed app's own session, before any title word: "Instagram" is not a song
-  // however it is spelled, and this is the one that used to slip through.
+  // A feed app's own session, before any title word: scrolling Instagram is not
+  // a song however it is spelled, and this is the one that used to slip through.
   if (namesOnlyItsApp(track)) return "feed-app";
   const title = (track.title ?? "").toLowerCase();
   if (VIDEO_WORDS.some((word) => title.includes(word))) return "video-title";
   const length = track.duration;
-  if (Number.isFinite(length) && length > 0 && (length < MIN_SONG_SECONDS || length > MAX_SONG_SECONDS)) return "wrong-length";
-  if (isBrowser(source)) return hasMusicEvidence(title, track.album, length) ? "music-evidence" : "browser-video";
+  if (Number.isFinite(length) && length > 0 && (length < MIN_SONG_SECONDS || length > MAX_SONG_SECONDS)) {
+    return "wrong-length";
+  }
+  // A browser — recognised, or one we cannot place — needs evidence of music.
+  // This is what stops a YouTube video reading as a song: with the app user
+  // model id resolved to "firefox.exe", it lands here and is read as a video.
+  if (isBrowser(source) || isUnknownProgram(source)) {
+    return hasMusicEvidence(title, track.album, length) ? "music-evidence" : "browser-video";
+  }
   return "default";
 }
 

@@ -150,6 +150,44 @@ test("no track is not a song", () => {
   assert.equal(songVerdict(null), "video-title");
 });
 
+// ── A page that plays YouTube and YouTube Music both ─────────────────────────
+//
+// Read live from this machine: the session reported the title of an ordinary
+// video, the channel as the artist, and no album and no length. The source was
+// an opaque app user model id, which is why the browser rules never ran and the
+// video read as a song.
+
+/** What Rust sends now: the executable that owns the session, not the raw id. */
+const page = (o = {}) => track({ source: "firefox.exe", artist: "Quick Fact Room", album: "", duration: 0, ...o });
+
+test("a YouTube page with no evidence of music is not a song", () => {
+  const video = page({ title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(video), "browser-video");
+  assert.equal(looksLikeSong(video), false);
+});
+
+test("the same page playing YouTube Music is a song", () => {
+  // YouTube Music names the record as the album; an ordinary video names none.
+  const music = page({ title: "Voyaging Star's Farewell", artist: "Wuthering Waves", album: "Voyaging Star's Farewell", duration: 225 });
+  assert.equal(songVerdict(music), "music-evidence");
+  assert.equal(looksLikeSong(music), true);
+});
+
+test("a YouTube Short is not a song, and a video's own words still win", () => {
+  assert.equal(songVerdict(page({ title: "Blade Got A New Weapon #hsr", duration: 30 })), "wrong-length");
+  assert.equal(songVerdict(page({ title: "SPY×FAMILY Episode 1 Reaction Mashup", duration: 300 })), "video-title");
+});
+
+test("an opaque source id is read as a browser, not as a player", () => {
+  // Before the id is resolved to an executable it still arrives sometimes: the
+  // publisher exited between the read and the lookup. It must not read as a song.
+  const unresolved = track({ source: "308046B0AF4A39CB", artist: "Quick Fact Room", album: "", duration: 0, title: "That's an Insane Amount of Chili!" });
+  assert.equal(songVerdict(unresolved), "browser-video");
+  assert.equal(looksLikeSong(unresolved), false);
+  // A player we know is still a player, whatever its id looks like.
+  assert.equal(songVerdict(track({ source: "Spotify.exe" })), "music-source");
+});
+
 // ── A feed app's own session ─────────────────────────────────────────────────
 
 /** What Instagram publishes while a clip plays: the app's name, nothing else. */
@@ -184,16 +222,18 @@ test("the other feeds are the same, and so is a name followed by its screen", ()
   assert.equal(songVerdict(feed({ title: "  instagram  " })), "feed-app");
 });
 
-test("a real song that happens to share a feed's name is still a song", () => {
-  // An artist, an album or a length says this is a track, not a scrolling feed.
-  assert.equal(looksLikeSong(feed({ title: "Threads", artist: "Now, Now" })), true);
-  assert.equal(looksLikeSong(feed({ title: "Instagram", album: "Album" })), true);
-  assert.equal(looksLikeSong(feed({ title: "Instagram", duration: 210 })), true);
+test("feed metadata never turns a feed session into a song", () => {
+  // An app may populate artist or album with its own collection metadata. The
+  // source is still a feed session, not a music player.
+  assert.equal(looksLikeSong(feed({ title: "Threads", artist: "Now, Now" })), false);
+  assert.equal(looksLikeSong(feed({ title: "Instagram", album: "Album" })), false);
+  // A real positive duration is not a feed signature: browser rules decide it.
+  assert.equal(songVerdict(feed({ title: "Instagram", duration: 210 })), "browser-video");
 });
 
-test("a feed name inside a longer title is not that feed", () => {
-  assert.equal(songVerdict(feed({ title: "Instagram Eyes" })), "default");
-  assert.equal(songVerdict(feed({ title: "Reddit Girl" })), "default");
+test("a feed name inside a longer title is still ordinary browser video", () => {
+  assert.equal(songVerdict(feed({ title: "Instagram Eyes" })), "browser-video");
+  assert.equal(songVerdict(feed({ title: "Reddit Girl" })), "browser-video");
 });
 
 test("the verdicts that pass are exactly the ones a card is shown for", () => {

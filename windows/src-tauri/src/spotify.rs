@@ -1506,6 +1506,15 @@ pub fn windows_time_to_unix_ms(universal: i64) -> Option<f64> {
     (universal > 0).then(|| (universal - UNIX_EPOCH_TICKS) as f64 / 10_000.0)
 }
 
+/// The id with the owning program's executable when it can be found, else the id
+/// itself. Kept pure-ish and separate so the fallback is obvious: an id nobody
+/// claims still reaches the page, and the page reads an unknown one as a browser.
+fn desktop_exe_for(app_user_model_id: &str) -> String {
+    crate::platform::exe_for_app_user_model_id(app_user_model_id)
+        .filter(|exe| !exe.trim().is_empty())
+        .unwrap_or_else(|| app_user_model_id.to_string())
+}
+
 /// What the media session says about the track → the track, or None when
 /// nothing is loaded. Windows gives no Spotify URI, so the id is made from the
 /// tags; an ad comes with a title and nothing else, and gets an ad id so the
@@ -1807,18 +1816,21 @@ mod win {
             }
             None => (0.0, 0.0, None),
         };
+        let source = session.SourceAppUserModelId().ok().map(|id| id.to_string_lossy().to_string());
+        let resolved = source.as_deref().map(desktop_exe_for);
         let track = windows_track(
             &props.Title()?.to_string_lossy(),
             &props.Artist()?.to_string_lossy(),
             &props.AlbumTitle()?.to_string_lossy(),
             duration,
-            // Which program this is ("Spotify.exe", "MSEdge", "chrome.exe"): the
-            // overlay tells a song from a video by it, and the tags say nothing.
-            session
-                .SourceAppUserModelId()
-                .ok()
-                .map(|id| id.to_string_lossy().to_string())
-                .as_deref(),
+            // Which program this is ("Spotify.exe", "MSEDGE.EXE", "firefox.exe"):
+            // the overlay tells a song from a video by it, and the tags say
+            // nothing. The session only carries an app user model id, which for a
+            // desktop browser is an opaque hash ("308046B0AF4A39CB" is Firefox),
+            // so it is resolved to the executable that owns it. When nothing
+            // owns it, the id itself is sent: an unknown source is treated as a
+            // browser, which is the same answer with less to go on.
+            resolved.as_deref(),
         );
         let snapshot = Snapshot {
             playing: info

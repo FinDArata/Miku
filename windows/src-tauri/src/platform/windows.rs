@@ -410,6 +410,75 @@ pub fn process_ancestors(pid: u32) -> Vec<u32> {
     session_window::ancestors(&process_table(), pid)
 }
 
+/// Which program publishes the media session with this app user model id.
+///
+/// The system media controls only hand over the id, and for a plain desktop
+/// browser that id is an opaque hash — Firefox reports "308046B0AF4A39CB" — with
+/// nothing in it to read. This walks the running processes, asks each for its
+/// own id, and returns the one that matches, so a caller can tell a browser from
+/// a music player by its executable. `None` when no process claims the id (the
+/// publisher has just exited, or hides its id).
+pub fn exe_for_app_user_model_id(wanted: &str) -> Option<String> {
+    if wanted.trim().is_empty() {
+        return None;
+    }
+    for (pid, proc) in process_table() {
+        if let Some(id) = app_user_model_id_of(pid) {
+            if id.eq_ignore_ascii_case(wanted) {
+                return Some(proc.exe);
+            }
+        }
+    }
+    None
+}
+
+/// A process's app user model id, if it has one. Browsers and packaged apps do;
+/// ordinary desktop programs usually do not, and answer with an error.
+fn app_user_model_id_of(pid: u32) -> Option<String> {
+    use ::windows::Win32::Storage::Packaging::Appx::GetApplicationUserModelId;
+    use ::windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+        let mut len: u32 = 0;
+        // The first call measures: a buffer sized from the answer is the only
+        // way to be sure the id is not cut short.
+        let _ = GetApplicationUserModelId(handle, &mut len, None);
+        if len == 0 {
+            let _ = CloseHandle(handle);
+            return None;
+        }
+        let mut buf = vec![0u16; len as usize];
+        let status = GetApplicationUserModelId(handle, &mut len, Some(::windows::core::PWSTR(buf.as_mut_ptr())));
+        let _ = CloseHandle(handle);
+        if status.is_err() {
+            return None;
+        }
+        let text = String::from_utf16_lossy(&buf);
+        let text = text.trim_end_matches('\0').trim().to_string();
+        (!text.is_empty()).then_some(text)
+    }
+}
+
+#[cfg(test)]
+mod aumid_lookup {
+    /// A live probe: the Firefox id this machine reports is resolved to the
+    /// executable that owns it, which is what spotify.rs sends to the page. Run
+    /// with `cargo test --lib aumid_lookup -- --nocapture` and a browser open.
+    #[test]
+    fn an_id_from_a_running_program_resolves_to_its_executable() {
+        // Not an assertion: a machine with no browser running has nothing to
+        // find, and that must not fail the suite. The line is the evidence.
+        let firefox = super::exe_for_app_user_model_id("308046B0AF4A39CB");
+        let unknown = super::exe_for_app_user_model_id("this-id-belongs-to-nobody");
+        eprintln!("308046B0AF4A39CB -> {firefox:?}");
+        eprintln!("unknown           -> {unknown:?}");
+        // An id nobody claims is None, never a wrong program.
+        assert_eq!(unknown, None);
+        // An empty id is never a lookup.
+        assert_eq!(super::exe_for_app_user_model_id("  "), None);
+    }
+}
+
 /// Visible top-level windows that are nobody's dialog and have a title:
 /// (handle, process ID, title).
 fn top_windows() -> Vec<(isize, u32, String)> {
