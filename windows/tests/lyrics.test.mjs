@@ -9,7 +9,7 @@ const { parseLrc, readSong, lineIndexAt, nextSungLine, previousSungLine, cacheKe
 const { romanizeJapanese, romanizeHangul, romanizeMixed, scriptOf, romanize, useJapanese, romanizeJapaneseFull, languageOfLines, japaneseReady } = await import(
   "../src/lyrics/romanize.ts"
 );
-const { prefsFrom, DEFAULT_PREFS, autoAction, HIDE_AFTER_PAUSE_MS } = await import("../src/lyrics/state.ts");
+const { prefsFrom, DEFAULT_PREFS, autoAction, HIDE_AFTER_PAUSE_MS, HOLD_MAX_MS, holdStillUp } = await import("../src/lyrics/state.ts");
 
 // ── LRC ───────────────────────────────────────────────────────────────────────
 
@@ -301,4 +301,33 @@ test("a stop is still a stop, even with the card up", () => {
 test("the switch in Settings is the master: off, nothing happens on its own", () => {
   assert.equal(auto({ enabled: false, playing: true, hasSong: true }), "stay");
   assert.equal(auto({ enabled: false, up: true }), "stay");
+});
+
+// ── Holding the words while a video owns the session ─────────────────────────
+//
+// One browser publishes one media session for all its tabs, so switching to a
+// YouTube video while a song plays replaces the song's report with the video's.
+// The pill keeps its words through a glance, but not through a film.
+
+test("a glance at another tab keeps the words", () => {
+  assert.equal(HOLD_MAX_MS, 20_000);
+  const since = 1_000_000;
+  assert.equal(holdStillUp(since, since), true);
+  assert.equal(holdStillUp(since, since + 5_000), true);
+  assert.equal(holdStillUp(since, since + 19_999), true);
+});
+
+test("watching a video takes the words away with the song", () => {
+  const since = 1_000_000;
+  // Past the grace period the lyrics go, even though the video is still playing
+  // and nothing about the session says the song stopped.
+  assert.equal(holdStillUp(since, since + 20_000), false);
+  assert.equal(holdStillUp(since, since + 60_000), false);
+  assert.equal(holdStillUp(since, since + 3_600_000), false);
+});
+
+test("no takeover is no hold, and a clock that jumps back does not pin it", () => {
+  assert.equal(holdStillUp(null, 1_000_000), false);
+  // A suspend or a time change must not leave the pill up for ever.
+  assert.equal(holdStillUp(1_000_000, 900_000), false);
 });

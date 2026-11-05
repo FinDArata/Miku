@@ -67,3 +67,23 @@ export function autoAction(o: {
   if (!o.up || o.waiting) return "stay";
   return "wait";
 }
+
+/**
+ * How long the top pill keeps its words while something other than the song owns
+ * the one media session a browser publishes, in ms. This covers a glance at
+ * another tab; past it the user is watching that video, and the lyrics have no
+ * business still being on screen.
+ */
+export const HOLD_MAX_MS = 20_000;
+
+/**
+ * Whether the top pill still shows the words it holds, given how long another
+ * thing has owned the session. `since` is when that takeover began (null when
+ * the song owns it). Pure, so the rule is tested rather than argued about.
+ */
+export function holdStillUp(since: number | null, now: number): boolean {
+  if (since == null) return false;
+  const elapsed = now - since;
+  // A clock that went backwards (a suspend, a time change) must not pin it up.
+  return elapsed >= 0 && elapsed < HOLD_MAX_MS;
+}

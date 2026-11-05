@@ -20,7 +20,7 @@ import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
 import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "../lyrics/lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
 import { looksLikeSong } from "../lyrics/song";
-import { HIDE_AFTER_PAUSE_MS } from "../lyrics/state";
+import { HIDE_AFTER_PAUSE_MS, holdStillUp } from "../lyrics/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
 import { syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
@@ -105,6 +105,8 @@ export class Island {
   /** A feed app (Instagram, TikTok) has taken the session the song was on: the
    *  words stay up, frozen, until the song reports again. */
   private lyricsFeedHold = false;
+  /** When that takeover started: the hold lasts HOLD_MAX_MS at most. */
+  private lyricsFeedSince: number | null = null;
   /** A song whose words could not be had: the key and when to ask again. */
   private lyricsRetryKey = "";
   private lyricsRetryAt = 0;
@@ -930,7 +932,9 @@ export class Island {
    *  them: a hidden island is not "compact", so the usual gate cannot be used. */
   wantsLyricsPill(): boolean {
     if (!this.lyricsInIsland() || !this.lyricsShown() || !this.lyricsSong.timed.length) return false;
-    if (this.lyricsFeedHold) return true;
+    if (this.lyricsFeedHold) {
+      return holdStillUp(this.lyricsFeedSince, Date.now());
+    }
     const track = Spotify.state.track;
     if (track == null || !looksLikeSong(track, State.settings.lyricsVideos)) return false;
     return Spotify.state.playing || this.lyricsPausedAt == null;
@@ -940,12 +944,16 @@ export class Island {
     const s = Spotify.state;
     if (State.mode !== "compact" || !this.lyricsInIsland() || !this.lyricsShown()) return false;
     if (!this.lyricsSong.timed.length) return false;
-    // A feed app holds the session the song was on: the words stay up, frozen on
-    // the line they reached, and the island stays with them. The song was never
-    // stopped, so this is not a stop.
+    // A feed app or a video holds the session the song was on: the words stay
+    // up, frozen on the line they reached. That is a grace period for a glance
+    // at another tab, not a freeze: past HOLD_MAX_MS the user is watching
+    // something else, and the pill goes with the song.
     if (this.lyricsFeedHold) {
-      this.lyricsPausedAt = null;
-      return true;
+      if (holdStillUp(this.lyricsFeedSince, Date.now())) {
+        this.lyricsPausedAt = null;
+        return true;
+      }
+      return false;
     }
     if (s.track == null || !looksLikeSong(s.track, State.settings.lyricsVideos)) return false;
     // A pause keeps the pill for its grace period, exactly like the floating
@@ -984,16 +992,20 @@ export class Island {
     // Something that is not a song has taken the session: an Instagram feed, a
     // YouTube video, a Short. A browser publishes one media session for all of
     // its tabs, so these reports alternate with the song's while it plays on.
-    // That is not a stop: the words stay on the pill, frozen on the line they
-    // reached, until the song reports again or the user really stops. Hiding
-    // here wiped them and let the island fold, which is why the lyrics needed a
-    // manual pause/play to come back.
+    // Hiding at once wiped the words and let the island fold, which is what made
+    // the lyrics need a manual pause/play to come back.
+    //
+    // The hold is a grace period, not a freeze: it covers a glance at another
+    // tab while the song keeps playing. Once the other thing has been on screen
+    // for HOLD_MAX_MS, the user has moved on to watching it, and the words go.
     if (!looksLikeSong(track, State.settings.lyricsVideos)) {
       this.lyricsFeedHold = true;
+      this.lyricsFeedSince ??= Date.now();
       this.refreshLyricsPill();
       return;
     }
     this.lyricsFeedHold = false;
+    this.lyricsFeedSince = null;
     const key = `${track.artist}\u0000${track.title}\u0000${Math.round(track.duration)}`;
     if (key === this.lyricsKey) {
       this.drawLyricsPill(s);
@@ -1119,6 +1131,7 @@ export class Island {
     this.lyricsGeneration++;
     this.lyricsSong = { timed: [], plain: [] };
     this.lyricsFeedHold = false;
+    this.lyricsFeedSince = null;
     this.lyricsTitle = "";
     this.lyricsPausedAt = null;
     this.lyricsPill.replaceChildren();
