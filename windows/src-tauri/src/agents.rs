@@ -110,6 +110,7 @@ pub enum Agent {
     OpenCode,
     Amp,
     Hermes,
+    Zcode,
 }
 
 impl Agent {
@@ -123,6 +124,7 @@ impl Agent {
         Agent::OpenCode,
         Agent::Amp,
         Agent::Hermes,
+        Agent::Zcode,
     ];
 
     /// The `--agent` name; the pill is `agent_<id>` (PillCatalog.swift).
@@ -137,6 +139,7 @@ impl Agent {
             Agent::OpenCode => "opencode",
             Agent::Amp => "amp",
             Agent::Hermes => "hermes",
+            Agent::Zcode => "zcode",
         }
     }
 
@@ -160,6 +163,9 @@ impl Agent {
                 let dir = home.join(".hermes").join("plugins").join("miku");
                 vec![dir.join("__init__.py"), dir.join("plugin.yaml")]
             }
+            // The CLI's own config: plugins, MCP servers and the user's own
+            // hooks live in the same file, so it is merged into, never replaced.
+            Agent::Zcode => vec![home.join(".zcode").join("cli").join("config.json")],
         }
     }
 
@@ -264,6 +270,12 @@ impl Agent {
                     .collect();
                 Box::new(move |v| muse_install(v, &commands).map(Some))
             }
+            (Agent::Zcode, false) => Box::new(|v| zcode_uninstall(v).map(Some)),
+            (Agent::Zcode, true) => {
+                let hooks: Vec<(String, Value)> =
+                    ZCODE_EVENTS.iter().map(|event| ((*event).to_string(), zcode_hook(relay, event))).collect();
+                Box::new(move |v| zcode_install(v, &hooks).map(Some))
+            }
             // Plugins are whole files (see `plugin`), never merged into JSON.
             (Agent::OpenCode | Agent::Amp | Agent::Hermes, _) => {
                 Box::new(|_| Err(crate::i18n::t("This agent takes a plugin, not hook entries.")))
@@ -300,6 +312,11 @@ impl Agent {
                 .and_then(Value::as_object)
                 .is_some_and(|h| h.values().filter_map(Value::as_array).flatten().any(copilot_entry_is_ours)),
             Agent::Muse => groups_have_ours(&json(), "muse"),
+            // Nested one level deeper than the others: `hooks.events.<Event>`.
+            Agent::Zcode => json()
+                .pointer("/hooks/events")
+                .and_then(Value::as_object)
+                .is_some_and(|events| events.values().filter_map(Value::as_array).flatten().any(zcode_group_is_ours)),
             Agent::OpenCode | Agent::Amp | Agent::Hermes => false,
         }
     }
@@ -327,6 +344,7 @@ impl Agent {
             Agent::OpenCode => "OpenCode",
             Agent::Amp => "Amp",
             Agent::Hermes => "Hermes Agent",
+            Agent::Zcode => "ZCode",
         }
     }
 
@@ -343,6 +361,7 @@ impl Agent {
             Agent::OpenCode => t("Restart OpenCode to load the plugin."),
             Agent::Amp => t("Restart Amp to load the plugin."),
             Agent::Hermes => t("Turn it on once with `hermes plugins enable miku`, then start a new Hermes session."),
+            Agent::Zcode => t("Start a new ZCode task to pick the hooks up: ZCode reads its hooks when a task starts."),
         }
     }
 }
@@ -776,6 +795,122 @@ fn muse_install(root: &Value, commands: &[(String, String, u64)]) -> Result<Valu
     if fresh {
         root.insert("schema_version".into(), json!(1));
     }
+    Ok(Value::Object(root))
+}
+
+// ── ZCode — ~/.zcode/cli/config.json ──────────────────────────────────────────
+//
+// One level deeper than the other agents: `{"hooks": {"enabled": true,
+// "events": {"<Event>": [{"hooks": [hook]}]}}}`. The event names are Claude
+// Code's, and so is the payload the relay reads, so nothing has to be mapped on
+// the command line. The same file holds the user's plugins, MCP servers and
+// their own hooks (a `Stop` watchdog, typically), so this is a merge that must
+// leave every one of them exactly as it was.
+//
+// `type: "process"` runs the command as argv with no shell in between: the path
+// goes in `command` and the flags in `args`, unquoted, which is what makes a
+// path with a space or an apostrophe work here without the quoting the other
+// agents need. Timeouts are in milliseconds. ZCode ignores a hook that prints
+// anything but JSON, and `onError` is left out: a relay that fails must never
+// deny a tool (that is Antigravity's `ask`, and Claude Code's silence, too).
+//
+// ZCode reads its hooks when a task starts, so a running task keeps the old set.
+
+const ZCODE_EVENTS: &[&str] = &[
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "Stop",
+];
+
+/// The relay as one `process` hook. `event` goes on the command line only as a
+/// fallback: ZCode sends the name in the payload, which the relay prefers.
+fn zcode_hook(relay: &Relay, event: &str) -> Value {
+    json!({
+        "type": "process",
+        "command": relay.exe,
+        "args": ["--agent", "zcode", event],
+        "timeoutMs": 10_000,
+    })
+}
+
+/// A hook entry this app wrote for ZCode, in either of the shapes it has used.
+fn zcode_hook_is_ours(hook: &Value) -> bool {
+    let command = hook.get("command").and_then(Value::as_str).unwrap_or_default();
+    if !mentions_relay(command) {
+        return false;
+    }
+    if command.contains("--agent zcode") {
+        return true;
+    }
+    let args: Vec<&str> =
+        hook.get("args").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+    args.windows(2).any(|w| w[0] == "--agent" && w[1] == "zcode")
+}
+
+/// A matcher group (`{"matcher"?, "hooks": [...]}`) holding one of our hooks.
+fn zcode_group_is_ours(group: &Value) -> bool {
+    group
+        .get("hooks")
+        .and_then(Value::as_array)
+        .is_some_and(|inner| inner.iter().any(zcode_hook_is_ours))
+}
+
+fn zcode_install(root: &Value, hooks: &[(String, Value)]) -> Result<Value, String> {
+    let mut root = root.as_object().cloned().unwrap_or_default();
+    let mut container = object_at(&root, "hooks")?;
+    let mut events = object_at(&container, "events")?;
+    for (event, hook) in hooks {
+        let mut list = list_at(&events, event)?;
+        list.retain(|group| !zcode_group_is_ours(group));
+        list.push(json!({ "hooks": [hook] }));
+        events.insert(event.clone(), Value::Array(list));
+    }
+    container.insert("events".into(), Value::Object(events));
+    // Without this the engine skips every hook, ours included: installing and
+    // leaving it off would write an entry that never runs. The preview shows
+    // the change; uninstalling leaves it on rather than guessing what the user
+    // had before — turning their own hooks off is the worse guess.
+    container.insert("enabled".into(), json!(true));
+    root.insert("hooks".into(), Value::Object(container));
+    Ok(Value::Object(root))
+}
+
+/// Removes our hooks and nothing else: the user's own Stop hook, `enabled`, the
+/// rest of `hooks` and every other key of the file stay as they are. An event
+/// left with no groups goes, and so does `events` when nothing is left in it.
+fn zcode_uninstall(root: &Value) -> Result<Value, String> {
+    let mut root = root.as_object().cloned().unwrap_or_default();
+    if !root.contains_key("hooks") {
+        return Ok(Value::Object(root));
+    }
+    let mut container = object_at(&root, "hooks")?;
+    if !container.contains_key("events") {
+        return Ok(Value::Object(root));
+    }
+    let events = object_at(&container, "events")?;
+    let mut kept = Map::new();
+    for (event, value) in events {
+        match value.as_array() {
+            Some(list) => {
+                let groups: Vec<Value> = list.iter().filter(|g| !zcode_group_is_ours(g)).cloned().collect();
+                if !groups.is_empty() {
+                    kept.insert(event, Value::Array(groups));
+                }
+            }
+            None => {
+                kept.insert(event, value);
+            }
+        }
+    }
+    if kept.is_empty() {
+        container.remove("events");
+    } else {
+        container.insert("events".into(), Value::Object(kept));
+    }
+    root.insert("hooks".into(), Value::Object(container));
     Ok(Value::Object(root))
 }
 
@@ -1318,6 +1453,120 @@ mod tests {
     fn only_codex_copilot_and_muse_take_approvals() {
         let with: Vec<&str> = Agent::ALL.iter().filter(|a| a.approvals()).map(|a| a.id()).collect();
         assert_eq!(with, ["codex", "copilot", "muse"]);
+    }
+
+    /// The shape of a real ~/.zcode/cli/config.json: a Stop watchdog of the
+    /// user's own, plugins and MCP servers. None of it may change.
+    const ZCODE_CONFIG: &str = r#"{
+      "hooks": {
+        "enabled": true,
+        "events": {
+          "Stop": [
+            { "hooks": [ { "type": "process", "command": "node", "args": ["C:/Users/me/.zcode/hooks/stop-watchdog.js"], "timeoutMs": 10000, "statusMessage": "Watchdog" } ] }
+          ]
+        }
+      },
+      "mcp": { "servers": { "codegraph": { "command": "codegraph" } } },
+      "plugins": { "enabledPlugins": { "zcode-guide": true }, "options": {} }
+    }"#;
+
+    #[test]
+    fn zcode_keeps_the_users_watchdog_plugins_and_mcp() {
+        let (home, installed, removed) = round_trip(Agent::Zcode, Some(ZCODE_CONFIG));
+        for event in ZCODE_EVENTS {
+            let groups = installed["hooks"]["events"][event].as_array().unwrap();
+            // One of ours per event, after the user's own (Stop has one: the watchdog).
+            let expect = if *event == "Stop" { 2 } else { 1 };
+            assert_eq!(groups.len(), expect, "{event}");
+            let group = groups.last().unwrap();
+            assert!(group.get("matcher").is_none(), "{event}: no matcher, so every call matches");
+            let hook = &group["hooks"][0];
+            assert_eq!(hook["type"], "process");
+            assert_eq!(hook["command"], "/home/me/.local/share/miku/bin/miku-hook");
+            assert_eq!(hook["args"], json!(["--agent", "zcode", event]));
+            assert_eq!(hook["timeoutMs"], 10_000);
+            // The relay never answers unless a human clicks: no deny on failure.
+            assert!(hook.get("onError").is_none(), "{event}");
+        }
+        // The user's Stop hook is still there, ahead of ours.
+        let stop = installed["hooks"]["events"]["Stop"].as_array().unwrap();
+        assert_eq!(stop.len(), 2);
+        assert_eq!(stop[0]["hooks"][0]["command"], "node");
+        assert_eq!(stop[0]["hooks"][0]["statusMessage"], "Watchdog");
+        assert_eq!(installed["hooks"]["enabled"], true);
+        assert_eq!(installed["mcp"], serde_json::from_str::<Value>(ZCODE_CONFIG).unwrap()["mcp"]);
+        assert_eq!(installed["plugins"], serde_json::from_str::<Value>(ZCODE_CONFIG).unwrap()["plugins"]);
+
+        // Uninstalling puts the file back exactly as it was.
+        assert_eq!(removed.unwrap(), serde_json::from_str::<Value>(ZCODE_CONFIG).unwrap());
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn zcode_install_turns_hooks_on_and_uninstall_leaves_them_on() {
+        let parse = |s: &str| serde_json::from_str::<Value>(s).unwrap();
+        let hooks = |hook: Value| -> Vec<(String, Value)> {
+            ZCODE_EVENTS.iter().map(|e| ((*e).to_string(), hook.clone())).collect()
+        };
+        let ours = zcode_hook(&linux(), "Stop");
+
+        // A fresh file: every event, and hooks enabled so they run at all.
+        let fresh = zcode_install(&json!({}), &hooks(ours.clone())).unwrap();
+        assert_eq!(fresh["hooks"]["enabled"], true);
+        assert_eq!(fresh["hooks"]["events"].as_object().unwrap().len(), ZCODE_EVENTS.len());
+        assert_eq!(zcode_uninstall(&fresh).unwrap(), json!({ "hooks": { "enabled": true } }));
+
+        // Off, with a watchdog in it: on afterwards, the watchdog untouched.
+        let off = parse(r#"{"hooks":{"enabled":false,"events":{"Stop":[{"hooks":[{"type":"process","command":"node","args":["w.js"]}]}]}}}"#);
+        let on = zcode_install(&off, &hooks(ours.clone())).unwrap();
+        assert_eq!(on["hooks"]["enabled"], true);
+        assert_eq!(on["hooks"]["events"]["Stop"][0]["hooks"][0]["command"], "node");
+
+        // Installing twice leaves one entry per event, not two.
+        let twice = zcode_install(&on, &hooks(ours.clone())).unwrap();
+        assert_eq!(twice, on);
+
+        // A relay at a new path replaces the old entry instead of adding to it.
+        let moved = zcode_hook(&windows(WIN), "Stop");
+        let newer = zcode_install(&on, &[("Stop".into(), moved)]).unwrap();
+        let stop = newer["hooks"]["events"]["Stop"].as_array().unwrap();
+        assert_eq!(stop.len(), 2);
+        assert_eq!(stop[1]["hooks"][0]["command"], WIN);
+        // The other events still carry the old command line: still ours.
+        assert!(zcode_uninstall(&newer).unwrap()["hooks"]["events"].get("PreToolUse").is_none());
+    }
+
+    #[test]
+    fn zcode_writes_its_path_as_argv_so_an_apostrophe_needs_no_quoting() {
+        let hook = zcode_hook(&windows(WIN_SPACE), "PreToolUse");
+        assert_eq!(hook["command"], WIN_SPACE, "the path, not a shell line");
+        assert_eq!(hook["args"], json!(["--agent", "zcode", "PreToolUse"]));
+    }
+
+    #[test]
+    fn zcode_hooks_someone_else_wrote_are_kept() {
+        let theirs = json!({
+            "hooks": { "enabled": true, "events": {
+                "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "/bin/guard.sh" }] }],
+                "Stop": [{ "hooks": [{ "type": "process", "command": "node", "args": ["--agent", "other"] }] }],
+            } },
+        });
+        let gone = zcode_uninstall(&theirs).unwrap();
+        assert_eq!(gone, theirs);
+        // And a file with no events at all reads as installed never.
+        let empty = json!({ "hooks": { "enabled": true } });
+        assert_eq!(zcode_uninstall(&empty).unwrap(), empty);
+    }
+
+    #[test]
+    fn zcode_installs_into_its_cli_config_and_no_event_waits_for_an_approval() {
+        let home = scratch("zcode-files");
+        let files = Agent::Zcode.files(&home);
+        assert_eq!(files.len(), 1);
+        assert!(files[0].ends_with(".zcode/cli/config.json"), "{}", files[0].display());
+        assert!(!ZCODE_EVENTS.contains(&"PermissionRequest"), "out of scope: sessions only");
+        assert!(!Agent::Zcode.approvals());
+        let _ = std::fs::remove_dir_all(home);
     }
 
     #[test]

@@ -8208,6 +8208,21 @@
       "tr": "Kullandığınız araçları seçin. Miku yalnızca burada belirttiklerinizi katalog sırasıyla gösterir.",
       "ko": "사용할 도구를 선택하세요. Miku는 여기에서 선언한 도구만 카탈로그 순서로 표시합니다.",
       "ja": "使うツールを選びます。Miku はここで宣言したツールだけをカタログ順に表示します。"
+    },
+    "Start a new ZCode task to pick the hooks up: ZCode reads its hooks when a task starts.": {
+      "zh-Hans": "启动新的 ZCode 任务以启用 hook：ZCode 会在任务开始时读取 hook。",
+      "hi": "हुक सक्रिय करने के लिए नया ZCode कार्य शुरू करें: ZCode कार्य शुरू होने पर हुक पढ़ता है।",
+      "es": "Inicia una nueva tarea de ZCode para activar los hooks: ZCode los lee al comenzar la tarea.",
+      "ar": "ابدأ مهمة ZCode جديدة لتفعيل الخطافات: يقرأ ZCode الخطافات عند بدء المهمة.",
+      "fr": "Démarrez une nouvelle tâche ZCode pour activer les hooks : ZCode les lit au début de la tâche.",
+      "bn": "হুক চালু করতে একটি নতুন ZCode টাস্ক শুরু করুন: টাস্ক শুরু হলে ZCode হুক পড়ে।",
+      "pt-BR": "Inicie uma nova tarefa do ZCode para ativar os hooks: o ZCode os lê quando a tarefa começa.",
+      "ru": "Запустите новую задачу ZCode, чтобы включить хуки: ZCode читает их при начале задачи.",
+      "id": "Mulai tugas ZCode baru untuk mengaktifkan hook: ZCode membacanya saat tugas dimulai.",
+      "de": "Starte eine neue ZCode-Aufgabe, um die Hooks zu laden: ZCode liest sie beim Aufgabenstart.",
+      "tr": "Hookları etkinleştirmek için yeni bir ZCode görevi başlatın: ZCode bunları görev başladığında okur.",
+      "ko": "훅을 적용하려면 새 ZCode 작업을 시작하세요. ZCode는 작업 시작 시 훅을 읽습니다.",
+      "ja": "フックを読み込むには新しい ZCode タスクを開始してください。ZCode はタスク開始時にフックを読み込みます。"
     }
   }
 }

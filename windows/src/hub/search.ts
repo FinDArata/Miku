@@ -122,7 +122,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   // ── Notch → the rest ────────────────────────────────────────────────────────
   { id: "pills.main", page: "pills", title: "Active pills", terms: ["Main tool", "Main", "Color", "Active"] },
   { id: "agents.claude", page: "agents", title: "Claude Code", terms: ["Install hooks…", "Reinstall hooks…", "Uninstall hooks…"] },
-  { id: "agents.others", page: "agents", title: "Agents", terms: ["Codex", "GitHub Copilot", "Muse Code", "Gemini", "Antigravity", "Cursor", "OpenCode", "Amp", "Hermes", "Install…", "Uninstall…"] },
+  { id: "agents.others", page: "agents", title: "Agents", terms: ["Codex", "GitHub Copilot", "Muse Code", "Gemini", "Antigravity", "Cursor", "OpenCode", "Amp", "Hermes", "ZCode", "Install…", "Uninstall…"] },
   { id: "agents.plan", page: "agents", title: "Plan usage", terms: ["Show in notch", "Show in compact island", "Show Codex plan in the notch", "Relay", "Install relay…", "Uninstall relay…"] },
   { id: "chat.subscriptions", page: "chat", title: "Your AI subscriptions", terms: ["Your AI subscriptions", "Claude", "Gemini", "ChatGPT", "Cursor", "Copilot", "Install it"] },
   { id: "chat.anthropic", page: "chat", title: "Claude", terms: ["API key", "Save key", "Remove", "Model", "Refresh", "Anthropic"] },

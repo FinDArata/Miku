@@ -17,6 +17,7 @@ export const KNOWN_AGENTS: Record<string, KnownAgent> = {
   opencode: { name: "OpenCode", color: "#4ADE80" },
   amp: { name: "Amp", color: "#F59E0B" },
   hermes: { name: "Hermes", color: "#C084FC" },
+  zcode: { name: "ZCode", color: "#A3A3A4" },
   "claude-desktop": { name: "Claude Desktop", color: "#D97757" },
 };
 

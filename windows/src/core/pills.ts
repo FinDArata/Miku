@@ -95,6 +95,9 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
     subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
   { id: "agent_hermes", name: "Hermes", color: "#C084FC", category: "agent",
     subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
+  // ZCode: hook entries merged into ~/.zcode/cli/config.json (agents.rs).
+  { id: "agent_zcode", name: "ZCode", color: "#A3A3A4", category: "agent",
+    subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
   // Claude Code sessions run from the Claude desktop app: the relay tags them
   // from CLAUDE_CODE_ENTRYPOINT, so there is nothing to install. The app has
   // official builds for Windows and Linux (.deb).
@@ -199,6 +202,7 @@ export function sessionSubtitle(id: string): string {
     case "agent_cursor": return "Cursor";
     case "agent_codex": return "Codex";
     case "agent_hermes": return "Hermes";
+    case "agent_zcode": return "ZCode";
     case "agent_claude-desktop": return "Claude Desktop";
     default: return N_("Agent");
   }
