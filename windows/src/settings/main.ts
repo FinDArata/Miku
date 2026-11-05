@@ -569,7 +569,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("Active pills") })),
-    h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here.") }),
+    h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here. They follow the catalog order.") }),
     slots,
     anchor("pills.main", h("div", { class: "row" }, h("label", { text: t("Main tool") }), main)),
     groups,
@@ -902,6 +902,9 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
 
   function updateNote() {
     const used = settings.activeIntegrations.length;
+    // A refusal message is replaced by the ordinary line the next time the
+    // count changes, so it never lingers after the user makes room.
+    note.classList.remove("hub-warn");
     note.textContent = t("Pick up to {max} pills to show next to Miku — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
   }
   declaredViews.push(updateNote);
@@ -915,7 +918,13 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
       if (on) {
         settings.activeIntegrations = settings.activeIntegrations.filter((x) => x !== def.id);
       } else {
-        if (settings.activeIntegrations.length >= MAX_ACTIVE) return;
+        if (settings.activeIntegrations.length >= MAX_ACTIVE) {
+          // The switch used to just do nothing here, which reads as a broken
+          // button. Say why, and say what to do about it.
+          note.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_ACTIVE, name: def.name });
+          note.classList.add("hub-warn");
+          return;
+        }
         settings.activeIntegrations = [...settings.activeIntegrations, def.id];
       }
       sw.classList.toggle("on", !on);

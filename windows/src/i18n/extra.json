@@ -8178,6 +8178,36 @@
       "tr": "Adada görünen haplar ve renkleri.",
       "ko": "아일랜드에 표시되는 필과 그 색상이에요.",
       "ja": "アイランドに表示されるピルと、その色。"
+    },
+    "All {max} slots are in use. Turn one off to make room for {name}.": {
+      "zh-Hans": "{max} 个位置都在使用中。关掉一个，为 {name} 腾出位置。",
+      "hi": "सभी {max} स्लॉट भरे हैं। {name} के लिए जगह बनाने के लिए कोई एक बंद करें।",
+      "es": "Los {max} huecos están ocupados. Desactiva uno para hacer sitio a {name}.",
+      "ar": "كل الفتحات الـ {max} مستخدمة. أوقف واحدة لإفساح المجال لـ {name}.",
+      "fr": "Les {max} emplacements sont pris. Désactive-en un pour faire de la place à {name}.",
+      "bn": "{max}টি স্লটই ব্যবহৃত। {name}-এর জন্য জায়গা করতে একটি বন্ধ করুন।",
+      "pt-BR": "Os {max} espaços estão em uso. Desative um para abrir espaço para {name}.",
+      "ru": "Все места ({max}) заняты. Отключите одно, чтобы освободить место для {name}.",
+      "id": "Semua {max} slot terpakai. Matikan satu untuk memberi ruang bagi {name}.",
+      "de": "Alle {max} Plätze sind belegt. Schalte einen aus, um {name} Platz zu machen.",
+      "tr": "{max} yuvanın hepsi dolu. {name} için yer açmak üzere birini kapat.",
+      "ko": "{max}개 자리가 모두 사용 중이에요. 하나를 꺼서 {name} 자리를 만들어 주세요.",
+      "ja": "{max} 枠すべて使用中です。ひとつをオフにして {name} の場所を空けてください。"
+    },
+    "Choose the tools you use. Miku only shows what you declare here. They follow the catalog order.": {
+      "zh-Hans": "选择你使用的工具。Miku 只显示你在此声明的工具；它们按目录顺序排列。",
+      "hi": "अपने उपयोग के टूल चुनें। Miku केवल यहाँ घोषित टूल दिखाता है। वे कैटलॉग क्रम में दिखते हैं।",
+      "es": "Elige las herramientas que usas. Miku solo muestra las que declares aquí y siguen el orden del catálogo.",
+      "ar": "اختر الأدوات التي تستخدمها. يعرض Miku ما تعلنه هنا فقط، وبترتيب الكتالوج.",
+      "fr": "Choisissez les outils utilisés. Miku n'affiche que ceux déclarés ici, dans l'ordre du catalogue.",
+      "bn": "আপনি যে টুল ব্যবহার করেন তা বেছে নিন। Miku এখানে ঘোষিত টুলগুলোই ক্যাটালগের ক্রমে দেখায়।",
+      "pt-BR": "Escolha as ferramentas que você usa. O Miku mostra apenas as declaradas aqui, na ordem do catálogo.",
+      "ru": "Выберите используемые инструменты. Miku показывает только заявленные здесь, в порядке каталога.",
+      "id": "Pilih alat yang kamu gunakan. Miku hanya menampilkan yang kamu deklarasikan di sini, sesuai urutan katalog.",
+      "de": "Wähle die verwendeten Tools. Miku zeigt nur die hier deklarierten in Katalogreihenfolge.",
+      "tr": "Kullandığınız araçları seçin. Miku yalnızca burada belirttiklerinizi katalog sırasıyla gösterir.",
+      "ko": "사용할 도구를 선택하세요. Miku는 여기에서 선언한 도구만 카탈로그 순서로 표시합니다.",
+      "ja": "使うツールを選びます。Miku はここで宣言したツールだけをカタログ順に表示します。"
     }
   }
 }
