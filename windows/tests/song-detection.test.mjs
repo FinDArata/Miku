@@ -150,6 +150,52 @@ test("no track is not a song", () => {
   assert.equal(songVerdict(null), "video-title");
 });
 
+// ── A feed app's own session ─────────────────────────────────────────────────
+
+/** What Instagram publishes while a clip plays: the app's name, nothing else. */
+const feed = (o = {}) => track({
+  id: "spotify:track:9a1b2c3d4e5f6071",
+  title: "Instagram",
+  artist: "",
+  album: "",
+  duration: 0,
+  source: "Instagram.exe",
+  ...o,
+});
+
+test("scrolling Instagram is not a song, whatever the player reports", () => {
+  // This is what put a lyrics pill on screen for a photo feed: the title was the
+  // app's own name, with no artist, album or length to say otherwise.
+  assert.equal(songVerdict(feed()), "feed-app");
+  assert.equal(looksLikeSong(feed()), false);
+  // "Show lyrics for videos too" must not bring it back: a feed is not a concert.
+  assert.equal(looksLikeSong(feed(), true), false);
+});
+
+test("the other feeds are the same, and so is a name followed by its screen", () => {
+  for (const title of ["Instagram", "TikTok", "Facebook", "Twitter", "Snapchat", "Threads", "Reddit"]) {
+    assert.equal(songVerdict(feed({ title })), "feed-app", title);
+    assert.equal(looksLikeSong(feed({ title })), false, title);
+  }
+  for (const title of ["Instagram — Reels", "TikTok | For You", "Facebook: Video"]) {
+    assert.equal(songVerdict(feed({ title })), "feed-app", title);
+  }
+  // Case and stray spacing are not a way out.
+  assert.equal(songVerdict(feed({ title: "  instagram  " })), "feed-app");
+});
+
+test("a real song that happens to share a feed's name is still a song", () => {
+  // An artist, an album or a length says this is a track, not a scrolling feed.
+  assert.equal(looksLikeSong(feed({ title: "Threads", artist: "Now, Now" })), true);
+  assert.equal(looksLikeSong(feed({ title: "Instagram", album: "Album" })), true);
+  assert.equal(looksLikeSong(feed({ title: "Instagram", duration: 210 })), true);
+});
+
+test("a feed name inside a longer title is not that feed", () => {
+  assert.equal(songVerdict(feed({ title: "Instagram Eyes" })), "default");
+  assert.equal(songVerdict(feed({ title: "Reddit Girl" })), "default");
+});
+
 test("the verdicts that pass are exactly the ones a card is shown for", () => {
   const pass = ["music-source", "spotify-id", "music-evidence", "default"];
   const fail = ["video-title", "wrong-length", "browser-video"];
