@@ -451,7 +451,7 @@ test("lookup() answers from the merged tables", () => {
 // upload canvas or the recap that is exactly a translated string, and is not
 // the argument of t() / tl() / tn() / N_(), is English that would stay English.
 
-const CHECKED = ["src/views", "src/settings", "src/island", "src/upload", "src/recap", "src/mochi/wardrobe.ts", "src/main.ts"];
+const CHECKED = ["src/views", "src/settings", "src/island", "src/upload", "src/recap", "src/hub", "src/mochi/wardrobe.ts", "src/main.ts"];
 /** Literals that are a translated word but are values in the code, not text on screen. */
 const NOT_TEXT = new Set([
   "file", // the kind of a chat context: { kind: "file" }
@@ -460,7 +460,21 @@ const NOT_TEXT = new Set([
   "Resend", // the service's name (the Mac's "Resend" is a button: send again)
   "Stop", // Claude Code's hook event (the Mac's "Stop" is a button)
   "running", // the phase of a mail plan (src/views/mailplan.ts)
+  "Space", // a keycap name (src/hub/keys.ts), drawn from the key's own label
+  "Pause", // the same, for the Pause key
+  "failed", // a note's or a save's state, not a sentence
+  "Miku", // the product's name: never translated
+  "Mail", // the sidebar group's heading, a product name for the Outlook feature
+  "Key", // the name of the keyboard key, drawn on a keycap
+  "Left", // a key name ("Left Ctrl"), not the direction word
 ]);
+
+/** Files whose English strings are data, not text drawn as it stands. */
+const NOT_SCREEN = [
+  // The settings search index holds the English words a page draws, so it can be
+  // searched for them; each one reaches the screen through t() at the page.
+  join("src", "hub", "search.ts"),
+];
 
 test("no known user-facing English literal outside t() in the views and settings", () => {
   const translated = new Set(
@@ -473,6 +487,8 @@ test("no known user-facing English literal outside t() in the views and settings
     const full = join(WINDOWS, target);
     const list = statSync(full).isDirectory() ? files(full, ".ts") : [full];
     for (const path of list) {
+      const rel = relative(WINDOWS, path);
+      if (NOT_SCREEN.some((skip) => rel.endsWith(skip))) continue;
       const text = code(path);
       for (const m of text.matchAll(new RegExp(STR, "g"))) {
         let value;
@@ -485,7 +501,7 @@ test("no known user-facing English literal outside t() in the views and settings
         const before = text.slice(Math.max(0, m.index - 400), m.index);
         if (/\b(?:t|tl|N_)\(\s*$/.test(before)) continue;
         if (/\btn\(\s*"(?:[^"\\]|\\.)*"\s*,\s*$/.test(before) || /\btn\(\s*$/.test(before)) continue;
-        offenders.push(`${relative(WINDOWS, path)}: ${JSON.stringify(value)}`);
+        offenders.push(`${rel}: ${JSON.stringify(value)}`);
       }
     }
   }

@@ -6046,21 +6046,6 @@
       "ko": "페어링했던 휴대폰 연결이 끊겼어요. 새 코드가 필요해요.",
       "ja": "ペアリング済みのスマートフォンは切断され、新しいコードが必要です。"
     },
-    "The pills shown in the island, their order and their colours.": {
-      "zh-Hans": "岛中显示的胶囊、它们的顺序和颜色。",
-      "hi": "आइलैंड में दिखने वाली पिल्स, उनका क्रम और उनके रंग।",
-      "es": "Las píldoras que muestra la isla, su orden y sus colores.",
-      "ar": "الكبسولات المعروضة في الجزيرة وترتيبها وألوانها.",
-      "fr": "Les pilules affichées dans l'île, leur ordre et leurs couleurs.",
-      "bn": "আইল্যান্ডে দেখানো পিলগুলো, তাদের ক্রম আর রং।",
-      "pt-BR": "As pílulas mostradas na ilha, sua ordem e suas cores.",
-      "ru": "Пилюли на острове, их порядок и цвета.",
-      "id": "Pil yang ditampilkan di pulau, urutannya, dan warnanya.",
-      "de": "Die in der Insel angezeigten Kapseln, ihre Reihenfolge und Farben.",
-      "tr": "Adada gösterilen araçlar, sıraları ve renkleri.",
-      "ko": "아일랜드에 표시되는 미쿠들과 순서, 색상이에요.",
-      "ja": "アイランドに表示するピル、その順番と色。"
-    },
     "The preview is out of date. Nothing was written — review the new diff.": {
       "zh-Hans": "预览已过期。未写入任何内容 — 请查看新的差异。",
       "hi": "प्रीव्यू पुराना हो गया है। कुछ नहीं लिखा गया — नया डिफ़ देखें।",
@@ -8178,6 +8163,21 @@
       "tr": "⚠ başarısız",
       "ko": "⚠ 실패",
       "ja": "⚠ 失敗"
+    },
+    "The pills shown in the island, and their colours.": {
+      "zh-Hans": "岛内显示的胶囊，以及它们的颜色。",
+      "hi": "आइलैंड में दिखने वाली पिल्स, और उनके रंग।",
+      "es": "Las píldoras que se ven en la isla, y sus colores.",
+      "ar": "الحبوب الظاهرة في الجزيرة وألوانها.",
+      "fr": "Les pilules affichées dans l'île, et leurs couleurs.",
+      "bn": "আইল্যান্ডে দেখানো পিলগুলো এবং তাদের রং।",
+      "pt-BR": "As pílulas mostradas na ilha, e as suas cores.",
+      "ru": "Пилюли, которые видны на острове, и их цвета.",
+      "id": "Pil yang tampil di pulau, dan warnanya.",
+      "de": "Die Pills, die auf der Insel erscheinen, und ihre Farben.",
+      "tr": "Adada görünen haplar ve renkleri.",
+      "ko": "아일랜드에 표시되는 필과 그 색상이에요.",
+      "ja": "アイランドに表示されるピルと、その色。"
     }
   }
 }
