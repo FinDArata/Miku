@@ -16,7 +16,7 @@ import {
 import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { SPOTIFY_ID, Spotify, islandDances, spotifyPosition, type SpotifyState } from "../core/spotify";
-import { cachedSong, fetchSong } from "../lyrics/fetch";
+import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
 import { lineIndexAt, type Song } from "../lyrics/lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
 import { looksLikeSong } from "../lyrics/song";
@@ -58,6 +58,11 @@ const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
 /** How often the island's lyric line is re-read while a song plays, in ms. */
 const TICK_MS = 200;
 
+/** How long after a words-less answer the same track may be asked again, in ms.
+ *  LRCLIB answers 503 in busy minutes, and that answer must not blank the pill
+ *  for the rest of the song. */
+const LYRICS_RETRY_MS = 20_000;
+
 const modeOrder = (m: IslandMode) => (m === "hidden" ? 0 : m === "compact" ? 1 : 2);
 
 export class Island {
@@ -97,6 +102,9 @@ export class Island {
   private lyricsPill!: HTMLElement;
   private lyricsSong: Song = { timed: [], plain: [] };
   private lyricsKey = "";
+  /** A song whose words could not be had: the key and when to ask again. */
+  private lyricsRetryKey = "";
+  private lyricsRetryAt = 0;
   private lyricsLoading = false;
   private lyricsGeneration = 0;
   private lyricsTicker: number | null = null;
@@ -934,12 +942,20 @@ export class Island {
     return State.settings.lyrics?.shown === true;
   }
 
+  /** Lyrics draw in the top pill unless a setting says "floating". A file from
+   *  before `lyrics.placement` existed carries no value there, and no value
+   *  means the island, which is the default. */
   private lyricsInIsland(): boolean {
-    return State.settings.lyrics?.placement === "island" || (!State.settings.lyrics && State.settings.lyricsPlacement !== "floating");
+    return State.settings.lyrics?.placement !== "floating"
+      && State.settings.lyricsPlacement !== "floating";
   }
 
   /** Fetches the words once per track and keeps the pill's three lines current. */
   private async syncLyricsPill(s: SpotifyState) {
+    // State can notify before build() has made the pill (the constructor
+    // subscribes first). There is nothing to draw in yet; setMode and the next
+    // report come back to it.
+    if (!this.lyricsPill) return;
     const track = s.track;
     if (!track || !this.lyricsInIsland() || !this.lyricsShown() || !looksLikeSong(track, State.settings.lyricsVideos)) {
       this.hideLyricsPill();
@@ -950,10 +966,20 @@ export class Island {
       this.drawLyricsPill(s);
       return;
     }
+    // A busy LRCLIB cleared this song's key a moment ago: do not ask again on
+    // every tick, only once the cooldown is over.
+    if (key === this.lyricsRetryKey && Date.now() < this.lyricsRetryAt) return;
     this.lyricsKey = key;
     const mine = ++this.lyricsGeneration;
     const cached = cachedSong(track);
-    if (!cached && this.lyricsLoading) return;
+    if (!cached && this.lyricsLoading) {
+      // Another track's words are on the way, and its answer will be dropped by
+      // the generation check below. Asking for this one waits for that answer,
+      // so the key is cleared and the next report asks again: a second of
+      // skipping through an album must not leave the pill blank for good.
+      this.lyricsKey = "";
+      return;
+    }
     this.lyricsSong = { timed: [], plain: [] };
     this.lyricsPausedAt = null;
     this.refreshLyricsPill();
@@ -970,7 +996,20 @@ export class Island {
     this.lyricsLoading = false;
     if (mine !== this.lyricsGeneration) return;
     this.lyricsSong = words ?? { timed: [], plain: [] };
-    if (!this.lyricsSong.timed.length) return;
+    if (!this.lyricsSong.timed.length) {
+      // No words. A song LRCLIB has none for is settled (the page remembers the
+      // miss); a busy answer is not, and clears the key so a later report asks
+      // again — otherwise one 503 during a song would leave the pill blank
+      // until the next track.
+      if (!knownMissing(track)) {
+        this.lyricsRetryKey = key;
+        this.lyricsRetryAt = Date.now() + LYRICS_RETRY_MS;
+        this.lyricsKey = "";
+      }
+      return;
+    }
+    this.lyricsRetryKey = "";
+    this.lyricsRetryAt = 0;
     // A Japanese song's kanji need the dictionary; until it lands the lines
     // show as written, then the pill redraws itself.
     const lines = this.lyricsSong.timed.map((l) => l.text);
@@ -1028,6 +1067,8 @@ export class Island {
 
   private hideLyricsPill() {
     this.lyricsKey = "";
+    this.lyricsRetryKey = "";
+    this.lyricsRetryAt = 0;
     this.lyricsGeneration++;
     this.lyricsSong = { timed: [], plain: [] };
     this.lyricsPausedAt = null;

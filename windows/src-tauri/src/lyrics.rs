@@ -46,6 +46,8 @@ pub struct LyricsPref {
     /// The user turned the overlay on.
     pub shown: bool,
     /// Where lyrics are drawn by default: in the island or in the floating window.
+    /// A file from before this field existed reads as "island", not as "".
+    #[serde(default = "default_placement", deserialize_with = "placement_field")]
     pub placement: String,
     /// Its top-left corner, in physical screen pixels, where they last put it.
     pub spot: Option<(f64, f64)>,
@@ -53,8 +55,35 @@ pub struct LyricsPref {
 
 impl Default for LyricsPref {
     fn default() -> Self {
-        Self { shown: false, placement: "island".into(), spot: None }
+        // Lyrics are on from the first launch, drawn in the top island: a song
+        // that starts shows its words without anyone opening Settings first.
+        // Settings → General → Floating lyrics is where they are turned off.
+        Self { shown: true, placement: "island".into(), spot: None }
     }
+}
+
+/// `placement` as the island and the overlay read it. A file written by a build
+/// that had no such field (or with a value we do not know) reads as "island",
+/// which is where lyrics are drawn by default.
+fn placement_or_default(value: &str) -> String {
+    match value.trim() {
+        "floating" => "floating".into(),
+        _ => "island".into(),
+    }
+}
+
+fn default_placement() -> String {
+    "island".into()
+}
+
+/// A settings.json's `placement`, normalised: `""` and anything unknown become
+/// "island" rather than a placement neither surface draws in.
+fn placement_field<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let raw = String::deserialize(deserializer).unwrap_or_default();
+    Ok(placement_or_default(&raw))
 }
 
 /// One track's words, as LRCLIB has them. Both may be there; `synced` is
@@ -121,8 +150,10 @@ pub fn setup(app: &AppHandle) {
     }
     match builder.build() {
         Ok(win) => {
-            place(app, &win, pref.spot, &screen);
-            if pref.shown {
+            // Keep the Music event source alive whenever lyrics are enabled,
+            // including the island placement. The top pill consumes those events.
+            crate::settings::declare_music_pill(app);
+            if pref.shown && pref.placement == "floating" {
                 show_window(app, true, pref.spot.as_ref(), &screen);
             }
             // Dragging it (the page's own drag region) is a window move: that

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Lyrics: on from the first launch, in the top pill
+
+- `lyrics.shown` now defaults to **on** (it was off), with `placement` still `island`: a song that starts draws its words in the compact island without anyone opening Settings first. Settings → General → Floating lyrics is where they are turned off.
+- A `settings.json` written before `lyrics.placement` existed read it as `""`, which is neither surface: `lyricsInIsland()` said no and the pill stayed empty. `placement` is now normalised on load — missing, empty or unknown values read as `island`, and only `floating` is the other one.
+- The Music pill is declared at launch when lyrics are on. The island draws lyrics from that pill's events, so without it there was nothing to draw at all, and auto-showing lyrics declared it only once a song had already started.
+- The island no longer draws the pill before `build()` has made it: `State.subscribe` runs in the constructor, ahead of the DOM, and a report arriving then would have touched an undefined element.
+- A track skipped to while another track's words were on the way cleared its own key and was never asked about again, leaving the pill blank for that song. The key is now reset so the next report asks.
+- A words-less answer no longer sticks for the whole song. LRCLIB's `503` in busy minutes is retried after a 20 s cooldown instead of blanking the pill until the next track; a song it genuinely has no words for is left alone (the page already remembers the miss).
+
 ### MiniLyrics: only for songs
 
 - The player's program now reaches the page (`Track.source`: Windows' app user model id, the MPRIS bus suffix on Linux), so a browser playing YouTube can be told from one playing YouTube Music.
