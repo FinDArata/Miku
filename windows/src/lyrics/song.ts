@@ -49,11 +49,17 @@ const MUSIC_SOURCES = [
 const BROWSER_SOURCES = ["chrome", "msedge", "edge", "firefox", "brave", "opera", "vivaldi", "safari"];
 
 /**
- * Evidence that a browser is playing a music upload rather than a video. The
- * album is the strongest one: YouTube Music reports the record's name, while an
- * ordinary YouTube video reports none — checked against live media sessions on
- * this machine. A title that says so ("official audio", "[Lyrics]") and the
- * "Artist - Title" shape of a music video count too.
+ * Evidence that a browser is playing a song rather than a video. Read from live
+ * media sessions on this machine, which is the only reliable guide:
+ *
+ *   YouTube Music: "Heart of Lahai-Roi", artist "Wuthering Waves, baitian, …",
+ *                  album EMPTY, duration 205.98 s
+ *   YouTube video: "That's an Insane Amount of Chili!", artist "Quick Fact
+ *                  Room", album EMPTY, duration 0
+ *
+ * So an album proves nothing — both report none — and a length does: a player
+ * knows how long a track runs, while a live page or a feed reports none. A title
+ * that names itself as music ("official audio", "[Lyrics]") counts too.
  */
 const MUSIC_EVIDENCE = [
   "official audio", "official video", "official music video", "lyrics", "lyric video",
@@ -117,30 +123,27 @@ function isUnknownProgram(source: string): boolean {
 }
 
 /**
- * The session's title is only the app's own name, with nothing else attached:
- * what Instagram, TikTok and the other feeds publish while a clip plays. A
- * length is what spares a real track whose title happens to be "Threads".
+ * Whether this session belongs to a feed app: Instagram, TikTok and the rest.
+ * Scrolling one plays clips a few seconds long, and what the session reports is
+ * the app's own name, its own "artist" and its own collection as the album. None
+ * of that makes it a track, so the source alone decides — a song called
+ * "Instagram" playing in Spotify is still a song, because that is not this.
  */
-function namesOnlyItsApp(track: Candidate): boolean {
+function isFeedSession(track: Candidate): boolean {
   const source = (track.source ?? "").toLowerCase();
-  const title = (track.title ?? "").trim().toLowerCase();
-  // Only a feed app's own session can be one of these: a song called
-  // "Instagram" in Spotify is a song.
-  if (!FEED_APPS.some((app) => source.includes(app))) return false;
-  if (Number.isFinite(track.duration) && track.duration > 0) return false;
-  if (!title) return true;
-  // "Instagram" itself, or "Instagram — Reels": the app name, perhaps followed
-  // by the name of the screen the clip is on.
-  const first = title.split(/\s*[-–—:|·/]\s*/)[0].trim();
-  return FEED_APPS.includes(first) || FEED_APPS.includes(title);
+  return FEED_APPS.some((app) => source.includes(app));
 }
 
-/** Whether a browser is playing music rather than a video. */
-function hasMusicEvidence(title: string, album: string | null | undefined, duration: number): boolean {
+/**
+ * Whether a browser is playing music rather than a video: a plausible track
+ * length (measured above: YouTube Music 205.98 s, a YouTube video 0), or a title
+ * that says so. A page reporting no length is a video as far as this is
+ * concerned, which is the safe way round — it holds the words of a song already
+ * playing instead of replacing them.
+ */
+function hasMusicEvidence(title: string, duration: number): boolean {
   if (MUSIC_EVIDENCE.some((word) => title.includes(word))) return true;
-  // An album: YouTube Music names the record, an ordinary video names none.
-  if ((album ?? "").trim()) return true;
-  return /\s+[-–—]\s+/.test(title) && Number.isFinite(duration) && duration > 0 && duration <= 12 * 60;
+  return Number.isFinite(duration) && duration >= MIN_SONG_SECONDS && duration <= MAX_SONG_SECONDS;
 }
 
 /** The first rule that applies, in order. Pure: the same track, the same word. */
@@ -151,7 +154,7 @@ export function songVerdict(track: Candidate | null | undefined): SongVerdict {
   if (SPOTIFY_ID.test(track.id)) return "spotify-id";
   // A feed app's own session, before any title word: scrolling Instagram is not
   // a song however it is spelled, and this is the one that used to slip through.
-  if (namesOnlyItsApp(track)) return "feed-app";
+  if (isFeedSession(track)) return "feed-app";
   const title = (track.title ?? "").toLowerCase();
   if (VIDEO_WORDS.some((word) => title.includes(word))) return "video-title";
   const length = track.duration;
@@ -162,7 +165,7 @@ export function songVerdict(track: Candidate | null | undefined): SongVerdict {
   // This is what stops a YouTube video reading as a song: with the app user
   // model id resolved to "firefox.exe", it lands here and is read as a video.
   if (isBrowser(source) || isUnknownProgram(source)) {
-    return hasMusicEvidence(title, track.album, length) ? "music-evidence" : "browser-video";
+    return hasMusicEvidence(title, length) ? "music-evidence" : "browser-video";
   }
   return "default";
 }
