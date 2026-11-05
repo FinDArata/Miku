@@ -942,8 +942,30 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
       }) as HTMLInputElement;
       const saveBtn = h("button", { text: t("Save") });
       const dotEl = statusDot(present[field.key] ?? false);
+      // An empty Save used to erase the stored credential with no warning, so
+      // one mis-click wiped the key. An empty field now only offers to remove
+      // it, and that removal is a second click that says what it does.
+      let confirming = false;
+      const unconfirm = () => {
+        if (!confirming) return;
+        confirming = false;
+        saveBtn.textContent = t("Save");
+        saveBtn.classList.remove("danger");
+      };
+      input.addEventListener("input", unconfirm);
       saveBtn.addEventListener("click", async () => {
         const value = input.value.trim();
+        if (!value && present[field.key]) {
+          if (!confirming) {
+            confirming = true;
+            saveBtn.textContent = t("Remove");
+            saveBtn.classList.add("danger");
+            return;
+          }
+          confirming = false;
+          saveBtn.textContent = t("Save");
+          saveBtn.classList.remove("danger");
+        }
         try {
           await Bridge.secretSet(field.key, value);
           present[field.key] = value.length > 0;
