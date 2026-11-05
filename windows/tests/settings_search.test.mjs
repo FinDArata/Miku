@@ -137,3 +137,36 @@ test("every entry is found by its own title", () => {
     );
   }
 });
+
+// Clicking a search hit scrolls to `[data-anchor="<id>"]` and glows it
+// (hub/shell.ts). A hit whose anchor is not in the page source just jumps to the
+// top with no glow, which is what every Notch page used to do.
+test("every search entry has its anchor in the page source", async () => {
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const { join } = await import("node:path");
+
+  const sources = [];
+  for (const root of ["src/settings", "src/hub/pages"]) {
+    const dir = fileURLToPath(new URL(`../${root}/`, import.meta.url));
+    for (const file of readdirSync(dir)) {
+      if (file.endsWith(".ts")) sources.push(readFileSync(join(dir, file), "utf8"));
+    }
+  }
+  sources.push(readFileSync(fileURLToPath(new URL("../src/hub/shell.ts", import.meta.url)), "utf8"));
+  const all = sources.join("\n");
+
+  const missing = SETTINGS_ENTRIES
+    .map((e) => e.id)
+    // A page marks the box either with the helper — anchor("id", el) — or by
+    // setting el.dataset.anchor = "id" directly. The Banned and VIP pages share
+    // one builder and choose between the two ids with a ternary, so those two
+    // appear as a quoted string inside it rather than as a whole assignment.
+    .filter((id) => !(
+      all.includes(`anchor("${id}"`)
+      || all.includes(`.dataset.anchor = "${id}"`)
+      || all.includes(`"${id}" : `)
+      || all.includes(`: "${id}"`)
+    ));
+  assert.deepEqual(missing, [], `search entries with no anchor on their page: ${missing.join(", ")}`);
+});

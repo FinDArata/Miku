@@ -6,7 +6,7 @@ import { t } from "../../i18n/i18n";
 import { Bridge } from "../../core/bridge";
 import type { VoiceOutput } from "../../core/flow";
 import type { HubContext } from "../shell";
-import { button, card, divider, label, row, segmented, toggle } from "../ui";
+import { anchor, button, card, divider, label, row, segmented, toggle } from "../ui";
 import { modelsControl } from "./flowsettings";
 
 const ELEVEN = "elevenlabs-api-key";
@@ -47,12 +47,12 @@ export async function voicePage(page: HTMLElement, ctx: HubContext) {
 
   const ready = status.models.parakeet.state === "ready";
   page.append(label(t("Listening")));
-  const main = card(
+  const main = anchor("voice.wake", card(
     row(t("Listen for « OK Miku »"), t("The microphone stays open; only what follows « OK Miku » goes further."),
       toggle(prefs.voice, (on) => void ctx.setPrefs((p) => (p.voice = on)).then(() => ctx.navigate("voice")))),
     divider(),
     row(t("Parakeet, on your computer"), t("Hears « OK Miku » here, without the internet."), modelsControl(ctx, () => ctx.navigate("voice"))),
-  );
+  ));
   if (prefs.voice && !status.hasClaudeKey) {
     main.append(h("div", { class: "hub-warn", text: t("Miku answers with Claude: add your Claude key in Notch → Chat.") }));
   } else if (prefs.voice && !ready) {
@@ -62,9 +62,9 @@ export async function voicePage(page: HTMLElement, ctx: HubContext) {
 
   page.append(label(t("Answers")));
   const outputs: [VoiceOutput, string][] = [["system", t("System voice")], ["elevenlabs", "ElevenLabs"], ["off", t("Text only")]];
-  const answers = card(
+  const answers = anchor("voice.tts", card(
     row(t("Miku answers out loud"), null, segmented(outputs, prefs.voiceOutput, (v) => void ctx.setPrefs((p) => (p.voiceOutput = v)).then(() => ctx.navigate("voice")))),
-  );
+  ));
   if (prefs.voiceOutput === "elevenlabs") {
     answers.append(
       divider(),

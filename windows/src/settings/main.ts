@@ -20,6 +20,7 @@ import {
 } from "../core/pills";
 import { h, clear } from "../views/dom";
 import { startHub, type PageId } from "../hub/shell";
+import { anchor } from "../hub/ui";
 import { FLOW_PAGE_RENDERERS } from "../hub/pages";
 import { claudeModelControl } from "./claude-models";
 import { agentsSection } from "./agents";
@@ -168,12 +169,12 @@ async function reviewChange(
 
 function claudeSection(status: HookStatus): HTMLElement {
   const body = h("div", { style: "display:flex;flex-direction:column;gap:12px" });
-  const section = h(
+  const section = anchor("agents.claude", h(
     "section",
     {},
     h("h2", {}, statusDot(status.installed), h("span", { text: "Claude Code" })),
     body,
-  );
+  ));
 
   const redraw = () => {
     clear(body);
@@ -260,7 +261,7 @@ const PLAN_SETTINGS_TEXT = {
 
 function planSection(status: HookStatus): HTMLElement {
   const body = h("div", { style: "display:flex;flex-direction:column;gap:12px" });
-  const section = h("section", {}, h("h2", {}, h("span", { text: t("Plan usage") })), body);
+  const section = anchor("agents.plan", h("section", {}, h("h2", {}, h("span", { text: t("Plan usage") })), body));
 
   const redraw = () => {
     clear(body);
@@ -401,7 +402,7 @@ function subscriptionsSection(): HTMLElement {
     }
   };
   void Bridge.subscriptionStatus().then((rows) => draw(rows ?? []));
-  return h(
+  return anchor("chat.subscriptions", h(
     "section",
     {},
     h("h2", { text: t("Your AI subscriptions") }),
@@ -410,7 +411,7 @@ function subscriptionsSection(): HTMLElement {
       text: t("Chat on the plan you already pay for. Miku asks your AI's official terminal tool, signed in with your own account: it never sees your password or your key."),
     }),
     list,
-  );
+  ));
 }
 
 // ── Claude API section ────────────────────────────────────────────────────────
@@ -482,7 +483,7 @@ function apiSection(hasKey: boolean, relay: boolean): HTMLElement {
 
   clearBtn.style.display = hasKey ? "" : "none";
 
-  return h(
+  return anchor("chat.anthropic", h(
     "section",
     {},
     h("h2", {}, dot, h("span", { text: "Claude" })),
@@ -490,7 +491,7 @@ function apiSection(hasKey: boolean, relay: boolean): HTMLElement {
     h("div", { class: "row" }, h("label", { text: t("API key") }), field, saveBtn, clearBtn),
     model.element,
     feedback,
-  );
+  ));
 }
 
 // ── Active pills section ──────────────────────────────────────────────────────
@@ -570,7 +571,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     h("h2", {}, h("span", { text: t("Active pills") })),
     h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here.") }),
     slots,
-    h("div", { class: "row" }, h("label", { text: t("Main tool") }), main),
+    anchor("pills.main", h("div", { class: "row" }, h("label", { text: t("Main tool") }), main)),
     groups,
   );
 }
@@ -673,13 +674,13 @@ function chatProvidersSection(
       h("div", { class: "hint", style: "margin:-4px 0 0 144px", text: t("Key from {site}", { site: def.where }) }),
     );
   }
-  return h(
+  return anchor("chat.others", h(
     "section",
     {},
     h("h2", {}, h("span", { text: CHAT_STRINGS.providersTitle })),
     h("div", { class: "hint", text: CHAT_STRINGS.providersHint }),
     list,
-  );
+  ));
 }
 
 // ── Local models section ──────────────────────────────────────────────────────
@@ -714,13 +715,13 @@ function exposureNotice(url: string, withKey: boolean): HTMLElement | null {
 
 function localSection(customKey: boolean): HTMLElement {
   const body = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
-  const section = h(
+  const section = anchor("chat.local", h(
     "section",
     {},
     h("h2", {}, h("span", { text: CHAT_STRINGS.localTitle })),
     h("div", { class: "hint", text: CHAT_STRINGS.localHint }),
     body,
-  );
+  ));
   const redraw = () => {
     clear(body);
     for (const id of Object.keys(LOCAL) as LocalId[]) body.append(serverBlock(id));
@@ -975,7 +976,7 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
   }
 
   updateNote();
-  return h("section", {}, h("h2", {}, h("span", { text: t("Integrations") })), note, list);
+  return anchor("integrations.all", h("section", {}, h("h2", {}, h("span", { text: t("Integrations") })), note, list));
 }
 
 /** WhatsApp (experimental), under the other integrations: its pill is turned on from its own switch. */
@@ -1083,17 +1084,17 @@ function generalSection(): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("General") })),
-    h("div", { class: "row" },
+    anchor("general.sound", h("div", { class: "row" },
       h("label", { text: t("Sound") }),
       toggle(settings.soundEnabled, (v) => { settings.soundEnabled = v; void save(); }),
       volume,
-    ),
+    )),
     h("div", { class: "row" }, soundsFolder, reloadSounds, customCount),
     h("div", { class: "hint", text: t("Drop a file named like one of Miku's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
-    h("div", { class: "row" },
+    anchor("general.behavior", h("div", { class: "row" },
       h("label", { text: t("Open on hover") }),
       toggle(settings.openOnHover, (v) => { settings.openOnHover = v; void save(); }),
-    ),
+    )),
     h("div", { class: "hint", text: t("Hovering the island opens it; it folds again shortly after the pointer leaves. Click inside to keep it open.") }),
     h("div", { class: "row" },
       h("label", { text: t("Open for every pill’s alerts") }),
@@ -1105,10 +1106,10 @@ function generalSection(): HTMLElement {
       toggle(settings.showClock, (v) => { settings.showClock = v; void save(); }),
     ),
     h("div", { class: "hint", text: t("The date and the time in the middle of the island when it is compact.") }),
-    h("div", { class: "row" },
+    anchor("general.display", h("div", { class: "row" },
       h("label", { text: t("Closed island shows") }),
       closed,
-    ),
+    )),
     h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Miku back. Hidden, move the pointer to the very top of the screen.") }),
     h("div", { class: "row" },
       h("label", { text: t("Auto-close") }),
@@ -1119,10 +1120,10 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Island lives on") }),
       screen,
     ),
-    h("div", { class: "row" },
+    anchor("general.startup", h("div", { class: "row" },
       h("label", { text: t("Launch at startup") }),
       toggle(settings.autostart, (v) => { settings.autostart = v; void save(); }),
-    ),
+    )),
     ...recapRows(),
     ...updateRows(toggle, version),
     ...lyricsRows(toggle),
@@ -1191,10 +1192,10 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
   });
 
   return [
-    h("div", { class: "row" },
+    anchor("general.lyrics", h("div", { class: "row" },
       h("label", { text: t("Floating lyrics") }),
       el,
-    ),
+    )),
     h("div", { class: "row" },
       h("label", { text: t("Placement") }),
       placement,
@@ -1246,7 +1247,7 @@ function languageRow(): HTMLElement {
     void save();
     applyLanguage();
   });
-  return h("div", { class: "row" }, h("label", { text: t("Language") }), select);
+  return anchor("general.language", h("div", { class: "row" }, h("label", { text: t("Language") }), select));
 }
 
 // ── Shortcuts section ─────────────────────────────────────────────────────────
@@ -1419,6 +1420,7 @@ function shortcutsSection(initial: ShortcutsReport | null): HTMLElement {
   }
 
   const islandList = h("div", { class: "shortcut-list" });
+  islandList.dataset.anchor = "shortcuts.island";
   for (const row of ISLAND_SHORTCUTS) {
     islandList.append(h("div", { class: "row shortcut" },
       h("span", { class: "shortcut-name", text: t(row.description) }),
@@ -1449,7 +1451,7 @@ function shortcutsSection(initial: ShortcutsReport | null): HTMLElement {
   };
 
   draw();
-  return h(
+  return anchor("shortcuts.global", h(
     "section",
     {},
     h("h2", {}, h("span", { text: SHORTCUTS_UI.title })),
@@ -1461,7 +1463,7 @@ function shortcutsSection(initial: ShortcutsReport | null): HTMLElement {
     h("div", { class: "row" }, reset),
     h("div", { class: "subhead", text: SHORTCUTS_UI.island }),
     islandList,
-  );
+  ));
 }
 
 /** Settings → General → Weekly recap. The prefs live with the history in Rust. */
@@ -1474,8 +1476,7 @@ function recapRows(): HTMLElement[] {
     about: t("Counts and project names only — never commands, files or prompts. Kept on this computer for 12 weeks."),
   };
   const feedback = h("span", { class: "hint" });
-  const sw = toggle(true, (v) => { void Bridge.recapSetEnabled(v); });
-  void Bridge.recapPrefs().then((prefs) => {
+  const sw = toggle(true, (v) => { void Bridge.recapSetEnabled(v); });  void Bridge.recapPrefs().then((prefs) => {
     if (prefs) sw.classList.toggle("on", prefs.enabled);
   });
   const clearBtn = h("button", {
@@ -1492,11 +1493,11 @@ function recapRows(): HTMLElement[] {
     },
   }) as HTMLButtonElement;
   return [
-    h("div", { class: "row" },
+    anchor("general.recap", h("div", { class: "row" },
       h("label", { text: T.label }),
       sw,
       h("span", { class: "hint", text: T.keep }),
-    ),
+    )),
     h("div", { class: "row" },
       h("label", {}),
       clearBtn,

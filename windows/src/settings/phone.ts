@@ -5,6 +5,7 @@ import { Bridge, type PhoneChatStatus, type PhoneLinkPairing, type PhoneLinkStat
 import { modelId, modelsOf, toggleModel, usableProviders } from "../core/phone-chat";
 import { PROVIDERS, type ProviderDef } from "../core/providers";
 import type { Settings } from "../core/state";
+import { anchor } from "../hub/ui";
 import { h } from "../views/dom";
 import { t } from "../i18n/i18n";
 
@@ -101,7 +102,7 @@ export function phoneSection(on: boolean, makeToggle: Toggle, settings: Settings
 
   void Bridge.phoneLinkStatus().then(draw);
 
-  const section = h(
+  const section = anchor("phone.android", h(
     "section",
     {},
     h("h2", {}, h("span", { text: t("Android phone") })),
@@ -110,7 +111,7 @@ export function phoneSection(on: boolean, makeToggle: Toggle, settings: Settings
     h("div", { class: "row" }, h("label", { text: t("Phone link") }), switchEl),
     note,
     detail,
-  );
+  ));
   return section;
 }
 

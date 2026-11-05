@@ -3,6 +3,7 @@
 // only then does agents.rs back the file up and write it.
 
 import { Bridge, type AgentHookStatus } from "../core/bridge";
+import { anchor } from "../hub/ui";
 import { clear, h } from "../views/dom";
 import { renderDiff, statusDot } from "./parts";
 import { t } from "../i18n/i18n";
@@ -46,13 +47,13 @@ export function agentsSection(list: AgentHookStatus[] | null): HTMLElement {
     blocks.append(h("div", { class: "hint", text: TEXT.none }));
   }
   for (const status of list ?? []) blocks.append(agentBlock(status));
-  return h(
+  return anchor("agents.others", h(
     "section",
     {},
     h("h2", {}, h("span", { text: TEXT.title })),
     h("div", { class: "hint", text: TEXT.intro }),
     blocks,
-  );
+  ));
 }
 
 function agentBlock(initial: AgentHookStatus): HTMLElement {

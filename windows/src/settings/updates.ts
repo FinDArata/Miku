@@ -4,6 +4,7 @@
 
 import { Bridge } from "../core/bridge";
 import { NO_UPDATE, isBusy, type UpdateStatus } from "../core/update";
+import { anchor } from "../hub/ui";
 import { h } from "../views/dom";
 import { t } from "../i18n/i18n";
 
@@ -63,11 +64,11 @@ export function updateRows(toggle: Toggle, version: string): HTMLElement[] {
   draw();
 
   return [
-    h("div", { class: "row" },
+    anchor("general.update", h("div", { class: "row" },
       h("label", { text: t("Updates") }),
       sw,
       h("span", { class: "hint", text: t("Tell me when a new version is out") }),
-    ),
+    )),
     h("div", { class: "row" }, h("label", {}), install, check, feedback),
     h("div", { class: "row" }, h("label", {}), footer),
     h("div", { class: "row" }, h("label", {}), current),

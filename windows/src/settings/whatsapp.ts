@@ -8,6 +8,7 @@ import {
   DEFAULT_PORT, DEFAULT_URLS, WHATSAPP_GREEN, installError, installStepLabel, isInstalling, linkColor, linkLabel,
   showsLinkState, testResultLabel, webhookLine, type WaSettingsView,
 } from "../core/whatsapp";
+import { anchor } from "../hub/ui";
 import { h } from "../views/dom";
 import { t } from "../i18n/i18n";
 
@@ -296,14 +297,14 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
     advanced,
   );
 
-  const section = h(
+  const section = anchor("integrations.whatsapp", h(
     "section",
     {},
     h("h2", {}, h("i", { class: "dot", style: `background:${WHATSAPP_GREEN}` }), h("span", { text: t("WhatsApp (experimental)") })),
     h("div", { class: "hint", style: hintStyle("#F5B83D"), text: t("Unofficial integration: it goes through a gateway you run on this computer. Use it on your own account only. WhatsApp may restrict accounts that abuse it.") }),
     h("div", { class: "row" }, h("label", { text: t("Show my WhatsApp messages") }), enableSwitch),
     body,
-  );
+  ));
   body.style.display = "none";
   advanced.style.display = "none";
 

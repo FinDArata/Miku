@@ -124,7 +124,9 @@ export async function flowSettingsPage(page: HTMLElement, ctx: HubContext) {
         toggle(prefs.muteOthers, (on) => void ctx.setPrefs((p) => (p.muteOthers = on)))),
     );
   }
-  page.append(anchor("flow.permission", micCard));
+  // The microphone card, not an "Accessibility permission" box: there is no
+  // permission to grant here, and this anchor is what search scrolls to.
+  page.append(anchor("flow.microphone", micCard));
 
   // ── Recognition ──
   page.append(label(t("Recognition")));
