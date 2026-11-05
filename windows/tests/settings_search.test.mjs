@@ -56,8 +56,9 @@ test("SettingsSearch - searchSettings searches entries across Flow, Notch and Ma
   assert.ok(resKeys.length > 0);
   assert.ok(resKeys.some((h) => h.entry.id === "flow.keys"));
 
-  // Search by term inside box
-  const resHandsfree = searchSettings("handsfree", getPageTitle);
+  // Search by a label inside the box: the words the page actually draws. The
+  // page spells it "Hands-free", so that is what a search for it must find.
+  const resHandsfree = searchSettings("hands-free", getPageTitle);
   assert.ok(resHandsfree.length > 0);
   assert.ok(resHandsfree.some((h) => h.entry.id === "flow.keys"));
 
@@ -90,5 +91,49 @@ test("SettingsSearch - SETTINGS_ENTRIES integrity and completeness", () => {
     assert.ok(entry.page, `entry ${entry.id} must define a page`);
     assert.ok(entry.title, `entry ${entry.id} must define a title`);
     assert.ok(Array.isArray(entry.terms), `entry ${entry.id} must define terms array`);
+  }
+});
+
+// The bug this guards against: the index once held macOS catalog keys
+// ("hub.mail.autosort", "vitals.title"), which this app's i18n table does not
+// know, so results rendered as literal dotted text and pointed at controls that
+// no longer existed.
+test("no entry is a macOS catalog key this app cannot translate", () => {
+  // A catalog key is dotted, lowercase, and has no capital letter anywhere —
+  // which is what tells "hub.mail.autosort" from a product name like "Cal.com".
+  const catalogKey = /^[a-z][a-z0-9-]*(\.[a-z0-9-]+)+$/;
+  const offenders = [];
+  for (const entry of SETTINGS_ENTRIES) {
+    if (catalogKey.test(entry.title)) offenders.push(`${entry.id}: title "${entry.title}"`);
+    for (const term of entry.terms) {
+      if (catalogKey.test(term)) offenders.push(`${entry.id}: term "${term}"`);
+    }
+  }
+  assert.deepEqual(offenders, [], `catalog keys in the index:\n${offenders.join("\n")}`);
+});
+
+// Every page the sidebar can show must be reachable from search, or someone who
+// searches for it gets nothing and has to find the page by hand.
+test("every hub page has at least one search entry", () => {
+  const pages = [
+    "dictation", "notes", "insights", "dictionary", "snippets", "styles", "flowsettings",
+    "general", "pills", "agents", "chat", "voice", "integrations", "phone", "shortcuts",
+    "mailOverview", "mailRules", "mailBanned", "mailVIP",
+  ];
+  const covered = new Set(SETTINGS_ENTRIES.map((e) => e.page));
+  const missing = pages.filter((p) => !covered.has(p));
+  assert.deepEqual(missing, [], `pages with no search entry: ${missing.join(", ")}`);
+});
+
+// A real user searches for the words on screen. Each entry must be found by its
+// own title, so a control renamed on the page but not here fails the suite.
+test("every entry is found by its own title", () => {
+  const getPageTitle = (p) => p;
+  for (const entry of SETTINGS_ENTRIES) {
+    const hits = searchSettings(entry.title, getPageTitle);
+    assert.ok(
+      hits.some((h) => h.entry.id === entry.id),
+      `"${entry.title}" (${entry.id}) is not found by searching for its own title`,
+    );
   }
 });
