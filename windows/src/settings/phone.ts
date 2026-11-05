@@ -12,8 +12,14 @@ import { t } from "../i18n/i18n";
 type Toggle = (on: boolean, onChange: (v: boolean) => void) => HTMLElement;
 
 /**
- * The relay block ("Away from home Wi-Fi") is hidden until a relay is ready to use: the code and its tests stay, and
- * turning this on shows it again. Nothing else changes.
+ * The relay block ("Away from home Wi-Fi") is deliberately hidden in this build.
+ *
+ * The Rust side behind it is complete — phone_relay_status, phone_relay_set and
+ * the relay client all work — but nobody has used this from the app yet, and a
+ * feature that reaches a phone over the internet should not appear in Settings
+ * before it has been tried. Flipping this to true shows the block again with
+ * nothing else to change; the block and its handlers below are kept live for
+ * that.
  */
 const SHOW_RELAY_SETTINGS = false;
 
