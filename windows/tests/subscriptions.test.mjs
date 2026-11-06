@@ -17,3 +17,10 @@ test("the chip names the tool that answers", () => {
   assert.equal(chipLabel({ ...DEFAULT_SETTINGS, chatProvider: "openai" }, "gpt-4o"), "gpt-4o");
   assert.deepEqual([...subscribedProviders()], ["anthropic", "google"]);
 });
+
+test("a provider with no model of its own names its tool", () => {
+  // ZCode answers with the model chosen inside the CLI: the chip is the tool.
+  setSubscriptions([row("zcode", "ZCode", true)]);
+  assert.equal(chipLabel({ ...DEFAULT_SETTINGS, chatProvider: "zcode" }, ""), "ZCode");
+  assert.deepEqual([...subscribedProviders()], ["zcode"]);
+});

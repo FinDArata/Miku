@@ -24,13 +24,15 @@ test("the catalog holds the Mac's pills with the Claude Code label for Windows a
     ["agent_cursor", "Cursor", "#C0C4CC", "workspace", "Integration"],
     ["agent_antigravity", "Antigravity", "#E879F9", "workspace", "Integration"],
     ["agent_codex", "Codex", "#2DD4BF", "workspace", "Integration"],
+    // ZCode is Windows' own: the Mac catalog has no such pill. It sits among
+    // the coding tools, not the agents, so it can be the main tool.
+    ["agent_zcode", "ZCode", "#A3A3A4", "workspace", "Integration"],
     ["agent_gemini", "Gemini CLI", "#8AB4F8", "agent", "Agent"],
     ["agent_copilot", "Copilot CLI", "#818CF8", "agent", "Agent"],
     ["agent_muse", "Muse Code", "#38BDF8", "agent", "Agent"],
     ["agent_opencode", "OpenCode", "#4ADE80", "agent", "Agent"],
     ["agent_amp", "Amp", "#F59E0B", "agent", "Agent"],
     ["agent_hermes", "Hermes", "#C084FC", "agent", "Agent"],
-    ["agent_zcode", "ZCode", "#A3A3A4", "agent", "Agent"],
     ["agent_claude-desktop", "Claude Desktop", "#D97757", "agent", "Agent"],
     ["ai_anthropic", "Anthropic", "#E07950", "ai", "Chat"],
     ["ai_google", "Google AI", "#4285F4", "ai", "Chat"],
@@ -157,13 +159,13 @@ test("no chat provider that works here says Coming soon", () => {
 
 test("the main pill is a workspace tool that works here", () => {
   assert.deepEqual(mainPillChoices("linux").map((p) => p.id), [
-    "integration_claude", "agent_cursor", "agent_antigravity", "agent_codex",
+    "integration_claude", "agent_cursor", "agent_antigravity", "agent_codex", "agent_zcode",
   ]);
   assert.equal(DEFAULT_MAIN_PILL, "integration_claude");
 });
 
 test("hook-driven pills are the workspace tools and the agents with hooks", () => {
-  for (const id of ["integration_claude", "agent_cursor", "agent_codex", "agent_gemini", "agent_copilot", "agent_muse", "agent_antigravity", "agent_opencode", "agent_amp", "agent_hermes"]) {
+  for (const id of ["integration_claude", "agent_cursor", "agent_codex", "agent_gemini", "agent_copilot", "agent_muse", "agent_antigravity", "agent_opencode", "agent_amp", "agent_hermes", "agent_zcode"]) {
     assert.ok(isHookPill(id), id);
   }
   for (const id of ["agent_claude-desktop", "ai_anthropic", "integration_stripe", "agent_unknown"]) {
@@ -197,6 +199,15 @@ test("a declaration from an older or edited settings file is made usable", () =>
   );
   assert.equal(sanitizeDeclared({ mainPill: "agent_claude-desktop", activeIntegrations: [] }, "windows").mainPill,
     "integration_claude");
+  // Five in the file: the list is cut to the cap, so every switch stays usable
+  // (a list over the cap used to disable all of them, ZCode's included).
+  assert.deepEqual(
+    sanitizeDeclared({
+      mainPill: "integration_claude",
+      activeIntegrations: ["integration_resend", "integration_n8n", "integration_vercel", "integration_github", "integration_spotify"],
+    }, "windows"),
+    { mainPill: "integration_claude", activeIntegrations: ["integration_resend", "integration_n8n", "integration_vercel", "integration_github"] },
+  );
 });
 
 test("up to four pills next to the main one, never the main one itself", () => {

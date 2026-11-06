@@ -8223,6 +8223,21 @@
       "tr": "Hookları etkinleştirmek için yeni bir ZCode görevi başlatın: ZCode bunları görev başladığında okur.",
       "ko": "훅을 적용하려면 새 ZCode 작업을 시작하세요. ZCode는 작업 시작 시 훅을 읽습니다.",
       "ja": "フックを読み込むには新しい ZCode タスクを開始してください。ZCode はタスク開始時にフックを読み込みます。"
+    },
+    "Also in use: {names} — turn one off in Integrations to free a slot.": {
+      "zh-Hans": "也在使用中：{names} — 在“集成”里关掉一个即可腾出位置。",
+      "hi": "ये भी उपयोग में हैं: {names} — स्लॉट खाली करने के लिए Integrations में कोई एक बंद करें।",
+      "es": "También en uso: {names} — desactiva uno en Integraciones para liberar un hueco.",
+      "ar": "قيد الاستخدام أيضًا: {names} — أوقف واحدًا في التكاملات لإفساح فتحة.",
+      "fr": "Aussi en cours d'utilisation : {names} — désactivez-en un dans Intégrations pour libérer une place.",
+      "bn": "এগুলোও ব্যবহৃত হচ্ছে: {names} — স্লট খালি করতে Integrations-এ একটি বন্ধ করুন।",
+      "pt-BR": "Também em uso: {names} — desative um em Integrações para liberar um espaço.",
+      "ru": "Также используются: {names} — отключите один в «Интеграциях», чтобы освободить слот.",
+      "id": "Juga dipakai: {names} — matikan salah satunya di Integrations untuk mengosongkan slot.",
+      "de": "Ebenfalls in Gebrauch: {names} — deaktiviere einen in Integrationen, um einen Platz freizugeben.",
+      "tr": "Ayrıca kullanımda: {names} — bir yer açmak için Entegrasyonlar'da birini kapat.",
+      "ko": "사용 중인 항목: {names} — 슬롯을 비우려면 통합에서 하나를 끄세요.",
+      "ja": "使用中: {names} — 統合でひとつオフにすると枠が空きます。"
     }
   }
 }

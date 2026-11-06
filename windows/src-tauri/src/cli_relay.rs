@@ -2,7 +2,7 @@
 // subscriptions, as on the Mac: CLIRelay.swift). With the switch on, the chat
 // is answered by the provider's official terminal tool, signed in with the
 // user's own account: Claude Code (claude_code.rs), Antigravity CLI or Gemini
-// CLI, Codex CLI, Cursor CLI and GitHub Copilot CLI. Miku reads no
+// CLI, Codex CLI, Cursor CLI, GitHub Copilot CLI and ZCode. Miku reads no
 // credential and makes no network call of its own.
 //
 // Each run is kept apart from the user's sessions and can only answer: plan,
@@ -43,6 +43,7 @@ pub enum Cli {
     Codex,
     Cursor,
     Copilot,
+    Zcode,
 }
 
 impl Cli {
@@ -54,6 +55,7 @@ impl Cli {
             Cli::Codex => "Codex CLI",
             Cli::Cursor => "Cursor CLI",
             Cli::Copilot => "Copilot CLI",
+            Cli::Zcode => "ZCode",
         }
     }
 
@@ -66,6 +68,7 @@ impl Cli {
             Cli::Codex => &["codex"],
             Cli::Cursor => &["cursor-agent", "agent"],
             Cli::Copilot => &["copilot"],
+            Cli::Zcode => &["zcode"],
         }
     }
 
@@ -78,6 +81,7 @@ impl Cli {
             Cli::Codex => "codex login",
             Cli::Cursor => "cursor-agent login",
             Cli::Copilot => "copilot",
+            Cli::Zcode => "zcode login",
         }
     }
 
@@ -89,6 +93,7 @@ impl Cli {
             Cli::Codex => "https://developers.openai.com/codex/cli",
             Cli::Cursor => "https://cursor.com/cli",
             Cli::Copilot => "https://docs.github.com/copilot/how-tos/copilot-cli",
+            Cli::Zcode => "https://zcode.z.ai",
         }
     }
 
@@ -99,7 +104,7 @@ impl Cli {
 }
 
 /// The providers listed under "Your AI subscriptions", in order.
-pub const PROVIDERS: [&str; 5] = ["anthropic", "google", "openai", "cursor", "copilot"];
+pub const PROVIDERS: [&str; 6] = ["anthropic", "google", "openai", "cursor", "copilot", "zcode"];
 
 /// The tools that answer for `provider`, the preferred one first. Empty: API only.
 pub fn clis_for(provider: &str) -> &'static [Cli] {
@@ -109,13 +114,15 @@ pub fn clis_for(provider: &str) -> &'static [Cli] {
         "openai" => &[Cli::Codex],
         "cursor" => &[Cli::Cursor],
         "copilot" => &[Cli::Copilot],
+        "zcode" => &[Cli::Zcode],
         _ => &[],
     }
 }
 
-/// Cursor and Copilot have no API here: they answer only through the subscription.
+/// Cursor, Copilot and ZCode have no API here: they answer only through the
+/// subscription.
 pub fn subscription_only(provider: &str) -> bool {
-    matches!(provider, "cursor" | "copilot")
+    matches!(provider, "cursor" | "copilot" | "zcode")
 }
 
 fn key_for(provider: &str) -> Option<&'static str> {
@@ -270,8 +277,20 @@ fn args(cli: Cli, r: &Request<'_>, prompt_arg: bool) -> Vec<OsString> {
                 out.extend(["--available-tools", "view"].map(String::from));
             }
         }
+        Cli::Zcode => {
+            // A headless run, plan mode: reads and searches, never edits or runs.
+            // The prompt is an argument (it has no stdin mode), and the tool's
+            // own config, plugins and MCP servers are left as the user has them.
+            out.extend(["-p".into(), prompt, "--output-format".into(), "json".into(), "--mode".into(), "plan".into()]);
+            out.push("--no-color".into());
+            // A dropped file is read with no web at all, as for Gemini above.
+            if !r.web {
+                out.extend(["--disallowed-tools".into(), "WebSearch WebFetch".into()]);
+            }
+        }
     }
-    if let Some(model) = model {
+    // ZCode has no --model option: its model is the one chosen in the tool itself.
+    if let Some(model) = model.filter(|_| cli != Cli::Zcode) {
         out.extend(["--model".into(), model.to_string()]);
     }
     if cli == Cli::Codex {
@@ -281,7 +300,7 @@ fn args(cli: Cli, r: &Request<'_>, prompt_arg: bool) -> Vec<OsString> {
 }
 
 /// Whether the prompt goes in on stdin: Codex always; Gemini, Cursor and
-/// Copilot when they are npm's `.cmd` shims; Antigravity never.
+/// Copilot when they are npm's `.cmd` shims; Antigravity and ZCode never.
 fn prompt_on_stdin(cli: Cli, exe: &Path) -> bool {
     let shim = exe
         .extension()
@@ -289,7 +308,7 @@ fn prompt_on_stdin(cli: Cli, exe: &Path) -> bool {
         .is_some_and(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"));
     match cli {
         Cli::Codex | Cli::Claude => true,
-        Cli::Antigravity => false,
+        Cli::Antigravity | Cli::Zcode => false,
         Cli::Gemini | Cli::Cursor | Cli::Copilot => shim,
     }
 }
@@ -350,6 +369,7 @@ fn parse(cli: Cli, stdout: &[u8], stderr: &[u8], success: bool) -> Result<String
             let text = String::from_utf8_lossy(stdout).trim().to_string();
             if success && !text.is_empty() { Ok(text) } else { Err(Failure::NoAnswer) }
         }
+        Cli::Zcode => parse_zcode_result(cli, stdout),
     };
     match result {
         Ok(text) => Ok(text),
@@ -431,6 +451,25 @@ fn parse_codex_events(_cli: Cli, stdout: &[u8]) -> Result<String, Failure> {
         (Some(text), _) => Ok(text),
         (None, Some(why)) => Err(Failure::Said(why)),
         (None, None) => Err(Failure::NoAnswer),
+    }
+}
+
+/// ZCode CLI: `{"response": …, "projection": {"status": …}}`, the errors on stderr.
+fn parse_zcode_result(_cli: Cli, stdout: &[u8]) -> Result<String, Failure> {
+    let json = last_json_object(stdout).ok_or(Failure::NoAnswer)?;
+    let text = json.get("response").and_then(Value::as_str).unwrap_or("").trim().to_string();
+    let said = json
+        .get("errorMessage")
+        .or_else(|| json.get("error"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|why| !why.is_empty());
+    // A turn that failed usually leaves stderr to explain it: NoAnswer carries it on.
+    let failed = matches!(json.pointer("/projection/status").and_then(Value::as_str), Some("error" | "failed"));
+    match (text.is_empty(), said, failed) {
+        (false, _, false) => Ok(text),
+        (_, Some(why), _) => Err(Failure::Said(why.to_string())),
+        _ => Err(Failure::NoAnswer),
     }
 }
 
@@ -624,8 +663,19 @@ mod tests {
         assert_eq!(after(&copilot_file, "--available-tools").as_deref(), Some("view"));
         assert!(!copilot_file.contains(&"--allow-all-urls".to_string()));
 
+        let zcode = strings(&args(Cli::Zcode, &request(true), true));
+        assert_eq!(after(&zcode, "-p").unwrap(), "<instructions>\nSYS\n</instructions>\n\nHello?");
+        assert_eq!(after(&zcode, "--mode").as_deref(), Some("plan"));
+        assert_eq!(after(&zcode, "--output-format").as_deref(), Some("json"));
+        assert!(!zcode.contains(&"--disallowed-tools".to_string()));
+        // A dropped file is read with no web at all.
+        let zcode_file = strings(&args(Cli::Zcode, &request(false), true));
+        assert_eq!(after(&zcode_file, "--disallowed-tools").as_deref(), Some("WebSearch WebFetch"));
+
         let model = Request { model: Some("m1"), ..request(true) };
         assert_eq!(after(&strings(&args(Cli::Cursor, &model, true)), "--model").as_deref(), Some("m1"));
+        // ZCode has no --model option: it would not even start.
+        assert!(!strings(&args(Cli::Zcode, &model, true)).contains(&"--model".to_string()));
         let empty = Request { model: Some(""), ..request(true) };
         assert!(!strings(&args(Cli::Cursor, &empty, true)).contains(&"--model".to_string()));
     }
@@ -637,6 +687,7 @@ mod tests {
         assert!(prompt_on_stdin(Cli::Gemini, Path::new(r"C:\npm\gemini.cmd")));
         assert!(!prompt_on_stdin(Cli::Gemini, Path::new("/usr/local/bin/gemini")));
         assert!(prompt_on_stdin(Cli::Copilot, Path::new("copilot.CMD")));
+        assert!(!prompt_on_stdin(Cli::Zcode, Path::new(r"C:\npm\zcode.cmd")));
     }
 
     #[test]
@@ -647,6 +698,10 @@ mod tests {
         let events = b"{\"type\":\"thread.started\"}\n{\"type\":\"item.completed\",\"item\":{\"type\":\"reasoning\",\"text\":\"x\"}}\n{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"Final\"}}\n";
         assert_eq!(parse(Cli::Codex, events, b"", true).unwrap(), "Final");
         assert_eq!(parse(Cli::Copilot, b"  The answer\n", b"", true).unwrap(), "The answer");
+        assert_eq!(parse(Cli::Zcode, br#"{"response":"Hi","projection":{"status":"idle"}}"#, b"", true).unwrap(), "Hi");
+        // What the CLI really prints is indented over several lines.
+        let pretty = b"{\n  \"sessionId\": \"sess_1\",\n  \"response\": \" Yo \\n\",\n  \"projection\": { \"status\": \"idle\" }\n}\n";
+        assert_eq!(parse(Cli::Zcode, pretty, b"", true).unwrap(), "Yo");
     }
 
     #[test]
@@ -660,6 +715,16 @@ mod tests {
         let crash = b"\x1b[31mboom: model not found\x1b[0m\n";
         assert_eq!(parse(Cli::Copilot, b"", crash, false).unwrap_err(), "Copilot CLI gave no answer. (boom: model not found)");
         assert_eq!(parse(Cli::Cursor, br#"{"is_error":true,"result":"Usage limit"}"#, b"", false).unwrap_err(), "Usage limit");
+
+        // ZCode: a failed turn says why, or leaves it on stderr.
+        let said = br#"{"response":"","error":"Quota reached","projection":{"status":"error"}}"#;
+        assert_eq!(parse(Cli::Zcode, said, b"", false).unwrap_err(), "Quota reached");
+        let failed = br#"{"response":"","projection":{"status":"failed"}}"#;
+        assert_eq!(
+            parse(Cli::Zcode, failed, b"Error: model not available\n", true).unwrap_err(),
+            "ZCode gave no answer. (Error: model not available)"
+        );
+        assert!(parse(Cli::Zcode, b"", b"Error: not logged in. Run zcode login\n", false).unwrap_err().ends_with("zcode login"));
     }
 
     #[test]
@@ -686,6 +751,13 @@ mod tests {
         assert!(!uses_subscription(&s, "google"));
         s.chat_provider = "cursor".into();
         set(&mut s, "cursor", false);
+        assert_eq!(s.chat_provider, "anthropic");
+        // ZCode answers only through its subscription too.
+        assert!(subscription_only("zcode"));
+        set(&mut s, "zcode", true);
+        assert!(uses_subscription(&s, "zcode"));
+        s.chat_provider = "zcode".into();
+        set(&mut s, "zcode", false);
         assert_eq!(s.chat_provider, "anthropic");
         assert_eq!(status(&s).len(), PROVIDERS.len());
     }

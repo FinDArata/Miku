@@ -8,7 +8,7 @@ import { N_ } from "../i18n/i18n";
 export type ProviderId =
   | "anthropic" | "openai" | "google" | "openrouter"
   | "ollama" | "lmstudio" | "custom"
-  | "cursor" | "copilot";
+  | "cursor" | "copilot" | "zcode";
 
 export interface ProviderDef {
   id: ProviderId;
@@ -35,10 +35,11 @@ export const PROVIDERS: readonly ProviderDef[] = [
   // Only through the user's own subscription (cli_relay.rs): no key, no address.
   { id: "cursor", name: "Cursor", accent: "#A1A1AA", key: null, urlField: null, defaultModel: "", prefer: null },
   { id: "copilot", name: "GitHub Copilot", accent: "#8B5CF6", key: null, urlField: null, defaultModel: "", prefer: null },
+  { id: "zcode", name: "ZCode", accent: "#A3A3A4", key: null, urlField: null, defaultModel: "", prefer: null },
 ];
 
 /** Answered only through the user's subscription, switched on in Settings → Chat. */
-export const SUBSCRIPTION_ONLY: readonly ProviderId[] = ["cursor", "copilot"];
+export const SUBSCRIPTION_ONLY: readonly ProviderId[] = ["cursor", "copilot", "zcode"];
 
 /** Credential store entry of the custom server's optional key. */
 export const CUSTOM_SERVER_KEY = "openai-compatible-key";
@@ -62,9 +63,9 @@ export function withModel(settings: Settings, provider: ProviderId, model: strin
 
 /**
  * The chips of the picker: every cloud provider (one without a key says so
- * when picked), a model server once it is connected, and Cursor or Copilot
- * once their subscription is on (`subscribed`: the providers whose switch is
- * on, from Rust) — or while it is the active one, so the picker never hides
+ * when picked), a model server once it is connected, and Cursor, Copilot or
+ * ZCode once their subscription is on (`subscribed`: the providers whose switch
+ * is on, from Rust) — or while it is the active one, so the picker never hides
  * where the chat goes.
  */
 export function visibleProviders(settings: Settings, subscribed: ReadonlySet<string> = new Set()): ProviderDef[] {

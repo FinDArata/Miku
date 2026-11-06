@@ -81,6 +81,11 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
     subtitle: N_("Integration"), source: "agent", support: "yes", connect: hooks },
   { id: "agent_codex", name: "Codex", color: "#2DD4BF", category: "workspace",
     subtitle: N_("Integration"), source: "agent", support: "yes", connect: hooks },
+  // ZCode: hook entries merged into ~/.zcode/cli/config.json (agents.rs). A
+  // workspace tool, not only an agent's pill: it is a coding CLI you can make
+  // the main tool, as Codex and Cursor are.
+  { id: "agent_zcode", name: "ZCode", color: "#A3A3A4", category: "workspace",
+    subtitle: N_("Integration"), source: "agent", support: "yes", connect: hooks },
   // ── Agents ─────────────────────────────────────────────────────────────────
   { id: "agent_gemini", name: "Gemini CLI", color: "#8AB4F8", category: "agent",
     subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
@@ -94,9 +99,6 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
   { id: "agent_amp", name: "Amp", color: "#F59E0B", category: "agent",
     subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
   { id: "agent_hermes", name: "Hermes", color: "#C084FC", category: "agent",
-    subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
-  // ZCode: hook entries merged into ~/.zcode/cli/config.json (agents.rs).
-  { id: "agent_zcode", name: "ZCode", color: "#A3A3A4", category: "agent",
     subtitle: N_("Agent"), source: "agent", support: "yes", connect: hooks },
   // Claude Code sessions run from the Claude desktop app: the relay tags them
   // from CLAUDE_CODE_ENTRYPOINT, so there is nothing to install. The app has
@@ -218,6 +220,11 @@ export interface Declared {
  * default), and declared pills this build offers, without duplicates and
  * without the main pill, which never takes a slot. Same rules as
  * AppState.loadIntegrationTasks on macOS.
+ *
+ * Never more than MAX_DECLARED: a settings file written by hand, or by a build
+ * that allowed more, used to be read as it was, and a list over the cap left
+ * every switch in Settings → Active pills disabled — nothing could be added
+ * because the list already read "full", and the counter read "5/4".
  */
 export function sanitizeDeclared(d: Declared, os: HostOs = HOST_OS): Declared {
   const mains = new Set(mainPillChoices(os).map((p) => p.id));
@@ -225,7 +232,12 @@ export function sanitizeDeclared(d: Declared, os: HostOs = HOST_OS): Declared {
   const offered = new Set(availablePills(os).map((p) => p.id));
   const activeIntegrations: string[] = [];
   for (const id of d.activeIntegrations ?? []) {
-    if (id !== mainPill && offered.has(id) && !activeIntegrations.includes(id)) {
+    if (
+      activeIntegrations.length < MAX_DECLARED
+      && id !== mainPill
+      && offered.has(id)
+      && !activeIntegrations.includes(id)
+    ) {
       activeIntegrations.push(id);
     }
   }

@@ -255,7 +255,7 @@ only ask whether a key exists. Same for every integration key.
 subscriptions** has one switch per provider: on, the chat goes through the
 provider's official terminal tool, signed in with your own account — Claude
 Code (Claude plan), Antigravity CLI or Gemini CLI (Google AI plan), Codex CLI
-(ChatGPT plan), Cursor CLI and GitHub Copilot CLI (`cli_relay.rs`). Each row
+(ChatGPT plan), Cursor CLI, GitHub Copilot CLI and ZCode (`cli_relay.rs`). Each row
 says whether the tool is installed (on PATH or in the usual install folders),
 links to its install page and gives the command to sign in once. Kanon reads
 no credential: the tool answers exactly as it does in a terminal. Each run is

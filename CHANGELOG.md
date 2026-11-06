@@ -2,13 +2,35 @@
 
 ## Unreleased
 
+### No console window, in a debug build too
+
+- `windows_subsystem = "windows"` used to be gated on `not(debug_assertions)`, so a debug build opened a console window on every start. It now applies to every build; a debug run that wants the log back sets `MIKU_CONSOLE=1`, which attaches to the terminal that started it (`AttachConsole`) instead of opening a window of its own.
+
+### Active pills: a list over the cap no longer locks the page
+
+- `sanitizeDeclared` now enforces `MAX_DECLARED` (4). A `settings.json` holding five declared pills — written by hand, or by an older build — used to be read as it was: Settings → Active pills then read "5/4 slots in use" and disabled **every** switch that was not already on, so no pill could be added (ZCode's included). The list is now cut to the cap on load, which is what makes the page usable again.
+- The page also names the pills that hold its slots but are not listed on it (the services, declared in Integrations), and a switch clicked while full says why instead of doing nothing.
+- Covered by a test with a real five-entry list.
+
+### ZCode: a coding tool you can make the main pill
+
+- `agent_zcode` moved from the Agents category to Where you code, so it appears in Settings → Active pills → Main tool next to Claude Code, Cursor, Antigravity and Codex. The Mac's catalog has no ZCode pill, so this is Windows' own entry.
+
 ### ZCode agent integration
 
-- Added **ZCode** to Settings → Agents and the agent pill catalog (`agent_zcode`), and to Settings search.
+- Added **ZCode** to Settings → Agents and the agent pill catalog (`agent_zcode`), and to Settings search (both the Agents section and Your AI subscriptions).
 - Miku can preview, install, and uninstall ZCode process hooks in `~/.zcode/cli/config.json` without replacing the user's plugins, MCP servers, or existing hooks. The hook uses argv directly, forwards `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `Stop`, and preserves the user's watchdog Stop hook.
 - Installing also writes `hooks.enabled: true`: ZCode runs no hook at all while that flag is off, so the entry would otherwise never fire. Uninstalling removes only Miku's entries and leaves the flag alone rather than guessing what it was.
 - ZCode hooks are read when a new task starts; existing tasks keep their current hook set. The relay is fire-and-forget and does not answer permission requests on ZCode's behalf.
 - Covered by Rust tests that round-trip a config shaped like a real one (a `Stop` watchdog, `plugins`, `mcp`): the user's entries come back byte-identical after uninstall, and installing twice leaves one entry per event.
+
+### ZCode in the chat, on your subscription
+
+- Added **ZCode** to Settings → Chat → Your AI subscriptions (`cli_relay.rs`). It has no API-key mode, so the row is subscription-only, like Cursor's and Copilot's: the chat is answered by `zcode --prompt`, signed in with the account the CLI already has.
+- Each turn runs headless in plan mode — `--output-format json --mode plan --no-color` — and the prompt goes in as an argument, because the CLI has no stdin mode. A dropped file is read with no web at all (`--disallowed-tools "WebSearch WebFetch"`), as for Gemini.
+- ZCode has no `--model` option: the model is the one chosen inside the tool, so the picker's chip names the tool alone.
+- The answer is the `response` field of the CLI's JSON. A turn whose `projection.status` is `error` or `failed` says why, or falls back to the last line of stderr; a signed-out CLI is reported with the command to fix it (`zcode login`).
+- Covered by tests for the command line, both JSON shapes (the CLI indents its output over several lines), the failure paths and the switch.
 
 ### Lyrics: on from the first launch, in the top pill
 

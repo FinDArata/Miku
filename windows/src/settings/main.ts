@@ -16,7 +16,7 @@ import type { UpdateStatus } from "../core/update";
 import { SOUND_NAMES } from "../core/sound";
 import {
   MAX_DECLARED, PILL_CATEGORIES, availablePills, chooseMainPill, isComingSoon, mainPillChoices,
-  sanitizeDeclared, toggleDeclared, type PillDefinition,
+  pillDefinition, sanitizeDeclared, toggleDeclared, type PillDefinition,
 } from "../core/pills";
 import { h, clear } from "../views/dom";
 import { startHub, type PageId } from "../hub/shell";
@@ -357,6 +357,7 @@ function planSection(status: HookStatus): HTMLElement {
 /** The plan people know, by provider. */
 const SUBSCRIPTION_NAMES: Record<string, string> = {
   anthropic: "Claude", google: "Google Gemini", openai: "ChatGPT", cursor: "Cursor", copilot: "GitHub Copilot",
+  zcode: "ZCode",
 };
 
 /**
@@ -503,6 +504,9 @@ function apiSection(hasKey: boolean, relay: boolean): HTMLElement {
  */
 function activePillsSection(connected: Record<string, boolean>): HTMLElement {
   const slots = h("div", { class: "hint" });
+  // The pills holding the slots that are not listed here: the services live in
+  // Integrations, so a page reading "4/4" with nothing lit looked like a fault.
+  const holders = h("div", { class: "hint" });
   const main = h("select", {}) as HTMLSelectElement;
   for (const def of mainPillChoices()) main.append(h("option", { value: def.id, text: def.name }));
   main.addEventListener("change", () => {
@@ -538,8 +542,14 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     const why = hint(def);
     el.append(h("span", { class: "state", text: why ?? "" }));
     const sw = h("button", { class: on ? "switch on" : "switch" }) as HTMLButtonElement;
-    sw.disabled = full;
     sw.addEventListener("click", () => {
+      // Full: say why, and where to make room, instead of a switch that does
+      // nothing (the same rule as the Integrations section below).
+      if (!on && settings.activeIntegrations.length >= MAX_ACTIVE) {
+        slots.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_ACTIVE, name: def.name });
+        slots.classList.add("hub-warn");
+        return;
+      }
       const next = toggleDeclared(settings, def.id);
       if (!next) return;
       settings.activeIntegrations = next;
@@ -551,8 +561,18 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
 
   function draw() {
     const used = settings.activeIntegrations.length;
+    slots.classList.remove("hub-warn");
     slots.textContent = t("{used}/{max} slots in use — the main tool doesn't take one.", { used, max: MAX_ACTIVE });
     slots.classList.toggle("full", used >= MAX_ACTIVE);
+    // Services take slots but are declared in Integrations, not here: name them
+    // so "4/4" with nothing lit on this page reads as a fact, not a fault.
+    const listed = new Set(availablePills().filter((p) => p.category !== "service").map((p) => p.id));
+    const elsewhere = settings.activeIntegrations.filter((id) => !listed.has(id));
+    holders.textContent = elsewhere.length === 0
+      ? ""
+      : t("Also in use: {names} — turn one off in Integrations to free a slot.", {
+        names: elsewhere.map((id) => pillDefinition(id)?.name ?? id).join(", "),
+      });
     main.value = settings.mainPill;
     clear(groups);
     for (const cat of PILL_CATEGORIES) {
@@ -571,6 +591,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     h("h2", {}, h("span", { text: t("Active pills") })),
     h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here. They follow the catalog order.") }),
     slots,
+    holders,
     anchor("pills.main", h("div", { class: "row" }, h("label", { text: t("Main tool") }), main)),
     groups,
   );

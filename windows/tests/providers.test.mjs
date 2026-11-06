@@ -12,11 +12,13 @@ const settings = (over = {}) => ({ ...DEFAULT_SETTINGS, ...over });
 
 test("the ids and key names match the Rust side and the Mac", () => {
   assert.deepEqual(PROVIDERS.map((p) => p.id), [
-    "anthropic", "google", "openai", "openrouter", "ollama", "lmstudio", "custom", "cursor", "copilot",
+    "anthropic", "google", "openai", "openrouter", "ollama", "lmstudio", "custom", "cursor", "copilot", "zcode",
   ]);
-  // Cursor and Copilot answer only through the subscription: no key, no address.
+  // Cursor, Copilot and ZCode answer only through the subscription: no key, no address.
   assert.equal(providerDef("cursor").key, null);
   assert.equal(providerDef("copilot").urlField, null);
+  assert.equal(providerDef("zcode").key, null);
+  assert.equal(providerDef("zcode").urlField, null);
   assert.equal(providerDef("google").key, "google-api-key");
   assert.equal(providerDef("openai").key, "openai-api-key");
   assert.equal(providerDef("openrouter").key, "openrouter-api-key");
@@ -46,11 +48,15 @@ test("model servers show in the picker once connected, or while in use", () => {
   assert.deepEqual(ids(settings({ chatProvider: "custom" })), ["anthropic", "google", "openai", "openrouter", "custom"]);
 });
 
-test("Cursor and Copilot show once their subscription is on, or while in use", () => {
+test("Cursor, Copilot and ZCode show once their subscription is on, or while in use", () => {
   const ids = (s, on) => visibleProviders(s, on).map((p) => p.id);
   assert.deepEqual(ids(settings(), new Set(["cursor"])), ["anthropic", "google", "openai", "openrouter", "cursor"]);
   assert.deepEqual(ids(settings({ chatSubscriptions: { copilot: true } })), ["anthropic", "google", "openai", "openrouter", "copilot"]);
   assert.deepEqual(ids(settings({ chatProvider: "copilot" })), ["anthropic", "google", "openai", "openrouter", "copilot"]);
+  // ZCode, the same way: not before its switch is on.
+  assert.ok(!ids(settings()).includes("zcode"));
+  assert.deepEqual(ids(settings(), new Set(["zcode"])), ["anthropic", "google", "openai", "openrouter", "zcode"]);
+  assert.deepEqual(ids(settings({ chatSubscriptions: { zcode: true } })), ["anthropic", "google", "openai", "openrouter", "zcode"]);
 });
 
 test("the saved model is kept when offered, else a sensible one is picked", () => {
