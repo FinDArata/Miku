@@ -4,9 +4,11 @@
 
 ### ZCode agent integration
 
-- Added **ZCode** to Settings → Agents and the agent pill catalog.
+- Added **ZCode** to Settings → Agents and the agent pill catalog (`agent_zcode`), and to Settings search.
 - Miku can preview, install, and uninstall ZCode process hooks in `~/.zcode/cli/config.json` without replacing the user's plugins, MCP servers, or existing hooks. The hook uses argv directly, forwards `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `Stop`, and preserves the user's watchdog Stop hook.
+- Installing also writes `hooks.enabled: true`: ZCode runs no hook at all while that flag is off, so the entry would otherwise never fire. Uninstalling removes only Miku's entries and leaves the flag alone rather than guessing what it was.
 - ZCode hooks are read when a new task starts; existing tasks keep their current hook set. The relay is fire-and-forget and does not answer permission requests on ZCode's behalf.
+- Covered by Rust tests that round-trip a config shaped like a real one (a `Stop` watchdog, `plugins`, `mcp`): the user's entries come back byte-identical after uninstall, and installing twice leaves one entry per event.
 
 ### Lyrics: on from the first launch, in the top pill
 

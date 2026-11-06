@@ -62,7 +62,7 @@ Flow dictation and the Notetaker are on the Mac for now; Windows and Linux are n
 
 ## Features
 
-- 🤖 **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, Claude Desktop and other agents, live** — see every session in your notch: what it reads, edits and runs, step by step. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)). Finished? Miku does a happy little jump.
+- 🤖 **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude Desktop and other agents, live** — see every session in your notch: what it reads, edits and runs, step by step. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)). Finished? Miku does a happy little jump.
 - See what Claude is editing, live in the notch: each file modification shows the file name and +N −M counts in the ticker, tap to read the full diff
 - ✅ **Approve and answer from the notch** — Claude Code permission requests show up with **Allow / Deny / Always**; `AskUserQuestion` prompts show the choices right in the notch (single or multi-select, up to 4 questions). One click, or "Reply in terminal" to fall back to the CLI. Codex also gets Allow / Deny.
 - 🧑‍💻 **Jump to the right terminal** — open the exact terminal window of a session *(macOS)*.
@@ -423,6 +423,7 @@ ENGINE_TYPE=baileys SSRF_ALLOWED_HOSTS=127.0.0.1 npm run start:prod
 | OpenCode | Plugin — **Settings → OpenCode Plugin → Install** | No |
 | Amp | Plugin — **Settings → Amp Plugin → Install** | No |
 | Hermes | Plugin — **Settings → Agents → Hermes → Install** | No |
+| ZCode | **Settings → Agents → ZCode → Install** — Miku's hooks are merged into `~/.zcode/cli/config.json`; start a new ZCode task to pick them up | No |
 | Any other | `--agent <name>` flag; see [`docs/AGENTS.md`](docs/AGENTS.md) | No |
 
 OpenCode, Amp and Hermes use a plugin model rather than a hook command. Miku installs the plugin file into `~/.config/opencode/plugins/`, `~/.config/amp/plugins/` and `~/.hermes/plugins/miku/` respectively. On Windows and Linux the plugins start the `miku-hook` relay directly — see [`windows/README.md`](windows/README.md#supported-agents).

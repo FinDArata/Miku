@@ -157,7 +157,7 @@ ElevenLabs with yours.
 **Settings… → Active pills** lists the tools you use, from the same catalog as
 the Mac app. Pick your **main tool** — VS Code, Cursor, Codex or Antigravity —
 which is always there and doesn't take a slot, then declare up to four more:
-agents (Gemini CLI, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, Claude
+agents (Gemini CLI, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude
 Desktop), the chat providers (Anthropic, Google AI, OpenAI, Ollama, LM Studio),
 and the services under **Integrations**. A pill fed by hooks says whether its
 hooks are installed, never asks for a key; a local model server's pill says
@@ -529,6 +529,7 @@ Linux.
 | OpenCode | plugin `.config\opencode\plugins\kanon.js` | asked in OpenCode |
 | Amp | plugin `.config\amp\plugins\kanon.ts` | asked in Amp |
 | Hermes Agent | plugin `.hermes\plugins\kanon\` — then `hermes plugins enable kanon` once | asked in Hermes |
+| ZCode | `.zcode\cli\config.json` — Miku's entries are merged beside yours (watchdog, plugins, MCP all kept); start a new task to pick them up | asked in ZCode |
 | Any other | run `kanon-hook --agent <name> [<Event>]` from your tool's hooks | asked in the tool |
 
 The relay maps every agent's event and field names onto Claude Code's (Gemini
@@ -625,6 +626,11 @@ own window.
 - Hermes: Kanon writes the plugin but does not run the `hermes` CLI, so it is
   turned on once by hand. Hermes runs natively on Linux; on Windows it is
   untested.
+- ZCode: sessions only, no Allow / Deny card — its own approval prompt keeps the
+  decision. Installing also turns `hooks.enabled` on (ZCode skips every hook,
+  Miku's included, while it is off), and uninstalling leaves it on. Miku
+  registers `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
+  `PostToolUseFailure` and `Stop`.
 - Plan usage: the user's previous status line runs through Git Bash on Windows
   (`/bin/sh` on Linux and Mac); without Git Bash it is not run, rather than
   guessed at with `cmd`. The Codex CLI is looked for on `PATH` and in npm's,

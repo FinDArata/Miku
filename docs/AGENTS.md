@@ -103,7 +103,8 @@ A catalog pill that is not checked in Settings behaves like any other agent: it 
 
 The GitHub build exposes Gemini CLI (`agent_gemini`), Antigravity (`agent_antigravity`),
 GitHub Copilot CLI (`agent_copilot`), Muse Code (`agent_muse`), OpenCode (`agent_opencode`),
-Amp (`agent_amp`) and Hermes (`agent_hermes`) in Settings → Active pills. Cursor (`agent_cursor`) and Codex
+Amp (`agent_amp`) and Hermes (`agent_hermes`) in Settings → Active pills, and ZCode (`agent_zcode`, Windows and
+Linux: its hooks are merged into `~/.zcode/cli/config.json`). Cursor (`agent_cursor`) and Codex
 (`agent_codex`, GitHub build only) are there too — their pills can be declared and set as
 the main pill; session support is coming in a future version.
 
@@ -224,6 +225,47 @@ Every event is fire-and-forget: if the app is closed or unreachable, nothing is 
 | `on_session_start` | `SessionStart` |
 | `post_llm_call` | `Stop` |
 | `pre_approval_request` | `PreToolUse` (observer only, shows "⏳ Approval pending in Hermes") |
+
+### ZCode (Windows, Linux)
+
+ZCode's hook system is Claude Code's: same event names, same payload fields, hooks
+configured under `hooks.events` in `~/.zcode/cli/config.json`. **Settings → Agents →
+ZCode → Install…** merges one `type: "process"` entry per event beside whatever is
+already in the file — a `Stop` watchdog of your own, `plugins`, `mcp` — and uninstalling
+removes only entries whose command line runs `miku-hook --agent zcode`.
+
+```json
+{
+  "hooks": {
+    "enabled": true,
+    "events": {
+      "Stop": [
+        { "hooks": [{ "type": "process", "command": "node", "args": ["…/stop-watchdog.js"], "timeoutMs": 10000 }] },
+        { "hooks": [{ "type": "process", "command": "…/miku-hook.exe", "args": ["--agent", "zcode", "Stop"], "timeoutMs": 10000 }] }
+      ]
+    }
+  }
+}
+```
+
+The path goes in `command` and the flags in `args` because a `process` hook is started as
+argv, with no shell: a path with a space or an apostrophe needs no quoting. ZCode reads
+its hooks when a task starts, so a task already running keeps the old set — start a new
+one after installing.
+
+| ZCode event | Canonical event |
+|---|---|
+| `SessionStart` | `SessionStart` |
+| `UserPromptSubmit` | `UserPromptSubmit` |
+| `PreToolUse` | `PreToolUse` |
+| `PostToolUse` | `PostToolUse` |
+| `PostToolUseFailure` | `PostToolUseFailure` |
+| `Stop` | `Stop` |
+
+Sessions only: no Allow / Deny card, so ZCode's own prompt keeps every decision
+(`PermissionRequest` is not registered). Installing writes `hooks.enabled: true`, since
+ZCode runs no hook at all while it is off; uninstalling leaves it on rather than guessing
+what it was before.
 
 ### Any other tool
 
