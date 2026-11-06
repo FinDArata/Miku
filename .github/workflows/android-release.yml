@@ -88,7 +88,7 @@ jobs:
           2. On your computer, Kanon 0.4.0 or later for Windows or Linux: Settings → Android phone, turn on Phone link, then Show pairing code.
           3. Scan the code with the app. The phone and the computer must be on the same Wi-Fi.
 
-          Check the download with \`sha256sum -c SHA256SUMS\`. Guide and troubleshooting: https://github.com/FinDArata/kanon/blob/main/android/README.md"
+          Check the download with \`sha256sum -c SHA256SUMS\`. Guide and troubleshooting: https://github.com/FinDArata/Miku/blob/main/android/README.md"
           # --latest=false: the macOS v* releases own the Latest slot, which the site's Download for Mac button points at.
           gh release create "$GITHUB_REF_NAME" \
             "release/Kanon-Android-$v.apk" \

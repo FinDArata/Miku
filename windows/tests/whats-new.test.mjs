@@ -154,8 +154,8 @@ test("the blue only when Mochi has nothing else to say", () => {
 });
 
 test("All changes and the coffee", () => {
-  assert.equal(releasePage("windows", "0.5.2"), "https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.2");
-  assert.equal(releasePage("linux", "0.5.2"), "https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.2");
+  assert.equal(releasePage("windows", "0.5.2"), "https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.2");
+  assert.equal(releasePage("linux", "0.5.2"), "https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.2");
   const site = readFileSync(new URL("../../docs/index.html", import.meta.url), "utf8");
   assert.ok(site.includes(COFFEE_URL), "the same link as the Kanon page");
 });

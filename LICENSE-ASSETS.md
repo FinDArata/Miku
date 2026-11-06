@@ -70,4 +70,4 @@ a distributed build needs its own icon, character and sounds (see the mascot wor
 
 ## Questions
 
-Open an issue on [GitHub](https://github.com/FinDArata/kanon/issues).
+Open an issue on [GitHub](https://github.com/FinDArata/Miku/issues).

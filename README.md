@@ -10,7 +10,7 @@ Approve permissions, watch your agents work, drop a file, chat with Claude — a
 
 **New in 0.4: Miku is a real Mac app.** Hold a key anywhere, speak, let go: your words are pasted where you type, like Wispr Flow — free, open source, and offline with Parakeet. Record your calls without a bot in the meeting and get the transcript, the summary and the to-dos.
 
-[![Version](https://img.shields.io/github/v/release/FinDArata/miku?filter=v*&label=version&color=0A84FF)](https://github.com/FinDArata/kanon/releases)
+[![Version](https://img.shields.io/github/v/release/FinDArata/miku?filter=v*&label=version&color=0A84FF)](https://github.com/FinDArata/Miku/releases)
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
 ![iOS 18+](https://img.shields.io/badge/iOS-18%2B-black?logo=apple)
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84?logo=android&logoColor=white)
@@ -31,7 +31,7 @@ Approve permissions, watch your agents work, drop a file, chat with Claude — a
 ## Why
 
 Some studios showed off gorgeous notch companions… and never let anyone use them.
-**Miku is the open version.** Every line of code is open source under the MIT License: read it, fork it, learn from it. The upstream Coucou name and the Mochi character stay © Louis Raillé (see [License](#license)).
+**Miku is the open version.** Every line of code is open source under the MIT License: read it, fork it, learn from it. It began as [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé — this is an edited fork of it, and the upstream name and the Mochi character stay © him (see [License](#license)).
 
 Meet **Miku**: a chibi drawn entirely in code that pops out of your notch, bobs to the beat, follows your cursor with her eyes, gets annoyed when you poke her (and dizzy if you insist), and tells you the moment Claude Code needs you. She comes in three official looks — classic, **Snow Miku** and **Sakura Miku** — and the wardrobe switches them, by hand or with the season.
 
@@ -132,7 +132,7 @@ The Mac app does the work; the iPhone app keeps you in the loop when you step aw
 - 🧩 **Home-screen widgets** — nine of them, from a tiny Mochi to a big card with plan usage and quick buttons. Orange when something waits for you, blue while it works, green when it's done. Read-only: a request is always decided in the app.
 - 🔒 **Local and private** — the phone talks straight to your computer on your Wi-Fi, paired with a QR code and a pinned certificate. The phone link is **off by default**, and nothing listens until you turn it on.
 
-**Status:** tested on a real phone (Android 13) with the Windows app. The phone link is in **Miku 0.4.0 for Windows and Linux**. Download the signed APK from the [latest Android release](https://github.com/FinDArata/kanon/releases/tag/android-v0.3.0). Android needs Miku on **Windows or Linux** (not the Mac), Android 11 or later, and both on the same Wi-Fi. Full guide: [`android/README.md`](android/README.md).
+**Status:** tested on a real phone (Android 13) with the Windows app. The phone link is in **Miku 0.4.0 for Windows and Linux**. Download the signed APK from the [latest Android release](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0). Android needs Miku on **Windows or Linux** (not the Mac), Android 11 or later, and both on the same Wi-Fi. Full guide: [`android/README.md`](android/README.md).
 
 <table>
 <tr>
@@ -151,58 +151,58 @@ macOS releases are published as `v*` tags. See [CHANGELOG.md](CHANGELOG.md) for 
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| [0.5.8](https://github.com/FinDArata/kanon/releases/tag/v0.5.8) | Oct 31, 2026 | Fixes by @Ohualtex: approvals and questions stay put, desktop Mochi stays visible, dropped files no longer overwrite each other |
-| [0.5.7](https://github.com/FinDArata/kanon/releases/tag/v0.5.7) | Oct 31, 2026 | Mail in the notch: search, filters, reading, automatic sorting with rules and Undo, mail plans from the chat; search the settings; Miku in a corner of the screen |
-| [0.5.6](https://github.com/FinDArata/kanon/releases/tag/v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot), switched on in Settings → Chat; Korean and Japanese |
-| [0.5.5](https://github.com/FinDArata/kanon/releases/tag/v0.5.5) | Oct 29, 2026 | Chat on your Claude plan with no API key; each session apart behind its pill, questions side by side; Claude Code on a remote machine |
-| [0.5.4](https://github.com/FinDArata/kanon/releases/tag/v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, your own hooks stay untouched, no crash without a mic, truer n8n, Stripe and GitHub pills |
-| [0.5.3](https://github.com/FinDArata/kanon/releases/tag/v0.5.3) | Oct 22, 2026 | Mochi turns blue when a new version waits; What's new and your Miku so far after each update; Buy Mochi a coffee |
-| [0.5.2](https://github.com/FinDArata/kanon/releases/tag/v0.5.2) | Oct 20, 2026 | New version in the notch, one click to install it; German, Turkish, Thai, Traditional Chinese; Homebrew; plan approval from the notch |
-| [0.5.1](https://github.com/FinDArata/kanon/releases/tag/v0.5.1) | Oct 18, 2026 | WhatsApp in one click: Miku installs and starts the gateway, no Terminal |
-| [0.5.0](https://github.com/FinDArata/kanon/releases/tag/v0.5.0) | Oct 18, 2026 | WhatsApp in the notch (experimental), Mochi feels your Mac, a screen capture for Claude, dictation that writes prompts or translates |
-| [0.4.0](https://github.com/FinDArata/kanon/releases/tag/v0.4.0) | Oct 14, 2026 | Miku becomes an app: Flow dictation anywhere, Parakeet offline, the Notetaker, a window in the Dock |
-| [0.3.0](https://github.com/FinDArata/kanon/releases/tag/v0.3.0) | Oct 11, 2026 | « OK Miku »: talk to Mochi, powered by Claude — pills, music, your services, web search, emails |
-| [0.2.3](https://github.com/FinDArata/kanon/releases/tag/v0.2.3) | Oct 8, 2026 | Terminal sessions, Spotify, a colour per Mochi, dictation in any language, open on hover, your own sounds |
-| [0.2.2](https://github.com/FinDArata/kanon/releases/tag/v0.2.2) | Oct 8, 2026 | Choose Mochi's screen, Claude Desktop pill, Codex plan usage, full questions, safer settings.json |
-| [0.2.1](https://github.com/FinDArata/kanon/releases/tag/v0.2.1) | Oct 7, 2026 | Hermes Agent support |
-| [0.2.0](https://github.com/FinDArata/kanon/releases/tag/v0.2.0) | Oct 6, 2026 | Copilot CLI, Muse Code, OpenCode and Amp, weekly recap, 10 languages |
-| [0.1.9](https://github.com/FinDArata/kanon/releases/tag/v0.1.9) | Oct 6, 2026 | iPhone services with live details and actions, smarter Live Activity |
-| [0.1.8](https://github.com/FinDArata/kanon/releases/tag/v0.1.8) | Oct 5, 2026 | Kanon on iPhone: sessions, widgets, approvals with Face ID, Mochi in the Dynamic Island |
-| [0.1.7](https://github.com/FinDArata/kanon/releases/tag/v0.1.7) | Oct 4, 2026 | Keyboard shortcuts |
-| [0.1.6](https://github.com/FinDArata/kanon/releases/tag/v0.1.6) | Oct 4, 2026 | Mochi on the desktop |
-| [0.1.5](https://github.com/FinDArata/kanon/releases/tag/v0.1.5) | Oct 4, 2026 | Wardrobe and seasonal outfits, new launch greeting |
-| [0.1.4](https://github.com/FinDArata/kanon/releases/tag/v0.1.4) | Oct 3, 2026 | Live diffs, GitHub pull requests, CI, reviews and contribution grid |
-| [0.1.3](https://github.com/FinDArata/kanon/releases/tag/v0.1.3) | Oct 3, 2026 | Answer Claude's questions from the notch, plan usage, local models, Apple Music |
-| [0.1.2](https://github.com/FinDArata/kanon/releases/tag/v0.1.2) | Oct 2, 2026 | Codex and Cursor support, the permission card stays until you answer |
-| [0.1.1](https://github.com/FinDArata/kanon/releases/tag/v0.1.1) | Oct 2, 2026 | Gemini and OpenAI chat, Linux build, more agents and pills, security hardening |
-| [0.1.0](https://github.com/FinDArata/kanon/releases/tag/v0.1.0) | Sep 27, 2026 | First release: Mochi, Claude Code sessions, chat, file drop, integrations |
+| [0.5.8](https://github.com/FinDArata/Miku/releases/tag/v0.5.8) | Oct 31, 2026 | Fixes by @Ohualtex: approvals and questions stay put, desktop Mochi stays visible, dropped files no longer overwrite each other |
+| [0.5.7](https://github.com/FinDArata/Miku/releases/tag/v0.5.7) | Oct 31, 2026 | Mail in the notch: search, filters, reading, automatic sorting with rules and Undo, mail plans from the chat; search the settings; Miku in a corner of the screen |
+| [0.5.6](https://github.com/FinDArata/Miku/releases/tag/v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot), switched on in Settings → Chat; Korean and Japanese |
+| [0.5.5](https://github.com/FinDArata/Miku/releases/tag/v0.5.5) | Oct 29, 2026 | Chat on your Claude plan with no API key; each session apart behind its pill, questions side by side; Claude Code on a remote machine |
+| [0.5.4](https://github.com/FinDArata/Miku/releases/tag/v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, your own hooks stay untouched, no crash without a mic, truer n8n, Stripe and GitHub pills |
+| [0.5.3](https://github.com/FinDArata/Miku/releases/tag/v0.5.3) | Oct 22, 2026 | Mochi turns blue when a new version waits; What's new and your Miku so far after each update; Buy Mochi a coffee |
+| [0.5.2](https://github.com/FinDArata/Miku/releases/tag/v0.5.2) | Oct 20, 2026 | New version in the notch, one click to install it; German, Turkish, Thai, Traditional Chinese; Homebrew; plan approval from the notch |
+| [0.5.1](https://github.com/FinDArata/Miku/releases/tag/v0.5.1) | Oct 18, 2026 | WhatsApp in one click: Miku installs and starts the gateway, no Terminal |
+| [0.5.0](https://github.com/FinDArata/Miku/releases/tag/v0.5.0) | Oct 18, 2026 | WhatsApp in the notch (experimental), Mochi feels your Mac, a screen capture for Claude, dictation that writes prompts or translates |
+| [0.4.0](https://github.com/FinDArata/Miku/releases/tag/v0.4.0) | Oct 14, 2026 | Miku becomes an app: Flow dictation anywhere, Parakeet offline, the Notetaker, a window in the Dock |
+| [0.3.0](https://github.com/FinDArata/Miku/releases/tag/v0.3.0) | Oct 11, 2026 | « OK Miku »: talk to Mochi, powered by Claude — pills, music, your services, web search, emails |
+| [0.2.3](https://github.com/FinDArata/Miku/releases/tag/v0.2.3) | Oct 8, 2026 | Terminal sessions, Spotify, a colour per Mochi, dictation in any language, open on hover, your own sounds |
+| [0.2.2](https://github.com/FinDArata/Miku/releases/tag/v0.2.2) | Oct 8, 2026 | Choose Mochi's screen, Claude Desktop pill, Codex plan usage, full questions, safer settings.json |
+| [0.2.1](https://github.com/FinDArata/Miku/releases/tag/v0.2.1) | Oct 7, 2026 | Hermes Agent support |
+| [0.2.0](https://github.com/FinDArata/Miku/releases/tag/v0.2.0) | Oct 6, 2026 | Copilot CLI, Muse Code, OpenCode and Amp, weekly recap, 10 languages |
+| [0.1.9](https://github.com/FinDArata/Miku/releases/tag/v0.1.9) | Oct 6, 2026 | iPhone services with live details and actions, smarter Live Activity |
+| [0.1.8](https://github.com/FinDArata/Miku/releases/tag/v0.1.8) | Oct 5, 2026 | Kanon on iPhone: sessions, widgets, approvals with Face ID, Mochi in the Dynamic Island |
+| [0.1.7](https://github.com/FinDArata/Miku/releases/tag/v0.1.7) | Oct 4, 2026 | Keyboard shortcuts |
+| [0.1.6](https://github.com/FinDArata/Miku/releases/tag/v0.1.6) | Oct 4, 2026 | Mochi on the desktop |
+| [0.1.5](https://github.com/FinDArata/Miku/releases/tag/v0.1.5) | Oct 4, 2026 | Wardrobe and seasonal outfits, new launch greeting |
+| [0.1.4](https://github.com/FinDArata/Miku/releases/tag/v0.1.4) | Oct 3, 2026 | Live diffs, GitHub pull requests, CI, reviews and contribution grid |
+| [0.1.3](https://github.com/FinDArata/Miku/releases/tag/v0.1.3) | Oct 3, 2026 | Answer Claude's questions from the notch, plan usage, local models, Apple Music |
+| [0.1.2](https://github.com/FinDArata/Miku/releases/tag/v0.1.2) | Oct 2, 2026 | Codex and Cursor support, the permission card stays until you answer |
+| [0.1.1](https://github.com/FinDArata/Miku/releases/tag/v0.1.1) | Oct 2, 2026 | Gemini and OpenAI chat, Linux build, more agents and pills, security hardening |
+| [0.1.0](https://github.com/FinDArata/Miku/releases/tag/v0.1.0) | Sep 27, 2026 | First release: Mochi, Claude Code sessions, chat, file drop, integrations |
 
-Windows and Linux are released together, under the `windows-v*` and `linux-v*` tags. The newest Windows installer is always at [`windows-latest`](https://github.com/FinDArata/kanon/releases/tag/windows-latest), the newest Linux AppImage at [`linux-latest`](https://github.com/FinDArata/kanon/releases/tag/linux-latest).
+Windows and Linux are released together, under the `windows-v*` and `linux-v*` tags. The newest Windows installer is always at [`windows-latest`](https://github.com/FinDArata/Miku/releases/tag/windows-latest), the newest Linux AppImage at [`linux-latest`](https://github.com/FinDArata/Miku/releases/tag/linux-latest).
 
 | Windows & Linux | Date | Highlights |
 |---------|------|------------|
-| 0.5.9 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.9) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.9) | Nov 3, 2026 | The island never disappears (Mochi or the time when closed), ✕ to fold it, dictation keeps your language, your own dictation key, silence while you speak |
-| 0.5.8 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.8) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.8) | Oct 31, 2026 | 14 fixes and features by @Ohualtex: permission requests queue, Claude Desktop cards and pill, plan usage in the compact island, Flow pill in a corner |
-| 0.5.7 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.7) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.7) | Oct 31, 2026 | Mail with classic Outlook on Windows: search, filters, automatic sorting, mail plans from the chat; search the settings |
-| 0.5.6 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.6) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot); Korean and Japanese |
-| 0.5.5 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.5) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.5) | Oct 29, 2026 | No API key? Your own Claude Code answers the chat, Flow's clean-up and the notes of a call, on your Claude plan |
-| 0.5.4 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.4) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, approval cards go when the terminal takes over, a sturdier Flow pill, WhatsApp group names |
-| 0.5.3 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.3) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.3) | Oct 22, 2026 | WhatsApp in the island (experimental): one-click gateway install, your chats and replies |
-| 0.5.2 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.2) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.2) | Oct 22, 2026 | Mochi turns blue when a new version waits, What's new after each update; GitLab and Gitea pills; the weekly recap on Android |
-| 0.5.1 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.1) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.1) | Oct 20, 2026 | New version in the island, one click to install it on Windows; German and Turkish; an optional clock; Linux idle CPU fixed |
-| 0.5.0 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.5.0) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.0) | Oct 15, 2026 | Catches up with the Mac: the Miku window, Flow dictation with Parakeet offline (X11 and Wayland), the Notetaker, « OK Miku » |
-| 0.4.0 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.4.0) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.4.0) | Oct 11, 2026 | Your Android phone: the link for Kanon for Android, by @Rhytam23 — approvals with your fingerprint, answers, chat, off by default |
-| 0.3.0 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.3.0) · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.3.0) | Oct 9, 2026 | Linux catches up: Spotify with Mochi dancing, global shortcuts on Wayland, Open terminal brings the terminal back; open on hover, your own sounds, a colour per Mochi |
-| 0.2.0 · [Windows](https://github.com/FinDArata/kanon/releases/tag/windows-v0.2.0) | Oct 8, 2026 | Catches up with the Mac: nine agents with approvals, chat with any AI, plan usage, GitHub, wardrobe, 10 languages |
-| 0.1.1 · [Linux](https://github.com/FinDArata/kanon/releases/tag/linux-v0.1.1) | Oct 1, 2026 | First Linux build (beta) |
+| 0.5.9 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.9) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.9) | Nov 3, 2026 | The island never disappears (Mochi or the time when closed), ✕ to fold it, dictation keeps your language, your own dictation key, silence while you speak |
+| 0.5.8 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.8) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.8) | Oct 31, 2026 | 14 fixes and features by @Ohualtex: permission requests queue, Claude Desktop cards and pill, plan usage in the compact island, Flow pill in a corner |
+| 0.5.7 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.7) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.7) | Oct 31, 2026 | Mail with classic Outlook on Windows: search, filters, automatic sorting, mail plans from the chat; search the settings |
+| 0.5.6 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.6) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot); Korean and Japanese |
+| 0.5.5 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.5) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.5) | Oct 29, 2026 | No API key? Your own Claude Code answers the chat, Flow's clean-up and the notes of a call, on your Claude plan |
+| 0.5.4 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.4) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, approval cards go when the terminal takes over, a sturdier Flow pill, WhatsApp group names |
+| 0.5.3 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.3) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.3) | Oct 22, 2026 | WhatsApp in the island (experimental): one-click gateway install, your chats and replies |
+| 0.5.2 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.2) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.2) | Oct 22, 2026 | Mochi turns blue when a new version waits, What's new after each update; GitLab and Gitea pills; the weekly recap on Android |
+| 0.5.1 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.1) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.1) | Oct 20, 2026 | New version in the island, one click to install it on Windows; German and Turkish; an optional clock; Linux idle CPU fixed |
+| 0.5.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.0) | Oct 15, 2026 | Catches up with the Mac: the Miku window, Flow dictation with Parakeet offline (X11 and Wayland), the Notetaker, « OK Miku » |
+| 0.4.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.4.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.4.0) | Oct 11, 2026 | Your Android phone: the link for Kanon for Android, by @Rhytam23 — approvals with your fingerprint, answers, chat, off by default |
+| 0.3.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.3.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.3.0) | Oct 9, 2026 | Linux catches up: Spotify with Mochi dancing, global shortcuts on Wayland, Open terminal brings the terminal back; open on hover, your own sounds, a colour per Mochi |
+| 0.2.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.2.0) | Oct 8, 2026 | Catches up with the Mac: nine agents with approvals, chat with any AI, plan usage, GitHub, wardrobe, 10 languages |
+| 0.1.1 · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.1.1) | Oct 1, 2026 | First Linux build (beta) |
 
 Kanon for Android, by [@Rhytam23](https://github.com/Rhytam23), is released under the `android-v*` tags.
 
 | Android | Date | Highlights |
 |---------|------|------------|
-| [0.3.0](https://github.com/FinDArata/kanon/releases/tag/android-v0.3.0) | Oct 22, 2026 | A light theme and your phone's colours, nine more languages (Arabic right to left), quick actions, a Team widget, Share to Miku, the weekly recap, a per-agent mute |
-| [0.2.0](https://github.com/FinDArata/kanon/releases/tag/android-v0.2.0) | Oct 13, 2026 | Nine home-screen widgets: Mochi, your agents, plan usage and quick buttons, coloured by state |
-| [0.1.0](https://github.com/FinDArata/kanon/releases/tag/android-v0.1.0) | Oct 11, 2026 | First release: your agents, approvals with your fingerprint, answers and chat, linked to Windows or Linux |
+| [0.3.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0) | Oct 22, 2026 | A light theme and your phone's colours, nine more languages (Arabic right to left), quick actions, a Team widget, Share to Miku, the weekly recap, a per-agent mute |
+| [0.2.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.2.0) | Oct 13, 2026 | Nine home-screen widgets: Mochi, your agents, plan usage and quick buttons, coloured by state |
+| [0.1.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.1.0) | Oct 11, 2026 | First release: your agents, approvals with your fingerprint, answers and chat, linked to Windows or Linux |
 
 ## Demo mode
 
@@ -230,7 +230,7 @@ Everything else, troubleshooting included, is in [docs/IPHONE.md](docs/IPHONE.md
 
 ### Android
 
-1. **Download** `Miku-Android-0.3.0.apk` from the [release page](https://github.com/FinDArata/kanon/releases/tag/android-v0.3.0) on your phone (Android 11 or later) and open it. Android asks once to allow installs from your browser or file manager. You can also [build it from source](#build-from-source).
+1. **Download** `Miku-Android-0.3.0.apk` from the [release page](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0) on your phone (Android 11 or later) and open it. Android asks once to allow installs from your browser or file manager. You can also [build it from source](#build-from-source).
 2. **On your computer**, install Miku **0.4.0 or later** for [Windows](#windows) or [Linux](#linux): **Settings → Android phone**, turn on **Phone link**. If Windows asks about the firewall, allow Miku on private networks.
 3. **Show pairing code** and scan it with the app. The phone and the computer must be on the same Wi-Fi.
 
@@ -239,7 +239,7 @@ Everything else, troubleshooting included, is in [`android/README.md`](android/R
 ### Homebrew (macOS)
 
 ```bash
-brew tap louis-cfm/miku https://github.com/FinDArata/kanon
+brew tap louis-cfm/miku https://github.com/FinDArata/Miku
 brew install --cask miku
 ```
 
@@ -247,13 +247,13 @@ It installs the same signed and notarized GitHub build as the download below. Mi
 
 ### Download for macOS
 
-1. Grab the latest `Kanon.zip` from [Releases](https://github.com/FinDArata/kanon/releases).
+1. Grab the latest `Kanon.zip` from [Releases](https://github.com/FinDArata/Miku/releases).
 2. Unzip and move **Kanon.app** to `/Applications`.
 3. Launch it, and click **Open** when macOS asks you to confirm. Updating from 0.1.0? macOS may ask you, once for each key you saved, to let Miku use it: enter your Mac password and click **Always Allow**.
 
 ### Windows
 
-Download **[Miku-Windows.msi](https://github.com/FinDArata/kanon/releases/download/windows-latest/Miku-Windows.msi)** or **[Miku-Windows-setup.exe](https://github.com/FinDArata/kanon/releases/download/windows-latest/Miku-Windows-setup.exe)** (Windows 10/11, always the newest version) and run it. You can also [build it from source](#build-from-source).
+Download **[Miku-Windows.msi](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows.msi)** or **[Miku-Windows-setup.exe](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows-setup.exe)** (Windows 10/11, always the newest version) and run it. You can also [build it from source](#build-from-source).
 
 **Windows will show a warning the first time — that's expected.** The installer isn't code-signed yet, so SmartScreen doesn't know the publisher:
 
@@ -273,7 +273,7 @@ rest of the differences.
 
 ### Linux
 
-**Miku for Linux 0.5.9** is out (x86_64): [AppImage](https://github.com/FinDArata/kanon/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.AppImage) · [.deb](https://github.com/FinDArata/kanon/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-amd64.deb) · [.rpm](https://github.com/FinDArata/kanon/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.rpm) · [all files and checksums](https://github.com/FinDArata/kanon/releases/tag/linux-v0.5.9). The newest AppImage is always at [`linux-latest`](https://github.com/FinDArata/kanon/releases/download/linux-latest/Miku-Linux-x86_64.AppImage).
+**Miku for Linux 0.5.9** is out (x86_64): [AppImage](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.AppImage) · [.deb](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-amd64.deb) · [.rpm](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.rpm) · [all files and checksums](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.9). The newest AppImage is always at [`linux-latest`](https://github.com/FinDArata/Miku/releases/download/linux-latest/Miku-Linux-x86_64.AppImage).
 
 - **AppImage** (any distribution): `chmod +x Miku-Linux-*.AppImage`, then run it.
 - **Debian / Ubuntu**: `sudo apt install ./Miku-Linux-*.deb`
@@ -291,7 +291,7 @@ so there it runs through XWayland as a dock window at the top of the screen. See
 
 ```bash
 brew install xcodegen
-git clone https://github.com/FinDArata/kanon.git
+git clone https://github.com/FinDArata/Miku.git
 cd miku/NotchBuddy
 xcodegen
 open NotchBuddy.xcodeproj   # then ⌘R
@@ -300,7 +300,7 @@ open NotchBuddy.xcodeproj   # then ⌘R
 **Windows** — requirements: [Rust](https://rustup.rs), Node 20+, MSVC build tools.
 
 ```powershell
-git clone https://github.com/FinDArata/kanon.git
+git clone https://github.com/FinDArata/Miku.git
 cd miku/windows
 npm install
 npm run pack                # installer lands in windows/release/
@@ -314,7 +314,7 @@ sudo apt install build-essential pkg-config \
   libwebkit2gtk-4.1-dev libgtk-layer-shell-dev libayatana-appindicator3-dev \
   librsvg2-dev libssl-dev libdbus-1-dev patchelf \
   gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-git clone https://github.com/FinDArata/kanon.git
+git clone https://github.com/FinDArata/Miku.git
 cd miku/windows
 npm install
 npm run pack                # AppImage, .deb and .rpm land in windows/release/
@@ -323,7 +323,7 @@ npm run pack                # AppImage, .deb and .rpm land in windows/release/
 **Android** — requirements: JDK 17 and the Android SDK (platform 35).
 
 ```bash
-git clone https://github.com/FinDArata/kanon.git
+git clone https://github.com/FinDArata/Miku.git
 cd miku/android
 ./gradlew assembleDebug      # the APK lands in app/build/outputs/apk/debug/
 ```
@@ -491,9 +491,10 @@ Want to add or improve a translation? Open a PR with changes to `NotchBuddy/Reso
 
 ## Credits
 
-Built by [Louis Raillé](https://louisraille.fr) with Claude Code.
+**Miku is a fork of [Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app and its macOS code with Claude Code. Everything here started as his work: Miku is an edited, rebranded fork of it, maintained by [FinDArata](https://github.com/FinDArata), rebuilt for Windows, Linux and Android. The upstream name and the Mochi character remain his — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
+
 Kanon for Android and the phone link by [Rhytam Biswas (@Rhytam23)](https://github.com/Rhytam23).
-Thanks to everyone who sent a pull request — see [contributors](https://github.com/FinDArata/kanon/graphs/contributors).
+Thanks to everyone who sent a pull request — see [contributors](https://github.com/FinDArata/Miku/graphs/contributors).
 Inspired by the notch-companion concepts shared by design studios — this project is independent and not affiliated with any of them.
 
 ## License

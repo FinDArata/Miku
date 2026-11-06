@@ -21,8 +21,8 @@ Approve Claude Code permissions, watch your session work, drop a file, chat with
 
 ## Install
 
-Download **[Kanon-Windows.msi](https://github.com/FinDArata/kanon/releases/download/windows-latest/Kanon-Windows.msi)**
-(Windows Installer) or **[Kanon-Windows-setup.exe](https://github.com/FinDArata/kanon/releases/download/windows-latest/Kanon-Windows-setup.exe)**,
+Download **[Kanon-Windows.msi](https://github.com/FinDArata/Miku/releases/download/windows-latest/Kanon-Windows.msi)**
+(Windows Installer) or **[Kanon-Windows-setup.exe](https://github.com/FinDArata/Miku/releases/download/windows-latest/Kanon-Windows-setup.exe)**,
 always the newest version, and run it. The .exe installs for the current user only, with no admin prompt; the .msi may ask for admin rights.
 
 **Windows will show a warning the first time — that's expected.** The installer isn't code-signed yet, so SmartScreen doesn't know the publisher:
@@ -411,7 +411,7 @@ at most if you leave the card unanswered, never over a permission or a question)
 looks once even with the switch off.
 
 Once allowed, Kanon asks GitHub at launch and every 6 hours:
-`GET https://api.github.com/repos/FinDArata/kanon/releases?per_page=30`,
+`GET https://api.github.com/repos/FinDArata/Miku/releases?per_page=30`,
 unauthenticated, no cookies, nothing about you. It keeps the published
 `windows-vX.Y.Z` releases (`linux-vX.Y.Z` on Linux — never the rolling
 `windows-latest` / `linux-latest`, drafts or prereleases) and takes the highest.
@@ -713,7 +713,7 @@ npm run pack           # AppImage, .deb and .rpm in windows/release/
 On Arch Linux, build and install the package from `linux/arch/`:
 
 ```bash
-git clone https://github.com/FinDArata/kanon.git
+git clone https://github.com/FinDArata/Miku.git
 cd kanon/linux/arch
 makepkg -si
 ```

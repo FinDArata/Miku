@@ -186,7 +186,7 @@ export function showsUpdateHint(waiting: boolean, state: BotStateName, pending: 
 
 /** The release page of this version, for "All changes". */
 export function releasePage(platform: "windows" | "linux", version: string): string {
-  return `https://github.com/FinDArata/kanon/releases/tag/${platform}-v${encodeURIComponent(version)}`;
+  return `https://github.com/FinDArata/Miku/releases/tag/${platform}-v${encodeURIComponent(version)}`;
 }
 
 /** Buy Mochi a coffee: the same Stripe link as the Miku page (docs/index.html). */
