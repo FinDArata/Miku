@@ -8,10 +8,11 @@
 // scrolled out of sight.
 
 import { BotEngine, hexToRGB } from "../mochi/engine";
-import { VariantCache, parseVariant } from "../mochi/wardrobe";
+import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { onScreen, shouldAnimate } from "./frames";
 import type { BotStateName } from "../core/layout";
 import { State } from "../core/state";
+import { currentSkin, themeFor } from "../theme/skins";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -167,7 +168,13 @@ interface Particle {
   r: number;
   depth: number;
   phase: number;
-  white: boolean;
+  /** 0 = the page's colour, 1 = white, 2 = Miku's teal. */
+  kind: 0 | 1 | 2;
+}
+
+/** Miku's teal, as the skin in force has it: the thread every band shares. */
+function mikuColor(): string {
+  return themeFor(currentSkin()).accent;
 }
 
 /** The deep black, the colour and the particles, on `canvas`; `pointerFrom` is
@@ -192,7 +199,9 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
       r: 0.5 + Math.random() * 1.4,
       depth: 0.35 + Math.random() * 0.65,
       phase: Math.random() * Math.PI * 2,
-      white: Math.random() < 0.35,
+      // Mostly the page's own colour, with Miku's teal mixed in so every band
+      // still feels like the same app.
+      kind: Math.random() < 0.3 ? 1 : Math.random() < 0.55 ? 2 : 0,
     }));
   };
 
@@ -203,23 +212,27 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
       if (!ctx || w === 0) return;
       if (particles.length === 0) seed(w, h);
       strength += ((pointer ? 1 : 0) - strength) * Math.min(1, dt * 4);
+      // Asked every frame: a skin picked in the wardrobe reaches the band
+      // without the page being rebuilt.
+      const miku = mikuColor();
       ctx.clearRect(0, 0, w, h);
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(0, 0, w, h, radius);
       ctx.clip();
-      ctx.fillStyle = "#020203";
+      ctx.fillStyle = "#020405";
       ctx.fillRect(0, 0, w, h);
       const lin = ctx.createLinearGradient(w, 0, w * 0.35, h);
-      lin.addColorStop(0, rgba(color, 0.1));
+      lin.addColorStop(0, rgba(color, 0.12));
+      lin.addColorStop(0.5, rgba(miku, 0.05));
       lin.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = lin;
       ctx.fillRect(0, 0, w, h);
       // The voice brightens the glow and lifts the particles.
       const breath = 0.85 + 0.15 * Math.sin(t * 0.9) + voice * 0.55;
       const rad = ctx.createRadialGradient(w * 0.92, -h * 0.15, 0, w * 0.92, -h * 0.15, Math.max(w, h) * 0.55 * breath);
-      rad.addColorStop(0, rgba(color, 0.3 * breath));
-      rad.addColorStop(0.5, rgba(color, 0.08));
+      rad.addColorStop(0, rgba(color, 0.28 * breath));
+      rad.addColorStop(0.35, rgba(miku, 0.11 * breath));
       rad.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = rad;
       ctx.fillRect(0, 0, w, h);
@@ -250,7 +263,7 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
         if (p.y > h + 4) p.y = -4;
         if (p.x < -4) p.x = w + 4;
         if (p.x > w + 4) p.x = -4;
-        const tint = p.white ? "#FFFFFF" : color;
+        const tint = p.kind === 1 ? "#FFFFFF" : p.kind === 2 ? miku : color;
         if (r > 1.1) {
           ctx.fillStyle = rgba(tint, Math.min(1, alpha) * 0.12);
           ctx.beginPath();
@@ -262,6 +275,23 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Two slow waves along the floor of the band: they breathe with the
+      // glow, and stand up while you dictate.
+      const waveAmp = h * 0.035 * (0.6 + voice * 2.2);
+      for (let k = 0; k < 2; k++) {
+        const amp = waveAmp * (k === 0 ? 1 : 0.55);
+        const y0 = h - 6 - k * 4;
+        ctx.beginPath();
+        for (let x = -6; x <= w + 6; x += 5) {
+          const y = y0 + Math.sin(x / (52 + k * 26) + t * (0.65 + k * 0.3)) * amp;
+          if (x < 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = rgba(k === 0 ? color : miku, 0.14 + voice * 0.3);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
       ctx.restore();
     },
   });
@@ -271,11 +301,36 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
 
 /** "auto" → the season's Miku, remembered for the day. */
 const variants = new VariantCache();
+/** "auto" → the season's outfit, remembered for the day. */
+const seasons = new SeasonCache();
 
-/** One Miku alone (the sidebar's logo, an empty page), in the user's variant. */
-export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: BotStateName = "idle") {
+/** Which Miku is drawn: the one hovered in the wardrobe, else the saved one. */
+export function shownVariant() {
+  return State.variantPreview ?? variants.get(parseVariant(State.settings.mikuVariant));
+}
+
+/** What she wears: the one hovered in the wardrobe, else the saved one. */
+export function shownOutfit() {
+  return State.wardrobePreview ?? seasons.get(parseOutfit(State.settings.mochiOutfit));
+}
+
+/**
+ * One Miku alone (the sidebar's logo, an empty page, the wardrobe's preview),
+ * in the user's variant and outfit.
+ *
+ * `headroom` is how much of the canvas the character leaves free above itself,
+ * 0…1 of its height. A party hat and a witch hat rise well past the head, so
+ * the preview asks for room; without it their tip is cut off by the canvas.
+ */
+export function liveMochi(
+  canvas: HTMLCanvasElement,
+  color = "#F5F6F8",
+  state: BotStateName = "idle",
+  headroom = 0,
+) {
   const engine = new BotEngine();
-  engine.setVariant(variants.get(parseVariant(State.settings.mikuVariant)));
+  engine.setVariant(shownVariant());
+  engine.setOutfit(shownOutfit(), false);
   engine.bodyColor = hexToRGB(color);
   engine.setState(state, true);
   canvas.addEventListener("click", () => engine.slap());
@@ -293,9 +348,17 @@ export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: B
         engine.lookX = Math.max(-1, Math.min(1, mouse.x / 300));
         engine.lookY = Math.max(-1, Math.min(1, mouse.y / 300));
       }
+      // Asked every frame, as the island does: a variant or outfit picked (or
+      // only hovered) in the wardrobe shows here at once, not only after the
+      // window is rebuilt.
+      engine.setVariant(shownVariant());
+      engine.setOutfit(shownOutfit());
       engine.update(dt);
       ctx.clearRect(0, 0, w, h);
-      engine.draw(ctx, w, h);
+      // The character is drawn into the lower part of the canvas, with the
+      // spare height above for a tall hat.
+      const body = headroom > 0 ? h * (1 - headroom) : h;
+      engine.draw(ctx, w, body);
     },
   });
   return engine;
@@ -303,16 +366,20 @@ export function liveMochi(canvas: HTMLCanvasElement, color = "#F5F6F8", state: B
 
 // ── Page colours ──────────────────────────────────────────────────────────────
 
-/** Each page's colour, worn by the band at the top and by its glow. */
+/** Each page's colour, worn by the band at the top and by its glow.
+ *  The pages that belong to Miku herself (Home, General, Wardrobe) wear the
+ *  skin's accent: they change colour with her. */
 export const THEMES: Record<string, { color: string }> = {
+  home: { get color() { return mikuColor(); } },
   dictation: { color: "#FB923C" },
   notes: { color: "#3B9EFF" },
   insights: { color: "#34D399" },
   dictionary: { color: "#A78BFA" },
   snippets: { color: "#F7B32B" },
   styles: { color: "#F472B6" },
-  flowsettings: { color: "#8E939C" },
-  general: { color: "#8E939C" },
+  wardrobe: { get color() { return mikuColor(); } },
+  flowsettings: { color: "#7E9A98" },
+  general: { get color() { return mikuColor(); } },
   pills: { color: "#F5A524" },
   agents: { color: "#3B9EFF" },
   chat: { color: "#E07950" },

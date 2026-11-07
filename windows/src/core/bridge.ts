@@ -267,6 +267,12 @@ export const Bridge = {
 
   openSettingsWindow: () => call<void>("open_settings_window"),
 
+  /**
+   * A skin being tried on in the wardrobe: every window repaints with it until
+   * a click keeps it (or `null` puts the saved one back). Nothing is written.
+   */
+  emitSkinPreview: (variant: string | null) => call<void>("emit_skin_preview", { variant }),
+
   /** Writes to %LOCALAPPDATA%\Miku\miku.log, next to the Rust lines. */
   log: (message: string) => call<void>("log_line", { message }),
 

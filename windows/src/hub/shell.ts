@@ -13,6 +13,7 @@ import { icon, keyLabel } from "./ui";
 import { searchSettings, type SettingsSearchHit } from "./search";
 
 export type PageId =
+  | "home" | "wardrobe"
   | "dictation" | "notes" | "insights" | "dictionary" | "snippets" | "styles" | "flowsettings"
   | "general" | "pills" | "agents" | "chat" | "voice" | "integrations" | "phone" | "shortcuts"
   | "mailOverview" | "mailRules" | "mailBanned" | "mailVIP";
@@ -26,6 +27,7 @@ interface PageDef {
 }
 
 export const FLOW_PAGES: PageDef[] = [
+  { id: "wardrobe", icon: "star", title: () => t("Wardrobe") },
   { id: "dictation", icon: "mic", title: () => t("Dictation") },
   { id: "notes", icon: "record", title: () => t("Notetaker") },
   { id: "insights", icon: "chart", title: () => t("Statistics") },
@@ -56,7 +58,10 @@ export const MAIL_PAGES: PageDef[] = [
   { id: "mailVIP", icon: "star", title: () => t("VIP") },
 ];
 
-const ALL = [...FLOW_PAGES, ...NOTCH_PAGES, ...MAIL_PAGES];
+/** The landing page: what Miku is doing, one card per thing. */
+export const HOME_PAGE: PageDef = { id: "home", icon: "grid", title: () => t("Home") };
+
+const ALL = [HOME_PAGE, ...FLOW_PAGES, ...NOTCH_PAGES, ...MAIL_PAGES];
 
 /** What a page gets to draw itself and reach the rest of the window. */
 export interface HubContext {
@@ -103,7 +108,7 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   await onEvent<number[]>("flow-bands", (bands) => setVoiceLevel(Math.max(0, ...bands)));
   const shown = await FlowBridge.hubShown();
   if (shown !== null) setWindowShown(shown);
-  let current: PageId = "dictation";
+  let current: PageId = "home";
   let activeAnchor: string | null = null;
   let searchHits: SettingsSearchHit[] = [];
   let status: FlowStatus = (await FlowBridge.status()) ?? DEFAULT_STATUS;
@@ -151,7 +156,12 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
       color = "#34d399";
       text = t("Ready · hold {0}", { 0: keyLabel(status.keys === "wayland" ? "wayland" : flowKeyId(status.prefs), status.platform) });
     }
-    statusLine.append(h("i", { class: "dot", style: `background:${color}` }), h("span", { text }));
+    const dot = h("i", { class: "dot" });
+    dot.style.background = color;
+    dot.style.color = color;
+    // A ripple while the voice model downloads: the chip is doing something.
+    if (models === "downloading" && status.prefs.enabled) dot.classList.add("pulse");
+    statusLine.append(dot, h("span", { text }));
   }
 
   function updateSearchRowHighlights() {
@@ -227,6 +237,15 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
 
   const groupsContainer = h("div", { class: "hub-groups" });
   const resultsContainer = h("div", { class: "hub-search-results", style: "display:none" });
+
+  // Home sits above the groups: the window opens on it.
+  const homeButton = h("button", { class: "hub-item hub-item-home", onclick: () => void show("home") });
+  const homeLabel = h("span", { text: HOME_PAGE.title() });
+  homeButton.append(icon(HOME_PAGE.icon), homeLabel);
+  items.set("home", homeButton);
+  labels.set("home", homeLabel);
+  groupsContainer.append(homeButton);
+
   side.append(groupsContainer, resultsContainer);
 
   const group = (title: string, pages: PageDef[]) => {

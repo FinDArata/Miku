@@ -10,7 +10,7 @@ import {
   ISLAND_SHORTCUTS, SHORTCUTS, SHORTCUT_TEXT, activeKeys, displayKeys, duplicates, effective,
   recordPress, type Binding,
 } from "../core/shortcuts";
-import { DEFAULT_SETTINGS, type Settings } from "../core/state";
+import { DEFAULT_SETTINGS, State, type Settings } from "../core/state";
 import { closedIsland } from "../core/closed";
 import type { UpdateStatus } from "../core/update";
 import { SOUND_NAMES } from "../core/sound";
@@ -21,9 +21,9 @@ import {
 import { h, clear } from "../views/dom";
 import { startHub, type PageId } from "../hub/shell";
 import { anchor } from "../hub/ui";
+import { watchSkin } from "../theme/sync";
 import { FLOW_PAGE_RENDERERS } from "../hub/pages";
-import { claudeModelControl } from "./claude-models";
-import { agentsSection } from "./agents";
+import { claudeModelControl } from "./claude-models";import { agentsSection } from "./agents";
 import { phoneSection } from "./phone";
 import { whatsappSection } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
@@ -48,6 +48,9 @@ let root: HTMLElement = windowRoot;
 let hub: { redraw(): void; current(): PageId } | null = null;
 
 async function save() {
+  // The hub's own Miku (hub/hero.ts) follows State, as the island's does:
+  // keep that copy in step before the window that owns the settings hears it.
+  State.settings = settings;
   await Bridge.saveSettings(settings);
 }
 
@@ -1588,8 +1591,14 @@ async function main() {
     settings = { ...settings, ...boot.settings };
     version = boot.version;
   }
+  // This window keeps its settings in `settings`; the shared State is what
+  // hub/hero.ts reads, and it used to stay at the defaults here.
+  State.settings = settings;
   setLanguage(resolveLanguage(settings.language, systemLanguages()));
   applyDirection();
+  // The window wears the skin picked in the wardrobe, and follows it from any
+  // window (a hovered swatch included).
+  watchSkin();
   hub = await startHub(windowRoot, {
     version,
     flowPages: FLOW_PAGE_RENDERERS,
@@ -1609,6 +1618,7 @@ async function main() {
   void onEvent<Settings>("settings-changed", (s) => {
     const before = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}`;
     settings = { ...settings, ...s };
+    State.settings = settings;
     shortcutsListener?.settingsChanged();
     for (const redraw of declaredViews) redraw();
     const after = `${settings.chatProvider}|${settings.ollamaUrl}|${settings.lmstudioUrl}|${settings.customUrl}`;

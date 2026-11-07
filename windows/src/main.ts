@@ -17,6 +17,7 @@ import { Recap } from "./recap/recap";
 import { Updates } from "./island/update";
 import { WhatsNew } from "./whats-new/controller";
 import { onLanguageChange, resolveLanguage, setLanguage, systemLanguages } from "./i18n/i18n";
+import { watchSkin } from "./theme/sync";
 
 /** Shows the language Settings asks for ("" = the system's, when Miku has it). */
 function applyLanguage() {
@@ -26,6 +27,10 @@ function applyLanguage() {
 async function main() {
   const root = document.getElementById("root");
   if (!root) return;
+
+  // The island keeps its black notch, but its small accents (dots, progress,
+  // glows) take the skin's colour like the rest of the app.
+  watchSkin();
 
   void Sound.preload();
 

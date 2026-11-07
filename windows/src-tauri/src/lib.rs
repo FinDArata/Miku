@@ -121,9 +121,10 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
         *current = settings;
         (current.clone(), screen_changed, autostart_changed, shortcuts_changed)
     };
-    if let Err(err) = settings::save(&settings) {
-        log::line(format!("could not save settings: {err}"));
-    }
+    // The file is written a moment later (settings::save_soon): a slider or a
+    // switch flipped twice in a second costs one write, not two. What the rest
+    // of the app reads is already in `shared.settings`.
+    settings::save_soon(&app);
     if autostart_changed {
         let manager = app.autolaunch();
         let result = if settings.autostart { manager.enable() } else { manager.disable() };
@@ -148,6 +149,17 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
     }
     // Keep the other window in step (island ⇄ settings window).
     let _ = app.emit("settings-changed", settings);
+}
+
+/// A skin being tried on in the wardrobe (a hovered swatch): every window
+/// repaints with it, and `None` puts the saved one back. Nothing is written —
+/// the click that keeps a skin goes through save_settings as usual.
+#[tauri::command]
+fn emit_skin_preview(app: AppHandle, variant: Option<String>) {
+    // Only the three the app knows: a page cannot make the windows paint
+    // something the skin table has never heard of.
+    let variant = variant.filter(|v| matches!(v.as_str(), "classic" | "snow" | "sakura"));
+    let _ = app.emit("skin-preview", variant);
 }
 
 /// The island reports the system's languages at launch, for "System" in
@@ -640,9 +652,7 @@ fn subscription_set(app: AppHandle, shared: State<Shared>, provider: String, on:
         cli_relay::set(&mut current, &provider, on);
         current.clone()
     };
-    if let Err(err) = settings::save(&settings) {
-        log::line(format!("could not save settings: {err}"));
-    }
+    settings::save_soon(&app);
     let status = cli_relay::status(&settings);
     let _ = app.emit("settings-changed", settings);
     status
@@ -914,6 +924,7 @@ pub fn run() {
             mail::mail_plan_start,
             mail::mail_plan_cancel,
             save_settings,
+            emit_skin_preview,
             set_system_languages,
             set_collapsed,
             set_island_rect,
@@ -1162,6 +1173,8 @@ pub fn run() {
         .run(|app, event| {
             // Withdraw the phone link's announcement on the local network before the process ends.
             if let tauri::RunEvent::Exit = event {
+                // Whatever a debounced save still holds reaches the disk.
+                settings::flush(app);
                 phone_link::stop_on_exit(app);
                 notes::shutdown(app);
                 // GOWA started by Miku stops with it; the conversations were only in memory.

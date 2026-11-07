@@ -31,6 +31,19 @@
   --cyan: #22d3ee;
   --indigo: #6366f1;
   --pink: #f472b6;
+
+  /* Miku's own teal — Hatsune Miku's #39C5BB — the accent the hub and the pill
+     wear. Shared by hub.css and pill.css; the island keeps its own palette,
+     taking only the skin's accent for its small dots and glows.
+     The values come from the skin in force (src/theme/skins.ts); the literals
+     after each `var()` are the classic Miku, used before that script runs. */
+  --miku: var(--skin-accent, #39c5bb);
+  --miku-bright: var(--skin-accent-bright, #6fede3);
+  --miku-deep: var(--skin-accent-deep, #1f8c86);
+  --miku-glow: var(--skin-accent-soft, rgba(57, 197, 187, 0.35));
+  --miku-tint: var(--skin-accent-soft, rgba(57, 197, 187, 0.12));
+  --miku-line: var(--skin-accent-line, rgba(57, 197, 187, 0.28));
+  --on-miku: var(--skin-on-accent, #04211f);
 }
 
 * {

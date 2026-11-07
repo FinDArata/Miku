@@ -12,6 +12,7 @@ import type { Settings } from "../core/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { resolveLanguage, setLanguage, systemLanguages, t } from "../i18n/i18n";
 import { HUB_ICONS, keyLabel } from "../hub/ui";
+import { watchSkin } from "../theme/sync";
 
 const RESTING_LENGTH = 44;
 const RESTING_THICKNESS = 8;
@@ -52,6 +53,8 @@ mochi.isMini = true;
 mochi.bodyColor = hexToRGB("#F5F6F8");
 mochi.setState("idle", true);
 const mochiCanvas = el("canvas");
+/** Its context, made once: a canvas keeps the same one across a resize. */
+let mochiCtx: CanvasRenderingContext2D | null = null;
 
 function mochiSlot(): HTMLElement {
   const slot = el("span", "mochi");
@@ -96,8 +99,13 @@ function messageText(): string | null {
   }
 }
 
+// One measuring canvas for the life of the page: `measure` is asked on every
+// render, and a canvas per call is a canvas to collect each time.
+let measureCtx: CanvasRenderingContext2D | null = null;
+
 function measure(text: string): number {
-  const c = document.createElement("canvas").getContext("2d")!;
+  measureCtx ??= document.createElement("canvas").getContext("2d");
+  const c = measureCtx!;
   c.font = "500 12px system-ui, 'Segoe UI', sans-serif";
   return Math.ceil(c.measureText(text).width);
 }
@@ -178,7 +186,7 @@ function content(l: Look): HTMLElement {
       if (vertical()) {
         const icon = el("span");
         icon.append(svgIcon(state.phase === "failed" ? "mic" : "copy"));
-        icon.querySelector("svg")!.setAttribute("style", "width:13px;height:13px;fill:none;stroke:#e8e9ec;stroke-width:2");
+        icon.querySelector("svg")!.setAttribute("style", "width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2");
         c.append(mochiSlot(), icon);
       } else {
         c.append(mochiSlot(), el("span", "message", messageText() ?? ""));
@@ -253,6 +261,8 @@ function render() {
   const length = open ? openLength(l) : RESTING_LENGTH;
   const thickness = open ? OPEN_THICKNESS : RESTING_THICKNESS;
   root.className = `${state.edge}${vertical() ? " vertical" : ""}`;
+  // What the pill is showing, for the styles that differ by look.
+  root.dataset.look = l;
   const key = `${l}|${state.edge}|${state.phase}|${state.key}|${state.noteStartedAt}|${platform}|${state.voice?.phase ?? ""}`;
   if (!capsule || key !== lastKey) {
     lastKey = key;
@@ -413,7 +423,7 @@ function tick(now: number) {
       mochiCanvas.width = Math.round(size * dpr);
       mochiCanvas.height = Math.round(size * dpr);
     }
-    const ctx = mochiCanvas.getContext("2d");
+    const ctx = mochiCtx ?? (mochiCtx = mochiCanvas.getContext("2d"));
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
@@ -515,6 +525,8 @@ async function say(s: Say) {
 async function main() {
   const boot = await Bridge.boot();
   setLanguage(resolveLanguage(boot?.settings.language, systemLanguages()));
+  // The pill wears the same skin as the window, and changes with it.
+  watchSkin();
   const status = await FlowBridge.status();
   if (status) platform = status.platform;
   state = (await FlowBridge.pillState()) ?? state;

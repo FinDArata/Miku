@@ -38,8 +38,8 @@ window.addEventListener = () => {};
 
 const { h } = await import("../src/views/dom.ts");
 const { onLanguageChange, setLanguage, t } = await import("../src/i18n/i18n.ts");
-const { FLOW_PAGES, NOTCH_PAGES, startHub } = await import("../src/hub/shell.ts");
-const pages = [...FLOW_PAGES, ...NOTCH_PAGES];
+const { FLOW_PAGES, HOME_PAGE, NOTCH_PAGES, startHub } = await import("../src/hub/shell.ts");
+const pages = [HOME_PAGE, ...FLOW_PAGES, ...NOTCH_PAGES];
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 beforeEach(() => {
@@ -69,7 +69,9 @@ test("language redraw relabels sidebar nodes and preserves selection and navigat
     const logo = root.find(".hub-brand")[0].find("CANVAS")[0];
     const labels = buttons.map((button) => button.find("SPAN")[0]);
     const groups = root.find(".hub-group");
-    buttons[FLOW_PAGES.length].fire("click");
+    // Find the page by id, not by position: the sidebar gained pages over time.
+    const at = (id) => buttons[pages.findIndex((page) => page.id === id)];
+    at("general").fire("click");
     await settle();
     assert.equal(hub.current(), "general");
     assert.equal(root.find("H1")[0].textContent, "General");
@@ -85,13 +87,13 @@ test("language redraw relabels sidebar nodes and preserves selection and navigat
       assert.equal(groups[1].textContent, t("Notch"));
       assert.equal(root.find(".hub-status")[0].textContent, t("Dictation is off"));
       assert.equal(root.find(".hub-brand")[0].find("CANVAS")[0], logo);
-      assert.equal(hub.current(), "general");
-      assert.deepEqual(buttons.filter((button) => button.classList.contains("on")), [buttons[FLOW_PAGES.length]]);
+    assert.equal(hub.current(), "general");
+    assert.deepEqual(buttons.filter((button) => button.classList.contains("on")), [at("general")]);
       assert.equal(root.find("H1")[0].textContent, t("General"));
       assert.equal(document.documentElement.dataset.dir, language === "ar" ? "rtl" : "ltr");
     }
     assert.deepEqual(calls, [], "redrawing must not save settings or request data");
-    buttons[0].fire("click");
+    at("dictation").fire("click");
     await settle();
     assert.equal(hub.current(), "dictation", "existing click listeners still work");
   } finally {

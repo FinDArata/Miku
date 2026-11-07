@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### Miku's rooms wear Miku: the hub and the pill, redrawn
+
+- The hub is rebuilt around a **Home** page: one card per thing (dictation, agents, integrations, the chat's model, OK Miku, the phone link) and a way into each page from it. The sidebar's active row carries a teal bar, the brand is a teal gradient, and pages arrive with a short fade instead of a jump.
+- The pill wears the same colours: a thin capsule that breathes teal while resting, controls that arrive one after another when it opens, teal audio bars, and teal buttons and bubbles.
+- The bands on top of each page keep their page's colour, but the particles and the two waves along their floor now mix Miku's teal and follow the dictation level.
+
+### Skins: the wardrobe paints the whole window
+
+- The wardrobe's choice of Miku — classic, Snow, Sakura, or the season's — is now the interface's theme, not only her hair. Each skin is its accent plus the surfaces and text derived from it, handed to the stylesheets as `--skin-*` properties, so the hub, the pill and the island's small accents change together and fade between colours instead of snapping.
+- The accent of each skin is that Miku's tie, straight from her palette, so the window and the character can never disagree about which skin is on.
+- The skin is remembered across launches, so the window opens in its own colour rather than flashing the default first.
+- A **Wardrobe** page in the hub shows the three Miku side by side with Miku herself as the preview; hovering one tries it on every window, clicking keeps it. Home carries a Skin card with the same way in.
+- Trying a skin on never writes it down: a hover is not a choice.
+
+### Outfits are drawn on Miku again
+
+- Outfits had been switched off wholesale when Miku was redrawn as a chibi: their anchors still described the old round Mochi head, so a hat would have floated. The anchors now follow her own head — the hair cap at (150, 64), 88×80 — and the party hat, the witch hat and the crown sit on her crown.
+- The preview leaves room above the character for the tall hats, which were having their tips cut off by the canvas.
+- Covered by tests that record the drawing calls: they fail if outfits are ever switched off again.
+
+### Cheaper frames, same picture
+
+- The body outline and the gradients (back hair, the two twin-tails, the skirt, the irises) are made once per variant and canvas instead of every frame; the outline is rebuilt only while the mailbox morph is running, and the iris gradients are kept per rounded gaze.
+- The chat's streaming answer is drawn once a frame instead of once per token, and only its last block is rebuilt: the blocks above it are already final in a stream.
+- A compact island with mini bots no longer stops its frame loop. Their engines breathe on their own and are not the island's engine, so the loop used to stop between their frames and leave them frozen mid-breath.
+- The lyrics pill redraws and romanizes only when the line changes, as the full lyrics card already did; the words of a line are kept once romanized.
+- Colour strings (`rgba(…)`) are cached, the bot glow writes no style when nothing changed, and every canvas — Mochi's, the mini bots', the pill's, the measuring one — keeps its drawing context instead of asking for it per frame.
+
+### Background work: less disk, fewer wakeups
+
+- `settings.json` saves are debounced: a burst of changes writes at most once a second, the latest snapshot winning, through the same temp-write/fsync/rename. Dragging Mochi across the desktop or moving a settings control no longer costs one full serialization and fsync per event. A save that must be on disk before it returns (installing hooks) still writes at once, and quitting flushes whatever is pending.
+- `miku.log` keeps one open handle and rotates to `miku.log.1` past 1 MB instead of deleting the history.
+- Integration pollers now live and die with their pills: switched off, their tasks are cancelled instead of waking every 15–300 s only to decline the work. GitHub's pulse and activity loops follow the same rule.
+- Every poller shares one `reqwest` client, so its connection pool and TLS sessions survive between ticks; the forges keep a separate no-redirect client for their tokens.
+- The pipe relay searches only the bytes that just arrived for the newline that ends a payload, instead of rescanning the whole buffer per chunk — large diffs no longer read quadratically (app and hook alike).
+- The hook reads its own SID once per process, `cli_candidates` caches found CLIs (an empty answer is retried), the Outlook process check is cached for two seconds, and Codex's app-server is given a moment to exit on its own before the whole tree is killed.
+
+### Build
+
+- The generated sounds are 22.05 kHz instead of 44.1: the chimes are quiet and sit under 1 kHz, so the installer carries about 1.1 MB less with nothing audible lost.
+- `predev`/`prebuild` rebuild the release hook only when `hook/` (or the workspace manifests) is newer than the binary, instead of relinking an LTO binary on every run.
+
 ### No console window, in a debug build too
 
 - `windows_subsystem = "windows"` used to be gated on `not(debug_assertions)`, so a debug build opened a console window on every start. It now applies to every build; a debug run that wants the log back sets `MIKU_CONSOLE=1`, which attaches to the terminal that started it (`AttachConsole`) instead of opening a window of its own.

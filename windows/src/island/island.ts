@@ -23,7 +23,7 @@ import { looksLikeSong } from "../lyrics/song";
 import { HIDE_AFTER_PAUSE_MS, holdStillUp } from "../lyrics/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
-import { syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
+import { miniBotCount, syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
 import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
@@ -113,6 +113,9 @@ export class Island {
   private lyricsLoading = false;
   private lyricsGeneration = 0;
   private lyricsTicker: number | null = null;
+  /** The line the pill shows now, and the words already romanized for it. */
+  private lyricsShownKey = "";
+  private lyricsRomanized = new Map<number, string>();
 
   private header!: ViewHost;
   private views!: Map<IslandViewName, ViewHost>;
@@ -138,6 +141,11 @@ export class Island {
   private canvasPx = 0;
   /** The pixel ratio Mochi's bitmap was sized for: it changes with the monitor. */
   private canvasDpr = 0;
+  /** The drawing context of that bitmap; it survives a resize. */
+  private botCtx: CanvasRenderingContext2D | null = null;
+  /** What the glow was last drawn as, so an unchanged frame writes nothing. */
+  private glowKey = "";
+  private glowVisible = false;
 
   // Rust starts the window at full size so the launch greeting has room.
   private collapsed = false;
@@ -331,6 +339,8 @@ export class Island {
       },
       previewVariant: (variant) => {
         State.variantPreview = variant;
+        // The window and the pill try the skin on too, without keeping it.
+        void Bridge.emitSkinPreview(variant);
         State.notify();
       },
       keyboard: (on) => {
@@ -1027,6 +1037,7 @@ export class Island {
       return;
     }
     this.lyricsSong = { timed: [], plain: [] };
+    this.lyricsRomanized.clear();
     this.lyricsPausedAt = null;
     this.refreshLyricsPill();
     if (!cached) this.lyricsLoading = true;
@@ -1042,6 +1053,7 @@ export class Island {
     this.lyricsLoading = false;
     if (mine !== this.lyricsGeneration) return;
     this.lyricsSong = words ?? { timed: [], plain: [] };
+    this.lyricsRomanized.clear();
     if (!this.lyricsSong.timed.length) {
       // No words. A song LRCLIB has none for is settled (the page remembers the
       // miss); a busy answer is not, and clears the key so a later report asks
@@ -1064,7 +1076,11 @@ export class Island {
       if (mine !== this.lyricsGeneration) return;
       if (ready) this.lyricsLanguage = "japanese";
     }
-    this.lyricsLanguage = languageOfLines(lines);
+    const spoken = languageOfLines(lines);
+    if (spoken !== this.lyricsLanguage) {
+      this.lyricsLanguage = spoken;
+      this.lyricsRomanized.clear();
+    }
     this.drawLyricsPill(Spotify.state);
     this.refreshLyricsPill();
   }
@@ -1089,18 +1105,31 @@ export class Island {
   private drawLyricsPill(s: SpotifyState) {
     const lines = this.lyricsSong.timed;
     if (!lines.length) return;
-    const els = this.buildLyricsPill();
     const index = Math.max(0, lineIndexAt(lines, Math.max(0, spotifyPosition(s, Date.now()))));
+    // The pill wears the song's own title, never the name of whatever took the
+    // session over: a feed app's title belongs to the feed, not to these words.
+    const title = this.lyricsTitle || (s.track?.title ?? "");
+    // The same line (most of the song): nothing to redraw, nothing to romanize.
+    const key = `${this.lyricsKey}|${this.lyricsLanguage}|${index}|${title}`;
+    if (key === this.lyricsShownKey && this.lyricsEls) return;
+    this.lyricsShownKey = key;
+
+    const els = this.buildLyricsPill();
     // The neighbours skip the instrumental gaps LRCLIB stamps: a verse's first
     // line would otherwise have an empty line above it, and a gap would leave
     // the whole pill wordless.
     const before = previousSungLine(lines, index);
     const after = nextSungLine(lines, index);
-    const text = (i: number) => (i >= 0 && i < lines.length ? lines[i].text : "");
-    const read = (i: number) => romanizeMixed(text(i), this.lyricsLanguage);
-    // The pill wears the song's own title, never the name of whatever took the
-    // session over: a feed app's title belongs to the feed, not to these words.
-    els.title.textContent = this.lyricsTitle || (s.track?.title ?? "");
+    const read = (i: number) => {
+      if (i < 0 || i >= lines.length) return "";
+      let text = this.lyricsRomanized.get(i);
+      if (text === undefined) {
+        text = romanizeMixed(lines[i].text, this.lyricsLanguage);
+        this.lyricsRomanized.set(i, text);
+      }
+      return text;
+    };
+    els.title.textContent = title;
     els.past.textContent = read(before);
     els.current.textContent = read(index);
     els.next.textContent = read(after);
@@ -1130,6 +1159,8 @@ export class Island {
     this.lyricsRetryAt = 0;
     this.lyricsGeneration++;
     this.lyricsSong = { timed: [], plain: [] };
+    this.lyricsRomanized.clear();
+    this.lyricsShownKey = "";
     this.lyricsFeedHold = false;
     this.lyricsFeedSince = null;
     this.lyricsTitle = "";
@@ -1507,12 +1538,16 @@ export class Island {
       this.width.animating || this.height.animating || this.radius.animating;
     const botMoving = !this.botCx.settled || !this.botCy.settled || !this.botSize.settled;
     // Closed, only the folding — and Mochi reaching his place in the closed island.
+    // The mini bots breathe on their own, and their engines are not this one:
+    // without them here, a compact island whose tasks are all "working" stopped
+    // its loop and left them frozen mid-breath.
     const busy = State.mode === "hidden"
       ? settling || (closedIsland(State.settings.closedIsland) === "mochi" &&
         (botMoving || nowMs < this.closedAwakeUntil))
       : settling ||
         !this.botCx.settled || !this.botCy.settled || !this.botSize.settled ||
-        greetingActive || this.engine.busy || UploadSeq.isActive || viewAnimating;
+        greetingActive || this.engine.busy || miniBotCount() > 0 ||
+        UploadSeq.isActive || viewAnimating;
 
     if (busy) {
       requestAnimationFrame(this.frame);
@@ -1542,14 +1577,25 @@ export class Island {
     if (State.mode === "expanded" && State.view !== "uploading" && !greetingActive && !this.uploadActive && !away) {
       const d = p.diameter;
       const color = botGlowColor(State.effectiveState);
-      this.botGlow.style.display = "block";
-      this.botGlow.style.width = `${d * 2.2}px`;
-      this.botGlow.style.height = `${d * 2.2}px`;
-      this.botGlow.style.left = `${this.botCx.value - d * 1.1}px`;
-      this.botGlow.style.top = `${this.botCy.value - d * 1.1}px`;
-      this.botGlow.style.background = `radial-gradient(circle, ${color} 0%, transparent 62%)`;
-      this.botGlow.style.opacity = String(botGlowOpacity(State.effectiveState));
-    } else {
+      const opacity = botGlowOpacity(State.effectiveState);
+      const cx = this.botCx.value;
+      const cy = this.botCy.value;
+      // A still frame writes nothing: the glow only changes with the colour,
+      // the size, the place or the state's opacity.
+      const key = `${color}|${d}|${cx}|${cy}|${opacity}`;
+      if (key !== this.glowKey || !this.glowVisible) {
+        this.glowKey = key;
+        this.glowVisible = true;
+        this.botGlow.style.display = "block";
+        this.botGlow.style.width = `${d * 2.2}px`;
+        this.botGlow.style.height = `${d * 2.2}px`;
+        this.botGlow.style.left = `${cx - d * 1.1}px`;
+        this.botGlow.style.top = `${cy - d * 1.1}px`;
+        this.botGlow.style.background = `radial-gradient(circle, ${color} 0%, transparent 62%)`;
+        this.botGlow.style.opacity = String(opacity);
+      }
+    } else if (this.glowVisible) {
+      this.glowVisible = false;
       this.botGlow.style.display = "none";
     }
   }
@@ -1573,7 +1619,7 @@ export class Island {
     this.botCanvas.style.left = `${this.botCx.value - wCss / 2}px`;
     this.botCanvas.style.top = `${this.botCy.value - BOT_OVERHANG / 2 - hCss / 2}px`;
 
-    const ctx = this.botCanvas.getContext("2d");
+    const ctx = this.botCtx ?? (this.botCtx = this.botCanvas.getContext("2d"));
     if (!ctx) return;
 
     const focus = State.focusTask;

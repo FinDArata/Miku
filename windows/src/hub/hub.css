@@ -3,18 +3,40 @@
    look as the Mac's Kanon window (FlowHub.swift). */
 
 :root {
-  --hub-panel: #0e0f11;
-  --hub-card: #18191c;
-  --hub-field: #1f2024;
-  --hub-line: rgba(255, 255, 255, 0.07);
-  --hub-text: #f5f6f8;
-  --hub-body: #e1e3e6;
-  --hub-secondary: #8e939c;
-  --hub-muted: #6b7079;
-  --hub-accent: #2ee6c8;
-  --hub-on-accent: #04231f;
+  /* Miku's teal on a near-black that leans the same way, so the window reads
+     as hers and not as a generic dark settings app.
+     The values come from the skin in force (src/theme/skins.ts); the literals
+     after each `var()` are the classic Miku, used before that script runs. */
+  --hub-panel: var(--skin-panel, #0b0f11);
+  --hub-card: var(--skin-card, #141a1b);
+  --hub-field: var(--skin-field, #1b2223);
+  --hub-line: var(--skin-line, rgba(150, 224, 218, 0.09));
+  --hub-text: var(--skin-text, #f3fbfa);
+  --hub-body: var(--skin-body, #dcebe9);
+  --hub-secondary: var(--skin-secondary, #92a6a4);
+  --hub-muted: var(--skin-muted, #667d7b);
+  --hub-accent: var(--skin-accent, #39c5bb);
+  --hub-accent-bright: var(--skin-accent-bright, #6fede3);
+  --hub-accent-deep: var(--skin-accent-deep, #1f8c86);
+  --hub-on-accent: var(--skin-on-accent, #04211f);
+  --hub-accent-soft: var(--skin-accent-soft, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.12));
+  --hub-accent-line: var(--skin-accent-line, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.34));
   --hub-green: #34d399;
   --hub-red: #ff453a;
+}
+
+/* The skin change is a fade: the surfaces that carry colour ease from the old
+   skin to the new one instead of snapping. */
+body.hub-window,
+.hub-side,
+.hub-panel,
+.hub-status,
+.hub-home-card {
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 body.hub-window {
@@ -47,8 +69,16 @@ body.hub-window {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 8px 14px;
+  padding: 6px 8px 16px;
   font: 700 18px var(--font);
+  letter-spacing: -0.01em;
+}
+
+.hub-brand span {
+  background: linear-gradient(110deg, #f6fffe 15%, var(--hub-accent-bright) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .hub-brand canvas {
@@ -71,7 +101,8 @@ body.hub-window {
 }
 
 .hub-search:focus-within {
-  border-color: rgba(46, 230, 200, 0.55);
+  border-color: var(--hub-accent-line);
+  box-shadow: 0 0 0 3px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1);
 }
 
 .hub-search svg.hub-search-icon {
@@ -169,11 +200,11 @@ body.hub-window {
 }
 
 .hub-search-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hub-accent-soft);
 }
 
 .hub-search-row.on {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.2), rgba(var(--skin-accent-rgb, 57, 197, 187), 0.07));
   color: var(--hub-text);
 }
 
@@ -215,10 +246,10 @@ body.hub-window {
     box-shadow: 0 0 0 0 transparent;
   }
   30% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
   }
   75% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
@@ -233,11 +264,12 @@ body.hub-window {
   font: 700 10.5px var(--font);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--hub-muted);
+  color: rgba(var(--skin-accent-bright-rgb, 111, 237, 227), 0.5);
   padding: 12px 10px 6px;
 }
 
 .hub-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -246,9 +278,28 @@ body.hub-window {
   height: 32px;
   border-radius: 9px;
   background: transparent;
-  color: #c7cad0;
+  color: #c3d6d4;
   font: 500 13.5px var(--font);
   text-align: start;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+/* Home sits above the groups, with a hairline under it. */
+.hub-item-home {
+  margin-bottom: 5px;
+  border-bottom: 1px solid transparent;
+}
+
+.hub-item-home::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -3px;
+  height: 1px;
+  background: var(--hub-line);
 }
 
 .hub-item svg {
@@ -261,10 +312,12 @@ body.hub-window {
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.9;
+  transition: color 0.14s ease;
 }
 
 .hub-item:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.08);
+  color: #e4f7f4;
   transform: none;
 }
 
@@ -273,9 +326,27 @@ body.hub-window {
 }
 
 .hub-item.on {
-  background: rgba(255, 255, 255, 0.09);
+  background: linear-gradient(90deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.18), rgba(var(--skin-accent-rgb, 57, 197, 187), 0.05));
   color: var(--hub-text);
   font-weight: 600;
+}
+
+/* The teal bar on the left of the page you are on. */
+.hub-item.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(to bottom, var(--hub-accent-bright), var(--hub-accent));
+  box-shadow: 0 0 10px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
+}
+
+.hub-item.on svg {
+  color: var(--hub-accent-bright);
+  opacity: 1;
 }
 
 .hub-side .spacer {
@@ -289,15 +360,40 @@ body.hub-window {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(120deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(var(--skin-accent-rgb, 57, 197, 187), 0.14);
   color: var(--hub-secondary);
   font-size: 12px;
   line-height: 1.3;
 }
 
 .hub-status .dot {
+  position: relative;
   width: 7px;
   height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+}
+
+/* A ripple while the model downloads: the chip is doing something. */
+.hub-status .dot.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: hub-dot-pulse 1.6s ease-out infinite;
+}
+
+@keyframes hub-dot-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
 }
 
 .hub-version {
@@ -331,6 +427,19 @@ body.hub-window {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  animation: hub-page-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A new page arrives from a hair below, instead of jumping in. */
+@keyframes hub-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* The notch's pages keep their sections as they ship, at the panel's width. */
@@ -349,6 +458,7 @@ body.hub-window {
   background:
     radial-gradient(ellipse 60% 90% at 92% -15%, var(--hero-glow, transparent), transparent 70%),
     linear-gradient(to bottom left, var(--hero-tint, transparent), transparent 65%),
+    linear-gradient(135deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.07), transparent 42%),
     #020203;
 }
 
@@ -490,7 +600,7 @@ button.hub-btn.primary {
 }
 
 button.hub-btn.primary:hover:not(:disabled) {
-  background: #63f0d9;
+  background: var(--hub-accent-bright);
 }
 
 button.hub-btn.danger {
@@ -540,7 +650,8 @@ button.hub-icon svg {
 .hub-input:focus,
 .hub-textarea:focus,
 .hub-select:focus {
-  border-color: rgba(251, 146, 60, 0.6);
+  border-color: var(--hub-accent-line);
+  box-shadow: 0 0 0 3px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.08);
 }
 
 .hub-textarea {
@@ -771,6 +882,306 @@ button.hub-icon svg {
   height: 64px;
 }
 
+/* ── Wardrobe ─────────────────────────────────────────────────────────────── */
+
+.hub-wardrobe {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* Miku herself, on the skin's own colour. */
+.hub-skin-preview-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 18px 18px;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, var(--card-tint, var(--hub-accent-soft)), transparent 70%),
+    var(--hub-card);
+  border: 1px solid var(--card-line, var(--hub-line));
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.hub-skin-preview {
+  width: 150px;
+  height: 186px;
+  flex: 0 0 186px;
+}
+
+.hub-skin-preview-card .meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.hub-skin-name {
+  font: 700 16px var(--font);
+  color: var(--card-color, var(--hub-text));
+}
+
+.hub-wardrobe-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hub-skin-card {
+  gap: 10px;
+}
+
+.hub-skin-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hub-skin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--hub-line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--hub-body);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.hub-skin:hover {
+  border-color: var(--hub-accent-line);
+  background: var(--hub-accent-soft);
+  transform: translateY(-1px);
+}
+
+.hub-skin.on {
+  border-color: var(--hub-accent);
+  background: linear-gradient(160deg, var(--hub-accent-soft), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 0 0 1px var(--hub-accent-line) inset;
+}
+
+.hub-skin .label {
+  font: 600 12.5px var(--font);
+  color: var(--hub-text);
+}
+
+.hub-skin .sub {
+  font: 400 10.5px var(--mono);
+  color: var(--hub-muted);
+  letter-spacing: 0.02em;
+}
+
+.hub-skin-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.hub-skin-swatch .auto {
+  font: 700 8px var(--font);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.72);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.hub-outfit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-outfit {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hub-line);
+  background: transparent;
+  color: var(--hub-secondary);
+  font: 500 12px var(--font);
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.hub-outfit:hover {
+  border-color: var(--hub-accent-line);
+  color: var(--hub-text);
+}
+
+.hub-outfit.on {
+  border-color: var(--hub-accent);
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .hub-wardrobe {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-skin-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Home ─────────────────────────────────────────────────────────────────── */
+
+/* The cards of the Home page: the band's colour, borrowed small. */
+.hub-home {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 14px;
+}
+
+.hub-home-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  min-height: 148px;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 90% 120% at 100% -25%, var(--card-tint, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1)), transparent 68%),
+    var(--hub-card);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-text);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.hub-home-card:hover {
+  border-color: var(--card-line, var(--hub-accent-line));
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1);
+}
+
+.hub-home-card:active {
+  transform: translateY(0);
+}
+
+.hub-home-card .top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-home-card .tile {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-tint, var(--hub-accent-soft));
+  color: var(--card-color, var(--hub-accent-bright));
+}
+
+.hub-home-card .tile svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-home-card .name {
+  font: 600 13.5px var(--font);
+  color: var(--hub-body);
+}
+
+.hub-home-card .state {
+  font: 700 21px/1.15 var(--font);
+  letter-spacing: -0.015em;
+}
+
+.hub-home-card .hint {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.hub-home-card .go {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--card-color, var(--hub-accent));
+  font: 600 12.5px var(--font);
+}
+
+.hub-home-card .go::after {
+  content: "→";
+  transition: transform 0.16s ease;
+}
+
+.hub-home-card:hover .go::after {
+  transform: translateX(3px);
+}
+
+.hub-home-card .swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.hub-home-card .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.hub-home-card .swatches .more {
+  color: var(--hub-muted);
+  font-size: 11.5px;
+}
+
+/* The strip under the band: the key and what it does. */
+.hub-home-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.hub-home-quick .hub-keycap {
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
+  box-shadow: inset 0 0 0 1px var(--hub-accent-line);
+}
+
 /* ── Statistics ───────────────────────────────────────────────────────────── */
 
 .hub-stat-row {
@@ -816,7 +1227,7 @@ button.hub-icon svg {
   align-items: flex-end;
   gap: 4px;
   height: 180px;
-  border-bottom: 1px dashed rgba(251, 146, 60, 0.35);
+  border-bottom: 1px dashed rgba(var(--skin-accent-rgb, 57, 197, 187), 0.25);
 }
 
 .hub-bars i {

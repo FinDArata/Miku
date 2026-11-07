@@ -7,7 +7,7 @@
 import { Ease, lerp, type EaseFn } from "../core/anim";
 import { Sound } from "../core/sound";
 import type { BotEmoteName, BotStateName } from "../core/layout";
-import { drawOutfitBehind, drawOutfitFront, makeHead } from "./outfits";
+import { drawOutfitBehind, drawOutfitFront, type Head } from "./outfits";
 import type { Outfit } from "./wardrobe";
 import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
 
@@ -62,6 +62,16 @@ interface Particle {
   age: number; life: number; rot: number; size: number;
 }
 
+/** The gradients of one variant, made by one canvas context. */
+interface GradientCache {
+  variant: MikuVariant;
+  hair?: CanvasGradient;
+  tails?: [CanvasGradient, CanvasGradient];
+  skirt?: CanvasGradient;
+  /** By rounded (ey, es): the iris follows the gaze and the surprise. */
+  iris: Map<number, CanvasGradient>;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 // (Mochi's squircle constants retired with the Miku chibi; see K_* below.)
 
@@ -81,6 +91,27 @@ const INK = "rgb(32,36,46)";
 
 function mixRGB(a: RGB, b: RGB, k: number): RGB {
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+}
+
+/**
+ * The head the outfits hang on: Miku's own, not the old Mochi's.
+ *
+ * The hat, glasses and scarf code (outfits.ts) measures everything in head
+ * radii, and was written for a head of (R·1.14, R·0.88). Miku's head is the
+ * hair cap at (150, 64) in the 0..300 prototype space, with radii 88×80; `u`
+ * turns those into canvas pixels. The caller moves the context up to that
+ * centre first, so a hat lands on the crown instead of floating over the body.
+ */
+function dressedHead(
+  u: number,
+  yaw: number,
+  pitch: number,
+  physDx: number,
+  physDy: number,
+): Head {
+  const rx = 88 * u;
+  const ry = 80 * u;
+  return { R: rx, rx, ry, yaw, pitch, physDx, physDy };
 }
 
 /**
@@ -172,8 +203,20 @@ export function hexToRGB(hex: string): RGB {
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
 }
 
-const rgba = (c: RGB, a = 1) =>
-  `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
+// The palette asks for these strings dozens of times a frame; the channels of
+// each colour are read once and kept, as hero.ts does for its particles.
+const channels = new Map<number, string>();
+
+const rgba = (c: RGB, a = 1) => {
+  const key = (Math.round(c[0] * 255) << 16) | (Math.round(c[1] * 255) << 8) | Math.round(c[2] * 255);
+  let rgb = channels.get(key);
+  if (rgb === undefined) {
+    rgb = `${key >> 16},${(key >> 8) & 255},${key & 255}`;
+    if (channels.size > 1024) channels.clear();
+    channels.set(key, rgb);
+  }
+  return `rgba(${rgb},${a})`;
+};
 
 const mix3 = (a: RGB, b: RGB, t: number): RGB => [
   lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t),
@@ -308,6 +351,12 @@ export class BotEngine {
   private tweens = new Map<PropKey, Tween>();
   private locks = new Set<PropKey>();
   private particles: Particle[] = [];
+
+  // The body outline and the gradients are the same every frame (the palette
+  // only changes on setVariant, the morph only while it runs): built once and
+  // reused, per canvas, since a gradient belongs to the context that made it.
+  private bodyCache: { key: string; path: Path2D } | null = null;
+  private gradients = new WeakMap<CanvasRenderingContext2D, GradientCache>();
 
   lookX = 0;
   lookY = 0;
@@ -903,13 +952,22 @@ export class BotEngine {
     if (this.tilt !== 0) x.rotate(this.tilt);
     x.scale(this.sx, this.sy);
 
-    // Miku: jangkar outfit (makeHead) masih geometri kepala Mochi — topi/aksesori
-    // sementara TIDAK digambar sampai diadaptasi ke kepala chibi (fase lanjut).
-    // Tanpa ini, topi melayang di posisi lama dan terlihat seperti kepala terbelah.
-    const dressed = false;
-    const head = dressed ? makeHead(R, this.yaw, this.pitch, this.physDx, this.physDy) : null;
+    // Outfits are anchored to the chibi's own head. The hat and glasses code in
+    // outfits.ts was written for a head ellipse centred on the body centre with
+    // radii (R·1.14, R·0.88); Miku's head is the hair cap at (150, 64) in the
+    // 0..300 prototype space, 88×80. So the context is moved up to that centre
+    // and the head is given those radii: a hat then sits on the crown instead of
+    // floating over the body. Minis never wear one.
+    const u = R / 158;
+    const headY = -(150 - 64) * u;
+    const head = this.isMini ? null : dressedHead(u, this.yaw, this.pitch, this.physDx, this.physDy);
     const outfitState = { presence: this.outfitPresence, morph: this.morph };
-    if (head) drawOutfitBehind(x, this.outfit, head, outfitState);
+    if (head) {
+      x.save();
+      x.translate(0, headY);
+      drawOutfitBehind(x, this.outfit, head, outfitState);
+      x.restore();
+    }
 
     const body = this.bodyPath(rx, ry, R);
     this.drawBody(x, body, R, rx, ry);
@@ -930,7 +988,12 @@ export class BotEngine {
     this.drawEyes(x, body, R, rx, ry);
     this.drawMikuFront(x, R, rx, ry);
 
-    if (head) drawOutfitFront(x, this.outfit, head, outfitState);
+    if (head) {
+      x.save();
+      x.translate(0, headY);
+      drawOutfitFront(x, this.outfit, head, outfitState);
+      x.restore();
+    }
 
     x.restore();
     x.restore();
@@ -942,13 +1005,19 @@ export class BotEngine {
   }
 
   private bodyPath(rx: number, ry: number, R: number): Path2D {
+    // While the mailbox morph runs the outline is a different shape every
+    // frame; at rest it only changes with the canvas size.
+    const m = this.morph;
+    const still = m < 0.005;
+    const key = `${rx}|${ry}|${R}`;
+    if (still && this.bodyCache?.key === key) return this.bodyCache.path;
+
     const n = 72;
     const expN = 2.0 / 2.7;
     const tw = R * 1.0;
     const th = R * 0.94;
     const tr = R * 0.42;
     const p = new Path2D();
-    const m = this.morph;
     for (let i = 0; i <= n; i++) {
       const a = (i / n) * Math.PI * 2;
       const ca = Math.cos(a);
@@ -957,7 +1026,7 @@ export class BotEngine {
       const py0 = ry * (sa >= 0 ? Math.pow(sa, expN) : -Math.pow(-sa, expN));
       let px = px0;
       let py = py0;
-      if (m >= 0.005) {
+      if (!still) {
         const rr = rrPoint(ca, sa, tw, th, tr);
         px = lerp(px0, rr.x, m);
         py = lerp(py0, rr.y, m);
@@ -966,7 +1035,17 @@ export class BotEngine {
       else p.lineTo(px, py);
     }
     p.closePath();
+    if (still) this.bodyCache = { key, path: p };
     return p;
+  }
+
+  /** The cached gradients of `x` for the variant drawn now, made on first use. */
+  private gradientCache(x: CanvasRenderingContext2D): GradientCache {
+    const held = this.gradients.get(x);
+    if (held && held.variant === this.variant) return held;
+    const fresh: GradientCache = { variant: this.variant, iris: new Map() };
+    this.gradients.set(x, fresh);
+    return fresh;
   }
 
   /** The whole chibi, back layer to body; the face is drawEyes, the front hair
@@ -999,10 +1078,14 @@ export class BotEngine {
     v.extra?.behind?.(x, v, t);
 
     // ── back hair: the cap, then the two twin-tails ──
-    const hg = x.createLinearGradient(0, 10, 0, 260);
-    hg.addColorStop(0, rgba(v.hair));
-    hg.addColorStop(1, rgba(v.hairDark));
-    x.fillStyle = hg;
+    const gc = this.gradientCache(x);
+    if (!gc.hair) {
+      const hg = x.createLinearGradient(0, 10, 0, 260);
+      hg.addColorStop(0, rgba(v.hair));
+      hg.addColorStop(1, rgba(v.hairDark));
+      gc.hair = hg;
+    }
+    x.fillStyle = gc.hair;
     x.beginPath(); x.ellipse(150, 64, 88, 80, 0, 0, Math.PI * 2); x.fill();
 
     // Twin-tails: Miku's signature. Each is gathered high at the side of the
@@ -1038,10 +1121,16 @@ export class BotEngine {
         x.closePath();
       };
       // Outer mass, in the darker shade.
-      const og = x.createLinearGradient(150 + s * 40, 60, 150 + s * 100, 280);
-      og.addColorStop(0, rgba(v.hair));
-      og.addColorStop(1, rgba(v.hairDark));
-      x.fillStyle = og;
+      if (!gc.tails) {
+        const make = (dir: number) => {
+          const g = x.createLinearGradient(150 + dir * 40, 60, 150 + dir * 100, 280);
+          g.addColorStop(0, rgba(v.hair));
+          g.addColorStop(1, rgba(v.hairDark));
+          return g;
+        };
+        gc.tails = [make(-1), make(1)];
+      }
+      x.fillStyle = gc.tails[s < 0 ? 0 : 1];
       tail(1);
       x.fill();
       // Inner mass, lighter and narrower: the highlight that rounds it out.
@@ -1078,9 +1167,13 @@ export class BotEngine {
     // Skirt: a modest A-line, grey pleats and a pale hem. It starts under the
     // shirt and stops inside the shoulder line, so the silhouette stays narrow
     // at the top and the twin-tails remain the widest thing on the character.
-    const sg = x.createLinearGradient(0, 186, 0, 254);
-    sg.addColorStop(0, rgba(v.skirt));
-    sg.addColorStop(1, rgba(v.skirtShade));
+    let sg = gc.skirt;
+    if (!sg) {
+      sg = x.createLinearGradient(0, 186, 0, 254);
+      sg.addColorStop(0, rgba(v.skirt));
+      sg.addColorStop(1, rgba(v.skirtShade));
+      gc.skirt = sg;
+    }
     x.fillStyle = sg;
     x.beginPath();
     x.moveTo(150 - 40, 188);
@@ -1290,10 +1383,19 @@ export class BotEngine {
         roundRectPath(x, ex - 11, ey - 2, 22, 5, 2.5); x.fill();
         return;
       }
-      // The iris: a gradient, light at the top and dark at the bottom.
-      const iris = x.createLinearGradient(0, ey - EH, 0, ey + EH);
-      iris.addColorStop(0, rgba(this.variant.eye1));
-      iris.addColorStop(1, rgba(this.variant.eye2));
+      // The iris: a gradient, light at the top and dark at the bottom. Its
+      // ends follow the gaze (ey) and the surprise (es), so it is kept per
+      // rounded pair rather than rebuilt for every eye of every frame.
+      const irisKey = (Math.round(ey * 2) << 8) | Math.round(es * 100);
+      const gc = this.gradientCache(x);
+      let iris = gc.iris.get(irisKey);
+      if (!iris) {
+        iris = x.createLinearGradient(0, ey - EH, 0, ey + EH);
+        iris.addColorStop(0, rgba(this.variant.eye1));
+        iris.addColorStop(1, rgba(this.variant.eye2));
+        if (gc.iris.size > 64) gc.iris.clear();
+        gc.iris.set(irisKey, iris);
+      }
       x.fillStyle = iris;
       x.beginPath(); x.ellipse(ex, ey, EW, EH, 0, 0, Math.PI * 2); x.fill();
       x.strokeStyle = ink; x.lineWidth = 1.9;
