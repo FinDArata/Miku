@@ -322,9 +322,7 @@ pub fn lyrics_set_look(
         (true, s.clone())
     };
     if changed {
-        if let Err(err) = crate::settings::save(&snapshot) {
-            crate::log::line(format!("could not save settings: {err}"));
-        }
+        crate::settings::save_soon(&app);
         // Every window hears the change, the overlay included: it repaints.
         let _ = tauri::Emitter::emit(&app, "settings-changed", &snapshot);
     }
@@ -366,9 +364,7 @@ pub fn lyrics_set_placement(app: AppHandle, placement: String) {
         s.lyrics.placement = placement.to_string();
         (s.clone(), s.lyrics.spot, s.screen.clone())
     };
-    if let Err(err) = crate::settings::save(&snapshot) {
-        crate::log::line(format!("could not save settings: {err}"));
-    }
+    crate::settings::save_soon(&app);
     // The floating window follows at once: shown for "floating", parked for "island".
     show_window(&app, snapshot.lyrics.shown, spot.as_ref(), &screen);
     let _ = tauri::Emitter::emit(&app, "settings-changed", &snapshot);
@@ -392,9 +388,7 @@ pub fn lyrics_set_visible(app: AppHandle, visible: bool) {
         let screen = s.screen.clone();
         let snapshot = s.clone();
         drop(s);
-        if let Err(err) = crate::settings::save(&snapshot) {
-            crate::log::line(format!("could not save settings: {err}"));
-        }
+        crate::settings::save_soon(&app);
         (spot, screen, snapshot)
     };
     // The island draws the words when lyrics live in the pill: it needs the switch.
@@ -466,13 +460,10 @@ pub fn lyrics_resize(app: AppHandle, width: f64, height: f64) {
         s.lyrics_width = w;
         s.lyrics_height = h;
         let out = (s.lyrics.spot, s.screen.clone());
-        let snapshot = s.clone();
         drop(s);
-        if let Err(err) = crate::settings::save(&snapshot) {
-            crate::log::line(format!("could not save settings: {err}"));
-        }
         out
     };
+    crate::settings::save_soon(&app);
     let Some(win) = window(&app) else { return };
     let app2 = app.clone();
     let w2 = win.clone();
@@ -542,14 +533,11 @@ fn spawn_spot_saver(app: AppHandle) {
 
 fn remember(app: &AppHandle, change: impl FnOnce(&mut LyricsPref)) {
     let Some(shared) = app.try_state::<crate::Shared>() else { return };
-    let snapshot = {
+    {
         let mut s = shared.settings.lock().unwrap();
         change(&mut s.lyrics);
-        s.clone()
-    };
-    if let Err(err) = crate::settings::save(&snapshot) {
-        crate::log::line(format!("could not save settings: {err}"));
     }
+    crate::settings::save_soon(app);
 }
 
 // ── The words ─────────────────────────────────────────────────────────────────

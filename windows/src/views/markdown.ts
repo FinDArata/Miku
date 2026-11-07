@@ -260,7 +260,34 @@ function render(block: Block): HTMLElement {
   }
 }
 
+/** What the last incremental render put in `into`, so the next one can keep it. */
+const streamed = new WeakMap<HTMLElement, HTMLElement[]>();
+
 /** Replaces what `into` shows with the Markdown rendered. */
 export function renderMarkdown(into: HTMLElement, markdown: string) {
+  streamed.delete(into);
   into.replaceChildren(...parseMarkdown(markdown).map(render));
+}
+
+/**
+ * `renderMarkdown` for text that only grows, a token at a time: a stream
+ * appends, it never edits an earlier block, so every block but the last is
+ * final and stays untouched — only the tail is parsed into new nodes.
+ */
+export function renderMarkdownIncremental(into: HTMLElement, markdown: string) {
+  const blocks = parseMarkdown(markdown);
+  const held = streamed.get(into);
+  const keep = Math.min(held?.length ?? 0, Math.max(0, blocks.length - 1));
+  if (held && keep === held.length) {
+    for (let i = keep; i < blocks.length; i++) {
+      const node = render(blocks[i]);
+      into.append(node);
+      held.push(node);
+    }
+    return;
+  }
+  const nodes = held ? held.slice(0, keep) : [];
+  for (let i = keep; i < blocks.length; i++) nodes.push(render(blocks[i]));
+  into.replaceChildren(...nodes);
+  streamed.set(into, nodes);
 }

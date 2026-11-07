@@ -6,6 +6,8 @@ import type { AgentTask } from "../core/state";
 
 interface MiniBot {
   canvas: HTMLCanvasElement;
+  /** Made on the first tick and kept: a canvas never changes its context. */
+  ctx: CanvasRenderingContext2D | null;
   engine: BotEngine;
   cssSize: number;
   taskId: string;
@@ -50,7 +52,7 @@ export function createMiniBot(task: AgentTask, bodySize: number, dancing?: () =>
     engine.eyeOverrideUntil = Number.POSITIVE_INFINITY;
   }
 
-  live.set(canvas, { canvas, engine, cssSize: engineSize, taskId: task.id, dancing });
+  live.set(canvas, { canvas, ctx: null, engine, cssSize: engineSize, taskId: task.id, dancing });
   return slot;
 }
 
@@ -77,7 +79,7 @@ export function syncMiniBotStates(tasks: AgentTask[]) {
 export function tickMiniBots(dt: number) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (const mb of live.values()) {
-    const ctx = mb.canvas.getContext("2d");
+    const ctx = mb.ctx ?? (mb.ctx = mb.canvas.getContext("2d"));
     if (!ctx) continue;
     mb.engine.setDancing(mb.dancing?.() ?? false);
     mb.engine.update(dt);

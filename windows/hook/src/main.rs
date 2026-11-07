@@ -345,14 +345,18 @@ fn talk(payload: &str, waits_for_answer: bool) -> Option<String> {
 
     let mut buf = Vec::new();
     let mut chunk = [0u8; 1024];
+    // The answer arrives in a few chunks; only the new bytes are searched for
+    // the newline that ends it.
+    let mut scanned = 0usize;
     loop {
         match pipe.read(&mut chunk) {
             Ok(0) => break,
             Ok(n) => {
                 buf.extend_from_slice(&chunk[..n]);
-                if buf.contains(&b'\n') {
+                if buf[scanned..].contains(&b'\n') {
                     break;
                 }
+                scanned = buf.len();
             }
             Err(_) => break,
         }

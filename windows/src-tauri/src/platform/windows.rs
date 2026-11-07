@@ -147,11 +147,21 @@ pub fn find_on_path(stem: &str) -> Option<PathBuf> {
     None
 }
 
+/// The lookups walk %PATH% × %PATHEXT% and stat every candidate, and are asked
+/// for on every settings render and every chat turn: the answer is kept per
+/// name. An empty answer is not kept, so installing a CLI while Miku runs is
+/// found on the next ask.
+static CLI_CACHE: std::sync::LazyLock<std::sync::Mutex<HashMap<String, Vec<PathBuf>>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
+
 /// Where a CLI such as `codex` or `claude` may be, best first: %PATH% (the
 /// .exe or npm's .cmd), then npm's global folder, the Volta / Bun / pnpm ones
 /// and the native installers' %USERPROFILE%\.local\bin. Rust quotes arguments
 /// safely for a `.cmd` (see find_on_path).
 pub fn cli_candidates(name: &str) -> Vec<PathBuf> {
+    if let Some(found) = CLI_CACHE.lock().unwrap().get(name) {
+        return found.clone();
+    }
     let mut out: Vec<PathBuf> = find_on_path(name).into_iter().collect();
     let var = |k: &str| std::env::var_os(k).map(PathBuf::from).filter(|p| p.is_absolute());
     if let Some(appdata) = var("APPDATA") {
@@ -166,6 +176,9 @@ pub fn cli_candidates(name: &str) -> Vec<PathBuf> {
         out.push(home.join(".local").join("bin").join(format!("{name}.exe")));
     }
     out.retain(|p| p.is_file());
+    if !out.is_empty() {
+        CLI_CACHE.lock().unwrap().insert(name.to_string(), out.clone());
+    }
     out
 }
 

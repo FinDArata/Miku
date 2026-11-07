@@ -24,6 +24,9 @@ const TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_LINE: usize = 256 * 1024;
 /// Everything we are willing to read before the answer shows up.
 const MAX_TOTAL: usize = 2 * 1024 * 1024;
+/// How long a finished app-server has to exit on its own before it is ended.
+const GRACE_STEP: Duration = Duration::from_millis(50);
+const GRACE_STEPS: usize = 20;
 
 /// What the Mac sends: initialize, initialized, then the one question.
 const REQUESTS: &str = concat!(
@@ -87,17 +90,33 @@ pub fn read() -> Option<Value> {
         drop(stdin);
         answer
     })();
-    // An npm install runs `codex.cmd`: killing cmd.exe alone would leave the
-    // node app-server under it running. End the whole tree there.
-    #[cfg(windows)]
-    {
-        let mut kill = Command::new("taskkill");
-        kill.args(["/T", "/F", "/PID", &child.id().to_string()]);
-        platform::no_console(&mut kill);
-        let _ = kill.status();
+    // Closing its input is how app-server learns we are done, and a healthy
+    // run is gone long before the grace period ends. Only a child still alive
+    // after it is ended — and an npm install runs `codex.cmd`: killing cmd.exe
+    // alone would leave the node app-server under it running, so the whole
+    // tree goes.
+    let mut gone = false;
+    for _ in 0..GRACE_STEPS {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                gone = true;
+                break;
+            }
+            Ok(None) => std::thread::sleep(GRACE_STEP),
+            Err(_) => break,
+        }
     }
-    let _ = child.kill();
-    let _ = child.wait();
+    if !gone {
+        #[cfg(windows)]
+        {
+            let mut kill = Command::new("taskkill");
+            kill.args(["/T", "/F", "/PID", &child.id().to_string()]);
+            platform::no_console(&mut kill);
+            let _ = kill.status();
+        }
+        let _ = child.kill();
+        let _ = child.wait();
+    }
     answer.map(|result| limits_only(&result))
 }
 

@@ -189,14 +189,19 @@ impl Relay for tokio::net::UnixStream {
 async fn handle(app: AppHandle, mut pipe: impl Relay) {
     let mut buf = Vec::new();
     let mut chunk = [0u8; 4096];
+    // Where the search for the newline stopped last time: a payload of up to
+    // MAX_PAYLOAD arrives in many chunks, and rescanning from byte 0 made the
+    // read quadratic.
+    let mut scanned = 0usize;
     loop {
         match pipe.read(&mut chunk).await {
             Ok(0) => break,
             Ok(n) => {
                 buf.extend_from_slice(&chunk[..n]);
-                if buf.contains(&b'\n') || buf.len() > MAX_PAYLOAD {
+                if buf[scanned..].contains(&b'\n') || buf.len() > MAX_PAYLOAD {
                     break;
                 }
+                scanned = buf.len();
             }
             Err(_) => return,
         }

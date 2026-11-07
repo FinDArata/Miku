@@ -56,8 +56,12 @@ pub fn connect() -> Option<std::fs::File> {
 }
 
 /// The SID of the account this process runs as, as `S-1-5-21-…`.
+///
+/// Read once: it cannot change while the process runs, and every hook event
+/// used to ask the token twice (the pipe name and the server check).
 pub fn current_user_sid() -> Option<String> {
-    unsafe { token_sid(GetCurrentProcess()) }
+    static SID: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    SID.get_or_init(|| unsafe { token_sid(GetCurrentProcess()) }).clone()
 }
 
 /// True when the process serving `handle` runs as the same user we do.

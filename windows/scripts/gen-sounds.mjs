@@ -7,13 +7,15 @@
 //
 //   node scripts/gen-sounds.mjs [--style=chimes|pop|mix] [--out=<dir>]
 //
-// Output: 44.1 kHz, 16-bit mono WAVs, each under a second.
+// Output: 22.05 kHz, 16-bit mono WAVs, each under a second. The chimes are
+// quiet and sit under 1 kHz, so the lower rate is inaudible and the files are
+// half the size — the installer carries 29 of them.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SR = 44100;
+const SR = 22050;
 const args = Object.fromEntries(process.argv.slice(2).map(a => {
   const [k, v = ""] = a.replace(/^--/, "").split("=");
   return [k, v];

@@ -8,6 +8,8 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
+use tauri::Manager;
+
 /// A field the file lacks takes its value from `Default`, so a settings.json
 /// written by an older build still loads, whatever has been added since.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -246,11 +248,106 @@ pub fn save(settings: &Settings) -> std::io::Result<()> {
     save_to(&settings_path(), settings)
 }
 
+/// How long a debounced save waits for the next change: a slider dragged or a
+/// Mochi dropped on the desktop writes once, not once per event.
+const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+
+#[derive(Default)]
+struct PendingSave {
+    /// A change is waiting to reach the disk.
+    dirty: bool,
+    /// The writer thread is already up.
+    writer: bool,
+}
+
+static PENDING: Mutex<PendingSave> =
+    Mutex::new(PendingSave { dirty: false, writer: false });
+
+fn pending() -> MutexGuard<'static, PendingSave> {
+    PENDING.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Writes the settings soon: at most once a second, whatever they hold then.
+///
+/// The file still goes through the same temp-write, fsync and rename as `save`;
+/// only the moment is deferred, so a burst of changes costs one write. Reading
+/// the state when the writer wakes — rather than storing a snapshot here —
+/// keeps the latest word last and keeps every mutation from cloning `Settings`.
+/// A save that must be on disk before the call returns keeps using `save`.
+pub fn save_soon(app: &tauri::AppHandle) {
+    let mut p = pending();
+    p.dirty = true;
+    if p.writer {
+        return;
+    }
+    p.writer = true;
+    drop(p);
+
+    let writer_app = app.clone();
+    let spawned = std::thread::Builder::new()
+        .name("miku-settings".into())
+        .spawn(move || loop {
+            std::thread::sleep(SAVE_DELAY);
+            {
+                let mut p = pending();
+                // The check and the flag are under one lock: a change that
+                // lands now either is seen here or starts a new writer.
+                if !p.dirty {
+                    p.writer = false;
+                    return;
+                }
+                p.dirty = false;
+            }
+            let Some(shared) = writer_app.try_state::<crate::Shared>() else { continue };
+            let snapshot = shared.settings.lock().unwrap().clone();
+            drop(shared);
+            if let Err(err) = save(&snapshot) {
+                crate::log::line(format!("could not save settings: {err}"));
+            }
+        });
+    if let Err(err) = spawned {
+        crate::log::line(format!("settings: no writer thread: {err}"));
+        {
+            let mut p = pending();
+            p.writer = false;
+            p.dirty = false;
+        }
+        let snapshot = app
+            .try_state::<crate::Shared>()
+            .map(|shared| shared.settings.lock().unwrap().clone());
+        if let Some(snapshot) = snapshot {
+            if let Err(err) = save(&snapshot) {
+                crate::log::line(format!("could not save settings: {err}"));
+            }
+        }
+    }
+}
+
+/// Writes the pending settings now: the app is ending.
+pub fn flush(app: &tauri::AppHandle) {
+    let dirty = {
+        let mut p = pending();
+        let dirty = p.dirty;
+        p.dirty = false;
+        dirty
+    };
+    if !dirty {
+        return;
+    }
+    let snapshot = app
+        .try_state::<crate::Shared>()
+        .map(|shared| shared.settings.lock().unwrap().clone());
+    if let Some(snapshot) = snapshot {
+        if let Err(err) = save(&snapshot) {
+            crate::log::line(format!("could not save settings: {err}"));
+        }
+    }
+}
+
 /// Turns the Music pill on for the lyrics overlay, which draws what that pill's
 /// events carry. Idempotent: declaring it twice changes nothing, so opening the
 /// overlay again is free.
 pub fn declare_music_pill(app: &tauri::AppHandle) {
-    use tauri::Manager;
     let pill = crate::spotify::PILL_ID.to_string();
     let (changed, snapshot) = {
         let Some(shared) = app.try_state::<crate::Shared>() else { return };

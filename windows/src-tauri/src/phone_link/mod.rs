@@ -309,9 +309,7 @@ pub fn phone_link_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_link = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     let _ = app.emit("settings-changed", updated);
@@ -433,9 +431,7 @@ pub fn phone_relay_set(
         let mut current = shared.settings.lock().unwrap();
         current.phone_relay = enabled;
         current.phone_relay_url = clean;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.sync_relay();
@@ -503,9 +499,7 @@ pub fn phone_details_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_details = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "details setting changed");
@@ -541,9 +535,7 @@ pub fn phone_answers_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_answers = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "answers setting changed");
@@ -579,9 +571,7 @@ pub fn phone_diffs_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_diffs = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "diffs setting changed");
@@ -617,9 +607,7 @@ pub fn phone_usage_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_usage = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "usage setting changed");
@@ -655,9 +643,7 @@ pub fn phone_recap_set_enabled(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_recap = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "recap setting changed");
@@ -696,9 +682,7 @@ pub fn phone_services_set(
     let updated = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_services = allowed.clone();
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         current.clone()
     };
     link.hub.kick_all("closed", "services setting changed");
@@ -815,9 +799,7 @@ pub fn phone_chat_set_enabled(
     let (updated, status) = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_chat = enabled;
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         let status = ChatStatus { enabled, models: chat_backend::clean_models(&current.phone_chat_models) };
         (current.clone(), status)
     };
@@ -843,9 +825,7 @@ pub fn phone_chat_set_models(
     let (updated, status) = {
         let mut current = shared.settings.lock().unwrap();
         current.phone_chat_models = cleaned.clone();
-        if let Err(err) = settings::save(&current) {
-            log::line(format!("could not save settings: {err}"));
-        }
+        settings::save_soon(&app);
         (current.clone(), ChatStatus { enabled: current.phone_chat, models: cleaned })
     };
     let _ = app.emit("settings-changed", updated);

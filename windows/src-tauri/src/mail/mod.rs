@@ -22,7 +22,7 @@ pub mod triage;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -106,8 +106,24 @@ fn pill_on(app: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+/// A process snapshot is a full Toolhelp32 walk, and the pill asks every tick
+/// only to know whether Outlook is running: two seconds of answer is enough.
+const OUTLOOK_CACHE: Duration = Duration::from_secs(2);
+static OUTLOOK_SEEN: Mutex<Option<(Instant, bool)>> = Mutex::new(None);
+
 fn outlook_open() -> bool {
-    cfg!(windows) && crate::platform::process_running(OUTLOOK_EXE)
+    if !cfg!(windows) {
+        return false;
+    }
+    let now = Instant::now();
+    if let Some((at, running)) = *OUTLOOK_SEEN.lock().unwrap() {
+        if now.duration_since(at) < OUTLOOK_CACHE {
+            return running;
+        }
+    }
+    let running = crate::platform::process_running(OUTLOOK_EXE);
+    *OUTLOOK_SEEN.lock().unwrap() = Some((now, running));
+    running
 }
 
 fn emit_card(app: &AppHandle, running: bool) {

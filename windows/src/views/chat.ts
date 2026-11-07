@@ -8,7 +8,7 @@
 
 import { h, svg, clear } from "./dom";
 import { ICONS } from "./icons";
-import { renderMarkdown } from "./markdown";
+import { renderMarkdown, renderMarkdownIncremental } from "./markdown";
 import { Bridge, onEvent, type ChatContext, type ModelInfo } from "../core/bridge";
 import {
   activeModel, pickModel, providerDef, visibleProviders, withModel, type ProviderDef,
@@ -266,6 +266,17 @@ export function buildPrompt(onHeightChange: () => void): ViewHost {
   let renderedCount = -1;
   // A local model answers token by token: where its text so far is shown.
   let live: HTMLElement | null = null;
+  // Deltas arrive faster than the screen refreshes: keep the latest text and
+  // draw it once a frame, instead of rebuilding the answer on every token.
+  let liveText = "";
+  let liveFrame = 0;
+
+  function flushLive() {
+    liveFrame = 0;
+    if (!live) return;
+    renderMarkdownIncremental(live, splitPlan(liveText).prose);
+    log.scrollTop = log.scrollHeight;
+  }
 
   function drawModelButton() {
     const p = providerDef(State.settings.chatProvider);
@@ -288,8 +299,8 @@ export function buildPrompt(onHeightChange: () => void): ViewHost {
       log.querySelector(".typing")?.parentElement?.remove();
       log.append(h("div", { class: "chat-row" }, live));
     }
-    renderMarkdown(live, splitPlan(text).prose);
-    log.scrollTop = log.scrollHeight;
+    liveText = text;
+    if (!liveFrame) liveFrame = requestAnimationFrame(flushLive);
   });
 
   async function submit() {
@@ -323,6 +334,11 @@ export function buildPrompt(onHeightChange: () => void): ViewHost {
     } finally {
       sending = false;
       live = null;
+      liveText = "";
+      if (liveFrame) {
+        cancelAnimationFrame(liveFrame);
+        liveFrame = 0;
+      }
       renderedCount = -1; // the finished answer replaces the streamed one
       drawModelButton();
       State.notify();

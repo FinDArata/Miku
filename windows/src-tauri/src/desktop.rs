@@ -548,16 +548,17 @@ async fn fly(app: &AppHandle, d: &Desktop, to: (f64, f64), ms: u64, ease: fn(f64
 }
 
 /// Saves what changed about him in the preferences.
+///
+/// Dropping him writes once, a moment after the landing (settings::save_soon):
+/// the spot is where the drag left him, and a second drop within the second
+/// only needs the last word.
 fn remember(app: &AppHandle, change: impl FnOnce(&mut settings::DesktopMochiPref)) {
     let Some(shared) = app.try_state::<crate::Shared>() else { return };
-    let snapshot = {
+    {
         let mut s = shared.settings.lock().unwrap();
         change(&mut s.desktop_mochi);
-        s.clone()
-    };
-    if let Err(err) = settings::save(&snapshot) {
-        crate::log::line(format!("could not save settings: {err}"));
     }
+    settings::save_soon(app);
 }
 
 fn remember_spot(app: &AppHandle, d: &Desktop, pos: (f64, f64), on_desktop: bool) {

@@ -47,11 +47,26 @@ fn emit(app: &AppHandle, update: IntegrationUpdate) {
     let _ = app.emit_to(WINDOW_LABEL, "integration", update);
 }
 
-fn client() -> reqwest::Client {
+/// One client for every poller: building one per poll threw away the
+/// connection pool and paid for a TLS handshake on every tick.
+static CLIENT: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| {
     reqwest::Client::builder()
         .timeout(TIMEOUT)
         .build()
         .unwrap_or_default()
+});
+
+/// The same, for the forges whose token must never follow a redirect.
+static NO_REDIRECT: std::sync::LazyLock<Option<reqwest::Client>> = std::sync::LazyLock::new(|| {
+    reqwest::Client::builder()
+        .timeout(TIMEOUT)
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .ok()
+});
+
+fn client() -> &'static reqwest::Client {
+    &CLIENT
 }
 
 /// Set from the tray's Pause item. While it is on, nothing reaches the network:
@@ -62,18 +77,70 @@ pub fn set_paused(on: bool) {
     PAUSED.store(on, Ordering::Relaxed);
 }
 
-/// Spawns every poller with the macOS delays and intervals.
+/// The pollers running now, and the set of pills that started them. A pill
+/// switched off stops its task instead of leaving a ticker that wakes up only
+/// to decline the work.
+static TASKS: std::sync::Mutex<Vec<tauri::async_runtime::JoinHandle<()>>> =
+    std::sync::Mutex::new(Vec::new());
+static STARTED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Starts the pollers of the pills that are on, from the settings it finds.
 pub fn start(app: AppHandle) {
-    spawn(app.clone(), "integration_n8n", 3, 15, poll_n8n);
-    spawn(app.clone(), "integration_vercel", 5, 30, poll_vercel);
-    spawn(app.clone(), "integration_stripe", 6, 30, poll_stripe);
-    spawn(app.clone(), "integration_resend", 6, 60, poll_resend);
-    spawn(app.clone(), "integration_github", 7, 300, poll_github);
-    spawn(app.clone(), "integration_gitlab", 7, 300, poll_gitlab);
-    spawn(app.clone(), "integration_gitea", 7, 300, poll_gitea);
-    spawn_github_loops(app.clone());
-    spawn(app.clone(), "integration_calcom", 8, 300, poll_calcom);
-    spawn(app, "integration_notion", 9, 300, poll_notion);
+    let active = app
+        .try_state::<crate::Shared>()
+        .map(|shared| shared.settings.lock().unwrap().active_integrations.clone())
+        .unwrap_or_default();
+    sync_pollers(&app, &active);
+}
+
+/// The declared pills changed: stop every poller and start the ones that are
+/// on now. A save that did not touch the list restarts nothing.
+fn sync_pollers(app: &AppHandle, active: &[String]) {
+    {
+        let mut started = STARTED.lock().unwrap();
+        if started.as_slice() == active {
+            return;
+        }
+        started.clear();
+        started.extend(active.iter().cloned());
+    }
+    let mut tasks = TASKS.lock().unwrap();
+    for task in tasks.drain(..) {
+        task.abort();
+    }
+    // A request cancelled this way never reaches its own "not busy any more":
+    // clear the flags so the loops started below can wake and ask again.
+    GITHUB.pulse_busy.store(false, Ordering::SeqCst);
+    GITHUB.activity_busy.store(false, Ordering::SeqCst);
+    let on = |id: &str| active.iter().any(|x| x == id);
+    if on("integration_n8n") {
+        tasks.push(spawn(app.clone(), "integration_n8n", 3, 15, poll_n8n));
+    }
+    if on("integration_vercel") {
+        tasks.push(spawn(app.clone(), "integration_vercel", 5, 30, poll_vercel));
+    }
+    if on("integration_stripe") {
+        tasks.push(spawn(app.clone(), "integration_stripe", 6, 30, poll_stripe));
+    }
+    if on("integration_resend") {
+        tasks.push(spawn(app.clone(), "integration_resend", 6, 60, poll_resend));
+    }
+    if on("integration_github") {
+        tasks.push(spawn(app.clone(), "integration_github", 7, 300, poll_github));
+        tasks.extend(spawn_github_loops(app.clone()));
+    }
+    if on("integration_gitlab") {
+        tasks.push(spawn(app.clone(), "integration_gitlab", 7, 300, poll_gitlab));
+    }
+    if on("integration_gitea") {
+        tasks.push(spawn(app.clone(), "integration_gitea", 7, 300, poll_gitea));
+    }
+    if on("integration_calcom") {
+        tasks.push(spawn(app.clone(), "integration_calcom", 8, 300, poll_calcom));
+    }
+    if on("integration_notion") {
+        tasks.push(spawn(app.clone(), "integration_notion", 9, 300, poll_notion));
+    }
 }
 
 /// True when the user has this integration switched on in settings.
@@ -86,7 +153,13 @@ fn enabled(app: &AppHandle, id: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn spawn<F, Fut>(app: AppHandle, id: &'static str, delay_secs: u64, every_secs: u64, poll: F)
+fn spawn<F, Fut>(
+    app: AppHandle,
+    id: &'static str,
+    delay_secs: u64,
+    every_secs: u64,
+    poll: F,
+) -> tauri::async_runtime::JoinHandle<()>
 where
     F: Fn(AppHandle) -> Fut + Send + 'static,
     Fut: std::future::Future<Output = ()> + Send,
@@ -105,7 +178,7 @@ where
             }
             poll(app.clone()).await;
         }
-    });
+    })
 }
 
 /// One-shot refresh from the Refresh buttons in the island.
@@ -141,8 +214,7 @@ fn gitea_api_base() -> Option<String> {
 async fn poll_gitea(app: AppHandle) {
     if PAUSED.load(Ordering::Relaxed) || !enabled(&app, "integration_gitea") { return; }
     let (Some(token), Some(base)) = (secrets::get("gitea-token"), gitea_api_base()) else { return };
-    let Ok(http) = reqwest::Client::builder().timeout(TIMEOUT)
-        .redirect(reqwest::redirect::Policy::none()).build() else { return };
+    let Some(http) = NO_REDIRECT.as_ref() else { return };
     let user = http.get(format!("{base}/user")).header("Authorization", format!("token {token}")).send().await;
     let Ok(response) = user else { return };
     if !response.status().is_success() {
@@ -396,8 +468,7 @@ async fn poll_gitlab(app: AppHandle) {
     if !matches!(instance.scheme(), "http" | "https") || instance.host_str().is_none() { return; }
     let base = instance.as_str().trim_end_matches('/').to_string();
     // PRIVATE-TOKEN must never follow an instance redirect to another server.
-    let Ok(http) = reqwest::Client::builder().timeout(TIMEOUT)
-        .redirect(reqwest::redirect::Policy::none()).build() else { return };
+    let Some(http) = NO_REDIRECT.as_ref() else { return };
     let headers = |request: reqwest::RequestBuilder| request.header("PRIVATE-TOKEN", &token);
     let user = headers(http.get(format!("{base}/api/v4/user"))).send().await;
     let Ok(user) = user else { return };
@@ -756,9 +827,9 @@ fn emit_github(app: &AppHandle) {
     emit(app, IntegrationUpdate { id: GITHUB_ID, data, error: None, event: None });
 }
 
-fn spawn_github_loops(app: AppHandle) {
+fn spawn_github_loops(app: AppHandle) -> Vec<tauri::async_runtime::JoinHandle<()>> {
     let pulse_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+    let pulse = tauri::async_runtime::spawn(async move {
         let mut wait = Duration::from_secs(10);
         loop {
             // Sleeps for `wait`, or less when the island asks for fresh data.
@@ -767,7 +838,7 @@ fn spawn_github_loops(app: AppHandle) {
             wait = Duration::from_secs(if pending { 60 } else { 300 });
         }
     });
-    tauri::async_runtime::spawn(async move {
+    let activity = tauri::async_runtime::spawn(async move {
         let mut wait = Duration::from_secs(15);
         loop {
             let _ = tokio::time::timeout(wait, GITHUB.activity_wake.notified()).await;
@@ -775,6 +846,7 @@ fn spawn_github_loops(app: AppHandle) {
             wait = Duration::from_secs(1800);
         }
     });
+    vec![pulse, activity]
 }
 
 /// One authenticated GraphQL call. Partial errors are logged (as a count) and the
@@ -908,6 +980,8 @@ pub fn github_token_changed(app: &AppHandle) {
 /// Switching the pill off forgets the pulse, so switching it back on starts
 /// silent instead of alerting on everything that changed in between.
 pub fn settings_saved(app: &AppHandle, active_integrations: &[String]) {
+    // The tasks follow the declared pills: off means no ticker at all.
+    sync_pollers(app, active_integrations);
     if active_integrations.iter().any(|id| id == GITHUB_ID) {
         return;
     }
