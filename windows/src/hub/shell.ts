@@ -114,6 +114,22 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   if (shown !== null) {
     setWindowShown(shown);
     setStagePolling(shown);
+    // The event above can race its listener: a hub shown before the page
+    // finished loading emits into the void, and the page then paints dead
+    // canvases. A slow re-ask stands in — `setWindowShown` only acts when the
+    // answer changes. (Only under Tauri: outside it the answer is always
+    // null, and the timer would hold a test process open for nothing.)
+    let shownSynced = shown;
+    const resync = window.setInterval(() => {
+      void FlowBridge.hubShown().then((now) => {
+        if (now !== null && now !== shownSynced) {
+          shownSynced = now;
+          setWindowShown(now);
+          setStagePolling(now);
+        }
+      });
+    }, 5000);
+    (resync as unknown as { unref?: () => void }).unref?.();
   }
   let current: PageId = "home";
   let activeAnchor: string | null = null;

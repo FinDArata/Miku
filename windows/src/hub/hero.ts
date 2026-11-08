@@ -106,6 +106,18 @@ export function setWindowShown(shown: boolean) {
   wake();
 }
 
+// The watchdog. A window created hidden can keep rAF frozen (and its state
+// stale) long after `show()`, and an event can race the page's first render —
+// either way the loop dies unasked and every live canvas stays blank. Timers
+// survive that throttling, so a slow tick re-arms the loop whenever it ought
+// to be running and isn't; `wake()` itself checks `running()`, so a hidden
+// window costs only this one boolean check per tick. Unref'd: under the test
+// runner (node) a module-level timer would otherwise hold the process open.
+const watchdog = window.setInterval(() => {
+  if (frame === null && fallback === null) wake();
+}, 2000);
+(watchdog as unknown as { unref?: () => void }).unref?.();
+
 // ── The voice ─────────────────────────────────────────────────────────────────
 
 /** How loud the dictation is, 0…1, as the bands last said (`flow-bands`). */
