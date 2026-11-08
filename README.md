@@ -4,7 +4,7 @@
 
 # Miku
 
-**A tiny friend that lives in your Mac's notch — or at the top of your screen on Windows and Linux — and keeps an eye on your AI coding agent sessions. And now on your phone too: iPhone and Android.**
+**A tiny friend that lives in your Mac's notch — or at the top of your screen on Windows and Linux — and keeps an eye on your AI coding agent sessions. And now on your phone too: iPhone.**
 
 Approve permissions, watch your agents work, drop a file, chat with Claude — all without leaving what you're doing. Walk away from your Mac and Miku follows you to your iPhone: Lock Screen, Dynamic Island, widgets, Siri.
 
@@ -13,7 +13,6 @@ Approve permissions, watch your agents work, drop a file, chat with Claude — a
 [![Version](https://img.shields.io/github/v/release/FinDArata/miku?filter=v*&label=version&color=0A84FF)](https://github.com/FinDArata/Miku/releases)
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
 ![iOS 18+](https://img.shields.io/badge/iOS-18%2B-black?logo=apple)
-![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84?logo=android&logoColor=white)
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-0078D4?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%7C%20deb%20%7C%20rpm-FCC624?logo=linux&logoColor=black)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
@@ -89,7 +88,6 @@ Flow dictation and the Notetaker are on the Mac for now; Windows and Linux are n
 - 🫥 **Invisible when idle** — hides away when nothing is running, peeks out when you hover the notch (the top edge of the screen on Windows and Linux).
 - 🖥️ **Any Mac, notch or not** — on an iMac, a Mac mini, or a MacBook with its lid closed on an external display, Miku sits in a small bar at the top of the screen. With several displays, pick his screen in Settings → General, or let him follow your mouse *(macOS)*.
 - 📱 **Kanon on iPhone** — your sessions, approvals and services in your pocket, with Live Activities, widgets and Siri. See [Kanon on iPhone](#miku-on-iphone).
-- 🤖 **Kanon for Android** — your agents, approvals with your fingerprint, questions, chat and home-screen widgets on an Android phone, linked to Miku on Windows or Linux over your Wi-Fi. By [@Rhytam23](https://github.com/Rhytam23). See [Kanon for Android](#miku-for-android).
 - 📅 **Weekly recap** *(macOS)* — every Monday morning Miku shows a summary of the past week: time coding, sessions, files, lines changed, commands, permissions, top agent and project, busiest day and longest session. Share it as a 1080 × 1920 image with Miku — project names optional. All local, no sync.
 - 🌍 **16 languages** — English, 简体中文, 繁體中文, हिन्दी, Español, العربية, Français, বাংলা, Português, Русский, Bahasa Indonesia, Deutsch, Türkçe, ไทย, 한국어, 日本語. Pick one in Settings → General → Language; Traditional Chinese and Thai are on the Mac only for now. Community translations welcome.
 - 🔒 **Private by design** — no telemetry, no account. Keys live in your macOS Keychain, Windows Credential Manager or Linux Secret Service (GNOME Keyring, KWallet). The app only talks to the services you plug in (and, once you agree, to GitHub's releases API to tell you about new versions).
@@ -120,30 +118,6 @@ The Mac app does the work; the iPhone app keeps you in the loop when you step aw
 - 🔒 **Through your own iCloud** — sessions sync through your private CloudKit database; project names, commands and questions are encrypted with your iCloud keys. No Miku server sees your projects, commands or keys. Turn it on in the Mac app: Settings → General → iPhone.
 
 **Get it on your iPhone in 3 steps:** install Miku on your iPhone ([Join the TestFlight beta](https://testflight.apple.com/join/3GpeHv2b) — free, App Store coming soon), turn on **Settings → General → iPhone** in the Mac app (0.1.9 or later), and use the same Apple Account in iCloud on both. Full guide, troubleshooting and build-it-yourself: [docs/IPHONE.md](docs/IPHONE.md).
-
-## Kanon for Android
-
-**Kanon for Android** brings Mochi to Android phones. It was built by [Rhytam Biswas (@Rhytam23)](https://github.com/Rhytam23) and lives in [`android/`](android/).
-
-- 🔐 **Approve from your phone** — a permission request rises over any screen, even on a locked phone; **Allow** needs your fingerprint or screen lock, **Deny** doesn't. A command too long to show in full can only be allowed on the computer.
-- 🧑‍💻 **Your agents at a glance** — the agent that needs you, the others below, plan usage and your services when the computer shares them.
-- 💬 **Answers and chat** — answer Claude Code's questions and chat through the computer's own AI keys (the keys never leave the computer).
-- 🏝️ **An island over other apps** *(optional)* — a black island drops from the camera cut-out while an agent works, plus a quick-settings tile and an ongoing notification.
-- 🧩 **Home-screen widgets** — nine of them, from a tiny Mochi to a big card with plan usage and quick buttons. Orange when something waits for you, blue while it works, green when it's done. Read-only: a request is always decided in the app.
-- 🔒 **Local and private** — the phone talks straight to your computer on your Wi-Fi, paired with a QR code and a pinned certificate. The phone link is **off by default**, and nothing listens until you turn it on.
-
-**Status:** tested on a real phone (Android 13) with the Windows app. The phone link is in **Miku 0.4.0 for Windows and Linux**. Download the signed APK from the [latest Android release](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0). Android needs Miku on **Windows or Linux** (not the Mac), Android 11 or later, and both on the same Wi-Fi. Full guide: [`android/README.md`](android/README.md).
-
-<table>
-<tr>
-<td><img src="docs/media/claude-code.png" alt="Claude Code session"></td>
-<td><img src="docs/media/stripe.png" alt="Stripe payments"></td>
-</tr>
-<tr>
-<td><img src="docs/media/chat.png" alt="Chat with Claude"></td>
-<td><img src="docs/media/dizzy.png" alt="Too many hits"></td>
-</tr>
-</table>
 
 ## Versions
 
@@ -196,14 +170,6 @@ Windows and Linux are released together, under the `windows-v*` and `linux-v*` t
 | 0.2.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.2.0) | Oct 8, 2026 | Catches up with the Mac: nine agents with approvals, chat with any AI, plan usage, GitHub, wardrobe, 10 languages |
 | 0.1.1 · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.1.1) | Oct 1, 2026 | First Linux build (beta) |
 
-Kanon for Android, by [@Rhytam23](https://github.com/Rhytam23), is released under the `android-v*` tags.
-
-| Android | Date | Highlights |
-|---------|------|------------|
-| [0.3.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0) | Oct 22, 2026 | A light theme and your phone's colours, nine more languages (Arabic right to left), quick actions, a Team widget, Share to Miku, the weekly recap, a per-agent mute |
-| [0.2.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.2.0) | Oct 13, 2026 | Nine home-screen widgets: Mochi, your agents, plan usage and quick buttons, coloured by state |
-| [0.1.0](https://github.com/FinDArata/Miku/releases/tag/android-v0.1.0) | Oct 11, 2026 | First release: your agents, approvals with your fingerprint, answers and chat, linked to Windows or Linux |
-
 ## Demo mode
 
 No API key, no Claude Code, no setup — open **Settings → General → Demo**, click **Try demo mode**, and Miku walks through a scripted session: a Claude Code session with live steps and a diff you can read, a permission request, an AskUserQuestion, a parallel Codex session, the GitHub, Stripe, Vercel and other integration pills loaded with sample data, the chat with a streamed response, the weekly recap with a share image you can actually save.
@@ -228,13 +194,21 @@ The App Store build of the Mac app runs in Apple's sandbox, so some features sta
 
 Everything else, troubleshooting included, is in [docs/IPHONE.md](docs/IPHONE.md).
 
-### Android
+### App Store
 
-1. **Download** `Miku-Android-0.3.0.apk` from the [release page](https://github.com/FinDArata/Miku/releases/tag/android-v0.3.0) on your phone (Android 11 or later) and open it. Android asks once to allow installs from your browser or file manager. You can also [build it from source](#build-from-source).
-2. **On your computer**, install Miku **0.4.0 or later** for [Windows](#windows) or [Linux](#linux): **Settings → Android phone**, turn on **Phone link**. If Windows asks about the firewall, allow Miku on private networks.
-3. **Show pairing code** and scan it with the app. The phone and the computer must be on the same Wi-Fi.
+Miku is coming to the **Mac App Store** and the **iPhone App Store**: one click to install, automatic updates, and the iPhone app pairs with your Mac through your iCloud account, with nothing to configure. The links will be here as soon as Apple publishes them.
 
-Everything else, troubleshooting included, is in [`android/README.md`](android/README.md).
+The App Store build of the Mac app runs in Apple's sandbox, so some features stay in the GitHub build: agents other than Claude Code, Cursor and Claude Desktop (Codex, Gemini CLI, Antigravity, Copilot CLI…), Claude and Codex plan usage, the chat through your AI subscription, the Miku window (Flow dictation, the Notetaker, settings search), « OK Miku », Mail, WhatsApp, Apple Music, Spotify, the Portfolio pill, screen capture, attaching the front window to the chat, and updates from inside the app (the App Store updates it).
+
+### iPhone
+
+1. **Install Miku on your iPhone** (iOS 18 or later): install [TestFlight](https://apps.apple.com/app/testflight/id899247664) from the App Store, then [Join the TestFlight beta](https://testflight.apple.com/join/3GpeHv2b). The beta is free; Apple limits it to 10,000 testers. The App Store version is coming soon.
+   *Apple is reviewing the beta: it opens within a day or two — if the link isn't accepting testers yet, check back soon.*
+2. **On your Mac**, with Miku 0.1.9 or later: **Settings… → General → iPhone**, turn on **Show my agent sessions on my iPhone**, and **Move Miku to my iPhone's Dynamic Island when my Mac is locked** for the Lock Screen.
+3. **Same Apple Account** in iCloud on the Mac and the iPhone. That's the whole link: no account, no pairing code.
+4. Open Miku on the iPhone, allow notifications, and start a Claude Code session on the Mac.
+
+Everything else, troubleshooting included, is in [docs/IPHONE.md](docs/IPHONE.md).
 
 ### Homebrew (macOS)
 
@@ -263,7 +237,7 @@ Download **[Miku-Windows.msi](https://github.com/FinDArata/Miku/releases/downloa
 
 This is only because the app isn't signed with a paid certificate yet. Miku is open source, and Microsoft Defender scans the installer as clean.
 
-**Windows and Linux 0.5.9** keep a small island at the top of the screen once it is closed (Mochi, the time or your Claude usage in it), fold it with ✕, keep your language when you dictate, take any dictation key you like and, on Windows, quiet the other apps while you speak. **0.5.8** bring 14 fixes and features by @Ohualtex: permission requests wait their turn, Claude Desktop cards on Windows and its pill on Linux, plan usage in the compact island. **0.5.7** bring **Mail** to Windows with classic Outlook (search, automatic sorting, mail plans from the chat) and a search field for the settings. **0.5.6** chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot) and speak Korean and Japanese. **0.5.5** answer on your Claude plan through Claude Code when no API key is saved. **0.5.4** bring 25 reliability fixes from the community. **0.5.3** bring **WhatsApp** to the island (experimental), with the gateway installed in one click. **0.5.2** turn Mochi blue when a new version waits and show what it brings after the update; they add **GitLab and Gitea** pills. **0.5.1** tell you when a new version is out (once you agree) and, on Windows, install it in one click; they also speak German and Turkish. **0.5.0** caught up with the Mac: Miku is now an app with its own window in the taskbar, **Flow dictation** anywhere (hold right Ctrl, speak, let go) with Parakeet running offline on your computer, the **Notetaker** for your calls, and **« OK Miku »** to talk to Mochi, powered by Claude with your key. On Linux, dictation works on X11 and Wayland. 0.4.0 paired with [Kanon for Android](#miku-for-android): approve, answer and chat from your Android phone (Settings → Android phone, off by default). 0.3.0 added open on hover, your own sounds, a colour of your own for each Mochi and the Mochi-to-desktop shortcut; on Linux, the Spotify pill with Mochi dancing to it, global shortcuts on Wayland and "Open terminal" that brings the terminal forward. 0.2.0 caught up with the Mac: Codex, Copilot CLI, Muse Code and six more agents with approvals from the island, answers to Claude's questions, live diffs, GitHub pull requests and CI, plan usage, local models, the wardrobe, Mochi on the desktop, keyboard shortcuts, the weekly recap and 10 languages. See the [changelog](CHANGELOG.md).
+**Windows and Linux 0.5.9** keep a small island at the top of the screen once it is closed (Mochi, the time or your Claude usage in it), fold it with ✕, keep your language when you dictate, take any dictation key you like and, on Windows, quiet the other apps while you speak. **0.5.8** bring 14 fixes and features by @Ohualtex: permission requests wait their turn, Claude Desktop cards on Windows and its pill on Linux, plan usage in the compact island. **0.5.7** bring **Mail** to Windows with classic Outlook (search, automatic sorting, mail plans from the chat) and a search field for the settings. **0.5.6** chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot) and speak Korean and Japanese. **0.5.5** answer on your Claude plan through Claude Code when no API key is saved. **0.5.4** bring 25 reliability fixes from the community. **0.5.3** bring **WhatsApp** to the island (experimental), with the gateway installed in one click. **0.5.2** turn Mochi blue when a new version waits and show what it brings after the update; they add **GitLab and Gitea** pills. **0.5.1** tell you when a new version is out (once you agree) and, on Windows, install it in one click; they also speak German and Turkish. **0.5.0** caught up with the Mac: Miku is now an app with its own window in the taskbar, **Flow dictation** anywhere (hold right Ctrl, speak, let go) with Parakeet running offline on your computer, the **Notetaker** for your calls, and **« OK Miku »** to talk to Mochi, powered by Claude with your key. On Linux, dictation works on X11 and Wayland. 0.3.0 added open on hover, your own sounds, a colour of your own for each Mochi and the Mochi-to-desktop shortcut; on Linux, the Spotify pill with Mochi dancing to it, global shortcuts on Wayland and "Open terminal" that brings the terminal forward. 0.2.0 caught up with the Mac: Codex, Copilot CLI, Muse Code and six more agents with approvals from the island, answers to Claude's questions, live diffs, GitHub pull requests and CI, plan usage, local models, the wardrobe, Mochi on the desktop, keyboard shortcuts, the weekly recap and 10 languages. See the [changelog](CHANGELOG.md).
 
 There is no notch on a PC, so the island slides out of the top edge of the screen
 instead of hiding inside one. See [`windows/README.md`](windows/README.md) for the
@@ -320,14 +294,6 @@ npm install
 npm run pack                # AppImage, .deb and .rpm land in windows/release/
 ```
 
-**Android** — requirements: JDK 17 and the Android SDK (platform 35).
-
-```bash
-git clone https://github.com/FinDArata/Miku.git
-cd miku/android
-./gradlew assembleDebug      # the APK lands in app/build/outputs/apk/debug/
-```
-
 ## Setup
 
 On the Mac, open Miku from the Dock or the menu bar: its window has every setting under **Notch** (⌘,). On Windows and Linux, click the Miku icon in the system tray → **Settings…**
@@ -344,7 +310,6 @@ On the Mac, open Miku from the Dock or the menu bar: its window has every settin
 | **Ollama server** *(macOS)* | chat with local models via Ollama | Settings → Chat → Local models → **Connect** |
 | **LM Studio server** *(macOS)* | chat with local models via LM Studio | Settings → Chat → Local models → **Connect** |
 | **iPhone** *(macOS)* | sessions, approvals, questions and Miku on your iPhone | Settings → General → iPhone · your private iCloud, see [docs/IPHONE.md](docs/IPHONE.md) |
-| **Android phone** *(Windows, Linux)* | sessions, approvals, questions and chat on your Android phone | Settings → Android phone · off by default, your local network only, see [android/README.md](android/README.md) |
 | **Active pills** *(macOS)* | choose which tools and agents appear in the island | Settings → Active pills |
 | **Flow dictation** *(macOS, GitHub build)* | hold a key, speak, the words are pasted | Miku → Flow → Settings · the Accessibility and Microphone permissions |
 | **Parakeet** *(macOS, Apple silicon)* | offline dictation, more accurate | Miku → Flow → Settings → Recognition → **Download** (about 650 MB) |
@@ -478,11 +443,6 @@ The macOS app is native Swift 6 / SwiftUI / AppKit with **zero third-party depen
 - Claude Code hooks go through the same `miku-hook`, over a Unix socket in
   `$XDG_RUNTIME_DIR`; keys live in the Secret Service.
 
-**Android**
-
-- A native Kotlin and Jetpack Compose app; Miku is drawn in code, ported from the Windows app, with his outfits and sounds.
-- The phone link (`windows/src-tauri/src/phone_link`) is an opt-in server in the Windows and Linux app, on your local network only: TLS with a certificate pinned at pairing, a pairing code that "Pair again" replaces (and disconnects every phone), and approvals bound to the exact request the computer is waiting on. The protocol is in [`docs/ANDROID_LINK.md`](docs/ANDROID_LINK.md).
-
 ## Contributing
 
 Issues and PRs are very welcome — new integrations, new emotes, new sounds, bug fixes. See [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -491,15 +451,14 @@ Want to add or improve a translation? Open a PR with changes to `NotchBuddy/Reso
 
 ## Credits
 
-**Miku is a fork of [Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app and its macOS code with Claude Code. Everything here started as his work: Miku is an edited, rebranded fork of it, maintained by [FinDArata](https://github.com/FinDArata), rebuilt for Windows, Linux and Android. The upstream name and the Mochi character remain his — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
+**Miku is a fork of [Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app and its macOS code with Claude Code. Everything here started as his work: Miku is an edited, rebranded fork of it, maintained by [FinDArata](https://github.com/FinDArata), rebuilt for Windows and Linux. The upstream name and the Mochi character remain his — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
 
-Kanon for Android and the phone link by [Rhytam Biswas (@Rhytam23)](https://github.com/Rhytam23).
 Thanks to everyone who sent a pull request — see [contributors](https://github.com/FinDArata/Miku/graphs/contributors).
 Inspired by the notch-companion concepts shared by design studios — this project is independent and not affiliated with any of them.
 
 ## License
 
-- **Code:** [MIT](LICENSE) — use it, fork it, learn from it, just keep the copyright notice. The Android app and the phone link are © Rhytam Biswas, also under MIT ([android/LICENSE](android/LICENSE)).
+- **Code:** [MIT](LICENSE) — use it, fork it, learn from it, just keep the copyright notice.
 - **Name, Miku character, icon, sounds and media:** © Louis Raillé, all rights reserved — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md). Shipping your own fork? Give it your own name and character.
 
 <div align="center">

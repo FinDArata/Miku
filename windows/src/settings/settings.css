@@ -10,15 +10,20 @@
     "Microsoft YaHei", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Arabic",
     "Noto Sans CJK SC", "Noto Sans SC", "Droid Sans Fallback", sans-serif;
   --mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
-  --ink: #f5f6f8;
-  --dim: #9398a1;
+  --ink: #f2f4f7;
+  --dim: #9aa3b2;
   --dim-2: #6b7079;
-  --bg: #0b0c0e;
-  --card: #141518;
-  --hairline: rgba(255, 255, 255, 0.07);
+  --bg: #0e1116;
+  --card: #171b23;
+  --hairline: #22262f;
   --green: #22c55e;
   --red: #f4505e;
   --amber: #f5a524;
+  /* Miku teal, the hub's accent (hub.css --hub-accent). */
+  --teal: #39c5bb;
+  --teal-bright: #7de3dc;
+  --teal-soft: rgba(57, 197, 187, 0.14);
+  --teal-line: rgba(57, 197, 187, 0.32);
 }
 
 * {
@@ -58,7 +63,7 @@ h1 .version {
 section {
   background: var(--card);
   border: 1px solid var(--hairline);
-  border-radius: 14px;
+  border-radius: 15px;
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
@@ -66,7 +71,12 @@ section {
 }
 
 section > h2 {
-  font: 600 13px var(--font);
+  font: 800 11px var(--font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  /* 6.8:1 on the card (#171b23): a section header is small text, so the dimmer
+     --dim-2 (3.5:1) sits below WCAG AA for it. */
+  color: var(--dim);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -122,12 +132,13 @@ button:active:not(:disabled) {
 }
 
 button.primary {
-  background: var(--ink);
-  color: #0b0c0e;
+  background: var(--teal);
+  color: #04211e;
+  font-weight: 700;
 }
 
 button.primary:hover:not(:disabled) {
-  background: #fff;
+  background: var(--teal-bright);
 }
 
 button.danger {
@@ -159,7 +170,8 @@ code,
 }
 
 .switch.on {
-  background: var(--green);
+  background: var(--teal);
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.4);
 }
 
 .switch::after {
@@ -214,7 +226,7 @@ input::placeholder {
 input:focus,
 select:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: var(--teal-line);
 }
 
 /* The popup is drawn by the OS: give it an explicit pair of colours rather than
@@ -365,6 +377,11 @@ select option {
   gap: 8px;
 }
 
+.shortcut-list .row + .row {
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
 .row.shortcut {
   flex-wrap: nowrap;
   gap: 10px;
@@ -428,7 +445,7 @@ html[dir="rtl"] :is(.diff, .path, .keycap, input[type="password"], input[type="t
   direction: ltr;
 }
 
-/* Settings → Android phone: the pairing QR code (an SVG from Rust, black on white). */
+/* Shared QR code look (settings pages). */
 .qr { width: 220px; max-width: 100%; background: #fff; border-radius: 8px; padding: 4px; }
 .qr svg { display: block; width: 100%; height: auto; }
 

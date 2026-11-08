@@ -219,12 +219,16 @@ async fn handle(app: AppHandle, mut pipe: impl Relay) {
     note_session_window(&pipe, &payload, &event);
     // Counts for the weekly recap — never the command, path or prompt itself.
     crate::recap::observe(&app, &payload);
+    // The hub window's character stage follows the same events; it cannot hear
+    // them itself, so the tracker watches them here.
+    crate::stage::observe(&event, payload.get("session_id").and_then(Value::as_str).unwrap_or(""));
 
     if event != "PermissionRequest" {
         // The status line relay calls in with every Claude Code update: not log-worthy.
         if event != "StatusLine" {
             log::line(format!("hook {event}"));
         }
+        crate::stage::refresh(&app);
         let _ = app.emit_to(WINDOW_LABEL, "hook", payload);
         pipe.finish();
         return;
@@ -236,6 +240,7 @@ async fn handle(app: AppHandle, mut pipe: impl Relay) {
         let pending = app.state::<Pending>();
         pending.0.lock().unwrap().insert(id.clone(), tx);
     }
+    crate::stage::refresh(&app);
     crate::recap::note_request(&app, &id, &payload);
     payload["request_id"] = json!(id);
     log::line(format!("hook PermissionRequest id={id}"));
@@ -243,6 +248,7 @@ async fn handle(app: AppHandle, mut pipe: impl Relay) {
 
     let decision = wait_for_decision(&id, &mut rx).await;
     app.state::<Pending>().0.lock().unwrap().remove(&id);
+    crate::stage::refresh(&app);
 
     // No decision: say nothing at all. miku-hook then writes nothing to stdout
     // and Claude Code asks in the terminal, exactly as if Miku were closed.
@@ -334,6 +340,10 @@ fn send(app: &AppHandle, request_id: &str, reply: Reply, keep: bool) {
     match sender {
         Some(tx) => {
             let _ = tx.try_send(reply);
+            // A taken-out request no longer waits: the stage may leave "waiting".
+            if !keep {
+                crate::stage::refresh(app);
+            }
         }
         None => log::line(format!("reply for id={request_id} — no pending request")),
     }

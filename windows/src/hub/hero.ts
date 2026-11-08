@@ -12,6 +12,7 @@ import { VariantCache, parseVariant } from "../mochi/wardrobe";
 import { onScreen, shouldAnimate } from "./frames";
 import type { BotStateName } from "../core/layout";
 import { State } from "../core/state";
+import { characterStage, stateChips } from "./character";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -326,16 +327,15 @@ export const THEMES: Record<string, { color: string }> = {
   mailVIP: { color: "#F5A524" },
 };
 
-/** The band itself: title, line and actions. */
+/** The band itself: title, line and actions, over the Mochi Stage — the
+ *  mockup's teal gradient with the character at the right, and under it the
+ *  row of character-state chips. `compact` bands take a corner stage instead. */
 export function hero(page: string, title: string, subtitle: string | null, actions: HTMLElement[] = [], compact = false): HTMLElement {
   const theme = THEMES[page] ?? THEMES.general;
+  // The stage is teal for every page; the page's colour survives as a tint.
   const el = document.createElement("div");
   el.className = compact ? "hub-hero compact" : "hub-hero";
-  el.style.setProperty("--hero-line", rgba(theme.color, 0.16));
-  el.style.setProperty("--hero-glow", rgba(theme.color, 0.3));
-  el.style.setProperty("--hero-tint", rgba(theme.color, 0.1));
-  const back = document.createElement("canvas");
-  back.className = "backdrop";
+  el.style.setProperty("--hero-tint", rgba(theme.color, 0.14));
   const copy = document.createElement("div");
   copy.className = "copy";
   const h1 = document.createElement("h1");
@@ -352,9 +352,13 @@ export function hero(page: string, title: string, subtitle: string | null, actio
     row.append(...actions);
     copy.append(row);
   }
-  el.append(back, copy);
-  backdrop(back, theme.color, el);
-  return el;
+  el.append(copy, characterStage({ size: compact ? "peek" : "hero" }));
+  // A block of `display: contents`, so the band and its chips row flow as two
+  // direct children of the page while the pages keep appending one hero.
+  const block = document.createElement("div");
+  block.className = "hub-hero-block";
+  block.append(el, stateChips());
+  return block;
 }
 
 /** A card in a colour: the band's black and particles behind `content`. */

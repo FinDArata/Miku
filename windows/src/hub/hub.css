@@ -3,22 +3,27 @@
    look as the Mac's Kanon window (FlowHub.swift). */
 
 :root {
-  --hub-panel: #0e0f11;
-  --hub-card: #18191c;
-  --hub-field: #1f2024;
-  --hub-line: rgba(255, 255, 255, 0.07);
-  --hub-text: #f5f6f8;
-  --hub-body: #e1e3e6;
-  --hub-secondary: #8e939c;
-  --hub-muted: #6b7079;
-  --hub-accent: #2ee6c8;
-  --hub-on-accent: #04231f;
-  --hub-green: #34d399;
+  --hub-panel: #0e1116;
+  --hub-card: #171b23;
+  --hub-field: #1f242e;
+  --hub-line: #22262f;
+  --hub-text: #f2f4f7;
+  --hub-body: #e9ecf1;
+  --hub-secondary: #9aa3b2;
+  /* 4.95:1 on the panel (#0e1116), 4.52:1 on a card (#171b23) — WCAG AA for
+     small text, which this grey is used at all over the window. */
+  --hub-muted: #7a8394;
+  --hub-accent: #39c5bb;
+  --hub-accent-bright: #7de3dc;
+  --hub-accent-soft: rgba(57, 197, 187, 0.14);
+  --hub-on-accent: #04211e;
+  --hub-green: #4ade80;
+  --hub-amber: #ffb84d;
   --hub-red: #ff453a;
 }
 
 body.hub-window {
-  background: #000;
+  background: #0e1116;
   color: var(--hub-text);
   font: 400 13px/1.45 var(--font);
   -webkit-font-smoothing: antialiased;
@@ -34,12 +39,14 @@ body.hub-window {
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
 
 .hub-side {
-  width: 228px;
-  flex: 0 0 228px;
+  width: 236px;
+  flex: 0 0 236px;
   display: flex;
   flex-direction: column;
   gap: 3px;
   padding: 18px 12px 12px;
+  background: #101318;
+  border-right: 1px solid #1f242e;
   overflow-y: auto;
 }
 
@@ -48,12 +55,26 @@ body.hub-window {
   align-items: center;
   gap: 10px;
   padding: 4px 8px 14px;
-  font: 700 18px var(--font);
 }
 
 .hub-brand canvas {
   width: 28px;
   height: 28px;
+}
+
+.hub-brand-name b {
+  display: block;
+  font: 800 15.5px var(--font);
+  color: var(--hub-text);
+  letter-spacing: -0.01em;
+}
+
+.hub-brand-name small {
+  display: block;
+  font: 800 10.5px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
 }
 
 /* ── Settings search field & results ── */
@@ -71,7 +92,7 @@ body.hub-window {
 }
 
 .hub-search:focus-within {
-  border-color: rgba(46, 230, 200, 0.55);
+  border-color: rgba(57, 197, 187, 0.55);
 }
 
 .hub-search svg.hub-search-icon {
@@ -215,10 +236,10 @@ body.hub-window {
     box-shadow: 0 0 0 0 transparent;
   }
   30% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(57, 197, 187, 0.55);
   }
   75% {
-    box-shadow: 0 0 0 2px var(--hub-accent, #2ee6c8), 0 0 16px rgba(46, 230, 200, 0.55);
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(57, 197, 187, 0.55);
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
@@ -260,12 +281,19 @@ body.hub-window {
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.9;
+  /* Off: the icon reads in greys; on: it takes the accent (color on active). */
+  color: var(--hub-muted);
+  transition: color 0.15s ease;
 }
 
 .hub-item:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
+  background: #181c24;
+  color: #c9ced8;
   transform: none;
+}
+
+.hub-item:hover:not(:disabled) svg {
+  color: #9aa3b2;
 }
 
 .hub-item:active:not(:disabled) {
@@ -273,9 +301,14 @@ body.hub-window {
 }
 
 .hub-item.on {
-  background: rgba(255, 255, 255, 0.09);
-  color: var(--hub-text);
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
   font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.32);
+}
+
+.hub-item.on svg {
+  color: var(--hub-accent);
 }
 
 .hub-side .spacer {
@@ -286,18 +319,27 @@ body.hub-window {
 .hub-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.05);
+  gap: 9px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #181c24;
+  border: 1px solid var(--hub-line);
   color: var(--hub-secondary);
   font-size: 12px;
+  font-weight: 600;
   line-height: 1.3;
 }
 
 .hub-status .dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
+  animation: hub-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hub-pulse {
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .hub-version {
@@ -340,11 +382,14 @@ body.hub-window {
   padding: 0;
 }
 
-/* ── Hero band ────────────────────────────────────────────────────────────── */
+/* ── Hero band: the Mochi Stage ───────────────────────────────────────────── */
 
-/* The band's black and its colour, painted by the page too: the canvas draws
-   the same over it, with the particles, once its frames run. */
-.hub-hero,
+/* A band and its chips row flow as two children of the page (see hero.ts). */
+.hub-hero-block {
+  display: contents;
+}
+
+/* The cards in a colour keep the band's black and their canvas particles. */
 .hub-glow {
   background:
     radial-gradient(ellipse 60% 90% at 92% -15%, var(--hero-glow, transparent), transparent 70%),
@@ -352,39 +397,42 @@ body.hub-window {
     #020203;
 }
 
+/* The stage: the mockup's teal gradient, with the page's colour as a tint. */
 .hub-hero {
   position: relative;
-  height: 170px;
-  border-radius: 18px;
+  height: 190px;
+  border-radius: 22px;
   overflow: hidden;
   flex: 0 0 auto;
-  border: 1px solid var(--hero-line, rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(125, 227, 220, 0.16);
+  box-shadow: 0 24px 60px rgba(15, 174, 157, 0.14);
+  background:
+    radial-gradient(300px 220px at 72% 45%, rgba(125, 227, 220, 0.2), transparent 62%),
+    radial-gradient(260px 200px at 50% 80%, rgba(4, 33, 30, 0.4), transparent 70%),
+    linear-gradient(to bottom left, var(--hero-tint, transparent), transparent 65%),
+    linear-gradient(118deg, #052e2c 0%, #0c5b54 45%, #128f85 100%);
 }
 
 .hub-hero.compact {
   height: 116px;
 }
 
-.hub-hero canvas.backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
 .hub-hero .copy {
   position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 26px;
-  max-width: 100%;
+  padding: 26px 36px;
+  max-width: calc(100% - 250px);
   height: 100%;
+  box-sizing: border-box;
   pointer-events: none;
 }
 
 .hub-hero.compact .copy {
   padding: 20px;
+  max-width: calc(100% - 140px);
 }
 
 .hub-hero .copy > * {
@@ -392,9 +440,10 @@ body.hub-window {
 }
 
 .hub-hero h1 {
-  font: 700 30px var(--font);
+  font: 800 30px var(--font);
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
+  color: #fff;
 }
 
 .hub-hero.compact h1 {
@@ -403,15 +452,332 @@ body.hub-window {
 
 .hub-hero p {
   font-size: 14px;
-  color: #b7bbc2;
-  max-width: 420px;
+  line-height: 1.55;
+  color: #c4f2ea;
+  max-width: 460px;
 }
 
 .hub-hero .actions {
   margin-top: auto;
   display: flex;
-  gap: 8px;
+  gap: 11px;
   align-items: center;
+}
+
+/* The band's buttons take the mockup's CTAs: the main one dark with teal
+   letters, the others white glass over the gradient. */
+.hub-hero .actions button.hub-btn.primary {
+  background: #04211e;
+  color: var(--hub-accent-bright);
+  box-shadow: 0 10px 26px rgba(4, 33, 30, 0.33);
+}
+
+.hub-hero .actions button.hub-btn.primary:hover:not(:disabled) {
+  background: #06332f;
+}
+
+.hub-hero .actions button.hub-btn:not(.primary):not(.danger) {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.hub-hero .actions button.hub-btn:not(.primary):not(.danger):hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* ── The character stage (hub/character.ts) ───────────────────────────────── */
+
+.mochi-stage {
+  position: absolute;
+  right: 52px;
+  top: 0;
+  bottom: 0;
+  width: 240px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mochi-disc {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, rgba(255, 255, 255, 0.17), rgba(4, 33, 30, 0.2) 70%);
+  box-shadow:
+    0 0 0 2px rgba(125, 227, 220, 0.27),
+    0 0 60px rgba(125, 227, 220, 0.19),
+    inset 0 -18px 40px rgba(4, 33, 30, 0.27);
+}
+
+.mochi-ring {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  margin: -125px 0 0;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 2px dashed rgba(125, 227, 220, 0.27);
+  animation: hub-spin 24s linear infinite;
+}
+
+@keyframes hub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mochi-char {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  font-size: 96px;
+  line-height: 1;
+  filter: drop-shadow(0 16px 28px rgba(4, 33, 30, 0.53));
+  animation: hub-bob 3s ease-in-out infinite;
+}
+
+@keyframes hub-bob {
+  0%,
+  100% {
+    transform: translateY(-58%);
+  }
+  50% {
+    transform: translateY(-63%);
+  }
+}
+
+/* Typing (agent running): a small restless hop. */
+.st-running .mochi-char {
+  animation: hub-type 1s steps(2) infinite;
+}
+
+@keyframes hub-type {
+  50% {
+    transform: translateY(-60%);
+  }
+}
+
+/* Dancing (session clear): a happy swing. */
+.st-clear .mochi-char {
+  transform-origin: 50% 90%;
+  animation: hub-dance 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes hub-dance {
+  from {
+    transform: translateY(-58%) rotate(-7deg) scale(1.02);
+  }
+  to {
+    transform: translateY(-58%) rotate(7deg);
+  }
+}
+
+/* Idle: the slow bob. */
+.st-idle .mochi-char {
+  animation-duration: 5s;
+}
+
+/* Each state tints its ring and disc. */
+.st-waiting-permission .mochi-ring {
+  border-color: rgba(255, 184, 77, 0.4);
+  animation-duration: 16s;
+}
+
+.st-waiting-permission .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(255, 184, 77, 0.35),
+    0 0 60px rgba(255, 184, 77, 0.2),
+    inset 0 -18px 40px rgba(4, 33, 30, 0.27);
+}
+
+.st-running .mochi-ring {
+  border-color: rgba(57, 197, 187, 0.3);
+}
+
+.st-running .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(57, 197, 187, 0.3),
+    0 0 50px rgba(57, 197, 187, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+.st-clear .mochi-ring {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.st-clear .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.3),
+    0 0 60px rgba(74, 222, 128, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+.st-idle .mochi-ring {
+  border-color: rgba(138, 148, 162, 0.27);
+  animation-duration: 40s;
+}
+
+.st-idle .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(138, 148, 162, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+/* Sparkles ✦ that twinkle around the stage. */
+.mochi-sparkle {
+  position: absolute;
+  color: #aef7ec;
+  opacity: 0.7;
+  font-size: 13px;
+  animation: hub-twinkle 2.6s infinite;
+}
+
+.mochi-sparkle.s1 {
+  left: 46%;
+  top: 18%;
+}
+
+.mochi-sparkle.s2 {
+  left: 62%;
+  top: 72%;
+  animation-delay: 0.9s;
+}
+
+.mochi-sparkle.s3 {
+  left: 90%;
+  top: 24%;
+  animation-delay: 1.4s;
+}
+
+.mochi-sparkle.s4 {
+  left: 70%;
+  top: 12%;
+  animation-delay: 0.4s;
+}
+
+@keyframes hub-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+/* The speech bubble near the character. */
+.mochi-bubble {
+  position: absolute;
+  left: -34px;
+  top: 2px;
+  background: #fff;
+  color: #12312e;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  padding: 9px 15px;
+  font: 800 12.5px var(--font);
+  white-space: nowrap;
+  box-shadow: 0 12px 30px rgba(4, 33, 30, 0.33);
+  animation: hub-pop 0.4s ease;
+}
+
+.mochi-bubble::after {
+  content: "";
+  position: absolute;
+  left: -7px;
+  bottom: 8px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 3px;
+}
+
+@keyframes hub-pop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* The compact band's corner stage: smaller, no bubble, tucked right. */
+.mochi-stage.peek {
+  right: 18px;
+  width: 130px;
+}
+
+.mochi-stage.peek .mochi-disc {
+  width: 108px;
+  height: 108px;
+  right: 0;
+}
+
+.mochi-stage.peek .mochi-ring {
+  width: 132px;
+  height: 132px;
+  margin-top: -66px;
+  right: -12px;
+}
+
+.mochi-stage.peek .mochi-char {
+  font-size: 54px;
+  right: 14px;
+}
+
+.mochi-stage.peek .mochi-sparkle {
+  font-size: 10px;
+}
+
+/* ── The character-state chips row (hub/character.ts) ─────────────────────── */
+
+.hub-states {
+  display: flex;
+  gap: 10px;
+  margin-top: -8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hub-states-label {
+  font: 800 11px var(--font);
+  letter-spacing: 0.16em;
+  color: var(--hub-muted);
+  margin-right: 4px;
+}
+
+.hub-state-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--hub-line);
+  color: var(--hub-secondary);
+}
+
+.hub-state-chip.on {
+  background: #17262c;
+  color: var(--hub-accent-bright);
+  border-color: #1d4a43;
+}
+
+.hub-state-chip .d {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 8px;
 }
 
 /* ── Cards, rows and controls of the Flow pages ───────────────────────────── */
@@ -427,7 +793,7 @@ body.hub-window {
 .hub-card {
   background: var(--hub-card);
   border: 1px solid var(--hub-line);
-  border-radius: 14px;
+  border-radius: 15px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -490,7 +856,7 @@ button.hub-btn.primary {
 }
 
 button.hub-btn.primary:hover:not(:disabled) {
-  background: #63f0d9;
+  background: #54d9cf;
 }
 
 button.hub-btn.danger {
@@ -540,7 +906,7 @@ button.hub-icon svg {
 .hub-input:focus,
 .hub-textarea:focus,
 .hub-select:focus {
-  border-color: rgba(251, 146, 60, 0.6);
+  border-color: rgba(57, 197, 187, 0.6);
 }
 
 .hub-textarea {
@@ -566,8 +932,9 @@ button.hub-icon svg {
 }
 
 .hub-segmented button.on {
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--hub-text);
+  background: rgba(57, 197, 187, 0.18);
+  color: var(--hub-accent-bright);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.32);
 }
 
 .hub-radio {
@@ -1144,6 +1511,19 @@ button.hub-icon svg {
 .mail-if {
   width: 44px;
   flex: 0 0 auto;
+}
+
+/* Reduced motion: the stage holds still — no spin, no bob, no twinkle, no
+   pulse. The layout, the colours and the bubble stay as they are. */
+@media (prefers-reduced-motion: reduce) {
+  .mochi-ring,
+  .mochi-char,
+  .mochi-sparkle,
+  .mochi-bubble,
+  .hub-card-glowing,
+  .hub-status .dot {
+    animation: none !important;
+  }
 }
 
 /* Scrollbars as on the Mac: a thin rounded thumb that floats on the page, no

@@ -5,16 +5,17 @@
 
 import "./hub.css";
 import { h, clear } from "../views/dom";
-import { t, onLanguageChange } from "../i18n/i18n";
+import { t, tl, onLanguageChange } from "../i18n/i18n";
 import { onEvent } from "../core/bridge";
 import { FlowBridge, type FlowPrefs, type FlowStatus, type ModelsStatus, flowKeyId } from "../core/flow";
 import { hero, liveMochi, setVoiceLevel, setWindowShown } from "./hero";
+import { setStagePolling, setStageState, type StageState } from "./character";
 import { icon, keyLabel } from "./ui";
 import { searchSettings, type SettingsSearchHit } from "./search";
 
 export type PageId =
   | "dictation" | "notes" | "insights" | "dictionary" | "snippets" | "styles" | "flowsettings"
-  | "general" | "pills" | "agents" | "chat" | "voice" | "integrations" | "phone" | "shortcuts"
+  | "general" | "pills" | "agents" | "chat" | "voice" | "integrations" | "shortcuts"
   | "mailOverview" | "mailRules" | "mailBanned" | "mailVIP";
 
 interface PageDef {
@@ -44,7 +45,6 @@ export const NOTCH_PAGES: PageDef[] = [
   { id: "chat", icon: "chat", title: () => t("Chat"), subtitle: () => t("The AI of the island's chat, with your own keys.") },
   { id: "voice", icon: "wave", title: () => "OK Miku" },
   { id: "integrations", icon: "puzzle", title: () => t("Integrations"), subtitle: () => t("Stripe, GitHub, Vercel, n8n, Notion and the rest.") },
-  { id: "phone", icon: "phone", title: () => t("Android phone"), subtitle: () => t("Your agents and their approvals on your Android phone, over your Wi-Fi.") },
   { id: "shortcuts", icon: "keyboard", title: () => t("Shortcuts"), subtitle: () => t("The keys that open the island and its actions.") },
 ];
 
@@ -97,12 +97,19 @@ const DEFAULT_STATUS: FlowStatus = {
 export async function startHub(root: HTMLElement, opts: HubOptions) {
   document.body.classList.add("hub-window");
   // The window is created hidden and only shown and hidden afterwards: its
-  // canvases animate only while it is on screen (#792).
-  await onEvent<boolean>("hub-visible", setWindowShown);
+  // canvases animate only while it is on screen (#792), and the character
+  // stage polls the agents' state only while it is.
+  await onEvent<boolean>("hub-visible", (shown) => {
+    setWindowShown(shown);
+    setStagePolling(shown);
+  });
   // While you dictate: the loudest of the pill's bands.
   await onEvent<number[]>("flow-bands", (bands) => setVoiceLevel(Math.max(0, ...bands)));
   const shown = await FlowBridge.hubShown();
-  if (shown !== null) setWindowShown(shown);
+  if (shown !== null) {
+    setWindowShown(shown);
+    setStagePolling(shown);
+  }
   let current: PageId = "dictation";
   let activeAnchor: string | null = null;
   let searchHits: SettingsSearchHit[] = [];
@@ -200,7 +207,13 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   // ── The sidebar ──
   const side = h("nav", { class: "hub-side" });
   const logo = h("canvas", {});
-  side.append(h("div", { class: "hub-brand" }, logo, h("span", { text: "Miku" })));
+  side.append(h("div", { class: "hub-brand" },
+    logo,
+    h("span", { class: "hub-brand-name" },
+      h("b", { text: "Miku" }),
+      h("small", { text: tl("Settings") }),
+    ),
+  ));
   liveMochi(logo as HTMLCanvasElement);
 
   // Settings search field
@@ -324,6 +337,9 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
     const id = (page === "settings" ? "flowsettings" : page) as PageId;
     if (ALL.some((p) => p.id === id)) void show(id);
   });
+  // What the agents are up to, announced by the backend as soon as it changes
+  // (stage.rs); the stage's poll only covers what an announcement missed.
+  void onEvent<StageState>("hub-stage", (state) => setStageState(state));
   void onEvent<FlowPrefs>("flow-prefs", (prefs) => {
     status = { ...status, prefs };
     drawStatus();
