@@ -24,7 +24,6 @@ mod mail;
 mod net;
 mod notes;
 mod openai_compat;
-mod phone_link;
 mod pipe;
 mod platform;
 #[cfg(target_os = "linux")]
@@ -37,6 +36,7 @@ mod shortcuts;
 mod sounds;
 mod speech;
 mod spotify;
+mod stage;
 mod system_health;
 mod tray;
 mod update;
@@ -104,18 +104,6 @@ fn save_settings(app: AppHandle, shared: State<Shared>, settings: Settings) {
         // Where Mochi sits on the desktop is desktop.rs's to say, not a webview's.
         let mut settings = settings.clone();
         settings.desktop_mochi = current.desktop_mochi.clone();
-        // Same for the phone link: only its own commands turn it on or off.
-        settings.phone_link = current.phone_link;
-        settings.phone_chat = current.phone_chat;
-        settings.phone_details = current.phone_details;
-        settings.phone_answers = current.phone_answers;
-        settings.phone_diffs = current.phone_diffs;
-        settings.phone_usage = current.phone_usage;
-        settings.phone_recap = current.phone_recap;
-        settings.phone_services = current.phone_services.clone();
-        settings.phone_relay = current.phone_relay;
-        settings.phone_relay_url = current.phone_relay_url.clone();
-        settings.phone_chat_models = current.phone_chat_models.clone();
         // The lyrics overlay's switch and spot are lyrics.rs's, same reason.
         settings.lyrics = current.lyrics.clone();
         *current = settings;
@@ -932,6 +920,7 @@ pub fn run() {
             reposition,
             fit_zoom,
             hub_shown,
+            stage::hub_stage_state,
             list_monitors,
             open_url,
             open_gitlab_url,
@@ -987,35 +976,6 @@ pub fn run() {
             lyrics::lyrics_visible,
             lyrics::lyrics_prefs,
             lyrics::lyrics_fetch,
-            phone_link::phone_link_status,
-            phone_link::phone_link_set_enabled,
-            phone_link::phone_link_pairing,
-            phone_link::phone_link_new_pairing,
-            phone_link::phone_link_publish,
-            phone_link::phone_link_publish_question,
-            phone_link::phone_link_publish_prefs,
-            phone_link::phone_answers_status,
-            phone_link::phone_answers_set_enabled,
-            phone_link::phone_diffs_status,
-            phone_link::phone_diffs_set_enabled,
-            phone_link::phone_link_send_diff,
-            phone_link::phone_usage_status,
-            phone_link::phone_usage_set_enabled,
-            phone_link::phone_recap_status,
-            phone_link::phone_recap_set_enabled,
-            phone_link::phone_relay_status,
-            phone_link::phone_relay_set,
-            phone_link::phone_relay_set_access,
-            phone_link::phone_link_publish_usage,
-            phone_link::phone_link_publish_recap,
-            phone_link::phone_services_status,
-            phone_link::phone_services_set,
-            phone_link::phone_link_publish_services,
-            phone_link::phone_details_status,
-            phone_link::phone_details_set_enabled,
-            phone_link::phone_chat_status,
-            phone_link::phone_chat_set_enabled,
-            phone_link::phone_chat_set_models,
             recap::recap_history,
             recap::recap_prefs,
             recap::recap_set_enabled,
@@ -1100,12 +1060,12 @@ pub fn run() {
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
-            app.manage(phone_link::PhoneLink::new(handle.clone()));
             tray::build(&handle)?;
             // Before the island: see create_settings_window.
             create_settings_window(&handle);
             // Same rule for Mochi's desktop window and the dictation pill.
             desktop::setup(&handle);
+            secrets::purge_retired();
             flow::setup(&handle);
             notes::setup(&handle);
             // And for the floating lyrics overlay (lyrics.rs).
@@ -1137,7 +1097,6 @@ pub fn run() {
             log::line(format!("--- Miku {} started ---", env!("CARGO_PKG_VERSION")));
             hooks::ensure_hook_exe(&handle);
             pipe::start(handle.clone());
-            phone_link::start_if_enabled(&handle);
             integrations::start(handle.clone());
             mail::start(handle.clone());
             // Lyrics are on by default, and the island draws them from the
@@ -1171,11 +1130,9 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building Miku")
         .run(|app, event| {
-            // Withdraw the phone link's announcement on the local network before the process ends.
             if let tauri::RunEvent::Exit = event {
                 // Whatever a debounced save still holds reaches the disk.
                 settings::flush(app);
-                phone_link::stop_on_exit(app);
                 notes::shutdown(app);
                 // GOWA started by Miku stops with it; the conversations were only in memory.
                 whatsapp::shutdown();

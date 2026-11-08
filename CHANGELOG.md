@@ -4,7 +4,7 @@
 
 ### Miku's rooms wear Miku: the hub and the pill, redrawn
 
-- The hub is rebuilt around a **Home** page: one card per thing (dictation, agents, integrations, the chat's model, OK Miku, the phone link) and a way into each page from it. The sidebar's active row carries a teal bar, the brand is a teal gradient, and pages arrive with a short fade instead of a jump.
+- The hub is rebuilt around a **Home** page: one card per thing (dictation, agents, integrations, the chat's model, OK Miku) and a way into each page from it. The sidebar's active row carries a teal bar, the brand is a teal gradient, and pages arrive with a short fade instead of a jump.
 - The pill wears the same colours: a thin capsule that breathes teal while resting, controls that arrive one after another when it opens, teal audio bars, and teal buttons and bubbles.
 - The bands on top of each page keep their page's colour, but the particles and the two waves along their floor now mix Miku's teal and follow the dictation level.
 

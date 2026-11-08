@@ -162,14 +162,6 @@ export async function homePage(page: HTMLElement, ctx: HubContext) {
       hint: t("Talk to Miku instead of typing."),
       page: "voice",
     }),
-    homeCard(ctx, {
-      icon: "phone",
-      name: t("Phone link"),
-      color: "#3DDC84",
-      state: settings.phoneLink ? t("Paired") : t("Not connected"),
-      hint: t("Your agents and their approvals on your Android phone, over your Wi-Fi."),
-      page: "phone",
-    }),
   );
   page.append(grid);
 }

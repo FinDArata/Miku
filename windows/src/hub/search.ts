@@ -143,18 +143,6 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
     title: "WhatsApp",
     terms: ["Install WhatsApp", "Mute groups (unless I’m mentioned)", "Mark as read when I open a conversation", "Ignored chats", "Advanced: your own gateway"],
   },
-  {
-    id: "phone.android",
-    page: "phone",
-    title: "Android phone",
-    terms: [
-      "Phone link", "Show pairing code", "Pair again", "Copy link",
-      "Show session details on the phone", "Let the phone answer Claude Code's questions",
-      "Show the files an agent changed on the phone", "Show my plan usage on the phone",
-      "Show my weekly recap on the phone", "Show these services on the phone",
-      "Let the phone chat with my AI providers",
-    ],
-  },
   { id: "voice.wake", page: "voice", title: "Listening", terms: ["Listen for « OK Miku »", "Parakeet, on your computer"] },
   { id: "voice.tts", page: "voice", title: "Answers", terms: ["System voice", "ElevenLabs", "Text only", "Female", "Male", "ElevenLabs key"] },
   { id: "shortcuts.global", page: "shortcuts", title: "From anywhere", terms: ["Toggle the island", "Open the chat", "Go to the alert", "Jump to the terminal", "Next pill", "Previous pill", "Mute", "Show Mochi on the desktop", "Wardrobe", "Reset to defaults"] },

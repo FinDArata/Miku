@@ -268,8 +268,8 @@ pub async fn send(
     .await
 }
 
-/// The same turn, with the streamed text handed to `on_delta` instead (the phone link uses this).
-pub async fn send_with(
+/// The same turn, with the streamed text handed to `on_delta` instead of emitted as `chat-delta`.
+pub(crate) async fn send_with(
     chat: &Chat,
     server: &Server,
     model: &str,

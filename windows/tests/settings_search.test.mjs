@@ -117,7 +117,7 @@ test("no entry is a macOS catalog key this app cannot translate", () => {
 test("every hub page has at least one search entry", () => {
   const pages = [
     "dictation", "notes", "insights", "dictionary", "snippets", "styles", "flowsettings",
-    "general", "pills", "agents", "chat", "voice", "integrations", "phone", "shortcuts",
+    "general", "pills", "agents", "chat", "voice", "integrations", "shortcuts",
     "mailOverview", "mailRules", "mailBanned", "mailVIP",
   ];
   const covered = new Set(SETTINGS_ENTRIES.map((e) => e.page));
