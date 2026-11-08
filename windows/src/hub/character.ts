@@ -8,6 +8,9 @@
 import { h } from "../views/dom";
 import { t } from "../i18n/i18n";
 import { Bridge } from "../core/bridge";
+import type { BotEngine } from "../mochi/engine";
+import type { BotStateName } from "../core/layout";
+import { liveMochi } from "./hero";
 
 /** What the character is up to (the mockup's four character states). */
 export type StageState = "waiting-permission" | "running" | "clear" | "idle";
@@ -91,6 +94,15 @@ function paintStage() {
     const chips = row.querySelectorAll(".hub-state-chip");
     STAGE_STATES.forEach((state, i) => chips[i]?.classList.toggle("on", state === current));
   }
+  // The Mikus change their pose with the state, and the ones whose pages have
+  // gone are forgotten.
+  for (const one of engines) {
+    if (!one.canvas.isConnected) {
+      engines.delete(one);
+      continue;
+    }
+    one.engine.setState(botState(current), true);
+  }
 }
 
 /** The backend's answer, once it says a state we know. */
@@ -131,11 +143,37 @@ export function setStagePolling(shown: boolean) {
 /**
  * The character itself, in a slot of its own so the asset can change in one
  * place; the stage around it (ring, disc, sparkles, bubble) never moves.
- * TODO: replace with real character asset (PNG/WebM/Lottie).
+ * This is the real Miku, drawn by the island's own BotEngine (the same live
+ * canvas the sidebar brand and the wardrobe previews use): she follows the
+ * pointer with her eyes, reacts to a click, and wears the outfit and variant
+ * picked in the wardrobe. A future static/WebM/Lottie asset replaces this
+ * canvas here and nowhere else.
  */
 export function renderCharacter(): HTMLElement {
-  return h("span", { class: "mochi-char-asset", text: "🐱", "aria-hidden": "true" });
+  const canvas = h("canvas", { class: "mochi-char-canvas", "aria-hidden": "true" }) as HTMLCanvasElement;
+  const engine = liveMochi(canvas, "#F5F6F8", botState(currentStageState()), 0.16);
+  engines.add({ canvas, engine });
+  return canvas;
 }
+
+/** The stage's four states, worn by the engine as its own bot states. */
+function botState(state: StageState): BotStateName {
+  switch (state) {
+    case "waiting-permission": return "approval";
+    case "running": return "working";
+    case "clear": return "finished";
+    default: return "sleeping";
+  }
+}
+
+/** One live stage Miku: her engine, and the canvas she is drawn into. */
+interface StageMochi {
+  canvas: HTMLCanvasElement;
+  engine: BotEngine;
+}
+
+/** Every Miku on the page. Pruned of removed canvases at each repaint. */
+const engines = new Set<StageMochi>();
 
 export interface StageOptions {
   /** The state to show; the window's current one when left out. */

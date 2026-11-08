@@ -643,6 +643,13 @@ body.hub-window {
 }
 
 /* Typing (agent running): a small restless hop. */
+.mochi-char .mochi-char-canvas {
+  width: 170px;
+  height: 170px;
+  display: block;
+  margin-right: -34px;
+}
+
 .st-running .mochi-char {
   animation: hub-type 1s steps(2) infinite;
 }
@@ -824,6 +831,12 @@ body.hub-window {
 .mochi-stage.peek .mochi-char {
   font-size: 54px;
   right: 14px;
+}
+
+.mochi-stage.peek .mochi-char .mochi-char-canvas {
+  width: 92px;
+  height: 92px;
+  margin-right: 0;
 }
 
 .mochi-stage.peek .mochi-sparkle {
