@@ -132,6 +132,9 @@ body {
   border-radius: 0 0 14px 14px;
   overflow: visible;
   will-change: width, height, transform;
+  /* The open/close sweep is a scale of a target-laid-out panel (island.ts
+     applyGeometry): it grows from the top edge, where the notch hangs. */
+  transform-origin: top center;
 }
 
 #island-clip {
@@ -139,6 +142,20 @@ body {
   inset: 0;
   overflow: hidden;
   border-radius: inherit;
+}
+
+/* The weather (Snow/Sakura): behind everything the island shows, above the
+   black. Cross-faded, so a wardrobe pick swaps the sky without a blink. */
+#ambient-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#ambient-canvas.on {
+  opacity: 1;
 }
 
 #bot-canvas,
@@ -255,6 +272,18 @@ body {
   border-radius: 50%;
   background: var(--plan);
   flex-shrink: 0;
+}
+
+/* Music chrome: while she dances, the island's small dots and the clock
+   breathe with the beat — `--beat` (0…1) is written by the frame loop, and
+   only the glow moves, nothing else. */
+#compact-plan .compact-plan-dot,
+#island-closed .dot {
+  box-shadow: 0 0 calc(2px + var(--beat, 0) * 7px) rgba(var(--skin-accent-rgb, 57, 197, 187), calc(0.12 + var(--beat, 0) * 0.5));
+}
+
+#island-clock {
+  text-shadow: 0 0 calc(2px + var(--beat, 0) * 9px) rgba(var(--skin-accent-rgb, 57, 197, 187), calc(var(--beat, 0) * 0.4));
 }
 
 /* Date and time in the middle of the compact island, between Mochi and the grid. */
@@ -441,6 +470,60 @@ body {
   background: var(--card);
   border: 1px solid var(--hairline);
   overflow: hidden;
+}
+
+/* A queue behind an approval: two ghost cards fan out below it, and a count
+   rides the card. Real siblings, so the ghosts never cross the card's face. */
+.approval-stack {
+  position: relative;
+  height: 100%;
+}
+
+.approval-stack .card {
+  z-index: 1;
+}
+
+.approval-stack .ghost {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--amber, #f5a524) 30%, transparent);
+  opacity: 0;
+  transform: translateY(0) scale(1);
+  transition: transform 0.28s cubic-bezier(0.34, 1.36, 0.64, 1), opacity 0.24s ease;
+  pointer-events: none;
+}
+
+.approval-stack.queued .ghost {
+  opacity: 1;
+}
+
+.approval-stack.queued .ghost:nth-of-type(1) {
+  transform: translateY(13px) rotate(1.8deg) scale(0.962);
+}
+
+.approval-stack.queued .ghost:nth-of-type(2) {
+  transform: translateY(6px) rotate(-1.4deg) scale(0.981);
+}
+
+.queued-more {
+  position: absolute;
+  top: 12px;
+  right: 46px;
+  font: 700 10.5px var(--font);
+  color: color-mix(in srgb, var(--amber, #f5a524) 85%, white);
+  background: color-mix(in srgb, var(--amber, #f5a524) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber, #f5a524) 35%, transparent);
+  border-radius: 999px;
+  padding: 2px 9px;
+  pointer-events: none;
+}
+
+/* The ritual card: one line of dim body under the heading. */
+.ritual-body {
+  font: 500 12px var(--font);
+  color: var(--ink-2, #b7bbc2);
 }
 
 .card.wash::after {

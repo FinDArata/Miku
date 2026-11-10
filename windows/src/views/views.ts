@@ -32,7 +32,7 @@ import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
 import type { Outfit, OutfitSelection, VariantSelection } from "../mochi/wardrobe";
 import type { MikuVariantId } from "../mochi/variants";
-import { language, t, tl, type Msg } from "../i18n/i18n";
+import { language, t, tn, tl, type Msg } from "../i18n/i18n";
 import type { ViewCommand } from "../island/shortcuts";
 
 export interface ViewActions {
@@ -564,8 +564,14 @@ function buildApproval(actions: ViewActions): ViewHost {
   const who = h("div");
   const code = h("div", { class: "code" });
   const row = h("div", { class: "actions" });
-  const el = h("div", { class: "view" },
-    card("amber", stack(116, 16, who, code, row), foldButton(actions)));
+  const more = h("div", { class: "queued-more" });
+  const cardEl = card("amber", stack(116, 16, who, code, row), foldButton(actions), more);
+  // Two ghost cards that fan out behind this one while a queue waits: real
+  // siblings, so they never cross the card's own face.
+  const g1 = h("div", { class: "ghost" });
+  const g2 = h("div", { class: "ghost" });
+  const wrap = h("div", { class: "approval-stack" }, g2, g1, cardEl);
+  const el = h("div", { class: "view" }, wrap);
   let rowKey = "";
   // The card pops up under a cursor that was busy with something else: a click
   // meant for the window underneath must not land on Allow. Clicks in the first
@@ -590,6 +596,12 @@ function buildApproval(actions: ViewActions): ViewHost {
       // is the command, the file path or the URL being authorised, not just the
       // name of the tool asking.
       code.textContent = State.pendingApproval?.command || State.pendingApproval?.tool || "…";
+      // The queue behind this one reads as a stack, not as a card that keeps
+      // changing its mind.
+      const extra = State.approvalQueue.length;
+      wrap.classList.toggle("queued", extra > 0);
+      clear(more);
+      if (extra > 0) more.textContent = tn("one more waiting", "{count} more waiting", extra);
       // Two buttons, built once. Rebuilding them between a mouse-down and a
       // mouse-up would swallow the click, and there is nothing left to vary:
       // "Always" is gone until the remembered-rules list exists to back it.
@@ -600,6 +612,42 @@ function buildApproval(actions: ViewActions): ViewHost {
         btn(tl("Deny"), "secondary", guarded("deny"), "N"),
         btn(tl("Allow"), "primary", guarded("allow"), "Y"),
       );
+    },
+  };
+}
+
+// ── Ritual ────────────────────────────────────────────────────────────────────
+
+/** The ritual card: a break worth taking, a milestone worth a nod. One line,
+ * one button, gone by itself — it never interrupts an approval. */
+function buildRitual(actions: ViewActions): ViewHost {
+  const title = h("div", { class: "title" });
+  const body = h("div", { class: "dim ritual-body" });
+  const row = h("div", { class: "actions" });
+  const el = h("div", { class: "view" },
+    card("cyan", stack(116, 16, title, body, row)));
+  let built = "";
+  return {
+    el,
+    sync() {
+      const r = State.ritual;
+      if (!r) return;
+      const heading = r.kind === "break" ? t("Time for a break") : t("Milestone");
+      const text = r.kind === "break"
+        ? t("The agents have been at it for {count} minutes.", { count: r.minutes })
+        : r.kind === "words"
+          ? t("{count} words today", { count: r.count })
+          : t("{count} days in a row", { count: r.count });
+      const key = `${heading}|${text}`;
+      if (key === built) return;
+      built = key;
+      title.textContent = heading;
+      body.textContent = text;
+      clear(row);
+      row.append(btn(tl("Take a breath"), "primary", () => {
+        State.ritual = null;
+        actions.collapse();
+      }));
     },
   };
 }
@@ -871,6 +919,7 @@ export function buildViews(
   map.set("error", buildError(actions));
   map.set("finished", buildFinished(actions));
   map.set("confused", buildConfused());
+  map.set("ritual", buildRitual(actions));
   map.set("note", buildNote());
   map.set("settings", buildSettings(actions));
   map.set("prompt", buildPrompt(onChatHeightChange));

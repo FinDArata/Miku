@@ -125,8 +125,11 @@ pub fn setup(app: &AppHandle) {
                 if !platform::prepare_pill_window(&win, mode) {
                     let _ = win.destroy();
                     mode = DesktopMode::Off;
-                } else if park {
-                    let _ = win.set_position(PhysicalPosition::new(PARKED.0, PARKED.1));
+                } else {
+                    crate::apply_glass(&win);
+                    if park {
+                        let _ = win.set_position(PhysicalPosition::new(PARKED.0, PARKED.1));
+                    }
                 }
             }
             Err(err) => {

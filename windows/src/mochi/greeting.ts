@@ -33,6 +33,24 @@ export const GREETING_END = T.end;
 /** The greeting's own sound, played from the start (greeting.wav, the Mac's file). */
 const GREETING_SOUND = "greeting";
 
+// ── The day's hello ───────────────────────────────────────────────────────────
+
+/** Which signature move she greets with, in the wave's own window. */
+export type GreetSignature = "wave" | "bow" | "twirl";
+
+/**
+ * Stable per day: the same hello all day, a different one tomorrow. `day` is
+ * any day-ordinal (year*372 + month*31 + date does fine).
+ */
+export function greetSignature(day: number): GreetSignature {
+  return (["wave", "bow", "twirl"] as const)[((day % 3) + 3) % 3];
+}
+
+/** Today as a day-ordinal, for greetSignature. */
+export function todayNumber(d = new Date()): number {
+  return d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
+}
+
 // ── Geometry (640×150) ────────────────────────────────────────────────────────
 
 export const GREETING_W = 640;
@@ -84,7 +102,7 @@ export interface Pose {
   iw: number; ih: number;
 }
 
-function greetPose(t: number): Pose {
+function greetPose(t: number, sig: GreetSignature = "wave"): Pose {
   // Island size — only the spread of the warp streaks uses it.
   const gx = seg(t, 0, 0.5);
   const g = Math.sin((Math.PI * gx) / 2) + 0.04 * Math.sin(Math.PI * gx) * gx;
@@ -187,7 +205,14 @@ function greetPose(t: number): Pose {
     : 1 - E.easeIn(seg(t, T.tuck0 + 0.03, T.tuck1));
   // The greeting's "hand" — Miku waves with her head, see waveTilt().
   const wave = t >= T.pop1 && t < T.tuck0 ? t - T.pop1 : -1;
-  const tilt = waveTilt({ wave } as Pose);
+  let tilt = waveTilt({ wave } as Pose);
+  // The day's signature, in the wave's own window and rhythm: a wave as ever,
+  // a bow that dips and rises, or a full twirl that lands back where it began.
+  if (wave >= 0 && sig !== "wave") {
+    const k = seg(wave, 0, T.tuck0 - T.pop1);
+    if (sig === "bow") tilt = -0.34 * Math.sin(Math.PI * k);
+    else tilt = Math.PI * 2 * E.inOut(k);
+  }
 
   return {
     hb, x, y, sx, sy, tilt,
@@ -222,9 +247,9 @@ function smallPose(): Pose {
 }
 
 /** Mochi's pose `t` seconds in; `tc` is when the collapse began (∞ if not yet). */
-export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY): Pose {
-  if (t < tc) return greetPose(Math.min(t, T.end + 10));
-  const a = greetPose(tc);
+export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY, sig: GreetSignature = "wave"): Pose {
+  if (t < tc) return greetPose(Math.min(t, T.end + 10), sig);
+  const a = greetPose(tc, sig);
   const b = smallPose();
   // Same curve and duration (340 ms) as the island shrinking around him: with
   // the Mac's inOut ease the island got ahead of Mochi and cut his body off
@@ -458,6 +483,8 @@ export class Greeting {
   private timers: number[] = [];
   /** The island's own engine, so the greeting shows the same Miku it lands as. */
   private engine = new BotEngine();
+  /** Today's hello, picked once at start. */
+  private sig: GreetSignature = "wave";
 
   onComplete: (() => void) | null = null;
 
@@ -470,6 +497,7 @@ export class Greeting {
     this.startMs = performance.now();
     this.tc = Number.POSITIVE_INFINITY;
     this.fired = false;
+    this.sig = greetSignature(todayNumber());
     this.cancelTimers();
     // The score plays from the start; it outlives greetComplete a little on
     // purpose and fades when the greeting view goes away (see leave()).
@@ -520,7 +548,7 @@ export class Greeting {
     const t = this.elapsed;
     if (!this.fired && t >= T.end && this.tc >= T.autoLeave) this.fire();
 
-    const p = greetingPose(t, this.tc);
+    const p = greetingPose(t, this.tc, this.sig);
     x.clearRect(0, 0, GREETING_W, GREETING_H);
 
     if (p.card > 0) {

@@ -104,9 +104,30 @@ body {
     box-shadow 0.35s ease;
 }
 
-/* Resting: the thin capsule breathes, so it is visible without being loud. */
+/* Acrylic really is behind the window (Rust said so): the panels thin out so
+   the blur shows, instead of hiding under near-opaque ink. */
+.acrylic .capsule {
+  background: rgba(4, 12, 12, 0.2);
+}
+
+.acrylic .capsule.open {
+  background: rgba(5, 11, 11, 0.6);
+}
+
+.acrylic .bubble {
+  background: rgba(5, 11, 11, 0.55);
+}
+
+/* Resting: the thin capsule breathes, so it is visible without being loud.
+   The system asking for less motion stills it — the shadow stays, unbreathing. */
 .capsule:not(.open) {
   animation: miku-rest 3.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capsule:not(.open) {
+    animation: none;
+  }
 }
 
 @keyframes miku-rest {

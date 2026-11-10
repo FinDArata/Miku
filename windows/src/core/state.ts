@@ -53,6 +53,15 @@ export interface ApprovalInfo {
   questions?: AskedQuestion[];
 }
 
+/**
+ * A ritual: something small worth saying at the right moment, not because
+ * anything is wrong. The ritual card reads it and words it.
+ */
+export type Ritual =
+  | { kind: "break"; minutes: number }
+  | { kind: "words"; count: number }
+  | { kind: "streak"; count: number };
+
 /** One question of an AskUserQuestion call. */
 export interface AskedQuestion {
   question: string;
@@ -271,6 +280,12 @@ class AppState {
   approvalQueue: ApprovalInfo[] = [];
   /** The pill that was in front when the card came up; it comes back after. */
   focusBeforeApproval: string | null = null;
+
+  /**
+   * A ritual on show (a break worth taking, a milestone worth a nod): what the
+   * ritual card reads. Null once it has been dismissed.
+   */
+  ritual: Ritual | null = null;
 
   integrations: Record<string, IntegrationInfo> = {};
 

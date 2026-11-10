@@ -16,6 +16,14 @@ export const SOUND_NAMES = [
 
 export type SoundName = (typeof SOUND_NAMES)[number];
 
+/**
+ * The six cues scripts/voice-cues.mjs lays over the chimes. A neural voice
+ * detuned by more than a hair sounds wrong, so they jitter far less than the
+ * composed chimes — which need the variation to stay fresh on the hundredth
+ * play of a day.
+ */
+const SPOKEN = new Set(["approve", "blip", "error", "finish", "greeting", "question"]);
+
 class SoundEngine {
   enabled = true;
   volume = 0.12;
@@ -117,7 +125,9 @@ class SoundEngine {
     this.enabled = on;
   }
 
-  play(name: SoundName | string) {
+  /** Plays a sound. `pan` places it in stereo: -1 left … 1 right — the desktop
+   * Miku's little sounds come from where she stands. 0 is the island, centre. */
+  play(name: SoundName | string, pan = 0) {
     if (!this.enabled) return;
     const ctx = this.ctx;
     const master = this.master;
@@ -130,9 +140,17 @@ class SoundEngine {
     if (ctx.state === "suspended") void ctx.resume();
     const src = ctx.createBufferSource();
     src.buffer = buf;
+    src.playbackRate.value = 1 + (Math.random() * 2 - 1) * (SPOKEN.has(name) ? 0.005 : 0.02);
     const gain = ctx.createGain();
     src.connect(gain);
-    gain.connect(master);
+    let out: AudioNode = gain;
+    if (pan !== 0 && typeof ctx.createStereoPanner === "function") {
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+      gain.connect(panner);
+      out = panner;
+    }
+    out.connect(master);
     const voice = { src, gain };
     let voices = this.playing.get(name);
     if (!voices) this.playing.set(name, (voices = new Set()));

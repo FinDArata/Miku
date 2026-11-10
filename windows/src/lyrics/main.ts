@@ -379,6 +379,9 @@ function setVisible(on: boolean) {
 }
 
 void onEvent<SpotifyState>("spotify", (s) => apply(s));
+// Rust says the window really has Acrylic behind it: the card goes translucent,
+// so the blur shows instead of hiding under it.
+void onEvent<null>("material", () => document.body.classList.add("acrylic"));
 // Rust parked or brought back the window by itself (a song started, the music
 // stopped): the page follows without touching the switch in Settings.
 void onEvent<boolean>("lyrics-shown", (on) => setVisible(on));

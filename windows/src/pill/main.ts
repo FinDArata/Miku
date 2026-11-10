@@ -542,6 +542,9 @@ async function main() {
     for (let i = 0; i < BANDS; i++) target[i] = bands[i] ?? 0;
     wake();
   });
+  // Rust says the window really has Acrylic behind it: the panels go
+  // translucent, so the blur shows instead of hiding under them.
+  void onEvent<null>("material", () => document.body.classList.add("acrylic"));
   void onEvent<boolean>("pill-visible", (v) => {
     visible = v;
     if (!v) {

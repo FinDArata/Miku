@@ -14,15 +14,19 @@ import {
   type BotEmoteName, type IslandMode, type IslandViewName,
 } from "../core/layout";
 import { Sound } from "../core/sound";
-import { State } from "../core/state";
-import { SPOTIFY_ID, Spotify, islandDances, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { State, type Ritual } from "../core/state";
+import { SPOTIFY_ID, Spotify, islandDances, desktopDances, spotifyPosition, type SpotifyState } from "../core/spotify";
 import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
 import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "../lyrics/lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
 import { looksLikeSong } from "../lyrics/song";
 import { HIDE_AFTER_PAUSE_MS, holdStillUp } from "../lyrics/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
+import { Ambient, ambientFor } from "../mochi/ambient";
 import { Greeting } from "../mochi/greeting";
+import { bandStats } from "../mochi/music";
+import { skyTint, type SkyTint } from "../mochi/sky";
+import { BREAK_AFTER_MS, BreakTracker } from "../mochi/session";
 import { miniBotCount, syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
 import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
@@ -124,11 +128,36 @@ export class Island {
   private width = new Tracked(NOTCH_W);
   private height = new Tracked(0);
   private radius = new Tracked(ROUNDED_CORNER);
+  /** Where the springs are headed: the DOM lays out here while they run. */
+  private sizeTarget = { w: NOTCH_W, h: 0, r: ROUNDED_CORNER };
   private botCx = new Spring(46);
   private botCy = new Spring(16);
   private botSize = new Spring(10);
 
   private engine = new BotEngine();
+  /** The music watch's last asked state, so Rust hears of changes only. */
+  private musicWatch: boolean | null = null;
+  /** The last `--beat` value written, so the style write is sparse. */
+  private lastBeat = -1;
+  /** The hour's light, remembered so the clock is read once an hour. */
+  private skyHour = -1;
+  private skyValue: SkyTint = { rgb: [1, 1, 1], strength: 0 };
+  /** The working-session clock (a break worth mentioning) and when it last ran. */
+  private breakTracker = new BreakTracker();
+  private breakCheckedAt = 0;
+
+  /** The hour's light (sky.ts), read once an hour. */
+  private skyNow(): SkyTint {
+    const h = new Date().getHours();
+    if (h !== this.skyHour) {
+      this.skyHour = h;
+      this.skyValue = skyTint(h);
+    }
+    return this.skyValue;
+  }
+  /** The weather behind the island's content (Snow/Sakura); classic has none. */
+  private ambientCanvas = h("canvas", { id: "ambient-canvas" });
+  private ambient = new Ambient(this.ambientCanvas);
   private greeting = new Greeting();
   private greetingShown = false;
   private seasons = new SeasonCache();
@@ -423,6 +452,7 @@ export class Island {
     this.clipEl = h(
       "div",
       { id: "island-clip" },
+      this.ambientCanvas,
       this.greetingCanvas,
       this.uploadCanvas.el,
       this.contentEl,
@@ -843,6 +873,10 @@ export class Island {
 
   private animateGeometry(shrinking: boolean) {
     const { w, h, r } = this.targetSize();
+    // The destination is where the DOM lays out while the spring runs: the
+    // panel is built at its final size once, and the eye sees a scale — see
+    // applyGeometry.
+    this.sizeTarget = { w, h, r };
     if (shrinking) {
       this.width.curveTowards(w);
       this.height.curveTowards(h);
@@ -859,15 +893,30 @@ export class Island {
     const w = this.width.value;
     const hh = this.height.value;
     const r = this.radius.value;
-    this.islandEl.style.width = `${w}px`;
-    this.islandEl.style.height = `${hh}px`;
-    this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
-    this.islandEl.style.transform = `translateX(-50%)`;
+    const t = this.sizeTarget;
+    const sx = t.w > 0 ? w / t.w : 1;
+    const sy = t.h > 0 ? hh / t.h : 1;
+    this.islandEl.style.width = `${t.w}px`;
+    this.islandEl.style.height = `${t.h}px`;
+    if (sx > 0.998 && sx < 1.002 && sy > 0.998 && sy < 1.002) {
+      // At rest: no transform, so text stays crisp and the radius is exact.
+      this.islandEl.style.transform = `translateX(-50%)`;
+      this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
+    } else {
+      // In flight: layout at the target, scale for the eye. The radius is
+      // pre-divided by the scale per axis, so what the user sees sweeps exactly
+      // as it did when width and height animated themselves — but the panel's
+      // DOM lays out once per animation, not every frame.
+      const rx = r / sx;
+      const ry = r / sy;
+      this.islandEl.style.transform = `translateX(-50%) scale(${sx}, ${sy})`;
+      this.islandEl.style.borderRadius = `0 0 ${rx}px ${rx}px / 0 0 ${ry}px ${ry}px`;
+    }
     // These follow the island as it resizes, so they belong here rather than in
     // the state-driven DOM sync.
-    this.clockEl.style.height = `${hh}px`;
-    this.greetingCanvas.style.left = `${(w - EXPANDED_W) / 2}px`;
-    this.uploadCanvas.el.style.left = `${(w - EXPANDED_W) / 2}px`;
+    this.clockEl.style.height = `${t.h}px`;
+    this.greetingCanvas.style.left = `${(t.w - EXPANDED_W) / 2}px`;
+    this.uploadCanvas.el.style.left = `${(t.w - EXPANDED_W) / 2}px`;
 
     const viewportW = window.innerWidth > 0 ? window.innerWidth : PANEL_W;
     const rect = { x: (viewportW - w) / 2, y: 0, w, h: hh };
@@ -1357,6 +1406,33 @@ export class Island {
     this.pointerInside = inside;
   }
 
+  /** How loud the voice on the mic is right now (pill-bands): her mouth opens
+   * with it while she dictates or answers. The loop stays up on `busy`. */
+  setVoice(level: number) {
+    this.engine.setVoiceLevel(level);
+    this.ensureRunning();
+  }
+
+  /** The system's music (music-bands): the dance rides its energy and beat. */
+  setMusic(bands: number[]) {
+    const { rms, bass } = bandStats(bands);
+    this.engine.setMusicEnergy(rms, bass);
+    this.ensureRunning();
+  }
+
+  /**
+   * A small ritual worth saying — a break, a milestone. It waits for a quiet
+   * island: nothing interrupts an approval, and nothing shoves a chat aside.
+   * When it does show, she is proud of it.
+   */
+  ritual(r: Ritual) {
+    State.ritual = r;
+    if (State.pendingApproval) return;
+    if (State.mode === "expanded" && State.view !== "overview" && State.view !== State.defaultView()) return;
+    this.engine.triggerEmote(r.kind === "break" ? "yawn" : "proud", 2);
+    this.alert("ritual");
+  }
+
   /** Cursor in window-logical coordinates. */
   onCursor(x: number, y: number) {
     // WebKitGTK can deliver a mousemove after the pointer has left the layer
@@ -1528,6 +1604,37 @@ export class Island {
     if (UploadSeq.isActive) this.stepSequence();
     this.updateCountdown(nowMs);
 
+    // The weather behind the content (snow on Snow Miku, petals on Sakura, the
+    // classic clean): asked every frame, so a wardrobe pick lands at once.
+    // Hidden, nothing falls — the closed island is a notch, not a sky.
+    const weather = State.mode === "hidden" ? "none" : ambientFor(
+      State.variantPreview ?? this.variants.get(parseVariant(State.settings.mikuVariant)),
+    );
+    this.ambient.set(weather);
+    this.ambientCanvas.classList.toggle("on", this.ambient.active);
+    this.ambient.setSky(this.skyNow());
+    this.ambient.step(dt);
+
+    // Music chrome: while she dances, the island's small dots and the clock
+    // glow with the beat — `--beat` for the CSS, quantised so the style write
+    // happens ~40 times a second at most.
+    const beat = State.mode === "hidden" ? 0 : Math.round(this.engine.beatPulse * 40) / 40;
+    if (beat !== this.lastBeat) {
+      this.lastBeat = beat;
+      this.islandEl.style.setProperty("--beat", beat.toFixed(3));
+    }
+
+    // The working session, read about twice a minute: agents at it for the
+    // better part of an hour earn a mention of a break.
+    if (nowMs - this.breakCheckedAt > 30_000) {
+      this.breakCheckedAt = nowMs;
+      const st = State.effectiveState;
+      const active = !State.paused && (st === "working" || st === "thinking" || st === "searching");
+      if (this.breakTracker.update(active, nowMs)) {
+        this.ritual({ kind: "break", minutes: Math.round(BREAK_AFTER_MS / 60_000) });
+      }
+    }
+
     // Nothing is drawn while the island is hidden, so nothing may keep the loop
     // alive either. This used to read `... || this.engine.busy || State.mode !==
     // "hidden"`, and engine.busy is permanently true for any state with a
@@ -1547,7 +1654,7 @@ export class Island {
       : settling ||
         !this.botCx.settled || !this.botCy.settled || !this.botSize.settled ||
         greetingActive || this.engine.busy || miniBotCount() > 0 ||
-        UploadSeq.isActive || viewAnimating;
+        UploadSeq.isActive || viewAnimating || this.ambient.active;
 
     if (busy) {
       requestAnimationFrame(this.frame);
@@ -1668,6 +1775,13 @@ export class Island {
       view: State.view,
       focusId: State.focusTask?.id,
     }));
+    // The system-audio watch follows the same rule: on while music plays and a
+    // dance is welcome, off the moment it is not (music.rs runs one capture).
+    const watchOn = desktopDances(State.spotifyPlaying, State.effectiveState) && !State.paused;
+    if (watchOn !== this.musicWatch) {
+      this.musicWatch = watchOn;
+      void Bridge.setMusicWatch(watchOn);
+    }
 
     this.engine.update(dt);
     // Cleared in device pixels, the whole canvas. At a fractional scale (150 %)

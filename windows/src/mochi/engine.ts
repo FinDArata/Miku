@@ -4,12 +4,13 @@
 // (design/prototype/notch-buddy.html, the visual source of truth) — the Swift
 // arc angles produce a different shape.
 
-import { Ease, lerp, type EaseFn } from "../core/anim";
+import { Ease, lerp, reducedMotion, type EaseFn } from "../core/anim";
 import { Sound } from "../core/sound";
 import type { BotEmoteName, BotStateName } from "../core/layout";
 import { drawOutfitBehind, drawOutfitFront, type Head } from "./outfits";
 import type { Outfit } from "./wardrobe";
 import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
+import { BeatTracker, musicEnergy as danceEnergy } from "./music";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ interface BotStateCfg {
 }
 
 interface Particle {
-  type: "heart" | "star" | "spark" | "sweat" | "z";
+  type: "heart" | "star" | "spark" | "sweat" | "z" | "petal" | "snowflake";
   x: number; y: number; vx: number; vy: number;
   age: number; life: number; rot: number; size: number;
 }
@@ -329,6 +330,21 @@ export class BotEngine {
   isDancing = false;
   dancingLevel = 0;
 
+  /** Forced gaze (`glance`): draw loops must hold their own look back meanwhile. */
+  glanceUntil = 0;
+
+  /** The mouth rides the voice (`setVoiceLevel`); smoothed in update(). */
+  private voiceTarget = 0;
+  private voice = 0;
+
+  /** Music loudness (`setMusicEnergy`): the dance bounces with the song, and a
+   * bass onset stamps `beatAt` so the hop lands on the beat. */
+  musicEnergy = 0;
+  private musicRaw = 0;
+  private musicTarget = 0;
+  private beat = new BeatTracker();
+  private beatAt = -10;
+
   // Mouth spring (fraction of R)
   slotH = 0; slotHTarget = 0; slotHVel = 0; isChewing = false;
 
@@ -374,6 +390,10 @@ export class BotEngine {
 
   /** Fired when three slaps land inside 1.7 s (→ dizzy + confused view). */
   onDizzy: (() => void) | null = null;
+
+  /** Where she stands, as stereo: -1 left … 1 right. The island is 0; the
+   * desktop surface sets it from her screen position. */
+  pan = 0;
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
@@ -426,6 +446,7 @@ export class BotEngine {
       case "finished":
         this.doRoll(950, 1);
         setTimeout(() => this.emit("spark", 5), 500);
+        setTimeout(() => this.celebrate(), 700);
         break;
       case "error":
         this.anim("ox", [
@@ -512,7 +533,7 @@ export class BotEngine {
     const t = now();
     this.slapTimes = this.slapTimes.filter((s) => t - s < 1.7);
     this.slapTimes.push(t);
-    Sound.play("slap");
+    Sound.play("slap", this.pan);
     this.squash();
     this.physVy -= 1.2;
     this.physVx += Math.random() < 0.5 ? 0.7 : -0.7;
@@ -522,7 +543,7 @@ export class BotEngine {
     } else {
       this.eyeOverride = "line";
       this.eyeOverrideUntil = t + 0.8;
-      setTimeout(() => Sound.play("annoyed"), 60);
+      setTimeout(() => Sound.play("annoyed", this.pan), 60);
     }
   }
 
@@ -548,7 +569,7 @@ export class BotEngine {
       this.anim("hands", [[1, 280, Ease.out]]);
       this.anim("sy", [[0.95, 100, Ease.out], [1.0, 260, Ease.back]]);
       this.anim("sx", [[1.04, 100, Ease.out], [1.0, 260, Ease.back]]);
-      Sound.play("greet");
+      Sound.play("greet", this.pan);
     }, 250);
 
     setTimeout(() => { if (this.greetToken === tok) this.blink(); }, 550);
@@ -632,7 +653,7 @@ export class BotEngine {
       case "annoyed":
         this.eyeOverride = "line";
         this.eyeOverrideUntil = t + 0.8;
-        setTimeout(() => Sound.play("annoyed"), 60);
+        setTimeout(() => Sound.play("annoyed", this.pan), 60);
         break;
     }
   }
@@ -650,6 +671,23 @@ export class BotEngine {
         life: 1.3 + Math.random() * 0.5,
         rot: Math.random() * Math.PI * 2,
         size: 0.15 + Math.random() * 0.08,
+      });
+    }
+  }
+
+  /** A little dust where a drag sets her down: sparks kick out at her feet. */
+  puff() {
+    for (let i = 0; i < 7; i++) {
+      this.particles.push({
+        type: "spark",
+        x: (Math.random() - 0.5) * 0.9,
+        y: 0.6 + Math.random() * 0.12,
+        vx: (Math.random() - 0.5) * 0.9,
+        vy: -(0.1 + Math.random() * 0.2),
+        age: -i * 0.03,
+        life: 0.5 + Math.random() * 0.3,
+        rot: Math.random() * Math.PI * 2,
+        size: 0.09 + Math.random() * 0.06,
       });
     }
   }
@@ -676,7 +714,10 @@ export class BotEngine {
     this.locks.delete("outfitPresence");
     const enter = () => {
       this.outfit = next;
-      this.anim("outfitPresence", [[1, 350, Ease.inOut]], () => this.squash());
+      this.anim("outfitPresence", [[1, 350, Ease.inOut]], () => {
+        this.squash();
+        this.celebrate();
+      });
     };
     if (!animated) {
       this.outfit = next;
@@ -704,6 +745,7 @@ export class BotEngine {
       this.cfg.bounces || this.cfg.scans || this.cfg.breathes || this.cfg.zz || this.cfg.sweat ||
       this.isMini ||
       this.isDancing || this.dancingLevel > 0.001 ||
+      this.voice > 0.004 || this.musicEnergy > 0.01 ||
       Math.abs(this.tgYaw - this.yaw) > 0.002 ||
       Math.abs(this.tgPitch - this.pitch) > 0.002 ||
       Math.abs(this.tgTilt - this.tilt) > 0.002 ||
@@ -814,6 +856,14 @@ export class BotEngine {
 
     this.col = mix3(this.col, this.colT, 1 - Math.pow(0.002, dt));
 
+    // The mouth rides the voice, the dance rides the music: both snappy enough
+    // to read as the real thing, smooth enough not to flicker frame to frame.
+    const kLive = 1 - Math.pow(0.002, dt);
+    this.voice += (this.voiceTarget - this.voice) * kLive;
+    this.musicTarget += (this.musicRaw - this.musicTarget) * kLive;
+    this.musicEnergy = danceEnergy(this.musicTarget);
+
+
     if (n > this.nextBlink) {
       if (this.state !== "sleeping" && this.state !== "dizzy") {
         this.blink();
@@ -907,17 +957,96 @@ export class BotEngine {
     if (this.isDancing !== dancing) this.isDancing = dancing;
   }
 
+  /** 1 at the beat, decaying in about a sixth of a second — the island's small
+   * chrome (plan dot, clock) breathes with it while she dances. 0 when not. */
+  get beatPulse(): number {
+    if (!this.isDancing || this.dancingLevel <= 0.001) return 0;
+    return Math.exp(-(now() - this.beatAt) * 6);
+  }
+
+  /** How loud the current voice is, 0…1: the mouth opens with it while she
+   * dictates or answers. 0 holds it shut. */
+  setVoiceLevel(v: number) {
+    this.voiceTarget = Math.min(1, Math.max(0, v));
+  }
+
+  /** The system's music, analysed by Rust (music-bands): the rms drives how
+   * hard the dance bounces, a bass onset stamps a beat the hop lands on. */
+  setMusicEnergy(rms: number, bass: number) {
+    this.musicRaw = Math.min(1, Math.max(0, rms));
+    if (this.beat.push(bass)) this.beatAt = now();
+  }
+
+  /** Forces the gaze toward (x, y) for `seconds`, whatever the cursor does.
+   * The caller's draw loop must hold its own look updates back meanwhile —
+   * read `glanceUntil` (the anticipation before an emote, chiefly). */
+  glance(x: number, y: number, seconds: number) {
+    this.lookX = x;
+    this.lookY = y;
+    this.glanceUntil = now() + seconds;
+  }
+
+  /** A small hello when the pointer first finds her: eyes widen, a light blush. */
+  notice() {
+    const t = now();
+    this.eyeOverride = "wide";
+    this.eyeOverrideUntil = t + 0.5;
+    this.anim("es", [[1.14, 140, Ease.out], [1, 420, Ease.inOut]]);
+    this.anim("blush", [[0.45, 180, Ease.out], [0, 520, Ease.inOut]]);
+  }
+
+  /** Task done, new look: a short burst whose confetti follows the variant —
+   * petals for Sakura, snow for Snow, hearts and sparks for classic. The
+   * falling kinds drift down from above her, the way the variants' own
+   * ornaments do. */
+  celebrate() {
+    if (this.variant.id === "sakura") {
+      for (let i = 0; i < 10; i++) this.particles.push({
+        type: "petal",
+        x: (Math.random() - 0.5) * 2.4,
+        y: -0.78 - Math.random() * 0.3,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: 0.5 + Math.random() * 0.3,
+        age: -i * 0.08,
+        life: 1.9 + Math.random() * 0.6,
+        rot: Math.random() * Math.PI * 2,
+        size: 0.15 + Math.random() * 0.08,
+      });
+    } else if (this.variant.id === "snow") {
+      for (let i = 0; i < 10; i++) this.particles.push({
+        type: "snowflake",
+        x: (Math.random() - 0.5) * 2.4,
+        y: -0.78 - Math.random() * 0.3,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: 0.45 + Math.random() * 0.3,
+        age: -i * 0.08,
+        life: 2.0 + Math.random() * 0.6,
+        rot: Math.random() * Math.PI * 2,
+        size: 0.14 + Math.random() * 0.07,
+      });
+    } else {
+      this.emit("heart", 3);
+      this.emit("spark", 6);
+    }
+  }
+
   /**
    * Applies the dance bounce and sway around the bottom of the body. Call it on
    * a saved context, before draw(), with the same size (BotEngine.applyDance).
+   * With music playing the hop rides the song: louder bounces higher, and a
+   * bass onset adds a kick that decays in a sixth of a second. The system
+   * asking for less motion keeps a gentle sway and drops the kick.
    */
   applyDance(x: CanvasRenderingContext2D, W: number, H: number) {
     if (this.dancingLevel <= 0.001) return;
     const R = W * 0.3;
     const px = W / 2 + this.ox * R;
     const py = H / 2 + this.particleOverhang / 2 + this.oy * R + R * 0.06 + R * 0.88;
-    const d = danceTransform(now(), this.dancingLevel, R);
-    x.translate(px + d.dx, py + d.dy);
+    const gentle = reducedMotion();
+    const level = this.dancingLevel * (gentle ? 0.35 : 1);
+    const d = danceTransform(now(), level, R);
+    const boost = gentle ? 1 : 1 + this.musicEnergy * 0.9 + Math.exp(-(now() - this.beatAt) * 6) * 0.4;
+    x.translate(px + d.dx, py + d.dy * boost);
     x.rotate(d.rotate);
     x.scale(d.sx, d.sy);
     x.translate(-px, -py);
@@ -1437,6 +1566,13 @@ export class BotEngine {
     if (this.isChewing) {
       x.beginPath(); x.arc(146, 118.5, 4, 0.1 * Math.PI, 0.9 * Math.PI);
       x.arc(154, 118.5, 4, 0.1 * Math.PI, 0.9 * Math.PI); x.stroke();
+    } else if (this.voice > 0.04 && state !== "sleeping" && state !== "dizzy") {
+      // Berkata-kata: mulut membuka mengikuti suara (dictation, OK Miku).
+      const h = 1.2 + this.voice * 5.2, w = 3.4 + this.voice * 2.6;
+      x.fillStyle = ink;
+      x.beginPath();
+      x.ellipse(150, 121, w, h, 0, 0, Math.PI * 2);
+      x.fill();
     } else if (shape === "happy" || state === "finished" || state === "dancing" as BotStateName) {
       x.beginPath(); x.arc(150, 120, 9, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
     } else if (state === "sleeping") {
@@ -1653,6 +1789,28 @@ export class BotEngine {
           x.fillStyle = "#fff";
           starPath(x, sz * 0.8, sz * 0.18);
           x.fill();
+          break;
+        case "petal":
+          // Kelopak sakura: pipih, buyar tertiup angin.
+          x.rotate(p.rot + Math.sin(p.age * 3) * 0.6);
+          x.fillStyle = "#F9B7D0";
+          x.beginPath();
+          x.ellipse(0, 0, sz * 0.75, sz * 0.4, 0, 0, Math.PI * 2);
+          x.fill();
+          break;
+        case "snowflake":
+          // Enam lengan + cabang kecil di ujung — kepingan salju sekecil apa pun.
+          x.rotate(p.rot + p.age * 0.8);
+          x.strokeStyle = "rgba(255,255,255,0.92)";
+          x.lineWidth = 1.3;
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+            x.beginPath(); x.moveTo(0, 0); x.lineTo(ca * sz, sa * sz); x.stroke();
+            x.beginPath();
+            x.moveTo(ca * sz * 0.62 - sa * sz * 0.2, sa * sz * 0.62 + ca * sz * 0.2);
+            x.lineTo(ca * sz * 0.62 + sa * sz * 0.2, sa * sz * 0.62 - ca * sz * 0.2);
+            x.stroke();
+          }
           break;
         case "sweat":
           x.fillStyle = "#7CC7FF";

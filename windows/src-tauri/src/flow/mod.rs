@@ -301,6 +301,10 @@ fn run(app: AppHandle, flow: Arc<Flow>, rx: mpsc::Receiver<(KeyEvent, Instant)>)
             if crate::hub_is_shown() {
                 let _ = app.emit_to(crate::HUB_LABEL, "flow-bands", levels);
             }
+            // The desktop Miku and the island listen too, so her mouth moves
+            // with the voice wherever she is on screen.
+            let _ = app.emit_to(crate::desktop::LABEL, "pill-bands", levels);
+            let _ = app.emit_to(crate::island::WINDOW_LABEL, "pill-bands", levels);
         }
     }
     pill::update(&app, |s| s.phase = "idle".into());

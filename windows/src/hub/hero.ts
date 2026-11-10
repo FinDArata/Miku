@@ -8,6 +8,8 @@
 // scrolled out of sight.
 
 import { BotEngine, hexToRGB } from "../mochi/engine";
+import { reducedMotion } from "../core/anim";
+import { skyTint, type SkyTint } from "../mochi/sky";
 import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
 import { onScreen, shouldAnimate } from "./frames";
 import type { BotStateName } from "../core/layout";
@@ -172,6 +174,19 @@ function rgba(hex: string, alpha: number): string {
   return `rgba(${rgb},${Math.max(0, Math.min(1, alpha))})`;
 }
 
+/** The hour's light (sky.ts), read once an hour — the bands wear it. */
+let skyHour = -1;
+let skyNow: SkyTint = { rgb: [1, 1, 1], strength: 0 };
+
+function theSky(): SkyTint {
+  const h = new Date().getHours();
+  if (h !== skyHour) {
+    skyHour = h;
+    skyNow = skyTint(h);
+  }
+  return skyNow;
+}
+
 // ── The backdrop ──────────────────────────────────────────────────────────────
 
 interface Particle {
@@ -250,6 +265,13 @@ export function backdrop(canvas: HTMLCanvasElement, color: string, pointerFrom: 
       rad.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = rad;
       ctx.fillRect(0, 0, w, h);
+      // The hour, worn as light: dawn warms the band, dusk violets it, night
+      // cools it — a wash faint enough to read as evening, not as a filter.
+      const sky = theSky();
+      if (sky.strength > 0) {
+        ctx.fillStyle = `rgba(${sky.rgb.map((v) => Math.round(v * 255)).join(",")},${(sky.strength * 0.07).toFixed(3)})`;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       for (const p of particles) {
         // Drift, always; the pointer pushes them away.
@@ -412,11 +434,6 @@ interface Flake {
   age: number;
 }
 
-/** The system asks for no motion: the stage's new gimmicks stay off. */
-function prefersReducedMotion(): boolean {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-}
-
 /**
  * The confetti that drifts around the stage's Miku: snow for Snow Miku,
  * petals for Sakura Miku, the stage's own teal sparks for the classic one.
@@ -426,9 +443,10 @@ function prefersReducedMotion(): boolean {
  * Asked every frame, like the variant itself: a Miku picked in the wardrobe
  * changes the weather without the page being rebuilt. Nothing drifts unless
  * the stage is on screen — `onScreen` and `shouldAnimate` gate the whole loop.
+ * The system asking for no motion keeps the stage's new gimmicks off.
  */
 export function stageWeather(canvas: HTMLCanvasElement) {
-  if (prefersReducedMotion()) return;
+  if (reducedMotion()) return;
   let flakes: Flake[] = [];
   let kind = weatherFor(shownVariant());
   let seeded = 0;
