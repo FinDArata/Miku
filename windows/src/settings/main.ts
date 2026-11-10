@@ -29,6 +29,7 @@ import { watchSkin } from "../theme/sync";
 import { FLOW_PAGE_RENDERERS } from "../hub/pages";
 import { claudeModelControl } from "./claude-models";
 import { agentsSection } from "./agents";
+import { approvalsSection } from "./approvals";
 import { whatsappSection } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { updateRows, updatesListener } from "./updates";
@@ -1750,7 +1751,10 @@ async function render() {
     // band that belongs to Settings rather than to the island's own page.
     islandSettings: () => [generalSection()],
     pills: () => [pillsSection(connected), ...whatsappSections()],
-    agents: () => [claudeSection(status), agentsSection(agents), planSection(status)],
+    agents: () => [claudeSection(status), agentsSection(agents), approvalsSection(settings.approvalModes ?? {}, (modes) => {
+      settings.approvalModes = modes;
+      void Bridge.approvalModesSet(modes);
+    }), planSection(status)],
     chat: () => [subscriptionsSection(), apiSection(hasKey, claudeRelay), chatProvidersSection(chatKeys, keyChanged), localSection(customKey)],
     shortcuts: () => [shortcutsSection(shortcutReport)],
   };

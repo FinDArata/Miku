@@ -112,6 +112,18 @@ pub struct Settings {
     /// `#RRGGBB` for the words, and for the card behind them.
     pub lyrics_text_color: String,
     pub lyrics_background: String,
+    /// How an agent's tool use is approved, by tool name — "ask" puts the card
+    /// up, "always" lets it through without asking. The key "*" covers every
+    /// tool the map has nothing about; a missing entry asks, everywhere.
+    pub approval_modes: BTreeMap<String, ToolMode>,
+}
+
+/// Ask or let through, for one tool (settings.rs approval_modes).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolMode {
+    Ask,
+    Always,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -183,6 +195,7 @@ impl Default for Settings {
             lyrics_height: 160.0,
             lyrics_text_color: "#ffffff".into(),
             lyrics_background: "#08090c".into(),
+            approval_modes: BTreeMap::new(),
         }
     }
 }

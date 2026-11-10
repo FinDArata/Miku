@@ -647,6 +647,26 @@ fn subscription_set(app: AppHandle, shared: State<Shared>, provider: String, on:
     status
 }
 
+/// The per-tool approval choices moved ("ask" / "always allow", Settings →
+/// Agents → Approvals, or the card's Always button): saved, both windows told.
+#[tauri::command]
+fn approval_modes_set(app: AppHandle, shared: State<Shared>, modes: std::collections::BTreeMap<String, settings::ToolMode>) -> Result<(), String> {
+    if modes.len() > 64 {
+        return Err("too many tools".into());
+    }
+    if modes.keys().any(|k| k.is_empty() || k.chars().count() > 64) {
+        return Err("bad tool name".into());
+    }
+    let settings = {
+        let mut current = shared.settings.lock().unwrap();
+        current.approval_modes = modes;
+        current.clone()
+    };
+    settings::save_soon(&app);
+    let _ = app.emit("settings-changed", settings);
+    Ok(())
+}
+
 #[tauri::command]
 fn secret_set(app: AppHandle, key: String, value: String) -> Result<(), String> {
     // Bound to its server's address: only local_set_key may store it.
@@ -1083,6 +1103,7 @@ pub fn run() {
             update::update_later,
             tray::tray_update_hint,
             tray::tray_state_hint,
+            approval_modes_set,
             update::update_dismiss,
             update::update_install,
             update::update_open_page,

@@ -111,6 +111,10 @@ export interface Settings {
   soundEnabled: boolean;
   soundVolume: number;
   autoCloseInterval: number;
+  /** How a tool's permission requests are handled, by tool name — "ask" puts
+   * the card up, "always" lets them through. "*" covers the other tools;
+   * nothing here asks, everywhere (core/approval-modes.ts). */
+  approvalModes?: Record<string, "ask" | "always">;
   /** Hovering the island opens it all the way (off: hovering only peeks). */
   openOnHover: boolean;
   /** Open the island for a moment when any pill finishes or hits an error. */

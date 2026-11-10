@@ -467,6 +467,7 @@ const NOT_TEXT = new Set([
   "Mail", // the sidebar group's heading, a product name for the Outlook feature
   "Key", // the name of the keyboard key, drawn on a keycap
   "Left", // a key name ("Left Ctrl"), not the direction word
+  "Edit", // the agent tool's proper name (the Mac's "Edit" is a verb)
 ]);
 
 /** Files whose English strings are data, not text drawn as it stands. */

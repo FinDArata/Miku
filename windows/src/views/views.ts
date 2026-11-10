@@ -52,6 +52,8 @@ export interface ViewActions {
   answer(answers: Record<string, string | string[]>): void;
   /** Hands the pending request back to the terminal. */
   answerInTerminal(): void;
+  /** The card's Always: this tool asks no more (the Settings switch, flipped). */
+  rememberApproval(): void;
   toggleSound(): void;
   setVolume(v: number): void;
   setAutoClose(seconds: number): void;
@@ -578,9 +580,10 @@ function buildApproval(actions: ViewActions): ViewHost {
   // moments after a new request appears are ignored.
   let shownFor: string | null = null;
   let shownAt = 0;
-  const guarded = (d: "allow" | "deny") => () => {
+  const guarded = (d: "allow" | "deny" | "remember") => () => {
     if (performance.now() - shownAt < CLICK_GUARD_MS) return;
-    actions.decide(d);
+    if (d === "remember") actions.rememberApproval();
+    else actions.decide(d);
   };
   return {
     el,
@@ -610,6 +613,7 @@ function buildApproval(actions: ViewActions): ViewHost {
       clear(row);
       row.append(
         btn(tl("Deny"), "secondary", guarded("deny"), "N"),
+        btn(tl("Always"), "secondary", guarded("remember"), "A"),
         btn(tl("Allow"), "primary", guarded("allow"), "Y"),
       );
     },

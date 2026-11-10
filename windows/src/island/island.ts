@@ -15,6 +15,7 @@ import {
 } from "../core/layout";
 import { Sound } from "../core/sound";
 import { State, type Ritual } from "../core/state";
+import { withMode } from "../core/approval-modes";
 import { SPOTIFY_ID, Spotify, islandDances, desktopDances, spotifyPosition, type SpotifyState } from "../core/spotify";
 import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
 import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "../lyrics/lrc";
@@ -311,6 +312,15 @@ export class Island {
         Sound.play(d === "deny" ? "blip" : "approve");
         void Bridge.approvalDecision(req.requestId, d);
         this.closeApproval();
+      },
+      rememberApproval: () => {
+        // The card's Always: this tool asks no more — the same switch as
+        // Settings → Agents → Approvals, flipped from where the ask happened.
+        const req = State.pendingApproval;
+        if (!req) return;
+        State.settings.approvalModes = withMode(State.settings.approvalModes ?? {}, req.tool, "always");
+        void Bridge.approvalModesSet(State.settings.approvalModes);
+        this.engine.triggerEmote("proud", 1.6);
       },
       answer: (answers) => {
         const req = State.pendingApproval;

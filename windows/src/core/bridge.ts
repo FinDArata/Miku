@@ -259,6 +259,10 @@ export const Bridge = {
   /** The tray wears the agents' state (tray.rs): at work teal, an ask amber,
    * trouble red, idle herself. Null = idle. */
   trayState: (state: string | null) => call<void>("tray_state_hint", { state }),
+  /** The per-tool approval choices moved (Settings → Agents → Approvals, or
+   * the card's Always button): saved, both windows told. */
+  approvalModesSet: (modes: Record<string, "ask" | "always">) =>
+    call<void>("approval_modes_set", { modes }),
 
   // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
   /** Settings' switch: shows or hides the overlay, and remembers the choice. */
