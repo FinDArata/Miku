@@ -241,6 +241,21 @@
       "ko": "모두 끝! 춤 출 시간!",
       "ja": "全部できた！踊る時間！"
     },
+    "Ta-da!": {
+      "zh-Hans": "当当！",
+      "hi": "ताड़ा!",
+      "es": "¡Tachán!",
+      "ar": "تا-دا!",
+      "fr": "Tada !",
+      "bn": "টাডা!",
+      "pt-BR": "Tcharam!",
+      "ru": "Та-дам!",
+      "id": "Ta-da!",
+      "de": "Ta-da!",
+      "tr": "Ta-da!",
+      "ko": "짜잔!",
+      "ja": "じゃじゃーん！"
+    },
     "All settings…": {
       "zh-Hans": "所有设置…",
       "hi": "सभी सेटिंग्स…",
@@ -1786,6 +1801,21 @@
       "ko": "집중 모드…",
       "ja": "集中モード…"
     },
+    "Working on it!": {
+      "zh-Hans": "正在处理！",
+      "hi": "काम चल रहा है!",
+      "es": "¡En ello!",
+      "ar": "أعمل عليه!",
+      "fr": "J’y travaille !",
+      "bn": "কাজ চলছে!",
+      "pt-BR": "Trabalhando nisso!",
+      "ru": "Работаю над этим!",
+      "id": "Sedang dikerjakan!",
+      "de": "Bin dran!",
+      "tr": "Üzerinde çalışıyorum!",
+      "ko": "작업 중이야!",
+      "ja": "作業中だよ！"
+    },
     "Idle": {
       "zh-Hans": "空闲",
       "hi": "निष्क्रिय",
@@ -1815,6 +1845,21 @@
       "tr": "Önce izin lütfen!",
       "ko": "먼저 허락해 주세요!",
       "ja": "まず許可してね！"
+    },
+    "Yes or no?": {
+      "zh-Hans": "同意还是拒绝？",
+      "hi": "हाँ या नहीं?",
+      "es": "¿Sí o no?",
+      "ar": "نعم أم لا؟",
+      "fr": "Oui ou non ?",
+      "bn": "হ্যাঁ নাকি না?",
+      "pt-BR": "Sim ou não?",
+      "ru": "Да или нет?",
+      "id": "Ya atau tidak?",
+      "de": "Ja oder nein?",
+      "tr": "Evet mi hayır mı?",
+      "ko": "응, 아니야?",
+      "ja": "はい？いいえ？"
     },
     "Return to top": {
       "zh-Hans": "返回顶部",
@@ -3121,21 +3166,6 @@
       "ko": "Miku, 노치 없는 Mac처럼",
       "ja": "Miku（ノッチのない Mac と同じ）"
     },
-    "Miku, her sounds and how the island behaves.": {
-      "zh-Hans": "Miku、它的声音以及岛的行为方式。",
-      "hi": "Miku, उसकी आवाज़ें और आइलैंड कैसे काम करता है।",
-      "es": "Miku, sus sonidos y cómo se comporta la isla.",
-      "ar": "Miku وأصواته وطريقة عمل الجزيرة.",
-      "fr": "Miku, ses sons et le comportement de l'île.",
-      "bn": "Miku, তার শব্দ আর আইল্যান্ড কেমন আচরণ করে।",
-      "pt-BR": "Miku, seus sons e como a ilha se comporta.",
-      "ru": "Miku, его звуки и поведение острова.",
-      "id": "Miku, suaranya, dan cara pulau berperilaku.",
-      "de": "Miku, seine Klänge und das Verhalten der Insel.",
-      "tr": "Miku, sesleri ve adanın davranışı.",
-      "ko": "미쿠들의 사운드, 아일랜드가 움직이는 방식이에요.",
-      "ja": "Miku、そのサウンド、アイランドの動作。"
-    },
     "Miku’s webhook port": {
       "zh-Hans": "Miku 的 Webhook 端口",
       "hi": "Miku का वेबहुक पोर्ट",
@@ -4155,21 +4185,6 @@
       "tr": "Sohbet kutusunun üstünden bir {name} modeli seç.",
       "ko": "채팅창 위에서 {name} 모델을 골라 주세요.",
       "ja": "チャット欄の上で {name} のモデルを選んでください。"
-    },
-    "Pick up to {max} pills to show next to Miku — {used}/{max} in use. Keys are stored in the {store}, never on disk.": {
-      "zh-Hans": "最多选择 {max} 个标签显示在 Miku 旁边 — 已用 {used}/{max}。密钥保存在 {store} 中，绝不写入磁盘。",
-      "hi": "Miku के बगल में दिखाने के लिए अधिकतम {max} टैब चुनें — {used}/{max} उपयोग में। कुंजियाँ {store} में रखी जाती हैं, डिस्क पर कभी नहीं।",
-      "es": "Elige hasta {max} pestañas para mostrar junto a Miku — {used}/{max} en uso. Las claves se guardan en {store}, nunca en el disco.",
-      "ar": "اختر حتى {max} تبويبات لعرضها بجانب Miku — {used}/{max} مستخدمة. تُحفظ المفاتيح في {store}، ولا تُكتب على القرص أبدًا.",
-      "fr": "Choisis jusqu'à {max} onglets à afficher à côté de Miku — {used}/{max} utilisés. Les clés sont stockées dans {store}, jamais sur le disque.",
-      "bn": "Miku-র পাশে দেখাতে সর্বোচ্চ {max}টি ট্যাব বেছে নিন — {used}/{max} ব্যবহৃত। কী {store}-এ রাখা হয়, কখনো ডিস্কে নয়।",
-      "pt-BR": "Escolha até {max} abas para mostrar ao lado do Miku — {used}/{max} em uso. As chaves ficam em {store}, nunca no disco.",
-      "ru": "Выберите до {max} вкладок рядом с Miku — занято {used}/{max}. Ключи хранятся в {store}, никогда на диске.",
-      "id": "Pilih hingga {max} tab untuk ditampilkan di samping Miku — {used}/{max} terpakai. Kunci disimpan di {store}, tidak pernah di disk.",
-      "de": "Wähle bis zu {max} Pills neben Miku — {used}/{max} belegt. Schlüssel werden im {store} gespeichert, niemals auf der Festplatte.",
-      "tr": "Miku'nin yanında gösterilecek en fazla {max} araç seç — {used}/{max} kullanımda. Anahtarlar {store} içinde saklanır, diske yazılmaz.",
-      "ko": "미쿠 옆에 띄울 미쿠를 {max}개까지 골라 주세요 — {used}/{max}개 사용 중. 키는 디스크가 아니라 {store}에 보관돼요.",
-      "ja": "Miku の横に表示するピルを最大 {max} 個選んでください — {used}/{max} 使用中。キーは {store} に保存され、ディスクには保存されません。"
     },
     "Port {port} is taken: pick another one. Checking every 20 s meanwhile.": {
       "zh-Hans": "端口 {port} 已被占用：请换一个。在此期间每 20 秒检查一次。",
@@ -5461,21 +5476,6 @@
       "ko": "이미지가 너무 커요.",
       "ja": "画像が大きすぎます。"
     },
-    "The keys that open the island and its actions.": {
-      "zh-Hans": "打开岛及其操作的按键。",
-      "hi": "वे कुंजियाँ जो आइलैंड और उसकी क्रियाएँ खोलती हैं।",
-      "es": "Las teclas que abren la isla y sus acciones.",
-      "ar": "المفاتيح التي تفتح الجزيرة وإجراءاتها.",
-      "fr": "Les touches qui ouvrent l'île et ses actions.",
-      "bn": "যে কী-গুলো আইল্যান্ড আর এর কাজগুলো খোলে।",
-      "pt-BR": "As teclas que abrem a ilha e suas ações.",
-      "ru": "Клавиши, открывающие остров и его действия.",
-      "id": "Tombol yang membuka pulau dan tindakannya.",
-      "de": "Die Tasten für die Insel und ihre Aktionen.",
-      "tr": "Adayı ve işlemlerini açan tuşlar.",
-      "ko": "아일랜드와 아일랜드 기능을 여는 단축키들이에요.",
-      "ja": "アイランドとその操作を開くキー。"
-    },
     "The microphone stays open; only what follows « OK Miku » goes further.": {
       "zh-Hans": "麦克风保持开启；只有「OK Miku」之后的内容才会被进一步处理。",
       "hi": "माइक्रोफ़ोन खुला रहता है; केवल « OK Miku » के बाद कही गई बात ही आगे जाती है।",
@@ -6571,6 +6571,81 @@
       "ko": "Zzz… 필요하면 불러 줘",
       "ja": "Zzz… 必要な時に呼んでね"
     },
+    "Mmh… I'm up!": {
+      "zh-Hans": "唔…我醒了！",
+      "hi": "उम्म… मैं जाग गई!",
+      "es": "Mmm… ¡ya me levanté!",
+      "ar": "ممم… استيقظت!",
+      "fr": "Hmm… je suis réveillée !",
+      "bn": "উঁহ… জেগে উঠেছি!",
+      "pt-BR": "Hmm… acordei!",
+      "ru": "Мм… я проснулась!",
+      "id": "Hmm… aku bangun!",
+      "de": "Hmm… ich bin wach!",
+      "tr": "Hmm… uyandım!",
+      "ko": "음… 일어났어!",
+      "ja": "うーん… 起きたよ！"
+    },
+    "Did you call me?": {
+      "zh-Hans": "你叫我吗？",
+      "hi": "मुझे बुलाया?",
+      "es": "¿Me llamabas?",
+      "ar": "هل ناديتني؟",
+      "fr": "Tu m’as appelée ?",
+      "bn": "ডাকলে?",
+      "pt-BR": "Me chamou?",
+      "ru": "Ты меня звал?",
+      "id": "Memanggilku?",
+      "de": "Hast du mich gerufen?",
+      "tr": "Beni mi çağırdın?",
+      "ko": "나 불렀어?",
+      "ja": "呼んだ？"
+    },
+    "Hey, that tickles!": {
+      "zh-Hans": "嘿，好痒！",
+      "hi": "अरे, गुदगुदी होती है!",
+      "es": "¡Oye, eso hace cosquillas!",
+      "ar": "مهلاً، هذا يدغدغ!",
+      "fr": "Hé, ça chatouille !",
+      "bn": "আরে, গুদগুদ করে!",
+      "pt-BR": "Ei, isso faz cócegas!",
+      "ru": "Ой, щекотно!",
+      "id": "Hei, geli!",
+      "de": "Hey, das kitzelt!",
+      "tr": "Hey, bu gıdıklıyor!",
+      "ko": "야, 간지러워!",
+      "ja": "わっ、くすぐったい！"
+    },
+    "Aww, thanks!": {
+      "zh-Hans": "哎呀，谢谢！",
+      "hi": "अरे, धन्यवाद!",
+      "es": "¡Ay, gracias!",
+      "ar": "أوه، شكراً!",
+      "fr": "Oh, merci !",
+      "bn": "ওহ, ধন্যবাদ!",
+      "pt-BR": "Ah, obrigada!",
+      "ru": "Ой, спасибо!",
+      "id": "Aww, makasih!",
+      "de": "Oh, danke!",
+      "tr": "Ayy, teşekkürler!",
+      "ko": "앗, 고마워!",
+      "ja": "わあ、ありがとう！"
+    },
+    "Dancing along!": {
+      "zh-Hans": "一起跳舞！",
+      "hi": "साथ में नाच रही हूँ!",
+      "es": "¡Bailando contigo!",
+      "ar": "أرقص معك!",
+      "fr": "Je danse avec toi !",
+      "bn": "সাথে নাচছি!",
+      "pt-BR": "Dançando junto!",
+      "ru": "Танцую вместе с тобой!",
+      "id": "Ikut menari!",
+      "de": "Ich tanze mit!",
+      "tr": "Birlikte dans!",
+      "ko": "같이 춤춰!",
+      "ja": "一緒に踊るよ！"
+    },
     "agent session": {
       "zh-Hans": "次智能体会话",
       "hi": "एजेंट सत्र",
@@ -7579,21 +7654,6 @@
       "ko": "⚠ 실패",
       "ja": "⚠ 失敗"
     },
-    "The pills shown in the island, and their colours.": {
-      "zh-Hans": "岛内显示的胶囊，以及它们的颜色。",
-      "hi": "आइलैंड में दिखने वाली पिल्स, और उनके रंग।",
-      "es": "Las píldoras que se ven en la isla, y sus colores.",
-      "ar": "الحبوب الظاهرة في الجزيرة وألوانها.",
-      "fr": "Les pilules affichées dans l'île, et leurs couleurs.",
-      "bn": "আইল্যান্ডে দেখানো পিলগুলো এবং তাদের রং।",
-      "pt-BR": "As pílulas mostradas na ilha, e as suas cores.",
-      "ru": "Пилюли, которые видны на острове, и их цвета.",
-      "id": "Pil yang tampil di pulau, dan warnanya.",
-      "de": "Die Pills, die auf der Insel erscheinen, und ihre Farben.",
-      "tr": "Adada görünen haplar ve renkleri.",
-      "ko": "아일랜드에 표시되는 필과 그 색상이에요.",
-      "ja": "アイランドに表示されるピルと、その色。"
-    },
     "All {max} slots are in use. Turn one off to make room for {name}.": {
       "zh-Hans": "{max} 个位置都在使用中。关掉一个，为 {name} 腾出位置。",
       "hi": "सभी {max} स्लॉट भरे हैं। {name} के लिए जगह बनाने के लिए कोई एक बंद करें।",
@@ -7638,21 +7698,6 @@
       "tr": "Hookları etkinleştirmek için yeni bir ZCode görevi başlatın: ZCode bunları görev başladığında okur.",
       "ko": "훅을 적용하려면 새 ZCode 작업을 시작하세요. ZCode는 작업 시작 시 훅을 읽습니다.",
       "ja": "フックを読み込むには新しい ZCode タスクを開始してください。ZCode はタスク開始時にフックを読み込みます。"
-    },
-    "Also in use: {names} — turn one off in Integrations to free a slot.": {
-      "zh-Hans": "也在使用中：{names} — 在“集成”里关掉一个即可腾出位置。",
-      "hi": "ये भी उपयोग में हैं: {names} — स्लॉट खाली करने के लिए Integrations में कोई एक बंद करें।",
-      "es": "También en uso: {names} — desactiva uno en Integraciones para liberar un hueco.",
-      "ar": "قيد الاستخدام أيضًا: {names} — أوقف واحدًا في التكاملات لإفساح فتحة.",
-      "fr": "Aussi en cours d'utilisation : {names} — désactivez-en un dans Intégrations pour libérer une place.",
-      "bn": "এগুলোও ব্যবহৃত হচ্ছে: {names} — স্লট খালি করতে Integrations-এ একটি বন্ধ করুন।",
-      "pt-BR": "Também em uso: {names} — desative um em Integrações para liberar um espaço.",
-      "ru": "Также используются: {names} — отключите один в «Интеграциях», чтобы освободить слот.",
-      "id": "Juga dipakai: {names} — matikan salah satunya di Integrations untuk mengosongkan slot.",
-      "de": "Ebenfalls in Gebrauch: {names} — deaktiviere einen in Integrationen, um einen Platz freizugeben.",
-      "tr": "Ayrıca kullanımda: {names} — bir yer açmak için Entegrasyonlar'da birini kapat.",
-      "ko": "사용 중인 항목: {names} — 슬롯을 비우려면 통합에서 하나를 끄세요.",
-      "ja": "使用中: {names} — 統合でひとつオフにすると枠が空きます。"
     },
     "Home": {
       "zh-Hans": "主页",
@@ -7863,6 +7908,358 @@
       "tr": "“Otomatik” mevsime uyar: aralıkta Noel şapkası, yazın güneş gözlüğü.",
       "ko": "“자동”은 계절을 따릅니다. 12월엔 산타 모자, 여름엔 선글라스.",
       "ja": "「自動」は季節に合わせます。12月はサンタ帽、夏はサングラス。"
+    },
+    "The island": {
+      "zh-Hans": "小岛",
+      "hi": "आइलैंड",
+      "es": "La isla",
+      "ar": "الجزيرة",
+      "fr": "L’îlot",
+      "bn": "আইল্যান্ড",
+      "pt-BR": "A ilha",
+      "ru": "Островок",
+      "id": "Pulau",
+      "de": "Die Insel",
+      "tr": "Ada",
+      "ko": "아일랜드",
+      "ja": "アイランド"
+    },
+    "Words": {
+      "zh-Hans": "单词",
+      "hi": "शब्द",
+      "es": "Palabras",
+      "ar": "الكلمات",
+      "fr": "Mots",
+      "bn": "শব্দ",
+      "pt-BR": "Palavras",
+      "ru": "Слова",
+      "id": "Kata",
+      "de": "Wörter",
+      "tr": "Kelimeler",
+      "ko": "단어",
+      "ja": "単語"
+    },
+    "Dictation, the island and how Miku behaves.": {
+      "zh-Hans": "听写、小岛，以及 Miku 的行为。",
+      "hi": "डिक्टेशन, आइलैंड और मिकु कैसे व्यवहार करती है।",
+      "es": "El dictado, la isla y cómo se comporta Miku.",
+      "ar": "الإملاء والجزيرة وكيف تتصرّف ميكو.",
+      "fr": "La dictée, l’îlot et le comportement de Miku.",
+      "bn": "ডিক্টেশন, আইল্যান্ড আর মিকু কেমন ব্যবহার করে।",
+      "pt-BR": "O ditado, a ilha e como a Miku se comporta.",
+      "ru": "Диктовка, островок и то, как ведёт себя Мику.",
+      "id": "Dikte, pulau, dan tingkah laku Miku.",
+      "de": "Das Diktat, die Insel und wie Miku sich verhält.",
+      "tr": "Dikte, ada ve Miku’nun davranışı.",
+      "ko": "받아쓰기, 아일랜드, 그리고 미쿠의 행동.",
+      "ja": "ディクテーション、アイランド、ミクのふるまい。"
+    },
+    "The pills, the agents, the chat and the keys.": {
+      "zh-Hans": "药丸、智能体、聊天和密钥。",
+      "hi": "पिल, एजेंट, चैट और कुंजियाँ।",
+      "es": "Las píldoras, los agentes, el chat y las claves.",
+      "ar": "الحبوب والوكلاء والدردشة والمفاتيح.",
+      "fr": "Les pilules, les agents, le chat et les clés.",
+      "bn": "পিল, এজেন্ট, চ্যাট আর কী।",
+      "pt-BR": "As pílulas, os agentes, o chat e as chaves.",
+      "ru": "Пилюли, агенты, чат и ключи.",
+      "id": "Pil, agen, chat, dan kunci.",
+      "de": "Die Pillen, die Agenten, der Chat und die Schlüssel.",
+      "tr": "Haplar, ajanlar, sohbet ve anahtarlar.",
+      "ko": "알약, 에이전트, 채팅, 키.",
+      "ja": "ピル、エージェント、チャット、キー。"
+    },
+    "What Miku tells you about your inbox.": {
+      "zh-Hans": "Miku 告诉你收件箱里的事。",
+      "hi": "मिकु आपको आपके इनबॉक्स के बारे में बताती है।",
+      "es": "Lo que Miku te cuenta sobre tu bandeja de entrada.",
+      "ar": "ما تخبرك به ميكو عن بريدك الوارد.",
+      "fr": "Ce que Miku te dit de ta boîte de réception.",
+      "bn": "মিকু আপনার ইনবক্স সম্পর্কে যা বলে।",
+      "pt-BR": "O que a Miku te conta sobre a sua caixa de entrada.",
+      "ru": "Что Мику рассказывает о вашем почтовом ящике.",
+      "id": "Apa yang Miku katakan tentang kotak masukmu.",
+      "de": "Was Miku dir über deinen Posteingang erzählt.",
+      "tr": "Miku’nun gelen kutun hakkında söyledikleri.",
+      "ko": "미쿠가 받은편지함에 대해 알려주는 것.",
+      "ja": "ミクが受信箱について教えてくれること。"
+    },
+    "The pills in the island, with the keys they need.": {
+      "zh-Hans": "小岛里的药丸，以及它们需要的密钥。",
+      "hi": "आइलैंड के पिल, और उन्हें जो कुंजियाँ चाहिए।",
+      "es": "Las píldoras de la isla, con las claves que necesitan.",
+      "ar": "حبوب الجزيرة، مع المفاتيح التي تحتاجها.",
+      "fr": "Les pilules de l’îlot, avec les clés qu’elles demandent.",
+      "bn": "আইল্যান্ডের পিল, আর তাদের যা কী দরকার।",
+      "pt-BR": "As pílulas da ilha, com as chaves de que precisam.",
+      "ru": "Пилюли островка и нужные им ключи.",
+      "id": "Pil di pulau, beserta kunci yang dibutuhkannya.",
+      "de": "Die Pillen auf der Insel, mit den Schlüsseln, die sie brauchen.",
+      "tr": "Adadaki haplar ve ihtiyaç duydukları anahtarlar.",
+      "ko": "아일랜드의 알약과 거기에 필요한 키.",
+      "ja": "アイランドのピルと、それに必要なキー。"
+    },
+    "The words Miku knows, and the phrases a trigger types for you.": {
+      "zh-Hans": "Miku 认识的词，以及触发器为你输入的短语。",
+      "hi": "मिकु जो शब्द जानती है, और जो वाक्यांश ट्रिगर आपके लिए टाइप करता है।",
+      "es": "Las palabras que Miku conoce, y las frases que escribe un disparador.",
+      "ar": "الكلمات التي تعرفها ميكو، والعبارات التي يكتبها المُشغِّل لك.",
+      "fr": "Les mots que Miku connaît, et les phrases qu’un déclencheur tape pour toi.",
+      "bn": "মিকু যে শব্দ জানে, আর ট্রিগার যে বাক্য আপনার হয়ে লেখে।",
+      "pt-BR": "As palavras que a Miku conhece, e as frases que um gatilho digita por você.",
+      "ru": "Слова, которые знает Мику, и фразы, которые за вас печатает триггер.",
+      "id": "Kata yang Miku kenal, dan frasa yang diketik pemicu untukmu.",
+      "de": "Die Wörter, die Miku kennt, und die Sätze, die ein Auslöser für dich tippt.",
+      "tr": "Miku’nun bildiği kelimeler ve tetikleyicinin senin için yazdığı ifadeler.",
+      "ko": "미쿠가 아는 단어와 트리거가 대신 입력해 주는 문구.",
+      "ja": "ミクが知っている単語と、トリガーが代わりに入力するフレーズ。"
+    },
+    "No data yet": {
+      "zh-Hans": "还没有数据",
+      "hi": "अभी कोई डेटा नहीं",
+      "es": "Aún no hay datos",
+      "ar": "لا توجد بيانات بعد",
+      "fr": "Pas encore de données",
+      "bn": "এখনও কোনো ডেটা নেই",
+      "pt-BR": "Ainda sem dados",
+      "ru": "Данных пока нет",
+      "id": "Belum ada data",
+      "de": "Noch keine Daten",
+      "tr": "Henüz veri yok",
+      "ko": "아직 데이터가 없어",
+      "ja": "まだデータがないよ"
+    },
+    "{left}% left": {
+      "zh-Hans": "还剩 {left}%",
+      "hi": "{left}% बाकी",
+      "es": "Queda {left}%",
+      "ar": "بقي {left}%",
+      "fr": "Il reste {left} %",
+      "bn": "{left}% বাকি",
+      "pt-BR": "{left}% restante",
+      "ru": "Осталось {left}%",
+      "id": "Sisa {left}%",
+      "de": "{left}% übrig",
+      "tr": "{left}% kaldı",
+      "ko": "{left}% 남음",
+      "ja": "残り {left}%"
+    },
+    "Resets {when}": {
+      "zh-Hans": "{when}重置",
+      "hi": "{when} रीसेट",
+      "es": "Se reinicia {when}",
+      "ar": "يُعاد الضبط {when}",
+      "fr": "Réinitialisé {when}",
+      "bn": "{when} রিসেট",
+      "pt-BR": "Reinicia {when}",
+      "ru": "Сброс {when}",
+      "id": "Setel ulang {when}",
+      "de": "Zurückgesetzt {when}",
+      "tr": "{when} sıfırlanır",
+      "ko": "{when} 초기화",
+      "ja": "{when}にリセット"
+    },
+    "Turn it on to see the numbers.": {
+      "zh-Hans": "开启后才能看到数字。",
+      "hi": "आँकड़े देखने के लिए इसे चालू करें।",
+      "es": "Actívalo para ver los números.",
+      "ar": "شغّله لترى الأرقام.",
+      "fr": "Active-le pour voir les chiffres.",
+      "bn": "সংখ্যাগুলো দেখতে এটি চালু করুন।",
+      "pt-BR": "Ative para ver os números.",
+      "ru": "Включите, чтобы увидеть цифры.",
+      "id": "Nyalakan untuk melihat angkanya.",
+      "de": "Einschalten, um die Zahlen zu sehen.",
+      "tr": "Sayıları görmek için aç.",
+      "ko": "숫자를 보려면 켜 줘.",
+      "ja": "オンにすると数字が見えるよ。"
+    },
+    "Key saved": {
+      "zh-Hans": "密钥已保存",
+      "hi": "कुंजी सहेजी गई",
+      "es": "Clave guardada",
+      "ar": "تم حفظ المفتاح",
+      "fr": "Clé enregistrée",
+      "bn": "কী সংরক্ষিত",
+      "pt-BR": "Chave salva",
+      "ru": "Ключ сохранён",
+      "id": "Kunci tersimpan",
+      "de": "Schlüssel gespeichert",
+      "tr": "Anahtar kaydedildi",
+      "ko": "키 저장됨",
+      "ja": "キーを保存したよ"
+    },
+    "No key": {
+      "zh-Hans": "没有密钥",
+      "hi": "कोई कुंजी नहीं",
+      "es": "Sin clave",
+      "ar": "لا يوجد مفتاح",
+      "fr": "Aucune clé",
+      "bn": "কোনো কী নেই",
+      "pt-BR": "Sem chave",
+      "ru": "Нет ключа",
+      "id": "Tanpa kunci",
+      "de": "Kein Schlüssel",
+      "tr": "Anahtar yok",
+      "ko": "키 없음",
+      "ja": "キーなし"
+    },
+    "Replace key…": {
+      "zh-Hans": "更换密钥…",
+      "hi": "कुंजी बदलें…",
+      "es": "Cambiar clave…",
+      "ar": "استبدال المفتاح…",
+      "fr": "Remplacer la clé…",
+      "bn": "কী বদলান…",
+      "pt-BR": "Substituir chave…",
+      "ru": "Заменить ключ…",
+      "id": "Ganti kunci…",
+      "de": "Schlüssel ersetzen…",
+      "tr": "Anahtarı değiştir…",
+      "ko": "키 바꾸기…",
+      "ja": "キーを変える…"
+    },
+    "Add key…": {
+      "zh-Hans": "添加密钥…",
+      "hi": "कुंजी जोड़ें…",
+      "es": "Añadir clave…",
+      "ar": "إضافة مفتاح…",
+      "fr": "Ajouter une clé…",
+      "bn": "কী যোগ করুন…",
+      "pt-BR": "Adicionar chave…",
+      "ru": "Добавить ключ…",
+      "id": "Tambah kunci…",
+      "de": "Schlüssel hinzufügen…",
+      "tr": "Anahtar ekle…",
+      "ko": "키 추가…",
+      "ja": "キーを追加…"
+    },
+    "Voice cues can be made with VOICEVOX:ずんだもん, © SSS LLC, under its terms.": {
+      "zh-Hans": "语音提示可用 VOICEVOX:ずんだもん 制作，© SSS LLC，须遵守其条款。",
+      "hi": "वॉइस क्यू VOICEVOX:ずんだもん से बनाए जा सकते हैं, © SSS LLC, उसकी शर्तों के तहत।",
+      "es": "Las indicaciones de voz pueden hacerse con VOICEVOX:ずんだもん, © SSS LLC, bajo sus términos.",
+      "ar": "يمكن إنشاء الإشارات الصوتية بـ VOICEVOX:ずんだもん، © SSS LLC، وفق شروطه.",
+      "fr": "Les repères vocaux peuvent être créés avec VOICEVOX:ずんだもん, © SSS LLC, selon ses conditions.",
+      "bn": "ভয়েস কিউ VOICEVOX:ずんだもん দিয়ে তৈরি করা যায়, © SSS LLC, তার শর্তে।",
+      "pt-BR": "Os avisos de voz podem ser feitos com VOICEVOX:ずんだもん, © SSS LLC, nos termos dele.",
+      "ru": "Голосовые подсказки можно сделать в VOICEVOX:ずんだもん, © SSS LLC, на его условиях.",
+      "id": "Isyarat suara bisa dibuat dengan VOICEVOX:ずんだもん, © SSS LLC, sesuai ketentuannya.",
+      "de": "Sprachhinweise lassen sich mit VOICEVOX:ずんだもん erstellen, © SSS LLC, zu dessen Bedingungen.",
+      "tr": "Ses ipuçları VOICEVOX:ずんだもん ile yapılabilir, © SSS LLC, kendi koşullarıyla.",
+      "ko": "음성 안내는 VOICEVOX:ずんだもん로 만들 수 있어요, © SSS LLC, 해당 약관에 따릅니다.",
+      "ja": "音声キューは VOICEVOX:ずんだもん で作れます。© SSS LLC、その規約に従います。"
+    },
+    "{count} agents not installed": {
+      "zh-Hans": {
+        "other": "{count} 个智能体未安装"
+      },
+      "hi": {
+        "one": "{count} एजेंट इंस्टॉल नहीं है",
+        "other": "{count} एजेंट इंस्टॉल नहीं हैं"
+      },
+      "es": {
+        "one": "{count} agente sin instalar",
+        "other": "{count} agentes sin instalar"
+      },
+      "ar": {
+        "zero": "{count} وكيل غير مثبَّت",
+        "one": "وكيل واحد غير مثبَّت",
+        "two": "وكيلان غير مثبَّتين",
+        "few": "{count} وكلاء غير مثبَّتين",
+        "many": "{count} وكيلاً غير مثبَّت",
+        "other": "{count} وكيل غير مثبَّت"
+      },
+      "fr": {
+        "one": "{count} agent non installé",
+        "other": "{count} agents non installés"
+      },
+      "bn": {
+        "one": "{count}টি এজেন্ট ইনস্টল করা নেই",
+        "other": "{count}টি এজেন্ট ইনস্টল করা নেই"
+      },
+      "pt-BR": {
+        "one": "{count} agente não instalado",
+        "other": "{count} agentes não instalados"
+      },
+      "ru": {
+        "one": "{count} агент не установлен",
+        "few": "{count} агента не установлены",
+        "many": "{count} агентов не установлено",
+        "other": "{count} агента не установлено"
+      },
+      "id": {
+        "other": "{count} agen belum terpasang"
+      },
+      "de": {
+        "one": "{count} Agent nicht installiert",
+        "other": "{count} Agenten nicht installiert"
+      },
+      "tr": {
+        "one": "{count} ajan kurulu değil",
+        "other": "{count} ajan kurulu değil"
+      },
+      "ko": {
+        "other": "{count}개 에이전트 설치 안 됨"
+      },
+      "ja": {
+        "other": "{count}個のエージェントが未インストール"
+      }
+    },
+    "{count} other tools": {
+      "zh-Hans": {
+        "other": "另外 {count} 个工具"
+      },
+      "hi": {
+        "one": "{count} अन्य टूल",
+        "other": "{count} अन्य टूल"
+      },
+      "es": {
+        "one": "{count} herramienta más",
+        "other": "{count} herramientas más"
+      },
+      "ar": {
+        "zero": "{count} أداة أخرى",
+        "one": "أداة أخرى",
+        "two": "أداتان أخريان",
+        "few": "{count} أدوات أخرى",
+        "many": "{count} أداة أخرى",
+        "other": "{count} أداة أخرى"
+      },
+      "fr": {
+        "one": "{count} autre outil",
+        "other": "{count} autres outils"
+      },
+      "bn": {
+        "one": "{count}টি অন্য টুল",
+        "other": "{count}টি অন্য টুল"
+      },
+      "pt-BR": {
+        "one": "{count} outra ferramenta",
+        "other": "{count} outras ferramentas"
+      },
+      "ru": {
+        "one": "{count} другой инструмент",
+        "few": "{count} других инструмента",
+        "many": "{count} других инструментов",
+        "other": "{count} других инструмента"
+      },
+      "id": {
+        "other": "{count} alat lain"
+      },
+      "de": {
+        "one": "{count} weiteres Werkzeug",
+        "other": "{count} weitere Werkzeuge"
+      },
+      "tr": {
+        "one": "{count} başka araç",
+        "other": "{count} başka araç"
+      },
+      "ko": {
+        "other": "다른 도구 {count}개"
+      },
+      "ja": {
+        "other": "ほかのツール {count}個"
+      }
     }
   }
 }

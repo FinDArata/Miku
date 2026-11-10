@@ -6,10 +6,9 @@ import { homePage } from "./pages/home";
 import { wardrobePage } from "./pages/wardrobe";
 import { dictationPage } from "./pages/dictation";
 import { notesPage } from "./pages/notes";
-import { insightsPage } from "./pages/insights";
-import { dictionaryPage, snippetsPage } from "./pages/words";
+import { wordsPage } from "./pages/words";
 import { stylesPage } from "./pages/styles";
-import { flowSettingsPage } from "./pages/flowsettings";
+import { settingsViewPage } from "./pages/flowsettings";
 import { voicePage } from "./pages/voice";
 import { mailBannedPage, mailOverviewPage, mailRulesPage, mailVIPPage } from "./pages/mail";
 
@@ -18,11 +17,9 @@ export const FLOW_PAGE_RENDERERS: Partial<Record<PageId, FlowPageRenderer>> = {
   wardrobe: wardrobePage,
   dictation: dictationPage,
   notes: notesPage,
-  insights: insightsPage,
-  dictionary: dictionaryPage,
-  snippets: snippetsPage,
+  words: wordsPage,
   styles: stylesPage,
-  flowsettings: flowSettingsPage,
+  settingsView: settingsViewPage,
   voice: voicePage,
   mailOverview: mailOverviewPage,
   mailRules: mailRulesPage,

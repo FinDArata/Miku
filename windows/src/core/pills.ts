@@ -183,6 +183,20 @@ export function availablePills(os: HostOs = HOST_OS): PillDefinition[] {
   return PILL_CATALOG.filter((p) => offeredOn(p, os));
 }
 
+/**
+ * The pills the user may declare next to the main one: everything the build
+ * offers except the chat providers.
+ *
+ * A chat provider's key is entered in Settings → Chat, and its pill never
+ * carried a session — the island drew a card reading "Key configured" and
+ * nothing else, while taking one of the four slots an agent could have used.
+ * The catalog entry stays, because the chat and the island's cards still name
+ * these providers; only the pill is no longer declarable.
+ */
+export function declarablePills(os: HostOs = HOST_OS): PillDefinition[] {
+  return availablePills(os).filter((p) => p.category !== "ai");
+}
+
 export function isComingSoon(id: string): boolean {
   return pillDefinition(id)?.support === "soon";
 }
@@ -229,7 +243,9 @@ export interface Declared {
 export function sanitizeDeclared(d: Declared, os: HostOs = HOST_OS): Declared {
   const mains = new Set(mainPillChoices(os).map((p) => p.id));
   const mainPill = mains.has(d.mainPill) ? d.mainPill : DEFAULT_MAIN_PILL;
-  const offered = new Set(availablePills(os).map((p) => p.id));
+  // Declarable only: a chat provider declared by an older build frees its slot
+  // here rather than staying on as a pill the settings page cannot show.
+  const offered = new Set(declarablePills(os).map((p) => p.id));
   const activeIntegrations: string[] = [];
   for (const id of d.activeIntegrations ?? []) {
     if (
@@ -248,11 +264,19 @@ export function sanitizeDeclared(d: Declared, os: HostOs = HOST_OS): Declared {
  * Declares or undeclares a pill. Returns the new list, or null when the click
  * changes nothing: the main pill is never toggled, an unknown pill never
  * declared, and a fifth pill never added.
+ *
+ * Removing works for anything already in the list, a chat provider included: a
+ * declaration from an older build must stay removable even though it can no
+ * longer be added.
  */
 export function toggleDeclared(d: Declared, id: string, os: HostOs = HOST_OS): string[] | null {
   if (id === d.mainPill) return null;
-  if (!availablePills(os).some((p) => p.id === id)) return null;
-  if (d.activeIntegrations.includes(id)) return d.activeIntegrations.filter((x) => x !== id);
+  const declarable = declarablePills(os).some((p) => p.id === id);
+  if (d.activeIntegrations.includes(id)) {
+    if (!declarable && !availablePills(os).some((p) => p.id === id)) return null;
+    return d.activeIntegrations.filter((x) => x !== id);
+  }
+  if (!declarable) return null;
   if (d.activeIntegrations.length >= MAX_DECLARED) return null;
   return [...d.activeIntegrations, id];
 }

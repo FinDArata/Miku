@@ -138,13 +138,15 @@ export async function homePage(page: HTMLElement, ctx: HubContext) {
       page: "agents",
     }),
     homeCard(ctx, {
-      icon: "puzzle",
-      name: t("Integrations"),
+      icon: "grid",
+      name: t("Active pills"),
       color: "#7C8CFF",
       state: services.length > 0 ? t("{0} connected", { 0: services.length }) : t("None yet"),
-      hint: t("Stripe, GitHub, Vercel, n8n, Notion and the rest."),
+      // The services and their keys now share the pills page: one row is one
+      // pill, switch and key together.
+      hint: t("The pills in the island, with the keys they need."),
       swatches: services,
-      page: "integrations",
+      page: "pills",
     }),
     homeCard(ctx, {
       icon: "chat",

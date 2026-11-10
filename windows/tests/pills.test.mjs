@@ -217,15 +217,31 @@ test("up to four pills next to the main one, never the main one itself", () => {
   };
   const four = toggleDeclared(d, "agent_gemini", "linux");
   assert.equal(four.length, MAX_DECLARED);
-  assert.equal(toggleDeclared({ ...d, activeIntegrations: four }, "ai_anthropic", "linux"), null);
+  assert.equal(toggleDeclared({ ...d, activeIntegrations: four }, "agent_copilot", "linux"), null);
   assert.equal(toggleDeclared(d, "integration_claude", "linux"), null);
   assert.equal(toggleDeclared(d, "integration_music", "linux"), null);
   assert.ok(toggleDeclared(d, "agent_claude-desktop", "linux").includes("agent_claude-desktop"));
   assert.ok(toggleDeclared(d, "agent_claude-desktop", "windows").includes("agent_claude-desktop"));
   assert.deepEqual(toggleDeclared(d, "integration_github", "linux"), ["integration_n8n", "integration_stripe"]);
-  // Every chat provider can be declared now that the chat talks to it.
-  assert.ok(toggleDeclared(d, "ai_google", "linux").includes("ai_google"));
-  assert.ok(toggleDeclared(d, "ai_ollama", "linux").includes("ai_ollama"));
+});
+
+test("a chat provider is no longer a pill, and one that is declared can be removed", () => {
+  const d = { mainPill: "integration_claude", activeIntegrations: [] };
+  // The keys live in Settings → Chat; a pill that only read "Key configured"
+  // took a slot an agent could have used.
+  for (const id of ["ai_anthropic", "ai_google", "ai_openai", "ai_ollama", "ai_lmstudio"]) {
+    assert.equal(toggleDeclared(d, id, "linux"), null, id);
+    assert.ok(!availablePills("linux").includes(pillDefinition(id)) === false, id);
+  }
+  // A declaration written by an older build still frees its slot when turned
+  // off, rather than becoming a pill the settings page cannot show.
+  const old = { mainPill: "integration_claude", activeIntegrations: ["ai_google", "integration_n8n"] };
+  assert.deepEqual(toggleDeclared(old, "ai_google", "linux"), ["integration_n8n"]);
+  // And a settings file that still lists one loses it on load, freeing the slot.
+  assert.deepEqual(
+    sanitizeDeclared({ mainPill: "integration_claude", activeIntegrations: ["ai_google", "integration_n8n"] }, "linux"),
+    { mainPill: "integration_claude", activeIntegrations: ["integration_n8n"] },
+  );
 });
 
 test("picking a main pill takes it out of the declared ones, and only workspace tools qualify", () => {
@@ -329,11 +345,11 @@ test("a Claude Code session gets its pill even when it is not loaded", () => {
 test("toggling declares up to four pills and never the main one", () => {
   State.settings.activeIntegrations = [];
   State.loadIntegrationTasks();
-  for (const id of ["integration_n8n", "agent_gemini", "ai_anthropic", "integration_stripe", "integration_github"]) {
+  for (const id of ["integration_n8n", "agent_gemini", "agent_copilot", "integration_stripe", "integration_github"]) {
     State.toggleIntegration(id);
   }
   assert.deepEqual(State.settings.activeIntegrations, [
-    "integration_n8n", "agent_gemini", "ai_anthropic", "integration_stripe",
+    "integration_n8n", "agent_gemini", "agent_copilot", "integration_stripe",
   ]);
   State.toggleIntegration("integration_claude");
   assert.ok(ids().includes("integration_claude"));

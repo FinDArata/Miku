@@ -90,24 +90,24 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   // ── Flow ────────────────────────────────────────────────────────────────────
   { id: "flow.history", page: "dictation", title: "History", terms: ["Dictation", "Search dictations", "Copy", "Delete"] },
   { id: "flow.notes", page: "notes", title: "The Notetaker", terms: ["Record a call", "Summary", "Transcript", "Key points", "To do", "Export as Markdown…"] },
-  { id: "flow.insights", page: "insights", title: "Statistics", terms: ["Words dictated", "Time saved", "Speed", "Dictations", "Where you dictate"] },
-  { id: "flow.dictionary", page: "dictionary", title: "Dictionary", terms: ["Add a word, e.g. Supabase", "Replacements", "Heard, e.g. cloud code"] },
-  { id: "flow.snippets", page: "snippets", title: "Snippets", terms: ["New snippet", "What you say, e.g. my signature", "The text Miku pastes"] },
+  { id: "flow.insights", page: "notes", title: "Statistics", terms: ["Words dictated", "Time saved", "Speed", "Dictations", "Where you dictate"] },
+  { id: "flow.dictionary", page: "words", title: "Dictionary", terms: ["Add a word, e.g. Supabase", "Replacements", "Heard, e.g. cloud code"] },
+  { id: "flow.snippets", page: "words", title: "Snippets", terms: ["New snippet", "What you say, e.g. my signature", "The text Miku pastes"] },
   { id: "flow.styles", page: "styles", title: "Styles", terms: ["Clean up with Claude", "Style per app", "Other apps", "As said", "Natural", "Polished"] },
   {
     id: "flow.keys",
-    page: "flowsettings",
+    page: "settingsView",
     title: "Keys",
     terms: [
       "Hold a key to dictate anywhere", "Hold to dictate", "A shortcut of your own…",
       "Where the pill is", "Hands-free", "Paste the last dictation again", "Cancel a dictation",
     ],
   },
-  { id: "flow.microphone", page: "flowsettings", title: "Microphone", terms: ["System default", "Mute the computer while you speak"] },
-  { id: "flow.recognition", page: "flowsettings", title: "Recognition", terms: ["Parakeet, on your computer", "Download", "Remove the models"] },
-  { id: "flow.summary", page: "flowsettings", title: "Summaries", terms: ["Notetaker", "Claude (your key)", "No summary"] },
-  { id: "flow.app", page: "flowsettings", title: "App", terms: ["Open this window when you open Miku", "Not when Miku starts with the computer."] },
-  { id: "flow.privacy", page: "flowsettings", title: "Privacy", terms: ["Keep the history", "Erase the history", "Erase everything", "Don't keep", "Forever"] },
+  { id: "flow.microphone", page: "settingsView", title: "Microphone", terms: ["System default", "Mute the computer while you speak"] },
+  { id: "flow.recognition", page: "settingsView", title: "Recognition", terms: ["Parakeet, on your computer", "Download", "Remove the models"] },
+  { id: "flow.summary", page: "settingsView", title: "Summaries", terms: ["Notetaker", "Claude (your key)", "No summary"] },
+  { id: "flow.app", page: "settingsView", title: "App", terms: ["Open this window when you open Miku", "Not when Miku starts with the computer."] },
+  { id: "flow.privacy", page: "settingsView", title: "Privacy", terms: ["Keep the history", "Erase the history", "Erase everything", "Don't keep", "Forever"] },
 
   // ── Notch → General ─────────────────────────────────────────────────────────
   { id: "general.sound", page: "general", title: "Sound", terms: ["Open sounds folder", "Reload sounds", "Volume"] },
@@ -120,6 +120,9 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   { id: "general.language", page: "general", title: "Language", terms: ["System"] },
 
   // ── Notch → the rest ────────────────────────────────────────────────────────
+  // The island's settings are one page now; this entry is what a search for the
+  // page itself lands on, on top of the entries for its tabs.
+  { id: "notch.all", page: "notch", title: "The island", terms: ["The island", "Notch", "Island settings"] },
   { id: "pills.main", page: "pills", title: "Active pills", terms: ["Main tool", "Main", "Color", "Active"] },
   { id: "agents.claude", page: "agents", title: "Claude Code", terms: ["Install hooks…", "Reinstall hooks…", "Uninstall hooks…"] },
   { id: "agents.others", page: "agents", title: "Agents", terms: ["Codex", "GitHub Copilot", "Muse Code", "Gemini", "Antigravity", "Cursor", "OpenCode", "Amp", "Hermes", "ZCode", "Install…", "Uninstall…"] },
@@ -130,7 +133,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   { id: "chat.local", page: "chat", title: "Local models", terms: ["Ollama", "LM Studio", "Connect", "Disconnect", "Use in chat", "API key (optional)"] },
   {
     id: "integrations.all",
-    page: "integrations",
+    page: "pills",
     title: "Integrations",
     terms: [
       "Stripe", "GitHub", "GitLab", "Gitea", "Vercel", "n8n", "Resend", "Notion", "Cal.com", "Music", "Spotify",
@@ -139,7 +142,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   },
   {
     id: "integrations.whatsapp",
-    page: "integrations",
+    page: "pills",
     title: "WhatsApp",
     terms: ["Install WhatsApp", "Mute groups (unless I’m mentioned)", "Mark as read when I open a conversation", "Ignored chats", "Advanced: your own gateway"],
   },

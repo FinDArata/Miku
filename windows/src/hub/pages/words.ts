@@ -19,11 +19,10 @@ function input(placeholder: string, onEnter?: () => void): HTMLInputElement {
   return el;
 }
 
-export async function dictionaryPage(page: HTMLElement, ctx: HubContext) {
+async function dictionaryBody(page: HTMLElement) {
   const data = (await FlowBridge.words()) ?? { words: [], replacements: [] };
   let words = data.words;
   let replacements: Replacement[] = data.replacements;
-  page.append(ctx.hero("dictionary", t("Dictionary"), t("Names and words Miku must always spell right.")));
   const write = pageSave(page);
   const save = async (next: typeof data) => {
     if (await write(() => FlowBridge.setWords(next)) !== "saved") return false;
@@ -96,9 +95,8 @@ export async function dictionaryPage(page: HTMLElement, ctx: HubContext) {
   drawReplacements();
 }
 
-export async function snippetsPage(page: HTMLElement, ctx: HubContext) {
+async function snippetsBody(page: HTMLElement) {
   let snippets: Snippet[] = (await FlowBridge.snippets()) ?? [];
-  page.append(ctx.hero("snippets", t("Snippets"), t("Say the trigger while dictating: Miku pastes the whole text in its place.")));
   const write = pageSave(page);
   const save = async (next: Snippet[]) => {
     if (await write(() => FlowBridge.setSnippets(next)) !== "saved") return false;
@@ -156,4 +154,49 @@ export async function snippetsPage(page: HTMLElement, ctx: HubContext) {
     }
   };
   draw();
+}
+
+/**
+ * Words: the dictionary and the snippets, one band with a tab each. Both are
+ * about the words Miku keeps for you — names it must spell right, and phrases
+ * a trigger pastes whole — and each was a sidebar row of its own.
+ */
+export async function wordsPage(page: HTMLElement, ctx: HubContext) {
+  page.append(ctx.hero("words", t("Words"), t("The words Miku knows, and the phrases a trigger types for you.")));
+  const body = h("div", { class: "hub-page-body" });
+  page.append(body);
+  const tabs = h("div", { class: "hub-tabs" },
+    h("button", { class: "hub-tab on", text: t("Dictionary") }),
+    h("button", { class: "hub-tab", text: t("Snippets") }),
+  );
+  page.insertBefore(tabs, body);
+  const [dictBtn, snipBtn] = [...tabs.querySelectorAll("button")] as HTMLButtonElement[];
+
+  async function draw(which: "dictionary" | "snippets") {
+    dictBtn.classList.toggle("on", which === "dictionary");
+    snipBtn.classList.toggle("on", which === "snippets");
+    clear(body);
+    await (which === "dictionary" ? dictionaryBody(body) : snippetsBody(body));
+  }
+  dictBtn.addEventListener("click", () => void draw("dictionary"));
+  snipBtn.addEventListener("click", () => void draw("snippets"));
+  // A search hit for Snippets draws Words, so the tab it asked for has to be
+  // the one that opens. `data-open-tab` is what the shell sets before drawing.
+  const wanted = page.dataset.openTab ?? document.body.dataset.openTab;
+  await draw(wanted === "snippets" ? "snippets" : "dictionary");
+}
+
+/**
+ * The two halves on their own, with the band each had before they shared a
+ * page. Kept as page renderers so a test (and a deep link to the old id) draws
+ * exactly the dictionary or exactly the snippets.
+ */
+export async function dictionaryPage(page: HTMLElement, ctx: HubContext) {
+  page.append(ctx.hero("dictionary", t("Dictionary"), t("Names and words Miku must always spell right.")));
+  await dictionaryBody(page);
+}
+
+export async function snippetsPage(page: HTMLElement, ctx: HubContext) {
+  page.append(ctx.hero("snippets", t("Snippets"), t("Say the trigger while dictating: Miku pastes the whole text in its place.")));
+  await snippetsBody(page);
 }

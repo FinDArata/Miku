@@ -4,7 +4,6 @@
 import { h, clear } from "../../views/dom";
 import { t } from "../../i18n/i18n";
 import { FlowBridge, type FlowStats, type Totals } from "../../core/flow";
-import type { HubContext } from "../shell";
 import { emptyState } from "../hero";
 import { number, segmented, shortCount } from "../ui";
 
@@ -16,7 +15,7 @@ function duration(minutes: number): string {
   return t("{0} min", { 0: m });
 }
 
-export async function insightsPage(page: HTMLElement, ctx: HubContext) {
+export async function insightsBlock(page: HTMLElement) {
   const stats: FlowStats | null = await FlowBridge.stats();
   let period: Period = "month";
   const body = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
@@ -25,7 +24,12 @@ export async function insightsPage(page: HTMLElement, ctx: HubContext) {
     period = p;
     draw();
   });
-  page.append(ctx.hero("insights", t("Statistics"), t("What you dictated, how fast, and where."), [picker]), body);
+  // A block, not a page: the Notetaker draws it under the notes it counts.
+  page.append(h("div", { class: "hub-block-head" },
+    h("b", { text: t("Statistics") }),
+    h("span", { class: "hub-note", text: t("What you dictated, how fast, and where.") }),
+    picker,
+  ), body);
 
   function stat(labelText: string, value: string, sub: string | null) {
     const el = h("div", { class: "hub-stat" }, h("div", { class: "label", text: labelText }), h("b", { text: value }));

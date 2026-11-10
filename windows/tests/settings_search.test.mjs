@@ -113,11 +113,14 @@ test("no entry is a macOS catalog key this app cannot translate", () => {
 });
 
 // Every page the sidebar can show must be reachable from search, or someone who
-// searches for it gets nothing and has to find the page by hand.
+// searches for it gets nothing and has to find the page by hand. The pages that
+// became tabs of another page are reached through their host (the island's
+// settings through "notch", the old Dictionary id through "words"), so what is
+// checked here is the sidebar's own rows.
 test("every hub page has at least one search entry", () => {
   const pages = [
-    "dictation", "notes", "insights", "dictionary", "snippets", "styles", "flowsettings",
-    "general", "pills", "agents", "chat", "voice", "integrations", "shortcuts",
+    "dictation", "notes", "words", "styles", "settingsView",
+    "notch", "pills", "agents", "chat", "voice", "shortcuts",
     "mailOverview", "mailRules", "mailBanned", "mailVIP",
   ];
   const covered = new Set(SETTINGS_ENTRIES.map((e) => e.page));

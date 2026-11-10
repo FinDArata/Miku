@@ -41,6 +41,43 @@ respect. In particular, this build:
 **If you fork this repository and distribute a build, the PCL binds you too.** Read it
 before you publish. The licence text is the authority; this section is only a summary.
 
+## Miku's own sounds
+
+The 29 notification cues are **composed in code** (`windows/scripts/gen-sounds.mjs`) and
+rebuilt on every build, so the repository carries no composed audio. They are the fork
+owner's own work.
+
+### Voice cues
+
+Six of the 29 — `finish`, `question`, `error`, `approve`, `greeting` and `blip` — are
+spoken Japanese cues made with [VOICEVOX](https://voicevox.hiroshiba.jp/) and **zundamon**
+(style: ささやき). A neural voice cannot be composed in code, so those six are recorded
+once and committed to `windows/voice/`; `gen-sounds.mjs` lays them over the chimes it
+generates, which is how a fresh clone and a release build both carry them with no extra
+step. `windows/scripts/voice-cues.mjs` is what produces that folder again.
+
+A file of the user's own in the sounds folder still wins over the built-in cue, so nobody
+is stuck with these.
+
+The terms, as published by their owners:
+
+| What | Terms |
+| --- | --- |
+| VOICEVOX software | Commercial and non-commercial use allowed, **with a credit** — [voicevox.hiroshiba.jp/term](https://voicevox.hiroshiba.jp/term/) |
+| zundamon's voice | Commercial and non-commercial use allowed, **with the credit** `VOICEVOX:ずんだもん` — [zunko.jp/con_ongen_kiyaku.html](https://zunko.jp/con_ongen_kiyaku.html), © SSS LLC |
+
+**The credit is required wherever the app is presented to someone else**, not only in the
+source: a README, a release page, a store listing, an about screen. Settings → General
+carries it next to the sound controls. Commercial use without the credit is charged by the
+rights holder, so do not strip it.
+
+The same terms forbid political or religious use, adult content, "information product"
+marketing, deliberate fakes, and use by antisocial groups. They do not restrict
+redistributing the generated audio itself, which is why the six files can live here.
+
+zundamon is **not** Hatsune Miku. It is a separate character with its own voice provider,
+and nothing here should present it as Miku's voice.
+
 ## Inherited third-party assets
 
 This repository is a fork of Coucou by Louis Raillé. The following assets from the

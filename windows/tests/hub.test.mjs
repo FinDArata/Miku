@@ -38,8 +38,12 @@ window.addEventListener = () => {};
 
 const { h } = await import("../src/views/dom.ts");
 const { onLanguageChange, setLanguage, t } = await import("../src/i18n/i18n.ts");
-const { FLOW_PAGES, HOME_PAGE, NOTCH_PAGES, startHub } = await import("../src/hub/shell.ts");
-const pages = [HOME_PAGE, ...FLOW_PAGES, ...NOTCH_PAGES];
+const { FLOW_PAGES, HOME_PAGE, NOTCH_PAGE, MAIL_PAGE, startHub } = await import("../src/hub/shell.ts");
+// The sidebar: Home, the flow's pages, then one row each for the island and
+// Mail. Their sections are tabs inside those pages.
+const pages = [HOME_PAGE, ...FLOW_PAGES, NOTCH_PAGE, MAIL_PAGE].filter(
+  (page) => page.id !== "mail" || navigator.userAgent.includes("Windows"),
+);
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 beforeEach(() => {
@@ -51,7 +55,9 @@ async function openHub() {
   const root = dom.root();
   const hub = await startHub(root, {
     version: "test",
-    flowPages: Object.fromEntries(FLOW_PAGES.map((page) => [page.id, (container) => {
+    // Every section draws a title, so a click on any sidebar row lands
+    // somewhere the test can see.
+    flowPages: Object.fromEntries(pages.map((page) => [page.id, (container) => {
       container.append(h("h1", { text: page.title() }));
     }])),
     renderNotch: async () => {},
@@ -71,10 +77,15 @@ test("language redraw relabels sidebar nodes and preserves selection and navigat
     const groups = root.find(".hub-group");
     // Find the page by id, not by position: the sidebar gained pages over time.
     const at = (id) => buttons[pages.findIndex((page) => page.id === id)];
-    at("general").fire("click");
+    // "The island" is one sidebar row now: its sections are tabs inside it.
+    at("notch").fire("click");
     await settle();
-    assert.equal(hub.current(), "general");
-    assert.equal(root.find("H1")[0].textContent, "General");
+    assert.equal(hub.current(), "general", "it opens on its first tab");
+    // The tabs the section draws, under its band.
+    assert.deepEqual(
+      root.find(".hub-tab").map((tab) => tab.textContent),
+      ["General", "Active pills", "Agents", "Chat", "OK Miku", "Shortcuts"],
+    );
     calls.length = 0;
 
     for (const language of ["fr", "ar", "en"]) {
@@ -88,8 +99,12 @@ test("language redraw relabels sidebar nodes and preserves selection and navigat
       assert.equal(root.find(".hub-status")[0].textContent, t("Dictation is off"));
       assert.equal(root.find(".hub-brand")[0].find("CANVAS")[0], logo);
     assert.equal(hub.current(), "general");
-    assert.deepEqual(buttons.filter((button) => button.classList.contains("on")), [at("general")]);
-      assert.equal(root.find("H1")[0].textContent, t("General"));
+    // The section's row stays lit while one of its tabs is showing.
+    assert.deepEqual(buttons.filter((button) => button.classList.contains("on")), [at("notch")]);
+      assert.deepEqual(
+        root.find(".hub-tab").filter((tab) => tab.classList.contains("on")).map((tab) => tab.textContent),
+        [t("General")],
+      );
       assert.equal(document.documentElement.dataset.dir, language === "ar" ? "rtl" : "ltr");
     }
     assert.deepEqual(calls, [], "redrawing must not save settings or request data");

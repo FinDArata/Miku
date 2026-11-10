@@ -62,7 +62,7 @@ You can also [build it yourself](#build-it-yourself).
 | Drag a file onto the island | Mochi turns into a box, swallows it, then offers to answer questions about it |
 | Click a file in the session ticker | Its diff opens in the island; ↗ opens the file in VS Code, ‹ or `Esc` goes back |
 | `Esc` | Closes the island |
-| Put a file named like one of Mochi's sounds (`finish.wav`, `approval.mp3`, `greet.m4a`…) in the sounds folder | It replaces that sound after **Settings → General → Reload sounds**. **Open sounds folder** shows the folder: `~/.config/kanon/sounds` on Linux, `%APPDATA%\Kanon\sounds` on Windows |
+| Put a file named like one of Mochi's sounds (`finish.wav`, `approval.mp3`, `greet.m4a`…) in the sounds folder | It replaces that sound after **Settings → General → Reload sounds**. **Open sounds folder** shows the folder: `~/.config/miku/sounds` on Linux, `%APPDATA%\Miku\sounds` on Windows |
 | Tray icon | Open, Weekly recap, Wardrobe…, Settings…, Pause, Quit — and **Update Kanon to X…** while a new version is out |
 | `Ctrl+Alt+Space` | Opens the chat, from any app |
 | `Ctrl+Alt+A` | Jumps to the waiting permission or question |
@@ -475,9 +475,17 @@ Installing is optional — `target/release/kanon.exe` runs on its own. There is 
 window in the taskbar and no console: the island at the top of the screen and the
 Mochi in the notification area are the whole app, and Quit lives in its menu.
 
-The 29 sounds are the macOS app's own files; they are never duplicated in this
-folder. The path is declared once, in `SOUNDS_DIR` at the top of
-`vite.config.ts` — when they move to `shared/sounds/`, change that one line.
+The 29 sounds are generated, not stored: `scripts/gen-sounds.mjs` composes them
+into `sounds/` on every `dev` and `build`, and the path is declared once, in
+`SOUNDS_DIR` at the top of `vite.config.ts` — when they move to `shared/sounds/`,
+change that one line.
+
+Six of them (`finish`, `question`, `error`, `approve`, `greeting`, `blip`) are
+spoken cues instead, recorded with VOICEVOX and committed to `voice/`. The
+generator lays them over the chimes it just wrote, so a fresh clone and a release
+build both carry them with no extra step. `scripts/voice-cues.mjs` regenerates
+that folder (it needs VOICEVOX running); see `LICENSE-ASSETS.md` for the credit
+the voice's terms require.
 
 The app icon and the tray icon are drawn in code, like Mochi itself:
 

@@ -303,8 +303,86 @@ select option {
   min-height: 24px;
 }
 
+/* The rows a page folds away (./parts.ts fold): the button that opens them, and
+   the block it opens. A fold is a disclosure, so it reads as a link, not a
+   button: one line, one chevron, no border. */
+.fold {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+.fold-toggle {
+  align-self: flex-start;
+  padding: 2px 0 2px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: 500 12px var(--font);
+  color: var(--dim);
+  text-align: left;
+  position: relative;
+}
+
+.fold-toggle::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--dim-2);
+}
+
+.fold-toggle.open::before {
+  content: "▾";
+}
+
+.fold-toggle:hover {
+  color: var(--ink);
+}
+
+.fold-toggle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A folded block still groups its rows by category. */
+.fold-body .pill-group {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* `display: flex` above beats the user agent's [hidden] rule, so the fold would
+   say it is closed while its rows stayed on the page 700px tall. */
+.fold-body[hidden] {
+  display: none;
+}
+
 .pill-row .name {
   font-size: 12.5px;
+}
+
+/* A pill's row is a fixed column so the colour dots, the names and the
+   switches line up down the page whatever each name — and whatever reason it
+   carries. Without the fixed width the gap between a name and its switch moved
+   with the length of "Key not configured". */
+.pill-row {
+  flex: 0 0 auto;
+  min-width: 246px;
+  padding-right: 4px;
+}
+
+.pill-row .state {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* The dot of a pill's row opens the colour palette (see ./colors.ts). The dot
@@ -471,3 +549,74 @@ html[dir="rtl"] :is(.diff, .path, .keycap, input[type="password"], input[type="t
 
 .lyrics-colour::-webkit-color-swatch-wrapper { padding: 2px; }
 .lyrics-colour::-webkit-color-swatch { border: none; border-radius: 5px; }
+
+/* The plan cards (see main.ts planCard): the numbers the island's header shows,
+   drawn large enough to read at a glance. The reset is the main line — it is
+   what decides whether to start a long task now — and the percentage supports
+   it. */
+.plan-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.plan-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.plan-title {
+  font: 600 12.5px var(--font);
+  color: var(--ink);
+}
+
+.plan-pct {
+  font: 600 12.5px var(--font);
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.plan-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* The line that answers "can I start now?". */
+.plan-reset {
+  font: 500 12px var(--font);
+  color: var(--ink);
+}
+
+/* A provider's key field stays closed until asked for (see main.ts
+   chatProvidersSection). The [hidden] rule is explicit for the same reason as
+   the fold: a flex display set here would otherwise win over it. */
+.key-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.key-editor[hidden] {
+  display: none;
+}

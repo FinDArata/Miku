@@ -454,6 +454,93 @@ body.hub-window {
   animation: hub-page-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ── The tabs inside a page ────────────────────────────────────────────────── */
+
+/* Under the band, a row of tabs: the sections of one page that used to be five
+   sidebar rows (the island's settings, the mail rules). A line, not a pill
+   group: the page band is the loud thing, this is a shelf under it. */
+.hub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: -6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--hub-line, rgba(150, 224, 218, 0.09));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hub-tab {
+  flex: 0 0 auto;
+  padding: 8px 13px 9px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--hub-secondary);
+  font: 500 12.5px var(--font);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.hub-tab:hover {
+  color: var(--hub-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hub-tab.on {
+  color: var(--hub-accent-bright);
+}
+
+/* The tab that is showing, drawn on the line itself. */
+.hub-tab.on::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hub-accent-bright);
+}
+
+.hub-tab:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* A block inside a page (the statistics under the Notetaker's notes): its own
+   heading, quieter than a band, because the page's band already said what page
+   this is. */
+.hub-block-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hub-line, rgba(150, 224, 218, 0.09));
+}
+
+.hub-block-head b {
+  font: 650 14px var(--font);
+  color: var(--hub-text);
+}
+
+.hub-block-head .hub-note {
+  flex: 1 1 auto;
+}
+
+.hub-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 /* A new page arrives from a hair below, instead of jumping in. */
 @keyframes hub-page-in {
   from {
@@ -616,9 +703,109 @@ body.hub-window {
   animation: hub-spin 24s linear infinite;
 }
 
+/* The second ring: an arc that turns the other way, so the stage reads as a
+   pair of orbits rather than one dashed circle. */
+.mochi-ring.inner {
+  right: 4px;
+  margin-top: -115px;
+  width: 230px;
+  height: 230px;
+  border: 0;
+  border-top: 2px solid rgba(125, 227, 220, 0.22);
+  border-left: 2px solid rgba(125, 227, 220, 0.1);
+  animation: hub-spin-back 17s linear infinite;
+}
+
 @keyframes hub-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes hub-spin-back {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Two motes riding the rings: a small dot each, kept on the orbit by the
+   parent's rotation. They carry the stage's colour. */
+.mochi-orbit {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  margin-top: -125px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  animation: hub-spin 24s linear infinite;
+}
+
+.mochi-orbit.o2 {
+  margin-top: -115px;
+  right: 4px;
+  width: 230px;
+  height: 230px;
+  animation: hub-spin-back 17s linear infinite;
+}
+
+.mochi-orbit::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #aef7ec;
+  box-shadow: 0 0 10px rgba(174, 247, 236, 0.9);
+}
+
+.mochi-orbit.o2::before {
+  background: rgba(125, 227, 220, 0.8);
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  top: -2px;
+}
+
+/* The seasonal confetti (hero.ts `stageWeather`): behind her, above the disc. */
+.mochi-weather {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 250px;
+  height: 250px;
+  margin-top: -125px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Her breath: the shadow on the ground, in step with the bob. It is a sibling
+   of `.mochi-char`, not a child: a child would ride the bob's transform and
+   hang in the air with her instead of staying on the floor. */
+.mochi-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 19px;
+  width: 74px;
+  height: 12px;
+  margin-left: -37px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(4, 33, 30, 0.55), transparent 70%);
+  animation: hub-breathe 3s ease-in-out infinite;
+}
+
+@keyframes hub-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(0.86);
+    opacity: 0.55;
   }
 }
 
@@ -642,12 +829,39 @@ body.hub-window {
   }
 }
 
+/* The full stage sits its Miku a few pixels lower than the compact one: the
+   bubble lives in the space above her crown, and at the top edge of a 190px
+   band there is only just room for it. She still stands on the disc. */
+.mochi-stage:not(.peek) .mochi-char {
+  top: calc(50% + 7px);
+}
+
 /* Typing (agent running): a small restless hop. */
 .mochi-char .mochi-char-canvas {
   width: 170px;
   height: 170px;
   display: block;
   margin-right: -34px;
+  /* The stage is pointer-events: none so it never steals a click from the
+     band; the character herself opts back in — a click is hers. */
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Dancing along with music (character.ts): the engine moves the body, so the
+   canvas keeps the plain bob and the CSS adds a small sway of its own. */
+.mochi-stage.dancing .mochi-char {
+  animation: hub-sway 1.07s ease-in-out infinite;
+}
+
+@keyframes hub-sway {
+  0%,
+  100% {
+    transform: translateY(-58%) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-60%) rotate(2deg);
+  }
 }
 
 .st-running .mochi-char {
@@ -686,6 +900,17 @@ body.hub-window {
   animation-duration: 16s;
 }
 
+.st-waiting-permission .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(255, 184, 77, 0.3);
+  border-left-color: rgba(255, 184, 77, 0.12);
+}
+
+.st-waiting-permission .mochi-orbit::before {
+  background: #ffd08a;
+  box-shadow: 0 0 10px rgba(255, 184, 77, 0.9);
+}
+
 .st-waiting-permission .mochi-disc {
   box-shadow:
     0 0 0 2px rgba(255, 184, 77, 0.35),
@@ -708,6 +933,17 @@ body.hub-window {
   border-color: rgba(74, 222, 128, 0.3);
 }
 
+.st-clear .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(74, 222, 128, 0.34);
+  border-left-color: rgba(74, 222, 128, 0.12);
+}
+
+.st-clear .mochi-orbit::before {
+  background: #9ff0b4;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.9);
+}
+
 .st-clear .mochi-disc {
   box-shadow:
     0 0 0 2px rgba(74, 222, 128, 0.3),
@@ -718,6 +954,13 @@ body.hub-window {
 .st-idle .mochi-ring {
   border-color: rgba(138, 148, 162, 0.27);
   animation-duration: 40s;
+}
+
+.st-idle .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(138, 148, 162, 0.2);
+  border-left-color: transparent;
+  animation-duration: 30s;
 }
 
 .st-idle .mochi-disc {
@@ -770,32 +1013,40 @@ body.hub-window {
   }
 }
 
-/* The speech bubble near the character. */
+/* The speech bubble near the character.
+   Frosted glass, not a white card: it sits over her head and her hats, so it
+   has to let them show through. Narrow and wrapped rather than one long line,
+   and pushed up and left of her crown, so it covers as little of her as the
+   band's height allows. */
 .mochi-bubble {
   position: absolute;
-  left: -34px;
-  top: 2px;
-  background: #fff;
-  color: #12312e;
-  border-radius: 16px;
-  border-bottom-left-radius: 4px;
-  padding: 9px 15px;
-  font: 800 12.5px var(--font);
-  white-space: nowrap;
-  box-shadow: 0 12px 30px rgba(4, 33, 30, 0.33);
-  animation: hub-pop 0.4s ease;
+  left: -66px;
+  top: 0;
+  /* Narrow enough that its right edge stops short of her head (which starts
+     about 135px into the stage), so the hats and hair ornaments stay clear. */
+  max-width: 112px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #0f2b28;
+  border-radius: 15px;
+  border-bottom-left-radius: 5px;
+  padding: 7px 12px;
+  font: 800 11.5px/1.35 var(--font);
+  white-space: normal;
+  text-wrap: balance;
+  box-shadow:
+    0 10px 26px rgba(4, 33, 30, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
+/* No tail: a translucent one doubles up where it overlaps the bubble and reads
+   as a smudge. The tight bottom-left corner points at her instead. */
 .mochi-bubble::after {
-  content: "";
-  position: absolute;
-  left: -7px;
-  bottom: 8px;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  transform: rotate(45deg);
-  border-radius: 3px;
+  content: none;
+}
+
+/* Every new line pops again (character.ts `pop`). */
+.mochi-bubble.pop {
+  animation: hub-pop 0.4s ease;
 }
 
 @keyframes hub-pop {
@@ -828,6 +1079,27 @@ body.hub-window {
   right: -12px;
 }
 
+.mochi-stage.peek .mochi-ring.inner,
+.mochi-stage.peek .mochi-orbit {
+  width: 120px;
+  height: 120px;
+  margin-top: -60px;
+  right: -6px;
+}
+
+.mochi-stage.peek .mochi-orbit::before {
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+}
+
+.mochi-stage.peek .mochi-weather {
+  width: 132px;
+  height: 132px;
+  margin-top: -66px;
+  right: -12px;
+}
+
 .mochi-stage.peek .mochi-char {
   font-size: 54px;
   right: 14px;
@@ -837,6 +1109,13 @@ body.hub-window {
   width: 92px;
   height: 92px;
   margin-right: 0;
+}
+
+.mochi-stage.peek .mochi-shadow {
+  width: 40px;
+  height: 7px;
+  margin-left: -20px;
+  bottom: 20px;
 }
 
 .mochi-stage.peek .mochi-sparkle {
@@ -1920,12 +2199,17 @@ button.hub-icon svg {
 }
 
 /* Reduced motion: the stage holds still — no spin, no bob, no twinkle, no
-   pulse. The layout, the colours and the bubble stay as they are. */
+   pulse, no orbiting motes, no breathing shadow, no sway. The layout, the
+   colours and the bubble stay as they are, and the seasonal canvas is left
+   empty by the script itself (hero.ts asks this query). */
 @media (prefers-reduced-motion: reduce) {
   .mochi-ring,
   .mochi-char,
+  .mochi-shadow,
   .mochi-sparkle,
+  .mochi-orbit,
   .mochi-bubble,
+  .mochi-stage.dancing .mochi-char,
   .hub-card-glowing,
   .hub-status .dot {
     animation: none !important;

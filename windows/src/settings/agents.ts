@@ -5,8 +5,8 @@
 import { Bridge, type AgentHookStatus } from "../core/bridge";
 import { anchor } from "../hub/ui";
 import { clear, h } from "../views/dom";
-import { renderDiff, statusDot } from "./parts";
-import { t } from "../i18n/i18n";
+import { fold, renderDiff, statusDot } from "./parts";
+import { t, tn } from "../i18n/i18n";
 
 /** In the current language (src/i18n); the settings window redraws on a change. */
 const TEXT = {
@@ -42,25 +42,40 @@ function errorText(err: unknown): string {
 }
 
 export function agentsSection(list: AgentHookStatus[] | null): HTMLElement {
-  const blocks = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
+  const installed = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
+  const others = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
+  const folded = h("div");
+
   if (!list || list.length === 0) {
-    blocks.append(h("div", { class: "hint", text: TEXT.none }));
+    installed.append(h("div", { class: "hint", text: TEXT.none }));
+  } else {
+    // Installed first: those are the agents already writing into the island,
+    // and the only ones whose config path anyone needs to see. The rest sit
+    // under one fold, still on the page, ready to install.
+    for (const status of list) {
+      if (status.installed) installed.append(agentBlock(status));
+      else others.append(agentBlock(status));
+    }
   }
-  for (const status of list ?? []) blocks.append(agentBlock(status));
-  return anchor("agents.others", h(
+
+  const section = anchor("agents.others", h(
     "section",
     {},
     h("h2", {}, h("span", { text: TEXT.title })),
     h("div", { class: "hint", text: TEXT.intro }),
-    blocks,
+    installed,
   ));
+  if (others.children.length > 0) {
+    folded.append(fold([others], (n) => tn("{count} agent not installed", "{count} agents not installed", n), false));
+    section.append(folded);
+  }  return section;
 }
 
 function agentBlock(initial: AgentHookStatus): HTMLElement {
   let status = initial;
   const head = h("div", { class: "row" });
   const body = h("div", { style: "display:flex;flex-direction:column;gap:10px" });
-  const block = h("div", { style: "display:flex;flex-direction:column;gap:8px" }, head, body);
+  const block = h("div", { class: "fold-row", style: "display:flex;flex-direction:column;gap:8px" }, head, body);
 
   async function refresh() {
     const fresh = (await Bridge.agentHooksList())?.find((a) => a.id === status.id);
@@ -97,7 +112,9 @@ function agentBlock(initial: AgentHookStatus): HTMLElement {
         onclick: () => void showPreview(false),
       }));
     }
-    body.append(h("span", { class: "path", text: status.path }));
+    // The config path matters once Miku has written there; for an agent with
+    // nothing installed it was the least useful line on the page.
+    if (status.installed) body.append(h("span", { class: "path", text: status.path }));
   }
 
   async function showPreview(install: boolean) {

@@ -14,6 +14,7 @@ import type { BotStateName } from "../core/layout";
 import { State } from "../core/state";
 import { currentSkin, themeFor } from "../theme/skins";
 import { characterStage, stateChips } from "./character";
+import { weatherFor } from "./stage-life";
 
 interface Animated {
   el: HTMLCanvasElement;
@@ -334,12 +335,25 @@ export function shownOutfit() {
  * `headroom` is how much of the canvas the character leaves free above itself,
  * 0…1 of its height. A party hat and a witch hat rise well past the head, so
  * the preview asks for room; without it their tip is cut off by the canvas.
+ *
+ * `opts` carries what only some canvases want: a dance (the stage, while music
+ * plays), a fixed gaze (the stage owns the pointer for itself), and the class
+ * that lets a click reach her — the stage is `pointer-events: none` so it never
+ * steals a click from the band's copy, and opts into hit-testing itself.
  */
+export interface MochiOptions {
+  /** She dances (the compact island's rules): the bounce is applied before the draw. */
+  dancing?: () => boolean;
+  /** Her gaze is driven from outside; the pointer is ignored. */
+  stillGaze?: boolean;
+}
+
 export function liveMochi(
   canvas: HTMLCanvasElement,
   color = "#F5F6F8",
   state: BotStateName = "idle",
   headroom = 0,
+  opts: MochiOptions = {},
 ) {
   const engine = new BotEngine();
   engine.setVariant(shownVariant());
@@ -348,10 +362,12 @@ export function liveMochi(
   engine.setState(state, true);
   canvas.addEventListener("click", () => engine.slap());
   let mouse: { x: number; y: number } | null = null;
-  window.addEventListener("pointermove", (e) => {
-    const r = canvas.getBoundingClientRect();
-    mouse = { x: e.clientX - (r.left + r.width / 2), y: e.clientY - (r.top + r.height / 2) };
-  });
+  if (!opts.stillGaze) {
+    window.addEventListener("pointermove", (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse = { x: e.clientX - (r.left + r.width / 2), y: e.clientY - (r.top + r.height / 2) };
+    });
+  }
   add({
     el: canvas,
     draw(dt) {
@@ -366,15 +382,136 @@ export function liveMochi(
       // window is rebuilt.
       engine.setVariant(shownVariant());
       engine.setOutfit(shownOutfit());
+      engine.setDancing(opts.dancing?.() ?? false);
       engine.update(dt);
       ctx.clearRect(0, 0, w, h);
       // The character is drawn into the lower part of the canvas, with the
       // spare height above for a tall hat.
       const body = headroom > 0 ? h * (1 - headroom) : h;
+      // The dance moves the whole body around its feet; it needs its own
+      // context so the transform never leaks into the next frame.
+      ctx.save();
+      if (engine.dancingLevel > 0.001) engine.applyDance(ctx, w, body);
       engine.draw(ctx, w, body);
+      ctx.restore();
     },
   });
   return engine;
+}
+
+// ── The weather around her ────────────────────────────────────────────────────
+
+interface Flake {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  spin: number;
+  /** 0…1, how far it is through its life (petals fade as they fall). */
+  age: number;
+}
+
+/** The system asks for no motion: the stage's new gimmicks stay off. */
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+/**
+ * The confetti that drifts around the stage's Miku: snow for Snow Miku,
+ * petals for Sakura Miku, the stage's own teal sparks for the classic one.
+ * A canvas of its own, behind the character and in front of the disc, so the
+ * ring and the bubble never sit under it.
+ *
+ * Asked every frame, like the variant itself: a Miku picked in the wardrobe
+ * changes the weather without the page being rebuilt. Nothing drifts unless
+ * the stage is on screen — `onScreen` and `shouldAnimate` gate the whole loop.
+ */
+export function stageWeather(canvas: HTMLCanvasElement) {
+  if (prefersReducedMotion()) return;
+  let flakes: Flake[] = [];
+  let kind = weatherFor(shownVariant());
+  let seeded = 0;
+
+  const seed = (w: number, h: number) => {
+    const count = Math.round(Math.min(46, Math.max(14, (w * h) / 2600)));
+    if (count === seeded) return;
+    seeded = count;
+    flakes = Array.from({ length: count }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h * 1.2 - h * 0.2,
+      vx: (Math.random() - 0.5) * 10,
+      vy: kind === "sparkle" ? -(6 + Math.random() * 10) : 8 + Math.random() * 18,
+      r: kind === "sparkle" ? 0.7 + Math.random() * 1.1 : 1.1 + Math.random() * 1.9,
+      spin: (Math.random() - 0.5) * 2.4,
+      age: Math.random(),
+    }));
+  };
+
+  add({
+    el: canvas,
+    draw(dt, t) {
+      const { w, h, ctx } = fit(canvas);
+      if (!ctx || w === 0) return;
+      kind = weatherFor(shownVariant());
+      seed(w, h);
+      ctx.clearRect(0, 0, w, h);
+      // Snow and petals are the variant's own hair colours; the sparks are the
+      // skin's accent, so the stage still reads as one piece.
+      const accent = mikuColor();
+      const tint = kind === "snow" ? "#EAF4FF" : kind === "petal" ? "#F7B6CE" : "#AEF7EC";
+      const fall = kind !== "sparkle";
+      for (const f of flakes) {
+        f.x += (f.vx + Math.sin(t * 0.8 + f.y * 0.02) * (fall ? 8 : 4)) * dt;
+        f.y += f.vy * dt;
+        f.age += dt * 0.16;
+        if (fall) {
+          if (f.y > h + 6) {
+            f.y = -6;
+            f.x = Math.random() * w;
+            f.age = 0;
+          }
+        } else if (f.y < -6) {
+          f.y = h + 6;
+          f.x = Math.random() * w;
+          f.age = 0;
+        }
+        if (f.x < -8) f.x = w + 8;
+        if (f.x > w + 8) f.x = -8;
+
+        const alpha = (fall ? 0.75 * (1 - Math.min(1, f.age) * 0.5) : 0.5 + 0.4 * Math.sin(t * 2 + f.spin))
+          * (1 - Math.min(1, f.age) * 0.35);
+        if (alpha <= 0.02) continue;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, alpha);
+        ctx.translate(f.x, f.y);
+        ctx.rotate(t * f.spin + f.r);
+        if (kind === "snow") {
+          ctx.fillStyle = tint;
+          ctx.beginPath();
+          ctx.arc(0, 0, f.r, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (kind === "petal") {
+          ctx.fillStyle = tint;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, f.r * 1.9, f.r * 0.95, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = accent;
+          // A tiny four-point spark, drawn as two crossing lines.
+          ctx.strokeStyle = tint;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(-f.r * 2, 0);
+          ctx.lineTo(f.r * 2, 0);
+          ctx.moveTo(0, -f.r * 2);
+          ctx.lineTo(0, f.r * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    },
+  });
 }
 
 // ── Page colours ──────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import type { HubContext } from "../shell";
 import { emptyState, glowCard } from "../hero";
 import { button, iconButton, segmented } from "../ui";
 import { modelsControl } from "./flowsettings";
+import { insightsBlock } from "./insights";
 
 const lang = () => document.documentElement.lang || undefined;
 
@@ -263,4 +264,6 @@ export async function notesPage(page: HTMLElement, ctx: HubContext) {
     unlisten();
     window.clearInterval(timer);
   };
+  // What those calls added up to, under the notes they came from.
+  await insightsBlock(page);
 }

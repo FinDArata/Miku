@@ -11,12 +11,16 @@ import {
   recordPress, type Binding,
 } from "../core/shortcuts";
 import { DEFAULT_SETTINGS, State, type Settings } from "../core/state";
+import {
+  ageLabel, codexResetsLabel, effectivePct, planColor, resetLabel,
+  type CodexPlanUsage, type PlanUsage, type PlanWindow,
+} from "../core/plan";
 import { closedIsland } from "../core/closed";
 import type { UpdateStatus } from "../core/update";
 import { SOUND_NAMES } from "../core/sound";
 import {
   MAX_DECLARED, PILL_CATEGORIES, availablePills, chooseMainPill, isComingSoon, mainPillChoices,
-  pillDefinition, sanitizeDeclared, toggleDeclared, type PillDefinition,
+  sanitizeDeclared, toggleDeclared, type PillDefinition,
 } from "../core/pills";
 import { h, clear } from "../views/dom";
 import { startHub, type PageId } from "../hub/shell";
@@ -29,7 +33,7 @@ import { whatsappSection } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
 import { updateRows, updatesListener } from "./updates";
 import { colorDot } from "./colors";
-import { renderDiff, statusDot } from "./parts";
+import { fold, moreLabel, renderDiff, statusDot } from "./parts";
 import {
   LANGUAGES, N_, isRtl, onLanguageChange, resolveLanguage, setLanguage, systemLanguages, t, tn,
 } from "../i18n/i18n";
@@ -41,6 +45,8 @@ const KEY_STORE = navigator.userAgent.includes("Windows")
 
 let settings: Settings = { ...DEFAULT_SETTINGS };
 let version = "";
+/** Which credentials the pills page found in the key store, read once per draw. */
+let presentKeys: Record<string, boolean> = {};
 
 const windowRoot = document.getElementById("hub")!;
 /** Where the Notch page being shown draws its sections. */
@@ -248,6 +254,42 @@ function claudeSection(status: HookStatus): HTMLElement {
 // ── Plan usage section ────────────────────────────────────────────────────────
 
 /**
+ * One plan's numbers as a card: what is left, when it comes back, and the bar.
+ * The line that matters is the reset — "resets in 1 h 20" is what decides
+ * whether to start a long task now — so it is the main line and the percentage
+ * supports it, not the other way round.
+ */
+function planCard(
+  title: string,
+  usage: PlanUsage | CodexPlanUsage | null,
+  window: PlanWindow | null,
+  weekly: boolean,
+  extra: string | null,
+): HTMLElement {
+  const now = Date.now();
+  const pct = window ? effectivePct(window, now) : null;
+  const left = pct == null ? null : Math.max(0, Math.round(100 - pct));
+  const head = h("div", { class: "plan-head" },
+    h("span", { class: "plan-title", text: title }),
+    h("span", { class: "plan-pct", text: left == null ? t("No data yet") : t("{left}% left", { left }) }),
+  );
+  const reset = window && pct != null
+    ? t("Resets {when}", { when: resetLabel(window, weekly, now) })
+    : t("Turn it on to see the numbers.");
+  const bar = h("div", { class: "plan-bar" },
+    h("i", {
+      style: `width:${pct ?? 0}%;background:${planColor(pct)}`,
+    }),
+  );
+  const card = h("div", { class: "plan-card" }, head, bar,
+    h("div", { class: "plan-reset", text: reset }),
+  );
+  if (extra) card.append(h("div", { class: "hint", text: extra }));
+  if (usage) card.append(h("div", { class: "hint", text: ageLabel(usage.updatedAt, now) }));
+  return card;
+}
+
+/**
  * The 5-hour and weekly limits in the island's header. They come from Claude
  * Code's status line, so the relay has to be the status line first: turning the
  * switch on without it starts the install, and the switch only stays on once
@@ -264,9 +306,32 @@ const PLAN_SETTINGS_TEXT = {
 
 function planSection(status: HookStatus): HTMLElement {
   const body = h("div", { style: "display:flex;flex-direction:column;gap:12px" });
-  const section = anchor("agents.plan", h("section", {}, h("h2", {}, h("span", { text: t("Plan usage") })), body));
+  const cards = h("div", { class: "plan-cards" });
+  const section = anchor("agents.plan", h("section", {}, h("h2", {}, h("span", { text: t("Plan usage") })), cards, body));
+
+  /** The week outlasts the day: show the window that is closest to running out. */
+  function tightest(u: PlanUsage | null): { window: PlanWindow | null; weekly: boolean } {
+    if (!u) return { window: null, weekly: false };
+    const week = u.sevenDay && u.sevenDay.resetsAt > Date.now() ? u.sevenDay : null;
+    const five = u.fiveHour && u.fiveHour.resetsAt > Date.now() ? u.fiveHour : null;
+    if (week && five) return week.usedPct >= five.usedPct ? { window: week, weekly: true } : { window: five, weekly: false };
+    if (week) return { window: week, weekly: true };
+    return { window: five, weekly: false };
+  }
+
+  function drawCards() {
+    clear(cards);
+    const claude = tightest(State.planUsage);
+    cards.append(planCard("Claude", State.planUsage, claude.window, claude.weekly, null));
+    const codex = tightest(State.codexPlanUsage);
+    cards.append(planCard(
+      "Codex", State.codexPlanUsage, codex.window, codex.weekly,
+      codexResetsLabel(State.codexPlanUsage),
+    ));
+  }
 
   const redraw = () => {
+    drawCards();
     clear(body);
     draw();
   };
@@ -351,6 +416,9 @@ function planSection(status: HookStatus): HTMLElement {
     );
   }
 
+  // The cards first, then the switches under them: drawCards() used to be
+  // called only from redraw(), so a page opened on its own had an empty strip.
+  drawCards();
   draw();
   return section;
 }
@@ -501,14 +569,20 @@ function apiSection(hasKey: boolean, relay: boolean): HTMLElement {
 // ── Active pills section ──────────────────────────────────────────────────────
 
 /**
- * The tools you use (Mac 0.1.1–0.1.2): pick the main workspace tool, which is
- * always on and takes no slot, and declare the agents and chat providers you
- * want as pills. Services are declared in Integrations below, next to their keys.
+ * The pills the island shows, one row each: the main workspace tool (always on,
+ * no slot) and whatever else the user picks, with the credentials that row
+ * needs on the same line.
+ *
+ * This page used to be two — Active pills for the agents, Integrations for the
+ * services and their keys — with one slot pool shared between them, so the
+ * pills page had to explain "Also in use: GitHub — turn one off in Integrations
+ * to free a slot". One row, one switch and its key says the same thing without
+ * the cross-reference.
+ *
+ * Rows in use are drawn; the rest sit under one fold, still on the page.
  */
-function activePillsSection(connected: Record<string, boolean>): HTMLElement {
+function pillsSection(connected: Record<string, boolean>): HTMLElement {
   const slots = h("div", { class: "hint" });
-  // The pills holding the slots that are not listed here: the services live in
-  // Integrations, so a page reading "4/4" with nothing lit looked like a fault.
   const holders = h("div", { class: "hint" });
   const main = h("select", {}) as HTMLSelectElement;
   for (const def of mainPillChoices()) main.append(h("option", { value: def.id, text: def.name }));
@@ -519,7 +593,10 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     settings.activeIntegrations = next.activeIntegrations;
     declaredChanged();
   });
-  const groups = h("div", { style: "display:flex;flex-direction:column;gap:12px" });
+
+  const used = h("div", { class: "pill-group" });
+  const rest = h("div", { class: "pill-group" });
+  const restWrap = h("div");
 
   /** Why a pill would show nothing yet, as on the Mac's row. */
   function hint(def: PillDefinition): string | null {
@@ -530,24 +607,93 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     return null;
   }
 
+  /** The credentials a service's row carries; none for the others. */
+  function credentials(def: PillDefinition): HTMLElement[] {
+    const def2 = INTEGRATIONS.find((d) => d.id === def.id);
+    if (!def2) return [];
+    const rows = h("div", { style: "display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-width:0" });
+    for (const field of def2.fields) {
+      const input = h("input", {
+        type: field.secret ? "password" : "text",
+        placeholder: presentKeys[field.key] ? CHAT_STRINGS.stored : field.placeholder,
+        autocomplete: "off",
+        spellcheck: "false",
+        style: "flex:1 1 auto;min-width:0",
+      }) as HTMLInputElement;
+      const saveBtn = h("button", { text: t("Save") });
+      const dotEl = statusDot(presentKeys[field.key] ?? false);
+      // An empty Save used to erase the stored credential with no warning, so
+      // one mis-click wiped the key. An empty field now only offers to remove
+      // it, and that removal is a second click that says what it does.
+      let confirming = false;
+      const unconfirm = () => {
+        if (!confirming) return;
+        confirming = false;
+        saveBtn.textContent = t("Save");
+        saveBtn.classList.remove("danger");
+      };
+      input.addEventListener("input", unconfirm);
+      saveBtn.addEventListener("click", async () => {
+        const value = input.value.trim();
+        if (!value && presentKeys[field.key]) {
+          if (!confirming) {
+            confirming = true;
+            saveBtn.textContent = t("Remove");
+            saveBtn.classList.add("danger");
+            return;
+          }
+          confirming = false;
+          saveBtn.textContent = t("Save");
+          saveBtn.classList.remove("danger");
+        }
+        try {
+          await Bridge.secretSet(field.key, value);
+          presentKeys[field.key] = value.length > 0;
+          input.value = "";
+          input.placeholder = value ? CHAT_STRINGS.stored : field.placeholder;
+          dotEl.style.background = value ? "#22c55e" : "#f4505e";
+        } catch {
+          dotEl.style.background = "#f5a524";
+        }
+      });
+      rows.append(h("div", { class: "row" },
+        h("label", { style: "min-width:104px", text: t(field.label) }),
+        input, saveBtn, dotEl,
+      ));
+    }
+    if (def2.hint) rows.append(h("div", { class: "hint", text: t(def2.hint) }));
+    if (def.id === "integration_spotify") {
+      // As on the Mac's row: said only when there is no Spotify to launch.
+      const note = h("div", { class: "hint", style: "padding-top:5px" });
+      rows.append(note);
+      void Bridge.spotifyInstalled().then((ok) => {
+        note.textContent = ok === false ? t("Not installed") : "";
+      });
+    }
+    return [rows];
+  }
+
   function row(def: PillDefinition): HTMLElement {
     const isMain = def.id === settings.mainPill;
     const on = settings.activeIntegrations.includes(def.id);
     const full = !isMain && !on && settings.activeIntegrations.length >= MAX_ACTIVE;
-    const el = h("div", { class: full ? "pill-row full" : "pill-row" },
+    const head = h("div", { class: full ? "pill-row full" : "pill-row" },
       colorDot(def, "width:10px;height:10px", () => settings.pillColors, pickColor),
       h("span", { class: "name", text: def.name }),
     );
     if (isMain) {
-      el.append(h("span", { class: "state", text: t("Main") }));
-      return el;
+      head.append(h("span", { class: "state", text: t("Main") }));
+      const keys = credentials(def);
+      return keys.length === 0
+        ? head
+        : h("div", { style: "display:flex;gap:12px;align-items:flex-start" }, head, ...keys);
     }
     const why = hint(def);
-    el.append(h("span", { class: "state", text: why ?? "" }));
+    head.append(h("span", { class: "state", text: why ?? "" }));
     const sw = h("button", { class: on ? "switch on" : "switch" }) as HTMLButtonElement;
     sw.addEventListener("click", () => {
       // Full: say why, and where to make room, instead of a switch that does
-      // nothing (the same rule as the Integrations section below).
+      // nothing.
       if (!on && settings.activeIntegrations.length >= MAX_ACTIVE) {
         slots.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_ACTIVE, name: def.name });
         slots.classList.add("hub-warn");
@@ -558,46 +704,55 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
       settings.activeIntegrations = next;
       declaredChanged();
     });
-    el.append(sw);
-    return el;
+    head.append(sw);
+    const keys = on || isMain ? credentials(def) : [];
+    return keys.length === 0
+      ? head
+      : h("div", { style: "display:flex;gap:12px;align-items:flex-start" }, head, ...keys);
   }
 
   function draw() {
-    const used = settings.activeIntegrations.length;
+    const count = settings.activeIntegrations.length;
     slots.classList.remove("hub-warn");
-    slots.textContent = t("{used}/{max} slots in use — the main tool doesn't take one.", { used, max: MAX_ACTIVE });
-    slots.classList.toggle("full", used >= MAX_ACTIVE);
-    // Services take slots but are declared in Integrations, not here: name them
-    // so "4/4" with nothing lit on this page reads as a fact, not a fault.
-    const listed = new Set(availablePills().filter((p) => p.category !== "service").map((p) => p.id));
-    const elsewhere = settings.activeIntegrations.filter((id) => !listed.has(id));
-    holders.textContent = elsewhere.length === 0
-      ? ""
-      : t("Also in use: {names} — turn one off in Integrations to free a slot.", {
-        names: elsewhere.map((id) => pillDefinition(id)?.name ?? id).join(", "),
-      });
+    slots.textContent = t("{used}/{max} slots in use — the main tool doesn't take one.", { used: count, max: MAX_ACTIVE });
+    slots.classList.toggle("full", count >= MAX_ACTIVE);
+    // Nothing to ask the other page for: the services sit on this page too.
+    holders.textContent = "";
     main.value = settings.mainPill;
-    clear(groups);
-    for (const cat of PILL_CATEGORIES) {
-      if (cat.id === "service") continue;
-      const pills = availablePills().filter((p) => p.category === cat.id);
-      if (pills.length === 0) continue;
-      groups.append(h("div", { class: "pill-group" }, h("h3", { text: t(cat.title) }), ...pills.map(row)));
+
+    clear(used);
+    clear(rest);
+    // In use first, in catalog order; the rest under the fold, by category.
+    const all = availablePills().filter((p) => p.category !== "ai");
+    for (const def of all) {
+      if (def.id === settings.mainPill || settings.activeIntegrations.includes(def.id)) used.append(row(def));
     }
+    for (const cat of PILL_CATEGORIES) {
+      if (cat.id === "ai") continue;
+      const folded = all
+        .filter((p) => p.category === cat.id)
+        .filter((p) => p.id !== settings.mainPill && !settings.activeIntegrations.includes(p.id));
+      if (folded.length === 0) continue;
+      rest.append(h("h3", { text: t(cat.title) }), ...folded.map(row));
+    }
+    clear(restWrap);
+    if (rest.children.length > 0) restWrap.append(fold([rest], moreLabel));
   }
+
   declaredViews.push(draw);
   draw();
 
-  return h(
+  return anchor("pills.main", h(
     "section",
     {},
     h("h2", {}, h("span", { text: t("Active pills") })),
     h("div", { class: "hint", text: t("Choose the tools you use. Miku only shows what you declare here. They follow the catalog order.") }),
     slots,
     holders,
-    anchor("pills.main", h("div", { class: "row" }, h("label", { text: t("Main tool") }), main)),
-    groups,
-  );
+    h("div", { class: "row" }, h("label", { text: t("Main tool") }), main),
+    anchor("integrations.all", used),
+    restWrap,
+  ));
 }
 
 // ── Chat providers section ────────────────────────────────────────────────────
@@ -642,7 +797,7 @@ function chatProvidersSection(
   present: Record<string, boolean>,
   keyChanged: (key: string, on: boolean) => void,
 ): HTMLElement {
-  const list = h("div", { style: "display:flex;flex-direction:column;gap:8px" });
+  const list = h("div", { style: "display:flex;flex-direction:column;gap:6px" });
   for (const def of CLOUD) {
     const p = providerDef(def.id);
     const key = p.key!;
@@ -656,11 +811,30 @@ function chatProvidersSection(
     const dotEl = statusDot(present[key] ?? false);
     const saveBtn = h("button", { text: CHAT_STRINGS.save });
     const removeBtn = h("button", { class: "danger", text: CHAT_STRINGS.remove });
+    // The key editor stays closed until it is asked for: three password fields
+    // always open is what made this page read as a form rather than a list.
+    const editor = h("div", { class: "key-editor" },
+      h("div", { class: "row" }, input, saveBtn, removeBtn, dotEl),
+      h("div", { class: "hint", text: t("Key from {site}", { site: def.where }) }),
+    );
+    const status = h("span", { class: "row-state" });
+    const openBtn = h("button", { class: "link-btn", type: "button" });
+
     const refresh = () => {
       input.placeholder = present[key] ? CHAT_STRINGS.stored : def.placeholder;
       dotEl.style.background = present[key] ? "#22c55e" : "#f4505e";
       removeBtn.style.display = present[key] ? "" : "none";
+      status.textContent = present[key] ? t("Key saved") : t("No key");
+      openBtn.textContent = present[key] ? t("Replace key…") : t("Add key…");
+      editor.hidden = true;
+      openBtn.setAttribute("aria-expanded", "false");
     };
+    openBtn.addEventListener("click", () => {
+      const open = editor.hidden;
+      editor.hidden = !open;
+      openBtn.setAttribute("aria-expanded", String(open));
+      if (open) input.focus();
+    });
     saveBtn.addEventListener("click", async () => {
       const value = input.value.trim();
       if (!value) return;
@@ -688,14 +862,18 @@ function chatProvidersSection(
     });
     refresh();
     list.append(
-      h("div", { class: "row" },
-        h("label", {},
-          h("i", { class: "dot", style: `background:${p.accent};margin-right:8px` }),
-          h("span", { text: def.name }),
+      h("div", { style: "display:flex;flex-direction:column;gap:6px" },
+        h("div", { class: "row" },
+          h("label", { style: "min-width:104px" },
+            h("i", { class: "dot", style: `background:${p.accent};margin-right:8px` }),
+            h("span", { text: def.name }),
+          ),
+          status,
+          h("span", { class: "spacer" }),
+          openBtn,
         ),
-        input, saveBtn, removeBtn, dotEl,
+        editor,
       ),
-      h("div", { class: "hint", style: "margin:-4px 0 0 144px", text: t("Key from {site}", { site: def.where }) }),
     );
   }
   return anchor("chat.others", h(
@@ -920,120 +1098,6 @@ function declaredChanged() {
   void save();
 }
 
-function integrationsSection(present: Record<string, boolean>): HTMLElement {
-  const note = h("div", { class: "hint" });
-  const list = h("div", { style: "display:flex;flex-direction:column;gap:14px" });
-
-  function updateNote() {
-    const used = settings.activeIntegrations.length;
-    // A refusal message is replaced by the ordinary line the next time the
-    // count changes, so it never lingers after the user makes room.
-    note.classList.remove("hub-warn");
-    note.textContent = t("Pick up to {max} pills to show next to Miku — {used}/{max} in use. Keys are stored in the {store}, never on disk.", { max: MAX_ACTIVE, used, store: KEY_STORE });
-  }
-  declaredViews.push(updateNote);
-
-  const offered = new Set(availablePills().map((p) => p.id));
-  for (const def of INTEGRATIONS.filter((d) => offered.has(d.id))) {
-    const active = settings.activeIntegrations.includes(def.id);
-    const sw = h("button", { class: active ? "switch on" : "switch" });
-    sw.addEventListener("click", () => {
-      const on = settings.activeIntegrations.includes(def.id);
-      if (on) {
-        settings.activeIntegrations = settings.activeIntegrations.filter((x) => x !== def.id);
-      } else {
-        if (settings.activeIntegrations.length >= MAX_ACTIVE) {
-          // The switch used to just do nothing here, which reads as a broken
-          // button. Say why, and say what to do about it.
-          note.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_ACTIVE, name: def.name });
-          note.classList.add("hub-warn");
-          return;
-        }
-        settings.activeIntegrations = [...settings.activeIntegrations, def.id];
-      }
-      sw.classList.toggle("on", !on);
-      declaredChanged();
-    });
-
-    const rows = h("div", { style: "display:flex;flex-direction:column;gap:6px;flex:1 1 auto;min-width:0" });
-    for (const field of def.fields) {
-      const input = h("input", {
-        type: field.secret ? "password" : "text",
-        placeholder: present[field.key] ? CHAT_STRINGS.stored : field.placeholder,
-        autocomplete: "off",
-        spellcheck: "false",
-        style: "flex:1 1 auto;min-width:0",
-      }) as HTMLInputElement;
-      const saveBtn = h("button", { text: t("Save") });
-      const dotEl = statusDot(present[field.key] ?? false);
-      // An empty Save used to erase the stored credential with no warning, so
-      // one mis-click wiped the key. An empty field now only offers to remove
-      // it, and that removal is a second click that says what it does.
-      let confirming = false;
-      const unconfirm = () => {
-        if (!confirming) return;
-        confirming = false;
-        saveBtn.textContent = t("Save");
-        saveBtn.classList.remove("danger");
-      };
-      input.addEventListener("input", unconfirm);
-      saveBtn.addEventListener("click", async () => {
-        const value = input.value.trim();
-        if (!value && present[field.key]) {
-          if (!confirming) {
-            confirming = true;
-            saveBtn.textContent = t("Remove");
-            saveBtn.classList.add("danger");
-            return;
-          }
-          confirming = false;
-          saveBtn.textContent = t("Save");
-          saveBtn.classList.remove("danger");
-        }
-        try {
-          await Bridge.secretSet(field.key, value);
-          present[field.key] = value.length > 0;
-          input.value = "";
-          input.placeholder = value ? CHAT_STRINGS.stored : field.placeholder;
-          dotEl.style.background = value ? "#22c55e" : "#f4505e";
-        } catch {
-          dotEl.style.background = "#f5a524";
-        }
-      });
-      rows.append(
-        h("div", { class: "row" },
-          h("label", { style: "min-width:104px", text: t(field.label) }),
-          input, saveBtn, dotEl,
-        ),
-      );
-    }
-
-    if (def.hint) rows.append(h("div", { class: "hint", text: t(def.hint) }));
-    if (def.id === "integration_spotify") {
-      // As on the Mac's row: said only when there is no Spotify to launch.
-      const hint = h("div", { class: "hint", style: "padding-top:5px" });
-      rows.append(hint);
-      void Bridge.spotifyInstalled().then((ok) => {
-        hint.textContent = ok === false ? t("Not installed") : "";
-      });
-    }
-
-    list.append(
-      h("div", { style: "display:flex;gap:12px;align-items:flex-start" },
-        h("div", { style: "display:flex;align-items:center;gap:8px;min-width:132px;padding-top:4px" },
-          sw,
-          colorDot(def, "", () => settings.pillColors, pickColor),
-          h("span", { style: "font-size:12.5px", text: def.name }),
-        ),
-        rows,
-      ),
-    );
-  }
-
-  updateNote();
-  return anchor("integrations.all", h("section", {}, h("h2", {}, h("span", { text: t("Integrations") })), note, list));
-}
-
 /** WhatsApp (experimental), under the other integrations: its pill is turned on from its own switch. */
 function whatsappSections(): HTMLElement[] {
   if (!availablePills().some((p) => p.id === WHATSAPP_ID)) return [];
@@ -1146,6 +1210,11 @@ function generalSection(): HTMLElement {
     )),
     h("div", { class: "row" }, soundsFolder, reloadSounds, customCount),
     h("div", { class: "hint", text: t("Drop a file named like one of Miku's sounds (finish.wav, approval.mp3, greet.m4a…) in the sounds folder to replace it, then Reload.") }),
+    // Required by the voice library's terms: the credit has to be somewhere a
+    // user can find it. `scripts/voice-cues.mjs` writes the cues made with it.
+    anchor("general.voicecredit", h("div", { class: "hint" },
+      h("span", { text: t("Voice cues can be made with VOICEVOX:ずんだもん, © SSS LLC, under its terms.") }),
+    )),
     anchor("general.behavior", h("div", { class: "row" },
       h("label", { text: t("Open on hover") }),
       toggle(settings.openOnHover, (v) => { settings.openOnHover = v; void save(); }),
@@ -1650,6 +1719,7 @@ async function render() {
 
   // A main pill this build can run, and no pill declared twice.
   settings = { ...settings, ...sanitizeDeclared(settings) };
+  presentKeys = present;
   const connected: Record<string, boolean> = { ...((await Bridge.agentHooksStatus()) ?? {}) };
   for (const def of availablePills()) {
     if (def.connect.kind === "key") {
@@ -1676,10 +1746,12 @@ async function render() {
   clear(root);
   const sections: Partial<Record<PageId, () => HTMLElement[]>> = {
     general: () => [generalSection()],
-    pills: () => [activePillsSection(connected)],
+    // The Settings page's "The island" tab draws the general settings, under a
+    // band that belongs to Settings rather than to the island's own page.
+    islandSettings: () => [generalSection()],
+    pills: () => [pillsSection(connected), ...whatsappSections()],
     agents: () => [claudeSection(status), agentsSection(agents), planSection(status)],
     chat: () => [subscriptionsSection(), apiSection(hasKey, claudeRelay), chatProvidersSection(chatKeys, keyChanged), localSection(customKey)],
-    integrations: () => [integrationsSection(present), ...whatsappSections()],
     shortcuts: () => [shortcutsSection(shortcutReport)],
   };
   root.append(...(sections[notchPage]?.() ?? []));

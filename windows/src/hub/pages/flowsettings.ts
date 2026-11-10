@@ -57,10 +57,9 @@ export function modelsControl(ctx: HubContext, onReady?: () => void): HTMLElemen
   return el;
 }
 
-export async function flowSettingsPage(page: HTMLElement, ctx: HubContext) {
+async function flowSettingsBody(page: HTMLElement, ctx: HubContext) {
   const status = await ctx.refresh();
   const prefs = status.prefs;
-  page.append(ctx.hero("flowsettings", t("Settings"), null));
 
   // ── Keys ──
   const keys: [FlowKey, string][] = [
@@ -79,7 +78,7 @@ export async function flowSettingsPage(page: HTMLElement, ctx: HubContext) {
       shortcutRecorder(prefs.keyCombo, status.platform, (combo) => void ctx.setPrefs((p) => {
         p.key = "custom";
         p.keyCombo = combo;
-      }).then(() => ctx.navigate("flowsettings"))))]
+      }).then(() => ctx.navigate("settingsView"))))]
     : [];
   const edges: [Edge, string][] = [["bottom", t("Bottom")], ["bottom-left", t("Bottom-left")], ["bottom-right", t("Bottom-right")], ["left", t("Left")], ["right", t("Right")]];
   page.append(label(t("Keys")));
@@ -89,7 +88,7 @@ export async function flowSettingsPage(page: HTMLElement, ctx: HubContext) {
     status.keys === "wayland"
       ? row(t("Hold to dictate"), null, keyKeycap("wayland", status.platform))
       : row(t("Hold to dictate"), prefs.key === "right_alt" ? t("On a keyboard with AltGr, the right Alt types characters: pick another key.") : null,
-        select(keys, prefs.key, (key) => void ctx.setPrefs((p) => (p.key = key)).then(() => ctx.navigate("flowsettings")))),
+        select(keys, prefs.key, (key) => void ctx.setPrefs((p) => (p.key = key)).then(() => ctx.navigate("settingsView")))),
     ...recordRow,
     divider(),
     row(t("Where the pill is"), null, segmented(edges, prefs.edge, (edge) => void ctx.setPrefs((p) => (p.edge = edge)))),
@@ -230,4 +229,48 @@ function shortcutRecorder(combo: string[], platform: "windows" | "linux", onDone
     window.addEventListener("keyup", up, true);
   }
   return el;
+}
+
+/**
+ * Settings, one band with two tabs: what the dictation does, and what the
+ * island does. Two sidebar rows named "Settings" and "General" had no reason
+ * to be two, and nobody could tell which one held the switch they wanted.
+ */
+export async function settingsViewPage(page: HTMLElement, ctx: HubContext) {
+  page.append(ctx.hero("settingsView", t("Settings"), t("Dictation, the island and how Miku behaves.")));
+  const body = h("div", { class: "hub-page-body" });
+  const tabs = h("div", { class: "hub-tabs" },
+    h("button", { class: "hub-tab on", text: t("Dictation") }),
+    h("button", { class: "hub-tab", text: t("The island") }),
+  );
+  page.append(tabs, body);
+  const [flowBtn, islandBtn] = [...tabs.querySelectorAll("button")] as HTMLButtonElement[];
+
+  async function draw(which: "flow" | "island") {
+    flowBtn.classList.toggle("on", which === "flow");
+    islandBtn.classList.toggle("on", which === "island");
+    clear(body);
+    if (which === "flow") {
+      await flowSettingsBody(body, ctx);
+      return;
+    }
+    // The island's settings are drawn by the settings window's own renderer.
+    await ctx.renderIslandSettings(body);
+  }
+  flowBtn.addEventListener("click", () => void draw("flow"));
+  islandBtn.addEventListener("click", () => void draw("island"));
+  // An island setting found by search draws this page, so it opens the tab
+  // that holds it.
+  const wanted = page.dataset.openTab ?? document.body.dataset.openTab;
+  await draw(wanted === "islandSettings" || wanted === "general" ? "island" : "flow");
+}
+
+/**
+ * The dictation half on its own, with the band it had before it shared a page
+ * with the island's settings. Kept as a page renderer for the tests, and for a
+ * deep link to the old id.
+ */
+export async function flowSettingsPage(page: HTMLElement, ctx: HubContext) {
+  page.append(ctx.hero("flowsettings", t("Settings"), null));
+  await flowSettingsBody(page, ctx);
 }

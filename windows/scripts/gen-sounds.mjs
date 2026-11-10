@@ -1,5 +1,6 @@
-// Composes the 29 Kanon sounds as WAVs — no binary assets in the repository,
-// the set is generated, like the icons (gen-icons.mjs). Two styles, both built:
+// Composes the 29 Kanon sounds as WAVs — the set is generated, like the icons
+// (gen-icons.mjs), so the repository carries no composed audio. Two styles,
+// both built:
 //
 //   chimes — musical: soft bell arpeggios, the brand's own "kanon" (花音)
 //   pop    — Mochi-like: bubbly sine pops and chirps
@@ -10,9 +11,15 @@
 // Output: 22.05 kHz, 16-bit mono WAVs, each under a second. The chimes are
 // quiet and sit under 1 kHz, so the lower rate is inaudible and the files are
 // half the size — the installer carries 29 of them.
+//
+// Six of the 29 are then replaced by the spoken cues in ../voice/ (see
+// scripts/voice-cues.mjs): a neural voice cannot be composed in code, so those
+// are recorded once and committed. They are laid over the chimes here, which is
+// what makes a fresh clone — and a release build — carry them with no extra
+// step. A file of the user's own in the sounds folder still wins over both.
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SR = 22050;
@@ -150,4 +157,19 @@ for (const name of NAMES) {
   writeFileSync(join(OUT, `${name}.wav`), wav(b));
   total++;
 }
+
+// The spoken cues, laid over the chimes they stand in for. Missing folder or
+// missing file is not an error: a checkout without them simply keeps the
+// chimes, which is what every build did before they existed.
+const VOICE = join(dirname(fileURLToPath(import.meta.url)), "..", "voice");
+let voiced = 0;
+if (existsSync(VOICE)) {
+  for (const file of readdirSync(VOICE)) {
+    if (extname(file) !== ".wav") continue;
+    copyFileSync(join(VOICE, file), join(OUT, file));
+    voiced++;
+  }
+}
+
 console.log(`wrote ${total} ${style} WAVs -> ${OUT}`);
+if (voiced > 0) console.log(`laid ${voiced} spoken cue(s) from ${VOICE} over them`);
