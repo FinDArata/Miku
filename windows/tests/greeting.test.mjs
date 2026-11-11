@@ -57,7 +57,7 @@ test("Miku stays inside the island when the greeting is cut short", () => {
 test("she slides to the side to wave, then comes back to the middle", () => {
   const atWave = greetingPose(2.0);
   assert.ok(atWave.x < 290, `waving at x=${atWave.x}`);
-  // The wave is a head tilt now: Miku has moe-sleeves, not hands.
+  // She waves with her hand, and her body sways along with it.
   assert.ok(atWave.wave >= 0, "waving");
   assert.notEqual(atWave.tilt, 0, "the tilt carries the wave");
   const back = greetingPose(3.6);

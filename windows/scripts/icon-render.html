@@ -32,17 +32,18 @@ function renderAt(size) {
   engine.update(1 / 60);
   engine.draw(x, W, W);
 
-  // The bust: the head, the shoulders and enough of the tails to read as Miku,
-  // centred. In engine pixels the character is centred horizontally.
+  // The bust: the head, the hair bands, the shoulders and the top of the tails,
+  // centred. The engine draws the chibi (src/mochi/chibi.ts) 440 design units
+  // wide across 62 % of the canvas, its point (260, 273) on the centre.
   const R = W * 0.3;
-  const u = R / 158;
+  const u = (W * 0.62) / 440;
   const cx = W / 2;
   const cy = W / 2 + R * 0.06;
-  // Prototype box to keep: x 6..294, y -40..300 — the head, the shoulders and
-  // the tails down to the skirt, with a little breathing room all round.
-  const box = { x: 6, y: -40, w: 288, h: 340 };
-  const sx = cx + (box.x - 150) * u;
-  const sy = cy + (box.y - 150) * u;
+  // Design box to keep: x 60..460, y 36..436 — a square from above the hair
+  // bands down to the skirt, the tails cut where they leave it.
+  const box = { x: 60, y: 36, w: 400, h: 400 };
+  const sx = cx + (box.x - 260) * u;
+  const sy = cy + (box.y - 273) * u;
   const sw = box.w * u;
   const sh = box.h * u;
 

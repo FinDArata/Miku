@@ -38,7 +38,9 @@ const GREETING_SOUND = "greeting";
 export const GREETING_W = 640;
 export const GREETING_H = 150;
 const C0 = { x: 320, y: 90 };
-const HB = 58;
+const HB = 70;
+/** How much of the marshmallow's squash and stretch the chibi keeps: she is a figure, not a blob. */
+const SQUASH = 0.45;
 export const ASP = 1.34;
 const EAR_X = 40;
 const EAR_HB = 17;
@@ -135,7 +137,7 @@ function greetPose(t: number): Pose {
   // Body bob in phase with the waving hand
   if (t >= T.pop1 && t < T.tuck0) {
     const w = t - T.pop1;
-    y += Math.sin(w * 2 * Math.PI * 5) * 0.02 * HB * clamp(w / 0.08, 0, 1);
+    y += Math.sin(w * 2 * Math.PI * 2.5) * 0.02 * HB * clamp(w / 0.08, 0, 1);
   }
 
   // Squash and stretch
@@ -155,6 +157,8 @@ function greetPose(t: number): Pose {
   const microK = t >= 3.7 && t < 3.82 ? Math.sin(Math.PI * seg(t, 3.7, 3.82)) : 0;
   sx += 0.08 * microK;
   sy -= 0.07 * microK;
+  sx = 1 + (sx - 1) * SQUASH;
+  sy = 1 + (sy - 1) * SQUASH;
 
   // Eyes
   let eye: EyeType = "dot";
@@ -185,7 +189,7 @@ function greetPose(t: number): Pose {
   const handR = t < T.tuck0
     ? E.back(seg(t, T.pop0 + 0.04, T.pop0 + 0.18))
     : 1 - E.easeIn(seg(t, T.tuck0 + 0.03, T.tuck1));
-  // The greeting's "hand" — Miku waves with her head, see waveTilt().
+  // How long she has been waving: the engine raises her hand, waveTilt() sways her.
   const wave = t >= T.pop1 && t < T.tuck0 ? t - T.pop1 : -1;
   const tilt = waveTilt({ wave } as Pose);
 
@@ -259,17 +263,16 @@ export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY): Pose {
 }
 
 /**
- * The wave used to be a little round hand poking out of the marshmallow. Miku
- * has moe-sleeves, so the greeting waves with the head: the tilt swings at the
- * same beat and the same envelope the hand had, which keeps the greeting's
- * rhythm without an asset the character does not have.
+ * The chibi waves with her own hand (the engine poses her from `wave`, see
+ * BotEngine.syncGreeting). Her body only sways along, gently, on the envelope
+ * the old hand had: a full-speed head shake under a waving arm read as a jitter.
  */
 function waveTilt(p: Pose): number {
   if (p.wave < 0) return 0;
   const w = p.wave;
   const rampIn = clamp(w / 0.08, 0, 1);
   const rampOut = 1 - clamp((w - (T.tuck0 - T.pop1)) / (T.tuck1 - T.tuck0), 0, 1);
-  return Math.sin(w * 2 * Math.PI * 5) * 0.1 * rampIn * rampOut;
+  return Math.sin(w * 2 * Math.PI * 2.5) * 0.045 * rampIn * rampOut;
 }
 
 

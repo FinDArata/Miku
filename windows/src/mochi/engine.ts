@@ -10,6 +10,7 @@ import type { BotEmoteName, BotStateName } from "../core/layout";
 import { drawOutfitBehind, drawOutfitFront, type Head } from "./outfits";
 import type { Outfit } from "./wardrobe";
 import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
+import { chibiArms, drawChibi, type ChibiEyes, type ChibiPose } from "./chibi";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -282,6 +283,18 @@ export function danceTransform(seconds: number, level: number, R: number) {
 
 // ── Engine ────────────────────────────────────────────────────────────────────
 
+/** The engine's eye shapes the chibi has an equivalent for; the rest keep the pose's own eyes. */
+const CHIBI_EYES: Partial<Record<EyeShape, ChibiEyes>> = {
+  happy: "happy", closed: "closed", heart: "heart", spiral: "spiral",
+  line: "flat", flat: "flat", tired: "flat", wide: "wide", wink: ["open", "happy"],
+};
+/** Chibi effects the engine already shows as a badge or as particles. */
+const ENGINE_FX: ReadonlySet<string> = new Set([
+  "dots", "question", "bang", "sweat", "stars", "hearts", "star", "winkStar", "zzz",
+]);
+/** The chibi's figure in its design space (chibi.ts): its width, the centre the engine pins, her head. */
+const CHIBI_FIGURE = { w: 440, cx: 260, cy: 273, headY: 175, headRx: 122, headRy: 115 };
+
 export class BotEngine {
   isMini = false;
   /** Solid body colour for mini bots / integration pills (null = the variant's own palette). */
@@ -361,6 +374,14 @@ export class BotEngine {
   lookX = 0;
   lookY = 0;
 
+  // The chibi (chibi.ts): the emote she is playing, the greeting's wave, and
+  // her arms, which ease from one pose to the next instead of jumping.
+  private emote: BotEmoteName | null = null;
+  private emoteUntil = 0;
+  private greetWave = false;
+  private arms = chibiArms("idle");
+  private armsAt = 0;
+
   lastTime = now();
   private t0 = now() - Math.random() * 5;
   private nextBlink = now() + 1.5 + Math.random() * 2;
@@ -394,7 +415,10 @@ export class BotEngine {
     lookX: number;
     lookY: number;
     tint: number;
+    /** Seconds into the wave, or negative when she is not waving. */
+    wave?: number;
   }) {
+    this.greetWave = (p.wave ?? -1) >= 0;
     this.state = "idle";
     this.cfg = BOT_STATES.idle;
     this.permanentEye = null;
@@ -594,6 +618,8 @@ export class BotEngine {
     const t = now();
     this.eyeOverride = EMOTE_EYE[emote];
     this.eyeOverrideUntil = t + duration;
+    this.emote = emote;
+    this.emoteUntil = t + duration;
 
     switch (emote) {
       case "love":
@@ -938,14 +964,17 @@ export class BotEngine {
 
     // With an outfit on, a roll turns the whole character — hat included — as
     // one piece instead of rolling the eyes over the body (BotCanvasView, macOS).
+    // The chibi always turns as one piece; only while she morphs into the
+    // mailbox does the old figure, which is the one that morphs, take over.
+    const chibi = this.morph < 0.005;
     x.save();
-    if (this.rigidRoll && Math.abs(this.roll) > 0.001) {
+    if ((chibi || this.rigidRoll) && Math.abs(this.roll) > 0.001) {
       x.translate(cx, cy);
       x.rotate(this.roll);
       x.translate(-cx, -cy);
     }
 
-    this.drawHandsBehind(x, R, rx, ry, cx, cy);
+    if (!chibi) this.drawHandsBehind(x, R, rx, ry, cx, cy);
 
     x.save();
     x.translate(cx, cy);
@@ -959,8 +988,17 @@ export class BotEngine {
     // and the head is given those radii: a hat then sits on the crown instead of
     // floating over the body. Minis never wear one.
     const u = R / 158;
-    const headY = -(150 - 64) * u;
-    const head = this.isMini ? null : dressedHead(u, this.yaw, this.pitch, this.physDx, this.physDy);
+    // The chibi fills the same 62 % of the box the old figure did.
+    const k = (W * 0.62) / CHIBI_FIGURE.w;
+    const headY = chibi ? (CHIBI_FIGURE.headY - CHIBI_FIGURE.cy) * k : -(150 - 64) * u;
+    const head: Head | null = this.isMini
+      ? null
+      : chibi
+        ? {
+          R: CHIBI_FIGURE.headRx * k, rx: CHIBI_FIGURE.headRx * k, ry: CHIBI_FIGURE.headRy * k,
+          yaw: this.yaw, pitch: this.pitch, physDx: this.physDx, physDy: this.physDy,
+        }
+        : dressedHead(u, this.yaw, this.pitch, this.physDx, this.physDy);
     const outfitState = { presence: this.outfitPresence, morph: this.morph };
     if (head) {
       x.save();
@@ -969,24 +1007,28 @@ export class BotEngine {
       x.restore();
     }
 
-    const body = this.bodyPath(rx, ry, R);
-    this.drawBody(x, body, R, rx, ry);
+    if (chibi) {
+      this.drawChibiFigure(x, k);
+    } else {
+      const body = this.bodyPath(rx, ry, R);
+      this.drawBody(x, body, R, rx, ry);
 
-    const blushVal = Math.max(this.blush, this.tint * 0.5) * (1 - this.morph);
-    if (blushVal > 0.01) {
-      x.save();
-      x.clip(body);
-      x.fillStyle = `rgba(255,150,170,${0.45 * blushVal})`;
-      for (const sd of [-1, 1]) {
-        x.beginPath();
-        x.ellipse(sd * R * 0.32, -R * 0.26, R * 0.09, R * 0.055, 0, 0, Math.PI * 2);
-        x.fill();
+      const blushVal = Math.max(this.blush, this.tint * 0.5) * (1 - this.morph);
+      if (blushVal > 0.01) {
+        x.save();
+        x.clip(body);
+        x.fillStyle = `rgba(255,150,170,${0.45 * blushVal})`;
+        for (const sd of [-1, 1]) {
+          x.beginPath();
+          x.ellipse(sd * R * 0.32, -R * 0.26, R * 0.09, R * 0.055, 0, 0, Math.PI * 2);
+          x.fill();
+        }
+        x.restore();
       }
-      x.restore();
-    }
 
-    this.drawEyes(x, body, R, rx, ry);
-    this.drawMikuFront(x, R, rx, ry);
+      this.drawEyes(x, body, R, rx, ry);
+      this.drawMikuFront(x, R, rx, ry);
+    }
 
     if (head) {
       x.save();
@@ -1002,6 +1044,41 @@ export class BotEngine {
       this.drawBadge(x, this.badge, R, cx, cy);
     }
     this.drawParticles(x, R, cx, cy);
+  }
+
+  /** What she is doing, as a chibi pose: an emote first, then a wave or a dance, else her state. */
+  private chibiPose(n: number): ChibiPose {
+    if (this.emote && n < this.emoteUntil) return this.emote;
+    if (this.permanentEmote) return this.permanentEmote;
+    if (this.greetWave || this.hands > 0.3) return "wave";
+    if (this.dancingLevel > 0.5) return "dance";
+    return this.state;
+  }
+
+  /** The chibi, centred on the origin at scale `k`, with the engine's own blink, gaze and eyes. */
+  private drawChibiFigure(x: CanvasRenderingContext2D, k: number) {
+    const n = now();
+    const pose = this.chibiPose(n);
+    const want = chibiArms(pose);
+    const ease = 1 - Math.pow(0.00002, Math.min(0.1, Math.max(0, n - this.armsAt)));
+    this.armsAt = n;
+    for (let i = 0; i < 4; i++) this.arms[i] += (want[i] - this.arms[i]) * ease;
+    // A state or a wave takes the engine's eyes (a greeting's smile, a blink
+    // held shut); an emote or a dance brings its own face.
+    const plain = pose === this.state || pose === "wave";
+    x.save();
+    x.scale(k, k);
+    x.translate(-CHIBI_FIGURE.cx, -CHIBI_FIGURE.cy);
+    drawChibi(x, pose, n - this.t0, this.variant.id, {
+      eyes: plain && this.eyeOverride ? CHIBI_EYES[this.eyeOverride] : undefined,
+      lid: this.open,
+      look: [this.yaw * 9, this.pitch * 8],
+      arms: this.arms,
+      tint: this.isMini && this.bodyColor ? this.bodyColor : undefined,
+      skipFx: ENGINE_FX,
+      noShadow: true,
+    });
+    x.restore();
   }
 
   private bodyPath(rx: number, ry: number, R: number): Path2D {
