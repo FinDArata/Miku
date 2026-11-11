@@ -811,8 +811,13 @@ body.hub-window {
 
 .mochi-char {
   position: absolute;
-  right: 26px;
-  top: 50%;
+  /* Centred on the disc: its centre sits 6px + 190px/2 = 101px from the
+     stage's right edge, so the 170px canvas starts at 101 - 85 = 16px. */
+  right: 16px;
+  /* The engine draws her with headroom (room for tall hats above), so her
+     body sits high inside the canvas: the box is dropped 32px to put her
+     body, not her canvas, on the disc's centre. */
+  top: calc(50% + 32px);
   font-size: 96px;
   line-height: 1;
   filter: drop-shadow(0 16px 28px rgba(4, 33, 30, 0.53));
@@ -841,7 +846,6 @@ body.hub-window {
   width: 170px;
   height: 170px;
   display: block;
-  margin-right: -34px;
   /* The stage is pointer-events: none so it never steals a click from the
      band; the character herself opts back in — a click is hers. */
   pointer-events: auto;
@@ -1102,7 +1106,9 @@ body.hub-window {
 
 .mochi-stage.peek .mochi-char {
   font-size: 54px;
-  right: 14px;
+  /* Centred on the peek disc: its centre sits 108px/2 = 54px from the stage's
+     right edge, so the 92px canvas starts at 54 - 46 = 8px. */
+  right: 8px;
 }
 
 .mochi-stage.peek .mochi-char .mochi-char-canvas {
