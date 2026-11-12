@@ -1,470 +1,176 @@
 <div align="center">
 
-<img src="NotchBuddy/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="96" alt="Miku icon">
+<img src="docs/media/miku/miku-classic.png" width="160" alt="Miku, the chibi drawn in code">
 
 # Miku
 
-**A tiny friend that lives in your Mac's notch — or at the top of your screen on Windows and Linux — and keeps an eye on your AI coding agent sessions. And now on your phone too: iPhone.**
+**Hatsune Miku lives at the top of your screen and keeps an eye on your AI coding agents, on Windows and Linux.**
 
-Approve permissions, watch your agents work, drop a file, chat with Claude — all without leaving what you're doing. Walk away from your Mac and Miku follows you to your iPhone: Lock Screen, Dynamic Island, widgets, Siri.
+Approve permissions, watch your agents work, drop a file, chat with Claude, dictate anywhere, all without leaving what you're doing. Miku sings, dances to your music and waves when you come back.
 
-**New in 0.4: Miku is a real Mac app.** Hold a key anywhere, speak, let go: your words are pasted where you type, like Wispr Flow — free, open source, and offline with Parakeet. Record your calls without a bot in the meeting and get the transcript, the summary and the to-dos.
-
-[![Version](https://img.shields.io/github/v/release/FinDArata/miku?filter=v*&label=version&color=0A84FF)](https://github.com/FinDArata/Miku/releases)
-![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
-![iOS 18+](https://img.shields.io/badge/iOS-18%2B-black?logo=apple)
+[![Version](https://img.shields.io/github/v/release/FinDArata/Miku?label=version&color=39C5BB)](https://github.com/FinDArata/Miku/releases)
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-0078D4?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-AppImage%20%7C%20deb%20%7C%20rpm-FCC624?logo=linux&logoColor=black)
-![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
-![SwiftUI](https://img.shields.io/badge/SwiftUI-native-0A84FF)
 ![Tauri 2](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri&logoColor=black)
 ![Code: MIT](https://img.shields.io/badge/code-MIT-green)
-![GitHub stars](https://img.shields.io/github/stars/FinDArata/miku?style=social)
 
-<img src="docs/media/demo.gif" width="760" alt="Miku in action">
+<img src="docs/media/miku/greeting-classic.png" width="760" alt="The launch greeting: Miku on a lit stage, her name glowing beside her">
 
 </div>
 
 ---
 
-## Why
+## Meet Miku
 
-Some studios showed off gorgeous notch companions… and never let anyone use them.
-**Miku is the open version.** Every line of code is open source under the MIT License: read it, fork it, learn from it. It began as [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé — this is an edited fork of it, and the upstream name and the Mochi character stay © him (see [License](#license)).
+Miku is a chibi **drawn entirely in code**: no sprites, no images, no Live2D. A canvas engine draws her twin-tails, headset, tie and blinking eyes at 60 fps. She follows your cursor with her eyes, bobs to the beat, gets annoyed when you poke her (and dizzy if you insist), and tells you the moment Claude Code needs you.
 
-Meet **Miku**: a chibi drawn entirely in code that pops out of your notch, bobs to the beat, follows your cursor with her eyes, gets annoyed when you poke her (and dizzy if you insist), and tells you the moment Claude Code needs you. She comes in three official looks — classic, **Snow Miku** and **Sakura Miku** — and the wardrobe switches them, by hand or with the season.
-
-## Miku on the Mac: dictation, notes, one window
-
-<div align="center">
-<img src="docs/media/hub-dictation.png" width="760" alt="The Miku window: the Dictation page with today's dictations, words dictated, speed and days in a row">
-</div>
-
-Since 0.4, Miku has its own window and sits in the Dock. On the left, **Flow** — everything about your voice — and **Notch**, all the settings of the island. *(macOS, GitHub build)*
-
-- 🎙️ **Flow dictation** — hold a key anywhere on the Mac (right ⌥ by default, or fn, right ⌘ or right ⌃), speak, let go: your words are pasted where you type, in any app. Two quick taps for hands-free, Esc to cancel, ⌃⌘V to paste the last one again. Your clipboard gets back what it held.
-- 💊 **The pill** — a small see-through pill at the bottom of the screen (or on its left or right edge). Hover it for a toolbar: dictate, record a call, open Miku. While you speak, Miku listens and nine dots follow your voice.
-- 🦜 **Parakeet, offline** — run NVIDIA's Parakeet on your Mac's Neural Engine through [FluidAudio](https://github.com/FluidInference/FluidAudio): more accurate, 25 languages, nothing leaves your Mac. One click to download (about 650 MB), Apple silicon only. Until then the Mac's own recognition is used.
-- ✍️ **Your words, your way** — a dictionary of names Miku always spells right, replacements, snippets (say a short phrase, paste a whole text), and an optional clean-up by Claude with your own key: as said, natural or polished, per app.
-- 📝 **Notetaker** — click Record a call: Miku records your microphone and what your Mac plays, no bot joins the call. Then you get the transcript person by person, a summary, the key points and the to-dos, written by Claude with your key or by Apple Intelligence on your Mac. The audio is deleted once the transcript is written. Tell the people in the call that you record.
-- 📊 **Statistics** — words dictated, time saved, words per minute, days in a row and the apps you dictate in. Counted on your Mac, never sent anywhere.
+She comes in her three official looks. The wardrobe switches them by hand, or with the season: Snow in winter, Sakura in spring.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/media/hub-statistics.png" alt="Statistics: words dictated, time saved, speed, words per day and where you dictate"></td>
-<td width="33%"><img src="docs/media/hub-styles.png" alt="Styles: an optional clean-up by Claude, as said, natural or polished, per app"></td>
-<td width="33%"><img src="docs/media/hub-settings.png" alt="Settings: the key to hold, where the pill is, hands-free, paste again and cancel"></td>
+<td align="center" width="33%"><img src="docs/media/miku/miku-classic.png" width="200" alt="Classic Miku"><br><b>Miku</b><br><sub>teal twin-tails, notes around her</sub></td>
+<td align="center" width="33%"><img src="docs/media/miku/miku-snow.png" width="200" alt="Snow Miku"><br><b>Snow Miku</b><br><sub>falling snowflakes</sub></td>
+<td align="center" width="33%"><img src="docs/media/miku/miku-sakura.png" width="200" alt="Sakura Miku"><br><b>Sakura Miku</b><br><sub>falling petals</sub></td>
 </tr>
 </table>
 
-Flow dictation and the Notetaker are on the Mac for now; Windows and Linux are next.
+The skin paints the whole app, not only her: the island's stage light, the tabs, the buttons and the settings window all wear her colour.
+
+### She shows you what your agents are doing
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/miku/state-working.png" width="130" alt="Miku working"><br><sub>working</sub></td>
+<td align="center"><img src="docs/media/miku/state-approval.png" width="130" alt="Miku waiting for your approval"><br><sub>needs your OK</sub></td>
+<td align="center"><img src="docs/media/miku/state-finished.png" width="130" alt="Miku happy, the task is done"><br><sub>done!</sub></td>
+<td align="center"><img src="docs/media/miku/state-sleeping.png" width="130" alt="Miku asleep"><br><sub>nothing running</sub></td>
+<td align="center"><img src="docs/media/miku/state-dizzy.png" width="130" alt="Miku dizzy"><br><sub>poked three times</sub></td>
+</tr>
+</table>
+
+### A live stage when you start
+
+When Miku launches, the footlights come on from left to right, a spotlight falls on her mark, and she rises through the stage floor, waves to the crowd (or bows, or twirls: a different hello each day) and watches her name light up karaoke-style. Then she settles in the island.
+
+<table>
+<tr>
+<td><img src="docs/media/miku/greeting-snow.png" alt="The greeting in Snow Miku's light"></td>
+<td><img src="docs/media/miku/greeting-sakura.png" alt="The greeting in Sakura Miku's light"></td>
+</tr>
+</table>
 
 ## Features
 
-- 🤖 **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude Desktop and other agents, live** — see every session in your notch: what it reads, edits and runs, step by step. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)). Finished? Miku does a happy little jump.
-- See what Claude is editing, live in the notch: each file modification shows the file name and +N −M counts in the ticker, tap to read the full diff
-- ✅ **Approve and answer from the notch** — Claude Code permission requests show up with **Allow / Deny / Always**; `AskUserQuestion` prompts show the choices right in the notch (single or multi-select, up to 4 questions). One click, or "Reply in terminal" to fall back to the CLI. Codex also gets Allow / Deny.
-- 🧑‍💻 **Jump to the right terminal** — open the exact terminal window of a session *(macOS)*.
-- 💬 **Chat with Claude, Gemini, OpenAI, DeepSeek, Qwen, Moonshot, or a local model (Ollama / LM Studio)** — click the model name above the chat box to switch provider and pick a model. Cloud providers use your own API key; local providers connect to a server running on your Mac. **No API key? Use your subscription**: switch it on in Settings → Chat and the chat goes through the official terminal tool you already pay for, signed in with your own account — Claude Code, Antigravity CLI or Gemini CLI, Codex CLI (ChatGPT), Cursor CLI, GitHub Copilot CLI *(GitHub build, Windows, Linux)* or ZCode *(GitHub build only)*. *(Gemini, OpenAI, DeepSeek, Qwen, Moonshot and local models: macOS)*
-- 📈 **Portfolio pill** *(macOS)* — track your crypto across 16 networks (Bitcoin, Ethereum, Solana, Polygon, BNB, Avalanche, Arbitrum, Optimism, Base, Dogecoin, Litecoin, TRON, XRP, Cardano, Cosmos, NEAR) and 5 exchanges (Binance, OKX, Bybit, Kraken, Coinbase) in the notch. Live balances, 7-day sparklines and 24-hour price change per holding. Read-only API keys for exchanges, public addresses for wallets — nothing leaves your Mac.
-- 📊 **Claude plan usage** *(macOS, GitHub build)* — a small pill in the notch header shows your 5-hour and weekly Claude plan limits. Enable it from Settings → Agents → Plan usage. Pro and Max plans only.
-- 📊 **Codex plan usage** *(macOS, GitHub build)* — a Codex pill next to it shows your Codex limits and how many free resets you have left, read from the Codex CLI. Turn it on in Settings → Agents → Plan usage.
-- 📋 **Declare the tools you use** — open Settings → Active pills and pick your main workspace tool (VS Code, Cursor, Codex or Antigravity), then toggle up to 4 more: Gemini CLI, Anthropic, Google AI, OpenAI, Ollama, LM Studio and service integrations *(macOS)*.
-- ✉️ **Mail in the notch** *(macOS GitHub build: Apple Mail; Windows: classic Outlook)* — search every inbox and filter (Unread, Important, Today), read a message and act on it: reply, mark as read, important, junk. Miku → Mail sorts new messages for you with your rules, banned words and VIPs, every action listed with Undo; nothing is ever deleted. Turn on **Mail** in the chat and the AI can prepare a plan — sorting, reply drafts, a mail merge with each recipient's page of a PDF — that runs only when you click Run.
-- 📎 **Drop a file on the notch** — Miku turns into a box and swallows it, then ask a question about it or send it by email *(email: macOS, Mail.app)*.
-- 🖥️ **Miku on the desktop** — drag Miku out of the island to set him loose on your desktop: he floats as a 120 pt companion, follows your cursor, wears his outfit, reacts to alerts by flying home and flying back, and comes back where you left him on next launch.
-- 🪟 **Drag Miku onto any window** — attach that window as context for Claude *(macOS)*.
-- 🔌 **Integrations** — Stripe payments, n8n workflows, GitHub (open PRs, reviews requested, CI status), Vercel deployments, Resend emails, Notion, Cal.com. Each one gets its own little colored Miku.
-- 🎵 **Apple Music pill** *(macOS, GitHub build)* — add the Apple Music pill in Settings → Active pills to see what's playing and control playback from the notch; Miku dances while it plays.
-- 🎧 **Spotify pill** *(macOS, GitHub build)* — add the Spotify pill in Settings → Active pills: album cover, title and artist, a progress bar you drag to seek, play/pause, previous/next, shuffle, repeat and volume, right from the notch; Miku dances while it plays.
-- 👗 **Dress Miku up** — right-click him for the wardrobe. He also dresses up for the seasons on his own.
-- ⌨️ **Keyboard shortcuts** — open the chat, jump to an alert or a terminal, switch pills, mute, send Miku to the desktop or open the wardrobe from anywhere; all customizable in Settings → Shortcuts.
-- 🎭 **A real character** — idle breathing, blinks, eyes on a sphere that follow your mouse, emotes, 28 handcrafted sounds, a greeting on launch.
-- 🔊 **Your own sounds** *(macOS)* — drop a file named like one of Miku's sounds (`finish.wav`, `approval.mp3`…) in Settings → General → Sound → **Open sounds folder** to replace it.
-- 🗣️ **« OK Miku »** *(macOS, GitHub build)* — talk to Miku like Jarvis. Say « OK Miku », then ask: « how much did I make on Stripe today? », « swap GitHub for Stripe », « play some Daft Punk », « who won the game last night? », « send an email to Enzo to tell him the image is ready ». Claude is the brain (your own Anthropic API key, set in Settings → Chat); speech recognition runs on your Mac, and only your words and the data Miku reads to answer go to Anthropic, never audio. Miku listens, thinks and answers out loud; emails open in the notch and leave only when you click Send. Settings → Voice.
-- 🎙️ **Dictate in the chat** *(macOS, GitHub build)* — click the mic next to the chat field and talk in any of your languages (Miku picks the one you spoke, or right-click the mic to choose); speech recognition runs on your Mac when it supports it.
-- ↘️ **The notch or a corner** *(macOS, GitHub build)* — put Miku in any corner of the screen: drag Miku there, or Settings → General → Display → Position. A small tile with Miku at rest; open, the other pills sit on a quarter circle around him.
-- 🔎 **Search the settings** — type in the Miku window's sidebar to find any setting *(macOS GitHub build, Windows, Linux)*.
-- 🫥 **Invisible when idle** — hides away when nothing is running, peeks out when you hover the notch (the top edge of the screen on Windows and Linux).
-- 🖥️ **Any Mac, notch or not** — on an iMac, a Mac mini, or a MacBook with its lid closed on an external display, Miku sits in a small bar at the top of the screen. With several displays, pick his screen in Settings → General, or let him follow your mouse *(macOS)*.
-- 📱 **Kanon on iPhone** — your sessions, approvals and services in your pocket, with Live Activities, widgets and Siri. See [Kanon on iPhone](#miku-on-iphone).
-- 📅 **Weekly recap** *(macOS)* — every Monday morning Miku shows a summary of the past week: time coding, sessions, files, lines changed, commands, permissions, top agent and project, busiest day and longest session. Share it as a 1080 × 1920 image with Miku — project names optional. All local, no sync.
-- 🌍 **16 languages** — English, 简体中文, 繁體中文, हिन्दी, Español, العربية, Français, বাংলা, Português, Русский, Bahasa Indonesia, Deutsch, Türkçe, ไทย, 한국어, 日本語. Pick one in Settings → General → Language; Traditional Chinese and Thai are on the Mac only for now. Community translations welcome.
-- 🔒 **Private by design** — no telemetry, no account. Keys live in your macOS Keychain, Windows Credential Manager or Linux Secret Service (GNOME Keyring, KWallet). The app only talks to the services you plug in (and, once you agree, to GitHub's releases API to tell you about new versions).
-
-## Kanon on iPhone
-
-The Mac app does the work; the iPhone app keeps you in the loop when you step away. It goes as far into the Apple ecosystem as a dev tool can:
-
-<table>
-<tr>
-<td colspan="3" align="center"><img src="docs/media/iphone-live-activity.jpg" width="520" alt="Miku on the Lock Screen, waiting for your OK with Deny and Allow"></td>
-</tr>
-<tr>
-<td width="33%"><img src="docs/media/iphone-approval.jpg" alt="A permission request on the iPhone, Allow with Face ID"></td>
-<td width="33%"><img src="docs/media/iphone-session.jpg" alt="A Claude Code session on the iPhone: the prompt, what it did, Claude's answer and the next instruction"></td>
-<td width="33%"><img src="docs/media/iphone-widgets.jpg" alt="Home Screen widgets with each agent's and service's Miku"></td>
-</tr>
-</table>
-
-- 🏝️ **Live Activity and Dynamic Island** — lock your Mac while an agent works and Miku moves to your iPhone's Lock Screen and Dynamic Island with the agent's state, then comes back to the notch when you unlock. **Allow** or **Deny** a permission right from the Lock Screen, without opening the app.
-- 🔔 **Notifications you can act on** — Allow, Review or Deny a permission, pick an answer to Claude's question, or reply to a finished agent, straight from the notification.
-- 🔐 **Face ID on every Allow** — nothing runs on your Mac without your explicit tap; your Mac only applies a decision meant for the exact request it is waiting on.
-- 💬 **Talk to your agents** — follow each session live (steps, diffs, the last turn), answer questions, and send the next instruction to your Mac by text or voice.
-- 🧩 **Widgets, Control Center, Siri and Shortcuts** — home and Lock Screen widgets, a Control Center control, ask Siri how your agents are doing or send Claude an instruction, in Siri and Shortcuts.
-- 🔎 **Spotlight and Focus** — find past turns in Spotlight; a Focus filter shows only the agents waiting for you.
-- 📊 **Your services up close** — GitHub, Vercel, Stripe, Cal.com, n8n, Notion, Resend: your Mac reads their APIs with the keys in its Keychain and the iPhone shows the figures and lists. Safe actions (re-run CI, redeploy, merge a PR, pause a workflow) behind Face ID; nothing that moves money or sends an email.
-- 🫧 **Liquid Glass, native to the bone** — SwiftUI, tabs, zoom transitions, context menus, swipe actions, alternate icons, Miku at 120 Hz.
-- 🔒 **Through your own iCloud** — sessions sync through your private CloudKit database; project names, commands and questions are encrypted with your iCloud keys. No Miku server sees your projects, commands or keys. Turn it on in the Mac app: Settings → General → iPhone.
-
-**Get it on your iPhone in 3 steps:** install Miku on your iPhone ([Join the TestFlight beta](https://testflight.apple.com/join/3GpeHv2b) — free, App Store coming soon), turn on **Settings → General → iPhone** in the Mac app (0.1.9 or later), and use the same Apple Account in iCloud on both. Full guide, troubleshooting and build-it-yourself: [docs/IPHONE.md](docs/IPHONE.md).
-
-## Versions
-
-macOS releases are published as `v*` tags. See [CHANGELOG.md](CHANGELOG.md) for the full notes of each version.
-
-| Version | Date | Highlights |
-|---------|------|------------|
-| [0.5.8](https://github.com/FinDArata/Miku/releases/tag/v0.5.8) | Oct 31, 2026 | Fixes by @Ohualtex: approvals and questions stay put, desktop Mochi stays visible, dropped files no longer overwrite each other |
-| [0.5.7](https://github.com/FinDArata/Miku/releases/tag/v0.5.7) | Oct 31, 2026 | Mail in the notch: search, filters, reading, automatic sorting with rules and Undo, mail plans from the chat; search the settings; Miku in a corner of the screen |
-| [0.5.6](https://github.com/FinDArata/Miku/releases/tag/v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot), switched on in Settings → Chat; Korean and Japanese |
-| [0.5.5](https://github.com/FinDArata/Miku/releases/tag/v0.5.5) | Oct 29, 2026 | Chat on your Claude plan with no API key; each session apart behind its pill, questions side by side; Claude Code on a remote machine |
-| [0.5.4](https://github.com/FinDArata/Miku/releases/tag/v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, your own hooks stay untouched, no crash without a mic, truer n8n, Stripe and GitHub pills |
-| [0.5.3](https://github.com/FinDArata/Miku/releases/tag/v0.5.3) | Oct 22, 2026 | Mochi turns blue when a new version waits; What's new and your Miku so far after each update; Buy Mochi a coffee |
-| [0.5.2](https://github.com/FinDArata/Miku/releases/tag/v0.5.2) | Oct 20, 2026 | New version in the notch, one click to install it; German, Turkish, Thai, Traditional Chinese; Homebrew; plan approval from the notch |
-| [0.5.1](https://github.com/FinDArata/Miku/releases/tag/v0.5.1) | Oct 18, 2026 | WhatsApp in one click: Miku installs and starts the gateway, no Terminal |
-| [0.5.0](https://github.com/FinDArata/Miku/releases/tag/v0.5.0) | Oct 18, 2026 | WhatsApp in the notch (experimental), Mochi feels your Mac, a screen capture for Claude, dictation that writes prompts or translates |
-| [0.4.0](https://github.com/FinDArata/Miku/releases/tag/v0.4.0) | Oct 14, 2026 | Miku becomes an app: Flow dictation anywhere, Parakeet offline, the Notetaker, a window in the Dock |
-| [0.3.0](https://github.com/FinDArata/Miku/releases/tag/v0.3.0) | Oct 11, 2026 | « OK Miku »: talk to Mochi, powered by Claude — pills, music, your services, web search, emails |
-| [0.2.3](https://github.com/FinDArata/Miku/releases/tag/v0.2.3) | Oct 8, 2026 | Terminal sessions, Spotify, a colour per Mochi, dictation in any language, open on hover, your own sounds |
-| [0.2.2](https://github.com/FinDArata/Miku/releases/tag/v0.2.2) | Oct 8, 2026 | Choose Mochi's screen, Claude Desktop pill, Codex plan usage, full questions, safer settings.json |
-| [0.2.1](https://github.com/FinDArata/Miku/releases/tag/v0.2.1) | Oct 7, 2026 | Hermes Agent support |
-| [0.2.0](https://github.com/FinDArata/Miku/releases/tag/v0.2.0) | Oct 6, 2026 | Copilot CLI, Muse Code, OpenCode and Amp, weekly recap, 10 languages |
-| [0.1.9](https://github.com/FinDArata/Miku/releases/tag/v0.1.9) | Oct 6, 2026 | iPhone services with live details and actions, smarter Live Activity |
-| [0.1.8](https://github.com/FinDArata/Miku/releases/tag/v0.1.8) | Oct 5, 2026 | Kanon on iPhone: sessions, widgets, approvals with Face ID, Mochi in the Dynamic Island |
-| [0.1.7](https://github.com/FinDArata/Miku/releases/tag/v0.1.7) | Oct 4, 2026 | Keyboard shortcuts |
-| [0.1.6](https://github.com/FinDArata/Miku/releases/tag/v0.1.6) | Oct 4, 2026 | Mochi on the desktop |
-| [0.1.5](https://github.com/FinDArata/Miku/releases/tag/v0.1.5) | Oct 4, 2026 | Wardrobe and seasonal outfits, new launch greeting |
-| [0.1.4](https://github.com/FinDArata/Miku/releases/tag/v0.1.4) | Oct 3, 2026 | Live diffs, GitHub pull requests, CI, reviews and contribution grid |
-| [0.1.3](https://github.com/FinDArata/Miku/releases/tag/v0.1.3) | Oct 3, 2026 | Answer Claude's questions from the notch, plan usage, local models, Apple Music |
-| [0.1.2](https://github.com/FinDArata/Miku/releases/tag/v0.1.2) | Oct 2, 2026 | Codex and Cursor support, the permission card stays until you answer |
-| [0.1.1](https://github.com/FinDArata/Miku/releases/tag/v0.1.1) | Oct 2, 2026 | Gemini and OpenAI chat, Linux build, more agents and pills, security hardening |
-| [0.1.0](https://github.com/FinDArata/Miku/releases/tag/v0.1.0) | Sep 27, 2026 | First release: Mochi, Claude Code sessions, chat, file drop, integrations |
-
-Windows and Linux are released together, under the `windows-v*` and `linux-v*` tags. The newest Windows installer is always at [`windows-latest`](https://github.com/FinDArata/Miku/releases/tag/windows-latest), the newest Linux AppImage at [`linux-latest`](https://github.com/FinDArata/Miku/releases/tag/linux-latest).
-
-| Windows & Linux | Date | Highlights |
-|---------|------|------------|
-| 0.5.9 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.9) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.9) | Nov 3, 2026 | The island never disappears (Mochi or the time when closed), ✕ to fold it, dictation keeps your language, your own dictation key, silence while you speak |
-| 0.5.8 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.8) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.8) | Oct 31, 2026 | 14 fixes and features by @Ohualtex: permission requests queue, Claude Desktop cards and pill, plan usage in the compact island, Flow pill in a corner |
-| 0.5.7 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.7) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.7) | Oct 31, 2026 | Mail with classic Outlook on Windows: search, filters, automatic sorting, mail plans from the chat; search the settings |
-| 0.5.6 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.6) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.6) | Oct 30, 2026 | Chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot); Korean and Japanese |
-| 0.5.5 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.5) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.5) | Oct 29, 2026 | No API key? Your own Claude Code answers the chat, Flow's clean-up and the notes of a call, on your Claude plan |
-| 0.5.4 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.4) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.4) | Oct 29, 2026 | Reliability: 25 community fixes — the hook server never gives up, approval cards go when the terminal takes over, a sturdier Flow pill, WhatsApp group names |
-| 0.5.3 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.3) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.3) | Oct 22, 2026 | WhatsApp in the island (experimental): one-click gateway install, your chats and replies |
-| 0.5.2 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.2) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.2) | Oct 22, 2026 | Mochi turns blue when a new version waits, What's new after each update; GitLab and Gitea pills; the weekly recap on Android |
-| 0.5.1 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.1) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.1) | Oct 20, 2026 | New version in the island, one click to install it on Windows; German and Turkish; an optional clock; Linux idle CPU fixed |
-| 0.5.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.5.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.0) | Oct 15, 2026 | Catches up with the Mac: the Miku window, Flow dictation with Parakeet offline (X11 and Wayland), the Notetaker, « OK Miku » |
-| 0.4.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.4.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.4.0) | Oct 11, 2026 | Your Android phone: the link for Kanon for Android, by @Rhytam23 — approvals with your fingerprint, answers, chat, off by default |
-| 0.3.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.3.0) · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.3.0) | Oct 9, 2026 | Linux catches up: Spotify with Mochi dancing, global shortcuts on Wayland, Open terminal brings the terminal back; open on hover, your own sounds, a colour per Mochi |
-| 0.2.0 · [Windows](https://github.com/FinDArata/Miku/releases/tag/windows-v0.2.0) | Oct 8, 2026 | Catches up with the Mac: nine agents with approvals, chat with any AI, plan usage, GitHub, wardrobe, 10 languages |
-| 0.1.1 · [Linux](https://github.com/FinDArata/Miku/releases/tag/linux-v0.1.1) | Oct 1, 2026 | First Linux build (beta) |
-
-## Demo mode
-
-No API key, no Claude Code, no setup — open **Settings → General → Demo**, click **Try demo mode**, and Miku walks through a scripted session: a Claude Code session with live steps and a diff you can read, a permission request, an AskUserQuestion, a parallel Codex session, the GitHub, Stripe, Vercel and other integration pills loaded with sample data, the chat with a streamed response, the weekly recap with a share image you can actually save.
-
-Nothing is written to disk during the demo — no Keychain entries, no hook files, no recap history. Your real sessions and keys are saved and restored exactly as they were when you stop.
+- 🤖 **Your agents, live**: Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude Desktop and others. See what each session reads, edits and runs, step by step, with the file name and +N −M counts of every edit and the full diff a click away. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)).
+- ✅ **Approve and answer from the island**: permission requests show up with **Allow / Deny / Always**, and `AskUserQuestion` prompts show their choices right there. Several requests wait their turn in a stack. Nothing is ever approved without your click.
+- 💬 **Chat with Claude**: with your own API key, or **on the subscription you already pay for** through the official CLI (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot, ZCode).
+- 🎙️ **Flow dictation**: hold a key anywhere (right Ctrl by default), speak, let go: your words are pasted where you type. Runs offline with Parakeet; on Linux it works on X11 and Wayland.
+- 🗣️ **« OK Miku »**: ask her things out loud, powered by Claude with your key.
+- 🎵 **Music and lyrics**: Spotify and system media in the island, synced lyrics in the top pill (Japanese read as rōmaji), and Miku dances to the song itself.
+- ✉️ **Mail** *(Windows, classic Outlook)*: search, filters, automatic sorting with rules and Undo, mail plans from the chat that run only when you click Run.
+- 📎 **Drop a file on the island**: Miku swallows it, then ask Claude about it.
+- 🔌 **Integrations**: GitHub, GitLab, Gitea, Vercel, Stripe, n8n, Resend, Notion, Cal.com, WhatsApp (experimental), each with its own pill.
+- 🖥️ **Miku on the desktop**: drag her out of the island and she floats on your desktop, follows your cursor, and flies home when something needs you.
+- ⌨️ **Keyboard shortcuts** for everything, all customisable.
+- 🔊 **30 sounds composed in code**, including Miku singing "mi-ku" when you change slides. Drop a file with the same name in the sounds folder to replace any of them.
+- 🌍 **14 languages**, Bahasa Indonesia included.
+- 🔒 **Private by design**: no telemetry, no account. Keys live in Windows Credential Manager or the Linux Secret Service. The app only talks to the services you plug in (and, once you agree, to GitHub's releases API to tell you about new versions).
 
 ## Install
 
-### App Store
-
-Miku is coming to the **Mac App Store** and the **iPhone App Store**: one click to install, automatic updates, and the iPhone app pairs with your Mac through your iCloud account, with nothing to configure. The links will be here as soon as Apple publishes them.
-
-The App Store build of the Mac app runs in Apple's sandbox, so some features stay in the GitHub build: agents other than Claude Code, Cursor and Claude Desktop (Codex, Gemini CLI, Antigravity, Copilot CLI…), Claude and Codex plan usage, the chat through your AI subscription, the Miku window (Flow dictation, the Notetaker, settings search), « OK Miku », Mail, WhatsApp, Apple Music, Spotify, the Portfolio pill, screen capture, attaching the front window to the chat, and updates from inside the app (the App Store updates it).
-
-### iPhone
-
-1. **Install Miku on your iPhone** (iOS 18 or later): install [TestFlight](https://apps.apple.com/app/testflight/id899247664) from the App Store, then [Join the TestFlight beta](https://testflight.apple.com/join/3GpeHv2b). The beta is free; Apple limits it to 10,000 testers. The App Store version is coming soon.
-   *Apple is reviewing the beta: it opens within a day or two — if the link isn't accepting testers yet, check back soon.*
-2. **On your Mac**, with Miku 0.1.9 or later: **Settings… → General → iPhone**, turn on **Show my agent sessions on my iPhone**, and **Move Miku to my iPhone's Dynamic Island when my Mac is locked** for the Lock Screen.
-3. **Same Apple Account** in iCloud on the Mac and the iPhone. That's the whole link: no account, no pairing code.
-4. Open Miku on the iPhone, allow notifications, and start a Claude Code session on the Mac.
-
-Everything else, troubleshooting included, is in [docs/IPHONE.md](docs/IPHONE.md).
-
-### App Store
-
-Miku is coming to the **Mac App Store** and the **iPhone App Store**: one click to install, automatic updates, and the iPhone app pairs with your Mac through your iCloud account, with nothing to configure. The links will be here as soon as Apple publishes them.
-
-The App Store build of the Mac app runs in Apple's sandbox, so some features stay in the GitHub build: agents other than Claude Code, Cursor and Claude Desktop (Codex, Gemini CLI, Antigravity, Copilot CLI…), Claude and Codex plan usage, the chat through your AI subscription, the Miku window (Flow dictation, the Notetaker, settings search), « OK Miku », Mail, WhatsApp, Apple Music, Spotify, the Portfolio pill, screen capture, attaching the front window to the chat, and updates from inside the app (the App Store updates it).
-
-### iPhone
-
-1. **Install Miku on your iPhone** (iOS 18 or later): install [TestFlight](https://apps.apple.com/app/testflight/id899247664) from the App Store, then [Join the TestFlight beta](https://testflight.apple.com/join/3GpeHv2b). The beta is free; Apple limits it to 10,000 testers. The App Store version is coming soon.
-   *Apple is reviewing the beta: it opens within a day or two — if the link isn't accepting testers yet, check back soon.*
-2. **On your Mac**, with Miku 0.1.9 or later: **Settings… → General → iPhone**, turn on **Show my agent sessions on my iPhone**, and **Move Miku to my iPhone's Dynamic Island when my Mac is locked** for the Lock Screen.
-3. **Same Apple Account** in iCloud on the Mac and the iPhone. That's the whole link: no account, no pairing code.
-4. Open Miku on the iPhone, allow notifications, and start a Claude Code session on the Mac.
-
-Everything else, troubleshooting included, is in [docs/IPHONE.md](docs/IPHONE.md).
-
-### Homebrew (macOS)
-
-```bash
-brew tap louis-cfm/miku https://github.com/FinDArata/Miku
-brew install --cask miku
-```
-
-It installs the same signed and notarized GitHub build as the download below. Miku then updates itself from the notch; `brew upgrade --cask --greedy miku` works too.
-
-### Download for macOS
-
-1. Grab the latest `Kanon.zip` from [Releases](https://github.com/FinDArata/Miku/releases).
-2. Unzip and move **Kanon.app** to `/Applications`.
-3. Launch it, and click **Open** when macOS asks you to confirm. Updating from 0.1.0? macOS may ask you, once for each key you saved, to let Miku use it: enter your Mac password and click **Always Allow**.
-
 ### Windows
 
-Download **[Miku-Windows.msi](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows.msi)** or **[Miku-Windows-setup.exe](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows-setup.exe)** (Windows 10/11, always the newest version) and run it. You can also [build it from source](#build-from-source).
+Download **[Miku-Windows.msi](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows.msi)** or **[Miku-Windows-setup.exe](https://github.com/FinDArata/Miku/releases/download/windows-latest/Miku-Windows-setup.exe)** (Windows 10/11, always the newest version) and run it.
 
-**Windows will show a warning the first time — that's expected.** The installer isn't code-signed yet, so SmartScreen doesn't know the publisher:
+**Windows will show a warning the first time.** The installer isn't code-signed yet, so SmartScreen shows *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
 
-1. A **"Windows protected your PC"** screen appears, with *Publisher: Unknown publisher*.
-2. Click **More info** (*Informations complémentaires* in French). This reveals a **Run anyway** button.
-3. Click **Run anyway** (*Exécuter quand même*). The installer starts normally.
-
-This is only because the app isn't signed with a paid certificate yet. Miku is open source, and Microsoft Defender scans the installer as clean.
-
-**Windows and Linux 0.5.9** keep a small island at the top of the screen once it is closed (Mochi, the time or your Claude usage in it), fold it with ✕, keep your language when you dictate, take any dictation key you like and, on Windows, quiet the other apps while you speak. **0.5.8** bring 14 fixes and features by @Ohualtex: permission requests wait their turn, Claude Desktop cards on Windows and its pill on Linux, plan usage in the compact island. **0.5.7** bring **Mail** to Windows with classic Outlook (search, automatic sorting, mail plans from the chat) and a search field for the settings. **0.5.6** chat on your own AI subscription (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot) and speak Korean and Japanese. **0.5.5** answer on your Claude plan through Claude Code when no API key is saved. **0.5.4** bring 25 reliability fixes from the community. **0.5.3** bring **WhatsApp** to the island (experimental), with the gateway installed in one click. **0.5.2** turn Mochi blue when a new version waits and show what it brings after the update; they add **GitLab and Gitea** pills. **0.5.1** tell you when a new version is out (once you agree) and, on Windows, install it in one click; they also speak German and Turkish. **0.5.0** caught up with the Mac: Miku is now an app with its own window in the taskbar, **Flow dictation** anywhere (hold right Ctrl, speak, let go) with Parakeet running offline on your computer, the **Notetaker** for your calls, and **« OK Miku »** to talk to Mochi, powered by Claude with your key. On Linux, dictation works on X11 and Wayland. 0.3.0 added open on hover, your own sounds, a colour of your own for each Mochi and the Mochi-to-desktop shortcut; on Linux, the Spotify pill with Mochi dancing to it, global shortcuts on Wayland and "Open terminal" that brings the terminal forward. 0.2.0 caught up with the Mac: Codex, Copilot CLI, Muse Code and six more agents with approvals from the island, answers to Claude's questions, live diffs, GitHub pull requests and CI, plan usage, local models, the wardrobe, Mochi on the desktop, keyboard shortcuts, the weekly recap and 10 languages. See the [changelog](CHANGELOG.md).
-
-There is no notch on a PC, so the island slides out of the top edge of the screen
-instead of hiding inside one. See [`windows/README.md`](windows/README.md) for the
-rest of the differences.
-
-**New versions.** Once you agree (the island asks once, or Settings → General → Updates), Miku for Windows and Linux tells you when a new version is out; on Windows, **Update now** downloads the installer you used, checks its SHA-256 against the one GitHub publishes and installs it in one click. See [`windows/README.md`](windows/README.md#new-versions).
+Once you agree (the island asks once, or Settings → General → Updates), Miku tells you when a new version is out, and **Update now** downloads the installer, checks its SHA-256 against the one GitHub publishes and installs it in one click.
 
 ### Linux
 
-**Miku for Linux 0.5.9** is out (x86_64): [AppImage](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.AppImage) · [.deb](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-amd64.deb) · [.rpm](https://github.com/FinDArata/Miku/releases/download/linux-v0.5.9/Miku-Linux-0.5.9-x86_64.rpm) · [all files and checksums](https://github.com/FinDArata/Miku/releases/tag/linux-v0.5.9). The newest AppImage is always at [`linux-latest`](https://github.com/FinDArata/Miku/releases/download/linux-latest/Miku-Linux-x86_64.AppImage).
+x86_64 builds are on the [releases page](https://github.com/FinDArata/Miku/releases): AppImage, .deb and .rpm, with `SHA256SUMS`.
 
 - **AppImage** (any distribution): `chmod +x Miku-Linux-*.AppImage`, then run it.
 - **Debian / Ubuntu**: `sudo apt install ./Miku-Linux-*.deb`
 - **Fedora / openSUSE**: `sudo dnf install ./Miku-Linux-*.rpm`
+- **Arch**: build it with the [PKGBUILD](linux/arch/PKGBUILD).
 
-Check a download with `sha256sum -c SHA256SUMS --ignore-missing`. On Arch Linux, build it with the [PKGBUILD](linux/arch/PKGBUILD).
-
-The island sits on the top edge on compositors with layer-shell — COSMIC, KDE
-Plasma, Hyprland, Sway and other wlroots compositors. GNOME has no layer-shell,
-so there it runs through XWayland as a dock window at the top of the screen. See [`windows/README.md`](windows/README.md#linux).
+The island sits on the top edge on compositors with layer-shell (COSMIC, KDE Plasma, Hyprland, Sway and other wlroots compositors). GNOME has no layer-shell, so there it runs through XWayland as a dock window at the top of the screen.
 
 ### Build from source
 
-**macOS** — requirements: macOS 15+, Xcode 16+, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+Requirements: [Rust](https://rustup.rs), Node 20+, and on Windows the MSVC build tools.
 
 ```bash
-brew install xcodegen
 git clone https://github.com/FinDArata/Miku.git
-cd miku/NotchBuddy
-xcodegen
-open NotchBuddy.xcodeproj   # then ⌘R
-```
-
-**Windows** — requirements: [Rust](https://rustup.rs), Node 20+, MSVC build tools.
-
-```powershell
-git clone https://github.com/FinDArata/Miku.git
-cd miku/windows
+cd Miku/windows
 npm install
-npm run pack                # installer lands in windows/release/
+npm run tauri dev           # run it
+npm run pack                # or build the installer into windows/release/
 ```
 
-**Linux** — requirements: [Rust](https://rustup.rs), Node 20+, and the WebKitGTK,
-gtk-layer-shell and appindicator development packages (Debian/Ubuntu names below).
+On Linux, install the WebKitGTK, gtk-layer-shell and appindicator development packages first (Debian/Ubuntu names):
 
 ```bash
-sudo apt install build-essential pkg-config \
-  libwebkit2gtk-4.1-dev libgtk-layer-shell-dev libayatana-appindicator3-dev \
-  librsvg2-dev libssl-dev libdbus-1-dev patchelf \
-  gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-git clone https://github.com/FinDArata/Miku.git
-cd miku/windows
-npm install
-npm run pack                # AppImage, .deb and .rpm land in windows/release/
+sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev libgtk-layer-shell-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev libdbus-1-dev patchelf gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 ```
+
+More in [`windows/README.md`](windows/README.md).
 
 ## Setup
 
-On the Mac, open Miku from the Dock or the menu bar: its window has every setting under **Notch** (⌘,). On Windows and Linux, click the Miku icon in the system tray → **Settings…**
+Click the Miku icon in the system tray → **Settings…**
 
-| What | Why | Where the key goes |
-|---|---|---|
-| **Claude Code hooks** | live sessions and approvals | **Install hooks** — Miku backs up `~/.claude/settings.json`, merges its hooks and shows you the diff before writing anything |
-| **Claude plan** *(macOS, GitHub build)* | Plan usage gauge in the notch header | **Install relay** in Settings → Agents → Plan usage, then enable "Show in the notch" |
-| **Gemini CLI hooks** | Gemini CLI sessions in the island | **Install hooks** in Settings → Gemini CLI — backs up `~/.gemini/settings.json` |
-| **Antigravity (agy) hooks** | agy sessions in the island | **Install hooks** in Settings → Antigravity — backs up `~/.gemini/config/hooks.json` |
-| **Anthropic API key** | chat and questions about files | Settings → Anthropic API · Keychain / Windows Credential Manager / Secret Service |
-| **Google AI API key** *(macOS)* | chat with Google AI (Gemini) | Settings → Chat — other providers · Keychain |
-| **OpenAI API key** *(macOS)* | chat with OpenAI | Settings → Chat — other providers · Keychain |
-| **Ollama server** *(macOS)* | chat with local models via Ollama | Settings → Chat → Local models → **Connect** |
-| **LM Studio server** *(macOS)* | chat with local models via LM Studio | Settings → Chat → Local models → **Connect** |
-| **iPhone** *(macOS)* | sessions, approvals, questions and Miku on your iPhone | Settings → General → iPhone · your private iCloud, see [docs/IPHONE.md](docs/IPHONE.md) |
-| **Active pills** *(macOS)* | choose which tools and agents appear in the island | Settings → Active pills |
-| **Flow dictation** *(macOS, GitHub build)* | hold a key, speak, the words are pasted | Miku → Flow → Settings · the Accessibility and Microphone permissions |
-| **Parakeet** *(macOS, Apple silicon)* | offline dictation, more accurate | Miku → Flow → Settings → Recognition → **Download** (about 650 MB) |
-| Stripe, n8n, GitHub, Vercel, Resend, Notion, Cal.com | the service pills | Keychain / Windows Credential Manager / Secret Service, all optional |
-| **WhatsApp** *(macOS GitHub build, Windows, Linux; experimental)* | your WhatsApp messages in the notch or the island, and replies | Settings → Integrations → WhatsApp · a gateway on your Mac, see [WhatsApp (experimental)](#whatsapp-experimental) |
+| Agent | How it connects |
+|---|---|
+| Claude Code | Settings → Claude Code → **Install hooks** (your `settings.json` is backed up and you see the diff before anything is written) |
+| Gemini CLI, Antigravity, Codex | Settings → the agent → **Install hooks** |
+| Cursor | Installed alongside Claude Code |
+| Copilot CLI, Muse Code | `--agent copilot` / `--agent muse` flag |
+| OpenCode, Amp, Hermes | Settings → the agent → **Install** (a plugin that starts the `miku-hook` relay) |
+| ZCode | Settings → Agents → ZCode → **Install** |
+| Any other | `--agent <name>` flag; see [`docs/AGENTS.md`](docs/AGENTS.md) |
 
-If Miku isn't running, the hook exits immediately: **Claude Code is never blocked.**
-
-### WhatsApp (experimental)
-
-*macOS (GitHub build), and Windows and Linux since 0.5.3.* The WhatsApp pill shows your incoming messages in the notch, one row per conversation, and lets you reply without opening WhatsApp. WhatsApp has no API for personal accounts, so Miku goes through an **unofficial gateway that runs on your Mac** and speaks the WhatsApp Web protocol: [GOWA](https://github.com/aldinokemal/go-whatsapp-web-multidevice) (recommended) or [OpenWA](https://github.com/rmyndharis/OpenWA). Miku only reads and sends through that gateway.
-
-> **Unofficial.** Use it on your own account only. WhatsApp may restrict an account that abuses it (bulk messages, automation). Miku only replies in a conversation that wrote to you, a few messages a minute at most.
-
-**Set it up in three steps, no Terminal:**
-
-1. **Turn it on.** In Miku: Settings → Integrations → WhatsApp (experimental) → **Show my WhatsApp messages**.
-2. **Click Install WhatsApp.** Miku downloads [GOWA](https://github.com/aldinokemal/go-whatsapp-web-multidevice), the open-source gateway, from its GitHub releases (the build for your Mac, about 15 MB, once), checks it against the SHA-256 GOWA publishes, and starts it. It starts and stops with Miku from then on.
-3. **Scan the QR code** that shows right there: on your phone, WhatsApp → Settings → Linked devices → Link a device. The dot turns green and the pill fills in as messages arrive.
-
-The gateway lives in `~/Library/Application Support/Miku/GOWA`, next to the WhatsApp session it keeps, so you scan once. **Update** in the same place gets GOWA's latest version. That download is the only time Miku goes online for WhatsApp, and only when you click. On Windows it lives in `%LOCALAPPDATA%\Miku\GOWA`, on Linux in `~/.local/share/miku/GOWA`.
-
-Miku tells the gateway where to post new messages (a small server on `127.0.0.1`, port 47823 by default, never reachable from another machine), with a random secret kept in the Keychain; every delivery is checked against its HMAC-SHA256 signature. If no message comes that way, Miku checks every 20 seconds instead.
-
-<details>
-<summary><b>Advanced: run the gateway yourself (GOWA by hand, or OpenWA)</b></summary>
-
-Everything below is under **Advanced: your own gateway** in the same Settings section.
-
-**GOWA by hand.** Download `whatsapp_<version>_darwin_arm64.zip` (Apple silicon) or `…_darwin_amd64.zip` (Intel) from the [latest release](https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/latest). The zip holds one binary, `darwin-arm64` or `darwin-amd64`. In the folder it unzipped to:
-
-```bash
-xattr -d com.apple.quarantine ./darwin-arm64
-```
-
-```bash
-chmod +x ./darwin-arm64
-```
-
-```bash
-./darwin-arm64 rest --host=127.0.0.1 --port=3000 --auto-download-media=false
-```
-
-Add `--basic-auth=user:password` to protect it with a password, and put the same `user:password` in Miku. Keep `http://127.0.0.1:3000`, **Save**, then **Test connection**. The address and the password go to the Keychain.
-
-**OpenWA instead.** Start it with the Baileys engine and allow its webhook to reach your Mac, then pick **OpenWA** with `http://127.0.0.1:2785` and its API key (`data/.api-key` on first start):
-
-```bash
-ENGINE_TYPE=baileys SSRF_ALLOWED_HOSTS=127.0.0.1 npm run start:prod
-```
-
-</details>
-
-**What it does**
-- One row per conversation: initials, name, the last message cut short, the unread count. Photos, voice messages and documents show as a label (« Photo », « Voice message », « Document »); nothing is downloaded.
-- A new message: Miku's little happy face, a sound if sounds are on, and the island opens under its usual rules.
-- Click a conversation: its last ten messages and a reply field. Return sends, Shift-Return starts a new line, Esc goes back.
-- Read receipts only when you open a conversation (or, if you turn that off, only when you reply). Never when a message just arrives.
-- Groups stay quiet unless you're mentioned; chats you ignore never show (right-click a row, or Settings); quiet during a macOS Focus when the system lets Miku read it.
-
-**Privacy.** Miku talks only to the gateway on your Mac (and to GitHub when you click Install or Update, to fetch GOWA itself). Messages stay in memory, are never written to disk or to a log, and are forgotten when Miku quits or WhatsApp is turned off. No profile photo is fetched: they live on WhatsApp's servers, so the pill shows initials.
-
-**Limits.** No profile photos, no voice-message duration (neither gateway gives it), no new conversations from Miku, no media sending. The gateway must run for messages to arrive. Following a Focus needs Miku to be signed with Apple's Communication Notifications capability; until then that setting says it's unavailable.
-
-### Supported agents
-
-| Agent | How it connects (Mac) | Mac-only? |
-|---|---|---|
-| Claude Code | Settings → Claude Code → **Install hooks** | No |
-| Gemini CLI | Settings → Gemini CLI → **Install hooks** | No |
-| Antigravity | Settings → Antigravity → **Install hooks** | No |
-| Cursor | Hooks installed automatically alongside Claude Code | No |
-| Codex | `--agent codex` flag; Settings → Codex → **Install hooks** | No |
-| Copilot CLI | `--agent copilot` flag + camelCase events | No |
-| Muse Code | `--agent muse` flag | No |
-| OpenCode | Plugin — **Settings → OpenCode Plugin → Install** | No |
-| Amp | Plugin — **Settings → Amp Plugin → Install** | No |
-| Hermes | Plugin — **Settings → Agents → Hermes → Install** | No |
-| ZCode | **Settings → Agents → ZCode → Install** — Miku's hooks are merged into `~/.zcode/cli/config.json`; start a new ZCode task to pick them up | No |
-| Any other | `--agent <name>` flag; see [`docs/AGENTS.md`](docs/AGENTS.md) | No |
-
-OpenCode, Amp and Hermes use a plugin model rather than a hook command. Miku installs the plugin file into `~/.config/opencode/plugins/`, `~/.config/amp/plugins/` and `~/.hermes/plugins/miku/` respectively. On Windows and Linux the plugins start the `miku-hook` relay directly — see [`windows/README.md`](windows/README.md#supported-agents).
-
-Agents running on a server (VS Code Remote - SSH, an SSH environment in the Claude app, Codex on a dev box) can reach Miku on your Mac through an SSH tunnel: see [`docs/REMOTE.md`](docs/REMOTE.md).
+Agents on a server can reach Miku through an SSH tunnel: see [`docs/REMOTE.md`](docs/REMOTE.md).
 
 ## Things to try
 
 | Do this | Miku does that |
 |---|---|
-| Hover the notch (top edge on Windows and Linux) | peeks out and says hi 👋 |
-| Click it | opens |
+| Hover the top edge of the screen | peeks out and says hi 👋 |
+| Click the island | opens her stage |
 | Hover Miku | blinks, eyes grow |
 | Click Miku | squish + annoyed |
 | Click 3 times fast | 😵‍💫 dizzy for a few seconds |
-| Drag a file onto the island | turns into a box and swallows it |
-| Drag Miku onto a window *(macOS)* | attaches it as context |
-| Click the model name above the chat box *(macOS)* | switch AI provider or model |
-| Say « OK Miku, play some music » *(macOS)* | listens, thinks, and does it |
-| Hold right ⌥ and speak, in any app *(macOS)* | Miku listens in the pill, your words are pasted |
-| Hover the pill at the bottom of the screen *(macOS)* | opens a toolbar: dictate, record a call, open Miku |
+| Swipe or press ← / → on the overview | the next pill's slide, with a little "mi-ku" |
+| Drag a file onto the island | swallows it |
+| Right-click Miku | the wardrobe: classic, Snow or Sakura |
+| Hold right Ctrl and speak, in any app | your words are pasted |
 
 ## How it works
 
-**macOS**
-
-- **Island**: a borderless `NSPanel` hugging the notch, driven by a small state machine (`hidden → petit → home`).
-- **Character**: drawn in SwiftUI `Canvas` + `TimelineView` at 60 fps — squircle body, eyes projected on a sphere, spring animations. No Rive, no Lottie, no images.
-- **Claude Code**: a tiny `nb-hook` script receives hook events and forwards them over a Unix socket to the app. For approvals it waits for your click, then answers the hook.
-- **Integrations**: lightweight pollers, paused when nothing is watching.
-- **Declared pills**: `PillCatalog.swift` is the single source of truth — every pill (coding tools, agents, AI providers, services) is declared there with its ID, color and category.
-- **Sounds**: 28 short WAVs played through preloaded `AVAudioPlayer`s.
-
-The macOS app is native Swift 6 / SwiftUI / AppKit with **zero third-party dependencies**.
-
-**iPhone**
-
-- A native SwiftUI app sharing Mochi's engine, the pills and the diff engine with the Mac through `KanonKit`.
-- The Mac publishes sessions, turns and services to a private CloudKit zone in your iCloud (sensitive fields encrypted with your iCloud keys); the iPhone reads them and writes back decisions, answers and instructions, which the Mac only applies when they match what it is waiting on.
-- Live Activities are started and updated by APNs pushes through [`relay/`](relay/), a stateless Cloudflare Worker that holds the APNs key and only sees the agent's name and state.
-
-**Windows**
-
-- A [Tauri 2](https://tauri.app) app (Rust + TypeScript): the island is a transparent, always-on-top window that never steals focus, Miku is drawn in Canvas 2D with the same shapes, timings and sounds as on the Mac.
-- Claude Code hooks go through a tiny `miku-hook.exe` and a named pipe; keys live in Windows Credential Manager.
-- Details and differences in [`windows/README.md`](windows/README.md).
-
-**Linux**
-
-- The same Tauri app as Windows. On Wayland the island is a gtk-layer-shell
-  overlay anchored to the top edge, and click-through is its input region.
-- Claude Code hooks go through the same `miku-hook`, over a Unix socket in
-  `$XDG_RUNTIME_DIR`; keys live in the Secret Service.
+- A [Tauri 2](https://tauri.app) app (Rust + TypeScript). The island is a transparent, always-on-top window that never steals focus; on Wayland it is a gtk-layer-shell overlay.
+- Miku is drawn in Canvas 2D by [`windows/src/mochi/engine.ts`](windows/src/mochi/engine.ts); her three looks are palettes in [`variants.ts`](windows/src/mochi/variants.ts). The app icon and every picture in this README are renders of that same engine.
+- Agent hooks go through a tiny `miku-hook` relay, over the named pipe `\\.\pipe\miku-<sid>` on Windows or a Unix socket in `$XDG_RUNTIME_DIR` on Linux. If the app doesn't answer, the hook exits at once: Miku never blocks your agent.
 
 ## Contributing
 
-Issues and PRs are very welcome — new integrations, new emotes, new sounds, bug fixes. See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Want to add or improve a translation? Open a PR with changes to `NotchBuddy/Resources/Localizable.xcstrings`.
+Issues and PRs are welcome: new integrations, new emotes, new sounds, bug fixes. See [CONTRIBUTING.md](CONTRIBUTING.md). Add a string in English first, then translate it in `extra.json`.
 
 ## Credits
 
-**Miku is a fork of [Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app and its macOS code with Claude Code. Everything here started as his work: Miku is an edited, rebranded fork of it, maintained by [FinDArata](https://github.com/FinDArata), rebuilt for Windows and Linux. The upstream name and the Mochi character remain his — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
-
-Thanks to everyone who sent a pull request — see [contributors](https://github.com/FinDArata/Miku/graphs/contributors).
-Inspired by the notch-companion concepts shared by design studios — this project is independent and not affiliated with any of them.
+Miku is a fork of **[Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app. This fork is maintained by [FinDArata](https://github.com/FinDArata) and rebuilt around Windows, Linux and Miku. The original macOS code still lives in `NotchBuddy/` under its upstream names; its history is in [docs/CHANGELOG-COUCOU.md](docs/CHANGELOG-COUCOU.md).
 
 ## License
 
-- **Code:** [MIT](LICENSE) — use it, fork it, learn from it, just keep the copyright notice.
-- **Name, Miku character, icon, sounds and media:** © Louis Raillé, all rights reserved — see [LICENSE-ASSETS.md](LICENSE-ASSETS.md). Shipping your own fork? Give it your own name and character.
+- **Code:** [MIT](LICENSE).
+- **Hatsune Miku** is © Crypton Future Media, INC., used under the [Piapro Character License](https://piapro.net/en_for_creators.html). This build is non-commercial and is not official, sponsored or endorsed by Crypton Future Media. The chibi here is drawn by this project's own code; no official artwork is included.
+- **The upstream Coucou name and the Mochi character** remain © Louis Raillé.
+
+Details in [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
 
 <div align="center">
 
 **If Miku made you smile, a ⭐ helps a lot.**
-
-[Website](https://louis-cfm.github.io/kanon/) · [Privacy](https://louis-cfm.github.io/kanon/privacy.html) · [Terms](https://louis-cfm.github.io/kanon/terms.html) · [Support](https://louis-cfm.github.io/kanon/support.html)
 
 </div>
