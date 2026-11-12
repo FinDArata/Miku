@@ -6,7 +6,7 @@ const KUROMOJI_DIR = resolve(__dirname, "node_modules/@sglkc/kuromoji/dict");
 
 // ───────────────────────────────────────────────────────────────────────────────
 // THE one and only place the shared sound folder is declared.
-// Kanon's 29 WAVs are GENERATED (scripts/gen-sounds.mjs --style=chimes) into
+// Kanon's 30 WAVs are GENERATED (scripts/gen-sounds.mjs --style=chimes) into
 // windows/sounds/ — composed in code, like the icons; no binary assets in git.
 export const SOUNDS_DIR = resolve(__dirname, "sounds");
 // ───────────────────────────────────────────────────────────────────────────────

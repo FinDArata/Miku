@@ -238,7 +238,8 @@ export class Island {
       foldApproval: () => this.foldApproval(),
       setFocus: (id) => {
         State.setFocus(id);
-        Sound.play("blip");
+        // Another slide: Miku sings it in ("mi-ku", scripts/gen-sounds.mjs).
+        Sound.play("slide");
         // A pill with a waiting request opens on its card: going back to it
         // after looking at another pill brings the card up again.
         const req = State.pendingApproval;
@@ -316,6 +317,11 @@ export class Island {
         State.notify();
       },
       openSettingsWindow: () => void Bridge.openSettingsWindow(),
+      toggleSlide: (id) => {
+        State.toggleIntegration(id);
+        void Bridge.saveSettings(State.settings);
+        Sound.play("blip");
+      },
       blip: () => Sound.play("blip"),
       chooseOutfit: (selection) => {
         if (parseOutfit(State.settings.mochiOutfit) === selection) return;
@@ -496,6 +502,8 @@ export class Island {
     const prev = State.mode;
     if (mode === prev) return;
     State.mode = mode;
+    // The stylesheet dresses the open island as a stage (style.css, "Stage").
+    this.islandEl.dataset.mode = mode;
     if (mode === "expanded") Sound.play("open");
     if (prev === "expanded") {
       Sound.play("close");

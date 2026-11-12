@@ -7,12 +7,12 @@ import { ICONS } from "./icons";
 import { Ticker } from "./ticker";
 import { State, type AgentTask } from "../core/state";
 import { washRGBA, type IslandViewName, type Wash } from "../core/layout";
-import { createMiniBot, pruneMiniBots } from "../mochi/minibots";
 import { buildPrompt } from "./chat";
 import { buildChoose, buildUpload, buildUploading } from "./upload";
 import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
 import { highlightRow, listRows, openRow } from "./github";
-import { pillDefinition, sessionSubtitle } from "../core/pills";
+import { MAX_DECLARED, declarablePills, pillDefinition, sanitizeDeclared, sessionSubtitle } from "../core/pills";
+import { pillColor } from "../core/pill-colors";
 import {
   PlanCard, buildPlanPill, claudePillVisible, codexPillVisible, planCardOpen, refreshCodexPlanUsage,
 } from "./usage";
@@ -23,7 +23,7 @@ import { buildRecap } from "./recap";
 import { buildWardrobe } from "./wardrobe";
 import { buildUpdate } from "./update";
 import { buildWhatsNew } from "./whatsnew";
-import { buildSpotifyCard, buildSpotifyPill, type SpotifyPillHost } from "./spotify";
+import { buildSpotifyCard } from "./spotify";
 import { SPOTIFY_ID } from "../core/spotify";
 import { buildWhatsAppCard } from "./whatsapp";
 import { buildSystemCard, SYSTEM_ID } from "./system";
@@ -69,6 +69,8 @@ export interface ViewActions {
   keyboard(on: boolean): void;
   /** Something is being typed in a card: the island stays open until it is sent or cleared. */
   holdOpen(on: boolean): void;
+  /** Turns one pill's slide on or off (declares it, as Settings does), and keeps it. */
+  toggleSlide(id: string): void;
 }
 
 export interface ViewHost {
@@ -143,10 +145,26 @@ export function buildHeader(actions: ViewActions): ViewHost {
     actions.setView(v);
   }
 
+  // The overview's pager: one dot per slide, the arrows, and Edit to choose them.
+  const prevBtn = h("button", { class: "pager-step", title: tl("Previous"), onclick: () => stepSlide(actions, -1) }, svg(ICONS.chevronLeft, 9));
+  const nextBtn = h("button", { class: "pager-step", title: tl("Next"), onclick: () => stepSlide(actions, 1) }, svg(ICONS.chevronRight, 9));
+  const dots = h("div", { class: "pager-dots" });
+  const editBtn = h("button", {
+    class: "pager-edit",
+    onclick: () => {
+      actions.blip();
+      slideEditing = !slideEditing;
+      State.notify();
+    },
+  });
+  const pager = h("div", { class: "pager" }, prevBtn, dots, nextBtn, editBtn);
+  let pagerKey = "";
+
   const el = h(
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabChat, tabDrop),
+    pager,
     h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn, closeBtn),
   );
   const headerActions = el.lastElementChild as HTMLElement;
@@ -164,10 +182,38 @@ export function buildHeader(actions: ViewActions): ViewHost {
       clear(soundBtn);
       soundBtn.append(svg(State.settings.soundEnabled ? ICONS.speakerLine : ICONS.speakerSlashLine, 18, { stroke: 1.6 }));
       closeBtn.style.display = State.pendingApproval ? "none" : "";
+      pager.style.display = v === "overview" ? "" : "none";
+      if (v === "overview") syncPager();
       syncPlanPills();
       el.style.opacity = v === "confused" ? "0" : "1";
     },
   };
+
+  function syncPager() {
+    const focus = State.focusTask?.id ?? null;
+    const key = State.tasks.map((t) => `${t.id}:${t.color}:${t.pillBadge ?? ""}:${t.name}`).join("|") +
+      `~${focus}~${slideEditing}~${language()}`;
+    if (key === pagerKey) return;
+    pagerKey = key;
+    clear(dots);
+    for (const task of State.tasks) {
+      const b = h("button", {
+        class: `pager-dot${task.id === focus ? " on" : ""}${task.pillBadge ? ` badge-${task.pillBadge}` : ""}`,
+        title: slideLabel(task),
+        onclick: () => actions.setFocus(task.id),
+      });
+      b.style.setProperty("--pill", task.color);
+      dots.append(b);
+    }
+    const i = State.tasks.findIndex((t) => t.id === focus);
+    prevBtn.toggleAttribute("disabled", slideEditing || i <= 0);
+    nextBtn.toggleAttribute("disabled", slideEditing || i < 0 || i >= State.tasks.length - 1);
+    dots.classList.toggle("dim", slideEditing);
+    editBtn.classList.toggle("on", slideEditing);
+    editBtn.title = slideEditing ? t("Done") : t("Edit");
+    clear(editBtn);
+    editBtn.append(svg(slideEditing ? ICONS.check : ICONS.stack, 11, { stroke: slideEditing ? 2.4 : 0 }));
+  }
 
   function syncPlanPills() {
     const claudeOn = claudePillVisible();
@@ -210,15 +256,14 @@ function buildOverview(actions: ViewActions): ViewHost {
     svg(ICONS.arrowUpRight, 12),
   );
   const left = card(null, leftBody, jump);
-  const pills = h("div", { class: "pills" });
-  const right = card(null, pills);
+  // Edit: every pill that can have a slide, each switched on or off here.
+  const editPanel = h("div", { class: "slide-edit" });
   // Opened from a plan pill in the header: stands in for the left card.
   const plan = new PlanCard();
   let planTimer: number | null = null;
   // Spotify's card and pill are kept and updated in place: the progress bar
   // runs on, and a slider being dragged must not be rebuilt under the pointer.
   const spotifyCard = buildSpotifyCard();
-  let spotifyPill: SpotifyPillHost | null = null;
   // WhatsApp's card too: its reply field keeps the draft and the keyboard while messages arrive.
   // Mail's card too (classic Outlook): the search field keeps its text and the keyboard.
   const mailCard = buildMailCard({ keyboard: (on) => actions.keyboard(on) });
@@ -231,35 +276,139 @@ function buildOverview(actions: ViewActions): ViewHost {
     holdOpen: (on) => actions.holdOpen(on),
   });
 
-  const el = h("div", { class: "view overview" },
-    h("div", { class: "left" }, left),
-    h("div", { class: "right" }, right),
-  );
+  const el = h("div", { class: "view overview" }, h("div", { class: "left" }, left));
 
-  let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "system" | null = null;
+  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "system" | "edit" | null = null;
   let cardKey = "";
   /** The list row highlighted at the last sync, to scroll only when it moves. */
   let shownSelection: number | null = null;
 
-  // Leaving the overview or folding the island closes the diff, as on macOS.
+  // Leaving the overview or folding the island closes the diff, as on macOS,
+  // and ends choosing the slides.
   State.subscribe(() => {
-    if (activeDiffId != null && (State.view !== "overview" || State.mode !== "expanded")) {
+    if (State.view !== "overview" || State.mode !== "expanded") {
       activeDiffId = null;
+      slideEditing = false;
     }
   });
-  // Escape steps back out of the diff before it closes the island.
+  // Escape steps back out of the diff, or out of Edit, before it closes the island.
   window.addEventListener(
     "keydown",
     (e) => {
-      if (e.key !== "Escape" || activeDiffId == null || State.view !== "overview") return;
+      if (e.key !== "Escape" || State.view !== "overview") return;
+      if (slideEditing) {
+        e.stopImmediatePropagation();
+        slideEditing = false;
+        State.notify();
+        return;
+      }
+      if (activeDiffId == null) return;
       e.stopImmediatePropagation();
       closeDiff();
     },
     true,
   );
+
+  // ── Slides: swipe, drag or ←/→ to the next pill ──
+  /** Plays the slide arriving from `dir` (1: from the right). */
+  function slideIn(dir: number, cls = "slide") {
+    leftBody.classList.remove("slide-next", "slide-prev", "edge-next", "edge-prev");
+    void leftBody.offsetWidth; // restarts the animation
+    leftBody.classList.add(`${cls === "edge" ? "edge" : "slide"}-${dir > 0 ? "next" : "prev"}`);
+  }
+  function go(dir: 1 | -1) {
+    if (!stepSlide(actions, dir)) slideIn(dir, "edge");
+  }
+
+  // A trackpad's sideways swipe (or Shift + wheel): one slide per gesture.
+  let wheelAcc = 0;
+  let wheelAt = 0;
+  let wheelLock = 0;
+  left.addEventListener("wheel", (e) => {
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0;
+    if (!d || slideEditing) return;
+    e.preventDefault();
+    const now = performance.now();
+    if (now - wheelAt > 220) wheelAcc = 0;
+    wheelAt = now;
+    if (now < wheelLock) return;
+    wheelAcc += d;
+    if (Math.abs(wheelAcc) < 40) return;
+    go(wheelAcc > 0 ? 1 : -1);
+    wheelAcc = 0;
+    wheelLock = now + 450;
+  }, { passive: false });
+
+  // Dragging the stage sideways, like a phone. Never from a control, nor from
+  // Miku's own spot (pressing her there picks her up to carry her out).
+  const MIKU_ZONE = 108;
+  const SWIPE = 60;
+  let drag: { x: number; dx: number } | null = null;
+  left.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || slideEditing) return;
+    if (e.clientX - left.getBoundingClientRect().left < MIKU_ZONE) return;
+    if ((e.target as Element).closest("button, a, input, textarea, select, [contenteditable], [role=slider]")) return;
+    drag = { x: e.clientX, dx: 0 };
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    drag.dx = e.clientX - drag.x;
+    if (Math.abs(drag.dx) < 6) return;
+    leftBody.style.transition = "none";
+    leftBody.style.transform = `translateX(${drag.dx * 0.35}px)`;
+  });
+  window.addEventListener("pointerup", () => {
+    if (!drag) return;
+    const dx = drag.dx;
+    drag = null;
+    leftBody.style.transition = "";
+    leftBody.style.transform = "";
+    if (Math.abs(dx) >= SWIPE) go(dx < 0 ? 1 : -1);
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if (State.view !== "overview" || State.mode !== "expanded" || slideEditing) return;
+    if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
+    if ((e.target as Element | null)?.closest?.("input, textarea, [contenteditable]")) return;
+    e.preventDefault();
+    go(e.key === "ArrowRight" ? 1 : -1);
+  });
+
+  function renderEdit() {
+    clear(editPanel);
+    const d = sanitizeDeclared(State.settings, State.os);
+    const main = pillDefinition(d.mainPill);
+    // The main pill first, then the slides that are on (in their order), then the rest.
+    const rest = declarablePills(State.os).filter((p) => p.id !== d.mainPill);
+    const rank = (id: string) => (d.activeIntegrations.includes(id) ? d.activeIntegrations.indexOf(id) : MAX_DECLARED);
+    const defs = [...(main ? [main] : []), ...rest.sort((a, b) => rank(a.id) - rank(b.id))];
+    const note = h("div", { class: "slide-edit-note", text: `${d.activeIntegrations.length + 1}/${MAX_DECLARED + 1}` });
+    const grid = h("div", { class: "slide-edit-grid" });
+    for (const def of defs) {
+      const isMain = def.id === d.mainPill;
+      const on = isMain || d.activeIntegrations.includes(def.id);
+      const chip = h("button", {
+        class: `slide-chip${on ? " on" : ""}${isMain ? " main" : ""}`,
+        title: def.name,
+        onclick: () => {
+          // The main pill always has its slide: it is changed in Settings.
+          if (isMain) return;
+          if (!on && d.activeIntegrations.length >= MAX_DECLARED) {
+            note.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_DECLARED, name: def.name });
+            note.classList.add("warn");
+            return;
+          }
+          actions.toggleSlide(def.id);
+        },
+      }, h("i"), h("span", { text: def.name }));
+      chip.style.setProperty("--pill", pillColor(def.id, def.color, State.settings.pillColors));
+      grid.append(chip);
+    }
+    editPanel.append(grid, note);
+  }
 
   const hooks: IntegrationCardHooks = {
     get detailOpen() {
@@ -322,11 +471,32 @@ function buildOverview(actions: ViewActions): ViewHost {
     sync() {
       const task = State.focusTask;
       if (task?.id !== lastFocus) {
+        const from = State.tasks.findIndex((x) => x.id === lastFocus);
+        const to = State.tasks.findIndex((x) => x.id === task?.id);
+        if (from >= 0 && to >= 0) slideIn(to > from ? 1 : -1);
         lastFocus = task?.id ?? null;
         detailOpen = false;
         activeDiffId = null;
         cardKey = "";
         mode = null;
+      }
+
+      if (slideEditing) {
+        const key = `edit~${State.settings.mainPill}~${State.settings.activeIntegrations.join(",")}~${language()}`;
+        if (mode !== "edit" || key !== cardKey) {
+          mode = "edit";
+          cardKey = key;
+          renderEdit();
+          clear(leftBody);
+          leftBody.append(editPanel);
+        }
+        jump.style.display = "none";
+        State.cardItemCount = 0;
+        return;
+      }
+      if (mode === "edit") {
+        mode = null;
+        cardKey = "";
       }
 
       // A workspace or agent pill with a live session keeps the ticker; every
@@ -447,23 +617,6 @@ function buildOverview(actions: ViewActions): ViewHost {
       highlightRow(rows, State.cardSelection, State.cardSelection !== shownSelection);
       shownSelection = State.cardSelection;
 
-      const others = State.otherTasks.slice(0, 4);
-      const pillKey = others.map((t) => `${t.id}:${t.color}:${t.pillBadge ?? ""}`).join("|");
-      if (pillKey !== pillIds) {
-        pillIds = pillKey;
-        clear(pills);
-        spotifyPill = null;
-        for (const t of others) {
-          if (t.id === SPOTIFY_ID) {
-            spotifyPill = buildSpotifyPill(t, () => actions.setFocus(t.id));
-            pills.append(spotifyPill.el);
-          } else {
-            pills.append(buildPill(t, actions));
-          }
-        }
-        pruneMiniBots();
-      }
-      spotifyPill?.sync();
     },
   };
 }
@@ -482,46 +635,23 @@ export function hasSessionTicker(task: AgentTask): boolean {
   return isSession && (task.state !== "idle" || task.steps.length > 0);
 }
 
-function buildPill(task: AgentTask, actions: ViewActions): HTMLElement {
-  const label = task.id === "integration_claude" ? pillDefinition(task.id)!.name : task.name;
-  const canvas = createMiniBot(task, 24);
-  const pill = h(
-    "div",
-    { class: "pill", onclick: () => actions.setFocus(task.id) },
-    canvas,
-    h("span", { class: "lbl", text: label }),
-  );
-  pill.style.borderColor = `${task.color}24`;
-  pill.addEventListener("mouseenter", () => {
-    pill.style.background = `${task.color}2e`;
-    pill.style.borderColor = `${task.color}8c`;
-    pill.style.boxShadow = `0 2px 10px ${task.color}59`;
-    (pill.querySelector(".lbl") as HTMLElement).style.color = lighten(task.color, 0.3);
-  });
-  pill.addEventListener("mouseleave", () => {
-    pill.style.background = "";
-    pill.style.borderColor = `${task.color}24`;
-    pill.style.boxShadow = "";
-    (pill.querySelector(".lbl") as HTMLElement).style.color = "";
-  });
+// ── Slides ────────────────────────────────────────────────────────────────────
 
-  if (task.pillBadge) {
-    const colors = { approval: "#F5A524", finished: "#22C55E", error: "#F4505E" } as const;
-    const icons = { approval: ICONS.bang, finished: ICONS.check, error: ICONS.xmark } as const;
-    const inner = h("i", { style: `background:${colors[task.pillBadge]}` }, svg(icons[task.pillBadge], 6, { stroke: task.pillBadge === "finished" ? 3 : 0 }));
-    const badge = h("div", { class: "pill-badge" }, inner);
-    badge.style.boxShadow = `0 0 4px ${colors[task.pillBadge]}99`;
-    pill.append(badge);
-  }
-  return pill;
+/** The overview's slides are being chosen (the pager's Edit). */
+let slideEditing = false;
+
+/** What a slide is called in the pager: its pill's name. */
+function slideLabel(task: AgentTask): string {
+  return task.id === "integration_claude" ? pillDefinition(task.id)!.name : task.name;
 }
 
-function lighten(hex: string, amount: number): string {
-  const v = parseInt(hex.replace("#", ""), 16);
-  const c = [(v >> 16) & 255, (v >> 8) & 255, v & 255].map((x) =>
-    Math.min(255, Math.round(x + amount * 255)),
-  );
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
+/** Shows the next (1) or previous (-1) slide; false at either end. */
+function stepSlide(actions: ViewActions, dir: 1 | -1): boolean {
+  const i = State.tasks.findIndex((x) => x.id === State.focusTask?.id);
+  const next = State.tasks[i + dir];
+  if (i < 0 || !next) return false;
+  actions.setFocus(next.id);
+  return true;
 }
 
 // ── Empty ─────────────────────────────────────────────────────────────────────

@@ -141,6 +141,36 @@ body {
   border-radius: inherit;
 }
 
+/* ── Stage ───────────────────────────────────────────────────────────────
+   Open, the island is the greeting's stage: lit from above in the skin's
+   colour, with a row of footlights along its front edge. Closed, it stays
+   the plain black of the notch. */
+
+#island[data-mode="expanded"] {
+  background:
+    radial-gradient(90% 120% at 50% -30%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.13), transparent 62%),
+    linear-gradient(180deg, #040506 0%, #0a0c0f 100%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(var(--skin-accent-rgb, 57, 197, 187), 0.32);
+}
+
+#island[data-mode="expanded"] #island-clip::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 2px;
+  height: 6px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.95) 0 1px, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.22) 1.5px, transparent 3px)
+    center / 24px 6px repeat-x;
+  opacity: 0.55;
+  animation: footlights 4s ease-in-out infinite;
+}
+
+@keyframes footlights {
+  50% { opacity: 0.8; }
+}
+
 #bot-canvas,
 #greeting-canvas {
   position: absolute;
@@ -347,6 +377,7 @@ body {
 }
 
 #header {
+  position: relative;
   height: 34px;
   flex: 0 0 34px;
   display: flex;
@@ -357,30 +388,35 @@ body {
 
 .tabs {
   display: flex;
-  gap: 5px;
-  padding-left: 14px;
+  gap: 2px;
+  margin-left: 12px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .tab {
-  width: 30px;
+  width: 32px;
   height: 22px;
   display: grid;
   place-items: center;
   border: 0;
   background: transparent;
-  border-radius: 11px;
-  color: var(--dim-2);
+  border-radius: 999px;
+  color: var(--dim-3);
   cursor: default;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .tab:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #b0b5be;
+  color: var(--ink);
 }
 
 .tab.on {
-  background: var(--tab-on);
-  color: var(--ink);
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.16);
+  color: var(--miku-bright);
+  box-shadow: inset 0 0 0 1px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.38), 0 0 12px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.22);
 }
 
 .header-actions {
@@ -393,14 +429,23 @@ body {
 .header-actions button {
   border: 0;
   background: transparent;
-  color: var(--dim-2);
+  color: var(--dim-3);
   display: grid;
   place-items: center;
   cursor: default;
+  transition: color 0.15s;
+}
+
+.header-actions button:hover {
+  color: var(--miku-bright);
+}
+
+.header-actions button.close:hover {
+  color: var(--red-text);
 }
 
 .header-actions button.on {
-  color: var(--ink);
+  color: var(--miku-bright);
 }
 
 #views {
@@ -413,16 +458,17 @@ body {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(0.97);
+  transform: translateY(8px);
   pointer-events: none;
   transition: opacity 0.16s ease-in;
 }
 
+/* A view comes up onto the stage, the way she does in the greeting. */
 .view.on {
   opacity: 1;
-  transform: scale(1);
+  transform: none;
   pointer-events: auto;
-  transition: opacity 0.3s ease-out 0.16s, transform 0.3s cubic-bezier(0.3, 1.2, 0.4, 1) 0.16s;
+  transition: opacity 0.28s ease-out 0.14s, transform 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) 0.14s;
 }
 
 /* A view that is not on is only transparent, not gone: an infinite animation
@@ -437,11 +483,25 @@ body {
 .card {
   position: relative;
   height: 100%;
-  border-radius: 20px;
-  background: var(--card);
-  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.012) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
+
+/* The overview's left card is where she stands: a spotlight falls on her mark. */
+.overview > .left > .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(64px 26px at 58px 100%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.3), transparent 75%),
+    conic-gradient(from 180deg at 58px -10px, transparent 162deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.11) 172deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.11) 188deg, transparent 198deg);
+}
+
+
 
 .card.wash::after {
   content: "";
@@ -486,17 +546,25 @@ body {
 }
 
 .btn.primary {
-  background: var(--ink);
-  color: #0b0c0e;
+  background: var(--miku);
+  color: var(--on-miku);
+  font-weight: 600;
+  box-shadow: 0 0 14px var(--miku-glow);
+}
+
+.btn.primary:hover {
+  background: var(--miku-bright);
 }
 
 .btn.secondary {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
   color: var(--ink-2);
 }
 
 .btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 1px var(--miku-line);
+  background: var(--miku-tint);
 }
 
 .btn .kbd {
@@ -535,19 +603,215 @@ body {
 
 /* ── Overview ───────────────────────────────────────────────────────────── */
 
+/* The stage runs the whole width of the island, Miku on her mark at its left
+   and one pill's slide beside her. The pager in the header, a sideways swipe,
+   a drag or ←/→ move to the next slide. */
 .overview {
-  display: flex;
-  gap: 10px;
   height: 100%;
 }
 
 .overview > .left {
-  flex: 0 0 322px;
-  width: 322px;
+  height: 100%;
 }
 
-.overview > .right {
+.left-body {
+  height: 100%;
+  transition: transform 0.25s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.left-body.slide-next { animation: slide-next 0.34s cubic-bezier(0.2, 1, 0.3, 1); }
+.left-body.slide-prev { animation: slide-prev 0.34s cubic-bezier(0.2, 1, 0.3, 1); }
+.left-body.edge-next { animation: edge-next 0.3s ease-out; }
+.left-body.edge-prev { animation: edge-prev 0.3s ease-out; }
+
+@keyframes slide-next { from { opacity: 0; transform: translateX(46px); } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(-46px); } }
+/* At the last slide: a small push that comes back. */
+@keyframes edge-next { 40% { transform: translateX(-10px); } }
+@keyframes edge-prev { 40% { transform: translateX(10px); } }
+
+/* ── Pager ──────────────────────────────────────────────────────────────── */
+
+.pager {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.pager button:focus-visible {
+  outline: 1px solid var(--miku-line);
+}
+
+.pager button {
+  border: 0;
+  background: transparent;
+  cursor: default;
+  display: grid;
+  place-items: center;
+}
+
+.pager-step {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--dim-3);
+  transition: color 0.15s, background 0.15s;
+}
+
+.pager-step:hover:not([disabled]) {
+  color: var(--miku-bright);
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.12);
+}
+
+.pager-step[disabled] {
+  opacity: 0.3;
+}
+
+.pager-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+  transition: opacity 0.2s;
+}
+
+.pager-dots.dim {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.pager .pager-dot {
+  --pill: #9398a1;
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--pill) 45%, rgba(255, 255, 255, 0.15));
+  transition: width 0.25s cubic-bezier(0.2, 1.2, 0.4, 1), background 0.2s, box-shadow 0.2s;
+}
+
+.pager .pager-dot:hover {
+  background: var(--pill);
+}
+
+.pager .pager-dot.on {
+  width: 18px;
+  background: var(--pill);
+  box-shadow: 0 0 8px var(--pill);
+}
+
+/* A slide that wants a look: a ring in the badge's colour (was the pill's badge). */
+.pager .pager-dot.badge-approval { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #f5a524; }
+.pager .pager-dot.badge-finished { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #22c55e; }
+.pager .pager-dot.badge-error { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #f4505e; }
+
+.pager-edit {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: var(--dim-3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.pager-edit:hover {
+  color: var(--miku-bright);
+}
+
+.pager-edit.on {
+  color: var(--on-miku);
+  background: var(--miku);
+  box-shadow: 0 0 10px var(--miku-glow);
+}
+
+/* ── Choosing the slides (Edit) ─────────────────────────────────────────── */
+
+.slide-edit {
+  height: 100%;
+  padding: 8px 12px 6px 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slide-edit-grid {
   flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 20px;
+  gap: 4px;
+  align-content: start;
+}
+
+.slide-chip {
+  --pill: #9398a1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--dim-3);
+  font: 600 10.5px var(--font);
+  cursor: default;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+
+.slide-chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slide-chip i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pill) 60%, transparent);
+}
+
+.slide-chip:hover {
+  color: var(--ink);
+}
+
+.slide-chip.on {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--pill) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pill) 50%, transparent);
+}
+
+.slide-chip.on i {
+  background: var(--pill);
+  box-shadow: 0 0 6px var(--pill);
+}
+
+/* The main pill always has a slide: shown on, not switchable here. */
+.slide-chip.main {
+  opacity: 0.75;
+}
+
+.slide-edit-note {
+  font: 500 10.5px var(--font);
+  color: var(--dim-3);
+}
+
+.slide-edit-note.warn {
+  color: var(--amber);
 }
 
 .card-body {
@@ -813,17 +1077,32 @@ body {
   padding: 0 8px;
 }
 
+/* Each agent is a channel strip: its colour as a lit bar on the left edge. */
 .pill {
+  --pill: #9398a1;
   position: relative;
   height: 28px;
-  border-radius: 999px;
-  background: var(--card-flat);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(8, 9, 11, 0.72);
+  border: 1px solid color-mix(in srgb, var(--pill) 20%, transparent);
   display: flex;
   align-items: center;
   cursor: default;
   transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), background 0.18s, border-color 0.18s,
     box-shadow 0.18s, filter 0.18s;
+}
+
+.pill::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--pill);
+  box-shadow: 0 0 6px var(--pill);
+  opacity: 0.85;
 }
 
 .pill .mini {
@@ -834,19 +1113,27 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  text-align: center;
-  font: 600 10px var(--font);
-  color: var(--dim-3);
+  text-align: left;
+  font: 600 10.5px var(--font);
+  letter-spacing: 0.02em;
+  color: var(--dim-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 8px 0 34px;
+  padding: 0 8px 0 36px;
   pointer-events: none;
+  transition: color 0.18s;
 }
 
 .pill:hover {
-  transform: scale(1.04);
-  filter: brightness(1.06);
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--pill) 15%, rgba(8, 9, 11, 0.72));
+  border-color: color-mix(in srgb, var(--pill) 55%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--pill) 30%, transparent);
+}
+
+.pill:hover .lbl {
+  color: color-mix(in srgb, var(--pill) 55%, white);
 }
 
 .pill-badge {
@@ -1667,6 +1954,90 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 6px;
   min-width: 0;
   padding-right: 24px;
+}
+
+/* ── Slide content ───────────────────────────────────────────────────────
+   A pill's own slide reads like a title card: what kind of pill it is as a
+   small spaced-out line, its name large in its own colour's light, the state
+   as a chip, and what can be done as capsules. List cards keep their rows. */
+
+/* Title on top; the state chip and the capsules share the line under it. */
+.int-card.idle {
+  --pill: var(--miku);
+  padding-top: 10px;
+  flex-flow: row wrap;
+  align-items: center;
+  align-content: flex-start;
+  column-gap: 6px;
+}
+
+.int-card.idle > .int-head {
+  flex-basis: 100%;
+  margin-bottom: 8px;
+}
+
+.int-card.idle .int-head {
+  flex-wrap: wrap;
+  row-gap: 1px;
+  column-gap: 7px;
+}
+
+.int-card.idle .int-head > span {
+  order: -1;
+  flex-basis: 100%;
+  font: 700 8.5px var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pill) 70%, var(--dim-3));
+}
+
+.int-card.idle .int-head b {
+  font: 700 17px var(--font);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--pill) 45%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.int-card.idle .int-head > .dot {
+  width: 8px !important;
+  height: 8px !important;
+  box-shadow: 0 0 8px var(--pill);
+}
+
+.int-card.idle .int-status {
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  font: 500 10.5px var(--font);
+  color: var(--dim-2);
+}
+
+.int-card.idle .int-actions {
+  gap: 6px;
+  padding-top: 0;
+}
+
+.int-card.idle .int-actions .link-btn {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font: 600 10.5px var(--font);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 32%, transparent);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.int-card.idle .int-actions .link-btn:hover {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 60%, transparent), 0 0 10px color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* A live session's slide: the agent's name a step larger than its tool. */
+.overview .who .name {
+  font: 700 13.5px var(--font);
 }
 
 .int-head b {

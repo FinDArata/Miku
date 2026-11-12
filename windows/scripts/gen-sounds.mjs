@@ -1,4 +1,4 @@
-// Composes the 29 Kanon sounds as WAVs — the set is generated, like the icons
+// Composes the 30 Kanon sounds as WAVs — the set is generated, like the icons
 // (gen-icons.mjs), so the repository carries no composed audio. Two styles,
 // both built:
 //
@@ -10,9 +10,9 @@
 //
 // Output: 22.05 kHz, 16-bit mono WAVs, each under a second. The chimes are
 // quiet and sit under 1 kHz, so the lower rate is inaudible and the files are
-// half the size — the installer carries 29 of them.
+// half the size — the installer carries 30 of them.
 //
-// Six of the 29 are then replaced by the spoken cues in ../voice/ (see
+// Six of the 30 are then replaced by the spoken cues in ../voice/ (see
 // scripts/voice-cues.mjs): a neural voice cannot be composed in code, so those
 // are recorded once and committed. They are laid over the chimes here, which is
 // what makes a fresh clone — and a release build — carry them with no extra
@@ -123,6 +123,74 @@ const pops = {
   yawn:     b => tone(b, 300, 0, 0.6, { slideTo: 175, vol: 0.16 }),
 };
 
+// ── a sung syllable, vocal-synth style ───────────────────────────────────────
+// Additive: every harmonic of the voice up to Nyquist, each weighted by how
+// close it sits to the vowel's formants, so the sound is a sung "i" or "u"
+// rather than a tone — and alias-free at any pitch. A light vibrato comes in
+// after the attack, as a vocal synth sings a held note.
+const VOWEL = {
+  // [frequency, bandwidth, gain] per formant
+  i: [[290, 70, 1], [2250, 110, 0.55], [3000, 160, 0.3]],
+  u: [[330, 80, 1], [850, 90, 0.5], [2250, 140, 0.12]],
+  m: [[260, 60, 1], [1050, 140, 0.08], [2300, 200, 0.04]], // the hum of an "m"
+};
+const formantGain = (fr, set) => set.reduce((g, [F, bw, a]) => g + a / (1 + ((fr - F) / bw) ** 2), 0);
+const lerpSet = (a, b, k) => a.map((f, j) => f.map((v, q) => v + (b[j][q] - v) * k));
+
+// `roll`: how fast the upper harmonics fall away (1 is a bright voice, more is softer);
+// `vib`: the vibrato's depth.
+function sing(b, f, t0, dur, vowel, { cons = "", vol = 1, from = 0, roll = 1, vib = 0.011 } = {}) {
+  const s = sec(t0), n = sec(dur), BLOCK = 64;
+  const consLen = cons === "m" ? sec(0.035) : cons === "k" ? sec(0.03) : 0;
+  let phase = 0;
+  for (let i0 = 0; i0 < n; i0 += BLOCK) {
+    // A short scoop up to the note, as a sung syllable starts.
+    const pitch = from ? from + (f - from) * Math.min(1, i0 / sec(0.05)) : f;
+    // The consonant shades into the vowel.
+    const mix = consLen ? Math.min(1, Math.max(0, (i0 - consLen * 0.5) / (consLen * 0.8))) : 1;
+    const set = cons === "m" ? lerpSet(VOWEL.m, VOWEL[vowel], mix) : VOWEL[vowel];
+    const H = Math.floor((SR / 2 - 200) / pitch);
+    const amps = [];
+    for (let h = 1; h <= H; h++) amps.push(formantGain(h * pitch, set) / h ** roll);
+    for (let i = i0; i < Math.min(n, i0 + BLOCK) && s + i < b.length; i++) {
+      const wob = 1 + vib * Math.sin(2 * Math.PI * 5.6 * i / SR) * Math.min(1, Math.max(0, (i - sec(0.06)) / sec(0.05)));
+      phase += 2 * Math.PI * pitch * wob / SR;
+      let v = 0;
+      for (let h = 0; h < amps.length; h++) v += amps[h] * Math.sin((h + 1) * phase);
+      const env = Math.min(1, i / sec(0.012)) * Math.min(1, (n - i) / sec(0.045));
+      // The "k" is breath before the voice: a click of noise, the voice held back.
+      const voiced = cons === "k" ? Math.min(1, Math.max(0, (i - consLen) / sec(0.012))) : 1;
+      b[s + i] += v * env * voiced * vol * (cons === "m" ? 0.55 + 0.45 * mix : 1);
+    }
+  }
+  if (cons === "k") {
+    let prev = 0;
+    for (let i = 0; i < consLen && s + i < b.length; i++) {
+      const w = Math.random() * 2 - 1;
+      const hp = w - prev; // a one-pole high-pass: the hiss, not the rumble
+      prev = w;
+      b[s + i] += hp * 0.18 * vol * Math.exp(-i / sec(0.01));
+    }
+  }
+}
+
+/** Scales a buffer so its loudest sample sits at `peak`. */
+function normalize(b, peak) {
+  let m = 0;
+  for (const v of b) m = Math.max(m, Math.abs(v));
+  if (m > 0) for (let i = 0; i < b.length; i++) b[i] *= peak / m;
+}
+
+// Changing slides: "mi-ku", sung up a fourth (A5 → D6), high and soft with a
+// clear vibrato, unhurried. Both styles share it.
+const slide = b => {
+  sing(b, N(21), 0, 0.18, "i", { cons: "m", from: N(19), roll: 1.3, vib: 0.02 });
+  sing(b, N(26), 0.171, 0.288, "u", { cons: "k", roll: 1.3, vib: 0.02 });
+  normalize(b, 0.32);
+};
+chimes.slide = slide;
+pops.slide = slide;
+
 // ── mix: chimes untuk momen penting, pop untuk yang ringan/negatif ────────────
 const MIX_CHIMES = new Set(["finish", "greeting", "greet", "approval", "approve", "question",
   "proud", "love", "think", "work", "sleep", "yawn", "search"]);
@@ -133,7 +201,7 @@ const pick = name => style === "chimes" ? chimes[name]
 const NAMES = ["peek", "open", "close", "hover", "blip", "slap", "annoyed", "dizzy", "greet",
   "work", "finish", "error", "approval", "question", "approve", "gulp", "tick", "send",
   "love", "pop", "proud", "wink", "yawn", "attach", "think", "search", "rate", "sleep",
-  "greeting"];
+  "greeting", "slide"];
 
 function wav(samples) {
   const pcm = Buffer.alloc(samples.length * 2);

@@ -147,7 +147,7 @@ function idleCard(task: AgentTask, openSettings: () => void): HTMLElement {
 
   return h(
     "div",
-    { class: "int-card" },
+    { class: "int-card idle", style: `--pill:${task.color}` },
     header(
       task.color,
       task.id === "integration_claude" ? def!.name : task.name,
@@ -381,7 +381,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
   const accent = success ? "#22C55E" : "#F4505E";
   return h(
     "div",
-    { class: "int-card" },
+    { class: "int-card idle", style: `--pill:${task.color}` },
     header("#F29B38", "n8n", t("Workflow")),
     h(
       "div",

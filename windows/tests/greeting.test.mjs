@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GREETING_END, GREETING_W, greetingPose, mochiBounds } from "../src/mochi/greeting.ts";
+import { FLOOR, GREETING_END, GREETING_W, greetingPose, mochiBounds } from "../src/mochi/greeting.ts";
 import { Tracked } from "../src/core/anim.ts";
 import { COMPACT_W, NOTCH_H, NOTCH_W, VIEW_LAYOUTS } from "../src/core/layout.ts";
 
@@ -18,8 +18,7 @@ function assertInside(t, tc, w, h) {
   const left = GREETING_W / 2 - w / 2;
   const right = GREETING_W / 2 + w / 2;
   const at = `t=${t.toFixed(3)} tc=${tc}`;
-  // No check on the top: he drops in from the edge of the screen, like out of
-  // the notch on a Mac, so his head is meant to come out of it.
+  // No check on the top: the island's own top edge is the screen's.
   assert.ok(b.bottom <= h + SLACK, `${at}: bottom ${b.bottom.toFixed(1)} below the island (${h.toFixed(1)})`);
   assert.ok(b.left >= left - SLACK, `${at}: left ${b.left.toFixed(1)} outside ${left.toFixed(1)}`);
   assert.ok(b.right <= right + SLACK, `${at}: right ${b.right.toFixed(1)} outside ${right.toFixed(1)}`);
@@ -54,16 +53,19 @@ test("Miku stays inside the island when the greeting is cut short", () => {
   for (let tc = 0.3; tc < GREETING_END + 0.4; tc += 0.1) run(tc);
 });
 
-test("she slides to the side to wave, then comes back to the middle", () => {
-  const atWave = greetingPose(2.0);
-  assert.ok(atWave.x < 290, `waving at x=${atWave.x}`);
+test("she rises through the stage floor, then waves in the middle", () => {
+  const onLift = greetingPose(0.5);
+  assert.ok(onLift.y > 120, `still on the lift at y=${onLift.y}`);
+  assert.equal(onLift.floor, FLOOR, "the stage floor hides what is under it");
+  const atWave = greetingPose(1.8);
+  assert.equal(atWave.x, 320);
   // She waves with her hand, and her body sways along with it.
   assert.ok(atWave.wave >= 0, "waving");
   assert.notEqual(atWave.tilt, 0, "the tilt carries the wave");
-  const back = greetingPose(3.6);
-  assert.equal(back.x, 320);
-  assert.equal(back.wave, -1);
-  assert.equal(back.tilt, 0);
+  assert.ok(atWave.lyric > 0 && atWave.lyric < 1, "her name is being sung");
+  const after = greetingPose(3.2);
+  assert.equal(after.wave, -1);
+  assert.equal(after.lyric, 1);
 });
 
 test("she lands where the compact island's Miku sits", () => {

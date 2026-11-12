@@ -43,13 +43,13 @@ before you publish. The licence text is the authority; this section is only a su
 
 ## Miku's own sounds
 
-The 29 notification cues are **composed in code** (`windows/scripts/gen-sounds.mjs`) and
+The 30 notification cues are **composed in code** (`windows/scripts/gen-sounds.mjs`) and
 rebuilt on every build, so the repository carries no composed audio. They are the fork
 owner's own work.
 
 ### Voice cues
 
-Six of the 29 — `finish`, `question`, `error`, `approve`, `greeting` and `blip` — are
+Six of the 30 — `finish`, `question`, `error`, `approve`, `greeting` and `blip` — are
 spoken Japanese cues made with [VOICEVOX](https://voicevox.hiroshiba.jp/) and **zundamon**
 (style: ささやき). A neural voice cannot be composed in code, so those six are recorded
 once and committed to `windows/voice/`; `gen-sounds.mjs` lays them over the chimes it

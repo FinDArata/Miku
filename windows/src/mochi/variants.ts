@@ -174,7 +174,7 @@ export const MIKU_VARIANTS: Record<MikuVariantId, MikuVariant> = {
 // ── Small ornaments ───────────────────────────────────────────────────────────
 
 /** A six-armed snowflake. */
-function snowflake(
+export function snowflake(
   x: CanvasRenderingContext2D,
   px: number, py: number, r: number, col: string, rot = 0,
 ) {
@@ -227,7 +227,7 @@ function blossom(
 }
 
 /** A single falling petal. */
-function petal(x: CanvasRenderingContext2D, r: number) {
+export function petal(x: CanvasRenderingContext2D, r: number) {
   x.fillStyle = "rgba(249,183,208,0.9)";
   x.beginPath();
   x.moveTo(0, -r);

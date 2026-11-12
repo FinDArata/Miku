@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### The launch greeting is a live stage
+
+- Miku no longer drops in, bounces and slides aside the way the old marshmallow did. The footlights come on from left to right, a spotlight falls on her mark, and she rises through the stage floor on a lift, waves to the crowd, and watches her name light up karaoke-style beside her.
+- Classic Miku is surrounded by notes; Snow gets falling snowflakes and Sakura falling petals, all in her skin's light.
+- She ends with a small bow and one pulse of the footlights, about a second sooner than before (3.45 s instead of 4.6 s), then settles in the compact island as usual.
+
+### The open island is her stage too
+
+- Opened, the island is no longer a plain black box: it is lit from above in the skin's colour, with a row of footlights breathing along its front edge. Closed, it keeps the notch's black.
+- The tabs sit in one track, the open one lit in the skin's colour; the header icons light up the same way on hover, and the close button turns red.
+- Cards are glass instead of grey slabs. On the overview, a spotlight falls where Miku stands, and the agents sit on an LED grid as channel strips, each with its colour as a lit bar, glowing in that colour on hover.
+- Primary buttons wear the skin's colour, and views come up from below the way she does, instead of zooming in.
+- The overview is one stage across the whole island instead of two side-by-side cards: Miku on her mark, and one pill's slide beside her. A pager in the header (a dot per slide, in its colour, plus ‹ ›) shows where you are; swipe sideways on a trackpad, drag the stage, or press ← / → to move. A slide that wants a look rings its dot in the badge's colour.
+- **Edit** in the pager lists every pill that can have a slide, the ones on first: click to switch one on or off (the same four slots as Settings, saved right away). Escape or the check mark ends it.
+- A pill's own slide reads like a title card: what kind of pill it is in small spaced capitals in its colour, its name large, then its state as a chip and what can be done as capsules on one line.
+- Changing slides has its own sound, `slide`: Miku sings "mi-ku" up a fourth, synthesised in `gen-sounds.mjs` from the vowels' formants rather than recorded. It is the 30th sound, and like the others it can be replaced by a file of your own.
+
 ### Miku's rooms wear Miku: the hub and the pill, redrawn
 
 - The hub is rebuilt around a **Home** page: one card per thing (dictation, agents, integrations, the chat's model, OK Miku) and a way into each page from it. The sidebar's active row carries a teal bar, the brand is a teal gradient, and pages arrive with a short fade instead of a jump.
