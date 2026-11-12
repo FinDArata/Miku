@@ -53,6 +53,15 @@ export interface ApprovalInfo {
   questions?: AskedQuestion[];
 }
 
+/**
+ * A ritual: something small worth saying at the right moment, not because
+ * anything is wrong. The ritual card reads it and words it.
+ */
+export type Ritual =
+  | { kind: "break"; minutes: number }
+  | { kind: "words"; count: number }
+  | { kind: "streak"; count: number };
+
 /** One question of an AskUserQuestion call. */
 export interface AskedQuestion {
   question: string;
@@ -102,6 +111,10 @@ export interface Settings {
   soundEnabled: boolean;
   soundVolume: number;
   autoCloseInterval: number;
+  /** How a tool's permission requests are handled, by tool name — "ask" puts
+   * the card up, "always" lets them through. "*" covers the other tools;
+   * nothing here asks, everywhere (core/approval-modes.ts). */
+  approvalModes?: Record<string, "ask" | "always">;
   /** Hovering the island opens it all the way (off: hovering only peeks). */
   openOnHover: boolean;
   /** Open the island for a moment when any pill finishes or hits an error. */
@@ -271,6 +284,12 @@ class AppState {
   approvalQueue: ApprovalInfo[] = [];
   /** The pill that was in front when the card came up; it comes back after. */
   focusBeforeApproval: string | null = null;
+
+  /**
+   * A ritual on show (a break worth taking, a milestone worth a nod): what the
+   * ritual card reads. Null once it has been dismissed.
+   */
+  ritual: Ritual | null = null;
 
   integrations: Record<string, IntegrationInfo> = {};
 

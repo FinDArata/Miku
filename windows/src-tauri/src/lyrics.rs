@@ -153,6 +153,7 @@ pub fn setup(app: &AppHandle) {
             // The remembered spot, whether or not the card is up yet: a drag
             // that only lands the window when it is first shown would lose it.
             place(app, &win, pref.spot, &screen);
+            crate::apply_glass(&win);
             // The window only appears where the words are drawn in it: in the
             // island, the top pill follows the same Music events instead.
             if pref.shown && pref.placement == "floating" {

@@ -21,6 +21,7 @@ mod local_chat;
 mod log;
 mod lyrics;
 mod mail;
+mod music;
 mod net;
 mod notes;
 mod openai_compat;
@@ -646,6 +647,26 @@ fn subscription_set(app: AppHandle, shared: State<Shared>, provider: String, on:
     status
 }
 
+/// The per-tool approval choices moved ("ask" / "always allow", Settings →
+/// Agents → Approvals, or the card's Always button): saved, both windows told.
+#[tauri::command]
+fn approval_modes_set(app: AppHandle, shared: State<Shared>, modes: std::collections::BTreeMap<String, settings::ToolMode>) -> Result<(), String> {
+    if modes.len() > 64 {
+        return Err("too many tools".into());
+    }
+    if modes.keys().any(|k| k.is_empty() || k.chars().count() > 64) {
+        return Err("bad tool name".into());
+    }
+    let settings = {
+        let mut current = shared.settings.lock().unwrap();
+        current.approval_modes = modes;
+        current.clone()
+    };
+    settings::save_soon(&app);
+    let _ = app.emit("settings-changed", settings);
+    Ok(())
+}
+
 #[tauri::command]
 fn secret_set(app: AppHandle, key: String, value: String) -> Result<(), String> {
     // Bound to its server's address: only local_set_key may store it.
@@ -809,6 +830,32 @@ fn set_hub_shown(win: &tauri::WebviewWindow, shown: bool) {
 pub(crate) fn hub_is_shown() -> bool {
     HUB_SHOWN.load(Ordering::Relaxed)
 }
+
+/// The Acrylic surface behind a transparent webview, where Windows can do it.
+/// Applied after creation and best-effort: a system without the effect (an old
+/// build, DWM off) only loses the blur, never the window. Tells the page with
+/// `material` so its panels go translucent only when the blur is really there.
+#[cfg(windows)]
+pub fn apply_glass(win: &tauri::WebviewWindow) {
+    use tauri::utils::config::WindowEffectsConfig;
+    let applied = win
+        .set_effects(WindowEffectsConfig {
+            effects: vec![tauri::window::Effect::Acrylic],
+            state: None,
+            radius: None,
+            color: None,
+            interactive: false,
+        })
+        .is_ok();
+    crate::log::line(format!("glass: acrylic {applied}"));
+    if applied {
+        let _ = win.emit("material", true);
+    }
+}
+
+/// Nothing on Linux: the compositor's blur is a surface setting, not ours.
+#[cfg(not(windows))]
+pub fn apply_glass(_win: &tauri::WebviewWindow) {}
 
 /// The page asks once at load, in case it missed the event.
 #[tauri::command]
@@ -1002,6 +1049,7 @@ pub fn run() {
             spotify::spotify_control,
             spotify::spotify_open,
             spotify::spotify_installed,
+            music::music_watch,
             whatsapp::whatsapp_island,
             whatsapp::whatsapp_open,
             whatsapp::whatsapp_close,
@@ -1054,6 +1102,8 @@ pub fn run() {
             update::update_show,
             update::update_later,
             tray::tray_update_hint,
+            tray::tray_state_hint,
+            approval_modes_set,
             update::update_dismiss,
             update::update_install,
             update::update_open_page,

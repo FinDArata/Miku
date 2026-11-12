@@ -253,6 +253,16 @@ export const Bridge = {
   spotifyOpen: () => call<boolean>("spotify_open"),
   /** Whether there is a Spotify to launch (Settings). */
   spotifyInstalled: () => call<boolean>("spotify_installed"),
+  /** The system-audio watch: on while a dance is welcome and music plays
+   * (src-tauri/src/music.rs) — `music-bands` events follow until it is off. */
+  setMusicWatch: (on: boolean) => call<void>("music_watch", { on }),
+  /** The tray wears the agents' state (tray.rs): at work teal, an ask amber,
+   * trouble red, idle herself. Null = idle. */
+  trayState: (state: string | null) => call<void>("tray_state_hint", { state }),
+  /** The per-tool approval choices moved (Settings → Agents → Approvals, or
+   * the card's Always button): saved, both windows told. */
+  approvalModesSet: (modes: Record<string, "ask" | "always">) =>
+    call<void>("approval_modes_set", { modes }),
 
   // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
   /** Settings' switch: shows or hides the overlay, and remembers the choice. */

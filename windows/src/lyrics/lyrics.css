@@ -56,6 +56,12 @@ body {
   overflow: hidden;
 }
 
+/* Acrylic really is behind the window (Rust said so): the card thins out to
+   half the user's own opacity, and the system blur does the reading. */
+body.acrylic #lyrics {
+  background: color-mix(in srgb, var(--lyrics-bg) calc(var(--lyrics-opacity) * 50%), transparent);
+}
+
 /* The hover adds the one thing the card is missing: it can be moved. */
 #lyrics:hover {
   border-color: rgba(255, 255, 255, 0.16);

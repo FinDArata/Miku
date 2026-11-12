@@ -43,6 +43,15 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number): Eas
 export const closeCurve = cubicBezier(0.45, 0, 0.2, 1);
 
 /**
+ * The system asks for less motion (Windows: Settings → Accessibility → Visual
+ * effects → Animation effects). Asked live, so flipping the setting lands
+ * without a restart: ambience stops, dances soften, springs lose their bounce.
+ */
+export function reducedMotion(): boolean {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+/**
  * SwiftUI-equivalent spring: ω₀ = 2π / response, ζ = dampingFraction.
  * Integrated per frame (sub-stepped) so a dropped frame never destabilises it.
  */

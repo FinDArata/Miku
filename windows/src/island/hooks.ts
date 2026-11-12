@@ -6,6 +6,7 @@
 // Code's (hook/src/normalize.rs), so one handler serves them all.
 
 import { Bridge, onEvent } from "../core/bridge";
+import { modeFor } from "../core/approval-modes";
 import { buildFileDiff, fileName, makeDiffStep, toOneLine } from "../core/diff";
 import { Sound } from "../core/sound";
 import { State, type ApprovalInfo, type AskedQuestion } from "../core/state";
@@ -327,9 +328,19 @@ function handleHook(island: Island, payload: HookPayload) {
   }
 
   if (State.paused) {
-    // Silence here used to cost Claude Code nearly two minutes: the relay waited
-    // for a decision from an island that had already decided not to look. Say so,
-    // and the terminal takes the question immediately.
+    // Standing consent still holds while paused: a tool the user set to always
+    // allow goes through. Everything else is declined — silence here used to
+    // cost Claude Code nearly two minutes: the relay waited for a decision
+    // from an island that had already decided not to look. Say so, and the
+    // terminal takes the question immediately.
+    if (
+      payload.request_id &&
+      payload.hook_event_name === "PermissionRequest" &&
+      modeFor(State.settings.approvalModes, payload.tool_name ?? "") === "always"
+    ) {
+      void Bridge.approvalDecision(payload.request_id, "allow");
+      return;
+    }
     if (payload.request_id) void Bridge.approvalDecline(payload.request_id);
     return;
   }
@@ -572,6 +583,18 @@ function handleHook(island: Island, payload: HookPayload) {
       // If this exact request is already showing or queued, ack again and leave it alone
       if (State.pendingApproval?.requestId === requestId || State.approvalQueue.some((x) => x.requestId === requestId)) {
         if (requestId) void Bridge.approvalAck(requestId);
+        break;
+      }
+
+      // A tool the user set to "always allow" (Settings → Agents → Approvals,
+      // or the card's own Always button) goes through without a card — standing
+      // consent, so it holds even while the island is paused.
+      const modeTool = payload.tool_name ?? "";
+      if (requestId && modeFor(State.settings.approvalModes, modeTool) === "always") {
+        ensurePill();
+        Sound.play("approve");
+        State.appendStep(agentId, t("Allowed · always for {tool}", { tool: modeTool }));
+        void Bridge.approvalDecision(requestId, "allow");
         break;
       }
 

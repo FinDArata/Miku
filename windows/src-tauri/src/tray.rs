@@ -115,22 +115,33 @@ pub fn set_update(app: &AppHandle, version: Option<&str>) {
 
 /// Miku's update blue, #3B82F6, the colour of Mochi while a new version waits.
 const UPDATE_BLUE: [f32; 3] = [59.0, 130.0, 246.0];
+/// The agents' own colours, the ones the island's dots wear: at work in Miku
+/// teal, an ask in amber, trouble in red.
+const WORK_TEAL: [f32; 3] = [57.0, 197.0, 187.0];
+const ASK_AMBER: [f32; 3] = [245.0, 165.0, 36.0];
+const TROUBLE_RED: [f32; 3] = [244.0, 80.0, 94.0];
 
-/// The tray Mochi in the update blue: the light body takes the blue and keeps its
-/// shading, the dark outline and eyes stay as they are, transparency untouched.
-pub fn tint_blue(rgba: &[u8]) -> Vec<u8> {
+/// The tray Mochi in `colour`: the light body takes it and keeps its shading,
+/// the dark outline and eyes stay as they are, transparency untouched.
+pub fn tint(rgba: &[u8], colour: [f32; 3]) -> Vec<u8> {
     let mut out = Vec::with_capacity(rgba.len());
     for p in rgba.chunks_exact(4) {
         let light = (0.2126 * p[0] as f32 + 0.7152 * p[1] as f32 + 0.0722 * p[2] as f32) / 255.0;
         // 0 for the outline and eyes, 1 for the white body.
         let body = ((light - 0.35) / 0.65).clamp(0.0, 1.0);
-        for (i, blue) in UPDATE_BLUE.iter().enumerate() {
-            let shaded = blue * (0.8 + 0.2 * light);
+        for (i, c) in colour.iter().enumerate() {
+            let shaded = c * (0.8 + 0.2 * light);
             out.push((p[i] as f32 * (1.0 - body) + shaded * body).round().clamp(0.0, 255.0) as u8);
         }
         out.push(p[3]);
     }
     out
+}
+
+/// The tray Mochi in the update blue: the light body takes the blue and keeps its
+/// shading, the dark outline and eyes stay as they are, transparency untouched.
+pub fn tint_blue(rgba: &[u8]) -> Vec<u8> {
+    tint(rgba, UPDATE_BLUE)
 }
 
 /// The island says whether a new version waits (consent, newer, not put off with
@@ -145,6 +156,32 @@ pub fn tray_update_hint(app: AppHandle, on: bool) {
         base.clone().to_owned()
     };
     let _ = tray.set_icon(Some(icon));
+}
+
+/// The island says what the agents are up to: the tray Mochi wears their colour
+/// (at work teal, an ask amber, trouble red, idle herself) and the tooltip says
+/// in words when she needs you.
+#[tauri::command]
+pub fn tray_state_hint(app: AppHandle, state: Option<String>) {
+    let Some(tray) = app.tray_by_id("kanon") else { return };
+    let Some(base) = app.default_window_icon() else { return };
+    let colour = match state.as_deref() {
+        Some("working") | Some("thinking") | Some("searching") | Some("finished") => Some(WORK_TEAL),
+        Some("approval") | Some("question") | Some("ratelimit") => Some(ASK_AMBER),
+        Some("error") => Some(TROUBLE_RED),
+        _ => None,
+    };
+    let icon = match colour {
+        Some(c) => Image::new_owned(tint(base.rgba(), c), base.width(), base.height()),
+        None => base.clone().to_owned(),
+    };
+    let _ = tray.set_icon(Some(icon));
+    let needs_you = matches!(
+        state.as_deref(),
+        Some("approval") | Some("question") | Some("error") | Some("ratelimit")
+    );
+    let tip = if needs_you { t("Miku — needs you") } else { "Miku".to_string() };
+    let _ = tray.set_tooltip(Some(tip.as_str()));
 }
 
 #[cfg(test)]

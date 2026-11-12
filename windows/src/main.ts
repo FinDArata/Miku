@@ -12,6 +12,9 @@ import { registerVoiceHandlers } from "./island/voice";
 import { applySpotify, registerSpotifyHandlers } from "./island/spotify";
 import { registerWhatsAppHandlers } from "./island/whatsapp";
 import { SPOTIFY_ID } from "./core/spotify";
+import { voiceLevel } from "./mochi/music";
+import { FlowBridge } from "./core/flow";
+import { nextMilestone, STREAK_MILESTONES, WORD_MILESTONES } from "./mochi/session";
 import { Recap } from "./recap/recap";
 import { Updates } from "./island/update";
 import { WhatsNew } from "./whats-new/controller";
@@ -62,12 +65,30 @@ async function main() {
   void Bridge.setSystemLanguages(systemLanguages());
   island.applySettings();
   State.loadIntegrationTasks();
+  // The tray follows the agents: at work in teal, an ask in amber, trouble in
+  // red, idle as herself. Only the changes are sent.
+  let trayState: string | null | undefined;
+  State.subscribe(() => {
+    const raw = State.pendingApproval
+      ? (State.pendingApproval.questions ? "question" : "approval")
+      : State.paused ? null : State.effectiveState;
+    const next =
+      raw == null || raw === "idle" || raw === "sleeping" || raw === "dizzy" ? null : raw;
+    if (next !== trayState) {
+      trayState = next;
+      void Bridge.trayState(next);
+    }
+  });
   if (boot && !boot.cursorPoll) island.followPageCursor();
   await island.desktop.init();
 
   await onEvent<{ x: number; y: number }>("cursor", ({ x, y }) => island.onCursor(x, y));
   await onEvent<boolean>("pointer-inside", (inside) => island.setPointerInside(inside));
   await onEvent<null>("closed-hover", () => island.wakeFromClosed());
+  // She is on the mic (dictation, « OK Miku »): the island's Miku mouths along.
+  await onEvent<number[]>("pill-bands", (bands) => island.setVoice(voiceLevel(bands)));
+  // The system's music (music.rs): the dance rides the song's energy and beat.
+  await onEvent<number[]>("music-bands", (bands) => island.setMusic(bands));
 
   /** Pause has to reach Rust too, or the pollers keep calling out. */
   const setPaused = (on: boolean) => {
@@ -180,11 +201,41 @@ async function main() {
   // What's new, once after an update: when the greeting is over, or a few
   // seconds in when there is no greeting (the card waits for a quiet island).
   const whatsNew = () => void WhatsNew.launch(island);
+
+  // A milestone worth a nod, from the dictation numbers: words in a day (once
+  // per milestone per day) and days in a row (once per milestone, ever).
+  const milestone = async () => {
+    try {
+      const s = await FlowBridge.stats();
+      if (!s) return;
+      const now = new Date();
+      const dateKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      const today = s.daily.at(-1)?.[1] ?? 0;
+      const wordsShown = Number(localStorage.getItem(`miku.milestone.words.${dateKey}`) ?? 0);
+      const words = nextMilestone(WORD_MILESTONES, wordsShown, today);
+      if (words != null) {
+        localStorage.setItem(`miku.milestone.words.${dateKey}`, String(words));
+        island.ritual({ kind: "words", count: words });
+        return;
+      }
+      const streakShown = Number(localStorage.getItem("miku.milestone.streak") ?? 0);
+      const streak = nextMilestone(STREAK_MILESTONES, streakShown, s.streak);
+      if (streak != null) {
+        localStorage.setItem("miku.milestone.streak", String(streak));
+        island.ritual({ kind: "streak", count: streak });
+      }
+    } catch {
+      /* no numbers, no ritual */
+    }
+  };
+
   island.onGreetingDone = () => {
     checkRecap();
     whatsNew();
+    void milestone();
   };
   window.setTimeout(whatsNew, 8000);
+  window.setTimeout(milestone, 8000);
   island.onWake = checkRecap;
   await onEvent<null>("recap-check", checkRecap);
 

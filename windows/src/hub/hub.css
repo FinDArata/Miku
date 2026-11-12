@@ -1029,7 +1029,10 @@ body.hub-window {
   /* Narrow enough that its right edge stops short of her head (which starts
      about 135px into the stage), so the hats and hair ornaments stay clear. */
   max-width: 112px;
-  background: rgba(255, 255, 255, 0.58);
+  /* The glass is the blur, not the ink: whatever passes behind her head reads
+     through softened, which a plain translucent fill only smears. */
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px) saturate(1.25);
   color: #0f2b28;
   border-radius: 15px;
   border-bottom-left-radius: 5px;

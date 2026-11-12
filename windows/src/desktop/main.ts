@@ -8,9 +8,11 @@
 // all while he sleeps.
 
 import { Bridge, emitToWindow, onEvent, type DesktopMode } from "../core/bridge";
+import { reducedMotion } from "../core/anim";
 import type { BotEmoteName } from "../core/layout";
 import { Sound } from "../core/sound";
 import { BotEngine } from "../mochi/engine";
+import { voiceLevel, bandStats } from "../mochi/music";
 import { DEFAULT_VARIANT } from "../mochi/variants";
 import {
   DESKTOP_EVENTS, DOUBLE_CLICK_MS, DRAG_THRESHOLD, IDLE_ANTIC_AFTER_MS, PANEL_SIZE, agentActive, freeForAntics,
@@ -97,10 +99,34 @@ class DesktopMochi {
     await onEvent<{ emote: BotEmoteName; duration: number }>(DESKTOP_EVENTS.emote, (e) => {
       this.lastAgentActive = performance.now();
       this.wake();
-      this.engine.triggerEmote(e.emote, e.duration);
+      // Anticipation before the startle: on a surprised emote she first whips
+      // her eyes up toward the island, where the alert card stands, then
+      // reacts. Disney's old rule — look, then jump.
+      if (e.emote === "surprised") {
+        this.engine.glance(0.35, -0.85, 0.18);
+        window.setTimeout(() => this.engine.triggerEmote("surprised", e.duration), 180);
+      } else {
+        // A landing after a Windows poll-drag arrives as the happy emote:
+        // she puffs the dust where she set down.
+        if (e.emote === "happy" && performance.now() < this.justDraggedUntil) this.engine.puff();
+        this.engine.triggerEmote(e.emote, e.duration);
+      }
       this.schedule();
     });
     await onEvent<Point>(DESKTOP_EVENTS.cursor, (p) => this.notePointer(p));
+    // She is on the mic (dictation, « OK Miku »): the mouth rides the voice.
+    await onEvent<number[]>("pill-bands", (bands) => {
+      this.engine.setVoiceLevel(voiceLevel(bands));
+      this.lastAgentActive = performance.now();
+      this.schedule();
+    });
+    // The system's music (music.rs): the dance rides the song's energy and beat.
+    await onEvent<number[]>("music-bands", (bands) => {
+      const { rms, bass } = bandStats(bands);
+      this.engine.setMusicEnergy(rms, bass);
+      this.lastAgentActive = performance.now();
+      this.schedule();
+    });
     await onEvent<boolean>(DESKTOP_EVENTS.visible, (on) => this.setVisible(on));
     await onEvent<string>(DESKTOP_EVENTS.flight, (kind) => {
       // He fades in on the way out of the island (alphaValue 0 → 1 on macOS).
@@ -234,6 +260,8 @@ class DesktopMochi {
   }
 
   private maybeAntic() {
+    // The system asks for less motion: his quiet-moment antics stay off.
+    if (reducedMotion()) return;
     const idleFor = performance.now() - this.lastAgentActive;
     const free = freeForAntics({
       visible: this.visible,
@@ -272,11 +300,22 @@ class DesktopMochi {
     this.schedule();
   }
 
-  /** Pointer in window coordinates: his eyes, and waking up. */
+  /** Pointer in window coordinates: his eyes, and waking up. The first time
+   * the pointer finds her after a while away, she greets it with widened eyes. */
+  private hoverBody = false;
+  private lastNotice = 0;
   private notePointer(p: Point) {
     this.cursor = p;
     this.lastPointer = performance.now();
     if (this.asleep) this.wake();
+    const now = performance.now();
+    if (this.dragging) this.trail();
+    const over = isOverBody(p);
+    if (over && !this.hoverBody && now - this.lastNotice > 8000) {
+      this.lastNotice = now;
+      this.engine.notice();
+    }
+    this.hoverBody = over;
     this.schedule();
   }
 
@@ -313,13 +352,16 @@ class DesktopMochi {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) return;
     const engine = this.engine;
+    // Her little sounds come from where she stands.
+    engine.pan = this.pan();
     engine.setOutfit(this.snap.outfit, true);
     if (!this.asleep) {
       // Windows: the global cursor. Linux: only while the pointer is over him.
       const fresh = this.mode === "poll" || now - this.lastPointer < 1500;
-      // An antic may have sent his eyes somewhere else for a moment: that wins
-      // over the pointer, or the drift would last a single frame.
-      if (now >= this.driftingUntil) {
+      // An antic or an anticipation glance may have sent his eyes somewhere
+      // else for a moment: that wins over the pointer, or it would last a
+      // single frame.
+      if (now >= this.driftingUntil && now >= engine.glanceUntil) {
         const g = this.cursor && fresh ? gaze(lookOrigin(0, 0), this.cursor) : { lookX: 0, lookY: 0 };
         engine.lookX = g.lookX;
         engine.lookY = g.lookY;
@@ -344,6 +386,15 @@ class DesktopMochi {
 
   private dpr(): number {
     return Math.min(2, window.devicePixelRatio || 1);
+  }
+
+  /** Where she stands on the screen, as stereo: -1 left … 1 right, softly
+   * capped so the far edge never goes fully hard. 0 when the screen is unknown. */
+  private pan(): number {
+    const w = window.screen?.width ?? 0;
+    if (!w) return 0;
+    const x = window.screenX + window.innerWidth / 2;
+    return Math.max(-0.6, Math.min(0.6, (x / w) * 2 - 1));
   }
 
   // ── Input ───────────────────────────────────────────────────────────────────
@@ -443,6 +494,7 @@ class DesktopMochi {
     const origin = this.dragOrigin;
     const press = this.press;
     if (!origin || !press || this.mode === "poll") return;
+    this.trail();
     if (this.mode === "layer") {
       const applied = window.innerWidth > PANEL_SIZE + 20;
       const topLeft = layerDragTopLeft(origin, { x: e.clientX, y: e.clientY }, press.client, applied);
@@ -469,8 +521,27 @@ class DesktopMochi {
     const topLeft = this.dragTopLeft;
     this.dragOrigin = null;
     this.dragTopLeft = null;
+    // She lands: a small dust puff at her feet. Windows' poll-driven drag
+    // lands elsewhere (the landing happy emote, below), so it puffs there.
+    this.engine.puff();
+    this.justDraggedUntil = performance.now() + 1500;
+    this.schedule();
     if (this.mode === "poll" || !topLeft) return;
     void Bridge.desktopDragEnd(Math.round(topLeft.x), Math.round(topLeft.y));
+  }
+
+  /**
+   * A faint spark trail while she slides across the desk, throttled so a fast
+   * drag leaves a scatter rather than a solid line.
+   */
+  private trailAt = 0;
+  private justDraggedUntil = 0;
+  private trail() {
+    const now = performance.now();
+    if (now - this.trailAt <= 90) return;
+    this.trailAt = now;
+    this.engine.emit("spark", 1);
+    this.schedule();
   }
 
   private setOffset(p: Point) {
