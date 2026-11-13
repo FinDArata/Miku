@@ -18,6 +18,8 @@ export interface SpotifyTrack {
   /** Seconds. */
   duration: number;
   artUrl: string | null;
+  /** The program playing it (Windows: from the media session), when known. */
+  source?: string | null;
 }
 
 export interface SpotifyState {

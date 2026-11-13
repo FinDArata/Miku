@@ -13,8 +13,11 @@
 // song plays: an overlay nobody is looking at costs nothing.
 
 import "./lyrics.css";
-import { Bridge, onEvent, type LyricsPrefs } from "../core/bridge";
-import { Spotify, isAd, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { Bridge, IS_TAURI, onEvent, type LyricsPrefs } from "../core/bridge";
+import { Spotify, currentArtwork, isAd, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { CHIBI_H, CHIBI_W, drawChibi } from "../mochi/chibi";
+import { parseVariant, resolveVariant } from "../mochi/wardrobe";
 import type { Settings } from "../core/state";
 import { t } from "../i18n/i18n";
 import { cachedSong, fetchSong, knownMissing } from "./fetch";
@@ -29,6 +32,11 @@ const TICK_MS = 200;
 
 const rowsEl = document.getElementById("rows")!;
 const songEl = document.getElementById("song")!;
+const titleEl = document.getElementById("song-title")!;
+const artistEl = document.getElementById("song-artist")!;
+const artEl = document.getElementById("song-art")!;
+const artImg = artEl.querySelector("img")!;
+const mikuCanvas = document.getElementById("song-miku") as HTMLCanvasElement;
 
 const prefs: LyricsPrefs = { ...DEFAULT_PREFS };
 const EMPTY: Song = { timed: [], plain: [] };
@@ -145,7 +153,7 @@ let songLanguage: "japanese" | "chinese" | null = null;
 function display(text: string): { line: string; original: string | null } {
   if (!prefs.romanize) return { line: text, original: null };
   if (scriptOf(text) === "latin") return { line: text, original: null };
-  const romanised = romanizeMixed(text, songLanguage);
+  const romanised = romanizeMixed(text, songLanguage, romajiLangs);
   const original = prefs.showOriginal && romanised !== text ? text : null;
   return { line: romanised, original };
 }
@@ -210,7 +218,7 @@ function draw() {
     && (song.timed.length || song.plain.length)) {
     return;
   }
-  songEl.textContent = track && !isAd(track) ? [track.title, track.artist].filter(Boolean).join(" — ") : "";
+  drawHeader(track && !isAd(track) ? track : null);
   // No player, no song, an advertisement: a line saying so, never a blank card.
   if (!state.running || !track) {
     shownIndex = Number.NaN;
@@ -249,14 +257,95 @@ function draw() {
   if (entering && song.timed.length) {
     rows.find((r) => r.classList.contains("current"))?.classList.add("enter");
   }
+  fitWindow();
+}
+
+/** Title, artist and cover at the top of the card; empty for an ad or no song. */
+function drawHeader(track: { title: string; artist: string } | null) {
+  titleEl.textContent = track?.title ?? "";
+  artistEl.textContent = track?.artist ?? "";
+  songEl.classList.toggle("empty", !track);
+  const cover = track ? currentArtwork(Spotify.state) : null;
+  artEl.classList.toggle("has-art", !!cover);
+  if (cover) {
+    if (artImg.getAttribute("src") !== cover) artImg.setAttribute("src", cover);
+  } else {
+    artImg.removeAttribute("src");
+  }
+}
+
+// ── Miku in the corner ───────────────────────────────────────────────────────
+//
+// She sings while the song plays and stands still otherwise, at the screen's
+// own frame rate; nothing runs while the card is hidden or she is turned off.
+
+let mikuVariant = parseVariant("auto");
+let mikuTimer: number | null = null;
+const mikuStart = performance.now();
+
+function paintMiku() {
+  const x = mikuCanvas.getContext("2d");
+  if (!x) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = mikuCanvas.clientWidth;
+  const hgt = mikuCanvas.clientHeight;
+  if (!w || !hgt) return;
+  if (mikuCanvas.width !== Math.round(w * dpr)) mikuCanvas.width = Math.round(w * dpr);
+  if (mikuCanvas.height !== Math.round(hgt * dpr)) mikuCanvas.height = Math.round(hgt * dpr);
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  x.clearRect(0, 0, mikuCanvas.width, mikuCanvas.height);
+  const scale = Math.min(mikuCanvas.width / CHIBI_W, mikuCanvas.height / CHIBI_H);
+  x.setTransform(scale, 0, 0, scale, (mikuCanvas.width - CHIBI_W * scale) / 2, mikuCanvas.height - CHIBI_H * scale);
+  const pose = playing ? "singing" : "idle";
+  drawChibi(x, pose, playing ? (performance.now() - mikuStart) / 1000 : 0, resolveVariant(mikuVariant, new Date()), { noShadow: true });
+}
+
+function mikuLoop() {
+  mikuTimer = null;
+  if (!(up && playing && showMiku)) return;
+  paintMiku();
+  mikuTimer = requestAnimationFrame(mikuLoop);
+}
+
+function syncMiku() {
+  const run = up && playing && showMiku;
+  if (run && mikuTimer == null) mikuTimer = requestAnimationFrame(mikuLoop);
+  else if (!run && mikuTimer != null) {
+    cancelAnimationFrame(mikuTimer);
+    mikuTimer = null;
+  }
+  paintMiku();
+}
+
+// ── The window wraps the card ────────────────────────────────────────────────
+//
+// The card fills its window, and the window is as tall as what the card holds:
+// no frame of empty (blurred) window around it. Not saved: it follows the words.
+
+let fittedHeight = 0;
+
+function fitWindow() {
+  if (!up || menu.isOpen()) return;
+  const card = document.getElementById("lyrics");
+  if (!card) return;
+  const style = getComputedStyle(card);
+  const pad = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+  const words = rowsEl.scrollHeight + pad;
+  const miku = showMiku ? mikuCanvas.offsetHeight + 8 : 0;
+  const want = Math.ceil(Math.max(90, words, miku));
+  if (Math.abs(want - fittedHeight) < 2) return;
+  fittedHeight = want;
+  void Bridge.lyricsWindowSize(lastLook.width ?? 420, want);
 }
 
 // ── The clock ────────────────────────────────────────────────────────────────
 
 function startClock() {
   if (ticker != null) return;
-  // While hidden there is nothing to move: the next show reads the player again.
-  if (!up) return;
+  // Hidden, the card still keeps its line while lyrics are on (the user may
+  // detach it any moment): shown, it is already on the line being sung. Only a
+  // changed line touches the page, so this costs next to nothing.
+  if (!up && !autoEnabled) return;
   ticker = window.setInterval(draw, TICK_MS);
 }
 
@@ -272,16 +361,24 @@ function apply(state: SpotifyState) {
   Spotify.state = state;
   playing = state.playing && state.track != null;
   autoShowOrHide();
-  // Hidden, the card is not on screen and nothing it would draw is seen: the
-  // state is kept (the next show reads it), and the words are asked for then.
+  // Hidden, nothing is drawn — but the song's words are fetched already, so a
+  // card detached mid-song starts on the right line at once instead of
+  // waiting for LRCLIB (and the dictionary) only then.
   if (!up) {
-    stopClock();
+    if (autoEnabled) {
+      void syncSong();
+      if (playing) startClock();
+      else stopClock();
+    } else {
+      stopClock();
+    }
     return;
   }
   void syncSong();
   if (playing) startClock();
   else stopClock();
   draw();
+  syncMiku();
 }
 
 // ── Opening and closing by itself ────────────────────────────────────────────
@@ -364,8 +461,10 @@ function hideForNow() {
 
 function setVisible(on: boolean) {
   up = on;
+  syncMiku();
   if (!on) {
-    stopClock();
+    // Lyrics still on: the line keeps up while hidden (see startClock).
+    if (!autoEnabled || !playing) stopClock();
     return;
   }
   // Coming back: the words of what plays now (no event said it while parked),
@@ -379,6 +478,11 @@ function setVisible(on: boolean) {
 }
 
 void onEvent<SpotifyState>("spotify", (s) => apply(s));
+// The cover arrives on its own, after the track: the header picks it up.
+void onEvent<{ artUrl: string; dataUrl: string }>("spotify-artwork", (art) => {
+  Spotify.artwork = art;
+  drawHeader(Spotify.state.track && !isAd(Spotify.state.track) ? Spotify.state.track : null);
+});
 // Rust says the window really has Acrylic behind it: the card goes translucent,
 // so the blur shows instead of hiding under it.
 void onEvent<null>("material", () => document.body.classList.add("acrylic"));
@@ -395,9 +499,13 @@ void onEvent<boolean>("lyrics-visible", (on) => {
 // The preferences live in the app's settings: changing them repaints at once.
 void onEvent<Settings>("settings-changed", (s) => {
   lyricsVideos = s.lyricsVideos === true;
+  mikuVariant = parseVariant(s.mikuVariant);
+  if (Array.isArray(s.lyricsRomajiLangs)) romajiLangs = s.lyricsRomajiLangs;
   Object.assign(prefs, prefsFrom(s));
   prefs.placement = s.lyrics?.placement ?? (s as { lyricsPlacement?: "island" | "floating" }).lyricsPlacement ?? "island";
   applyLook(s);
+  applyBehaviour({ locked: s.lyricsLocked === true, clickThrough: s.lyricsClickThrough === true });
+  applyDressing({ showMiku: s.lyricsShowMiku !== false, showCover: s.lyricsShowCover !== false, transparent: s.lyricsTransparent === true });
   shownIndex = Number.NaN;
   draw();
 });
@@ -426,6 +534,30 @@ const menu = buildContextMenu({
     void Bridge.lyricsSetLook(patch);
   },
   openSettings: () => void Bridge.openSettingsWindow(),
+  locked: () => locked,
+  setLocked: (on) => {
+    applyBehaviour({ locked: on });
+    void Bridge.lyricsSetLook({ locked: on });
+  },
+  toggles: () => [
+    { label: t("Transparent card"), on: transparent, set: (on: boolean) => {
+      applyDressing({ transparent: on });
+      void Bridge.lyricsSetLook({ transparent: on });
+    } },
+    { label: t("Romaji"), on: prefs.romanize, set: (on: boolean) => void Bridge.lyricsSetLook({ romanize: on }) },
+    { label: t("Show Miku on the card"), on: showMiku, set: (on: boolean) => {
+      applyDressing({ showMiku: on });
+      void Bridge.lyricsSetLook({ showMiku: on });
+    } },
+    { label: t("Show the album cover"), on: showCover, set: (on: boolean) => {
+      applyDressing({ showCover: on });
+      void Bridge.lyricsSetLook({ showCover: on });
+    } },
+  ],
+  setClickThrough: () => {
+    applyBehaviour({ clickThrough: true });
+    void Bridge.lyricsSetLook({ clickThrough: true });
+  },
   placement: () => lyricsPlacement(),
   setPlacement: (placement) => {
     prefs.placement = placement;
@@ -435,7 +567,7 @@ const menu = buildContextMenu({
   // The menu is taller than the card, so the window grows for it and shrinks
   // back afterwards. Neither is saved: the card's own size is the setting.
   grow: (width, height) => void Bridge.lyricsWindowSize(width, height),
-  shrink: () => void Bridge.lyricsWindowSize(lastLook.width ?? 420, lastLook.height ?? 170),
+  shrink: () => void Bridge.lyricsWindowSize(lastLook.width ?? 420, fittedHeight || (lastLook.height ?? 170)),
 });
 
 document.addEventListener("contextmenu", (e) => {
@@ -484,6 +616,43 @@ function applyLook(look: {
   };
 }
 
+// ── Locked and click-through ─────────────────────────────────────────────────
+
+let locked = false;
+let clickThrough = false;
+let showMiku = true;
+/** Which languages the user wants romanised (Settings → Lyrics). */
+let romajiLangs: readonly string[] = ["ja", "ko"];
+let showCover = true;
+let transparent = false;
+
+/** Miku in the corner and the cover in the header, each the user's to hide. */
+function applyDressing(next: { showMiku?: boolean; showCover?: boolean; transparent?: boolean }) {
+  if (typeof next.showMiku === "boolean") showMiku = next.showMiku;
+  if (typeof next.showCover === "boolean") showCover = next.showCover;
+  if (typeof next.transparent === "boolean") transparent = next.transparent;
+  document.body.classList.toggle("see-through", transparent);
+  document.body.classList.toggle("no-miku", !showMiku);
+  document.body.classList.toggle("no-cover", !showCover);
+  syncMiku();
+}
+
+/** Locked: a press no longer drags. Click-through: the window ignores the
+ *  pointer, so the way back is Settings → General (the card cannot be clicked). */
+function applyBehaviour(next: { locked?: boolean; clickThrough?: boolean }) {
+  if (typeof next.locked === "boolean") locked = next.locked;
+  const through = typeof next.clickThrough === "boolean" ? next.clickThrough : clickThrough;
+  const card = document.getElementById("lyrics");
+  if (locked) card?.removeAttribute("data-tauri-drag-region");
+  else card?.setAttribute("data-tauri-drag-region", "deep");
+  document.body.classList.toggle("locked", locked);
+  if (through !== clickThrough || typeof next.clickThrough === "boolean") {
+    clickThrough = through;
+    document.body.classList.toggle("click-through", clickThrough);
+    if (IS_TAURI) void getCurrentWindow().setIgnoreCursorEvents(clickThrough).catch(() => undefined);
+  }
+}
+
 /** `#RRGGBB` only: anything else is ignored rather than pasted into a style. */
 function isHex(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -497,6 +666,9 @@ async function start() {
   }
   lyricsVideos = saved?.videos === true;
   applyLook(saved ?? null);
+  applyBehaviour({ locked: saved?.locked === true, clickThrough: saved?.clickThrough === true });
+  if (Array.isArray(saved?.romajiLangs)) romajiLangs = saved.romajiLangs;
+  applyDressing({ showMiku: saved?.showMiku !== false, showCover: saved?.showCover !== false, transparent: saved?.transparent === true });
   // The switch in Settings is the master: on, the card opens and closes with the
   // music by itself; off, it never appears on its own.
   autoEnabled = on === true;
@@ -504,6 +676,11 @@ async function start() {
   setVisible(on === true);
   // Read the player once so a song already playing opens the card.
   if (autoEnabled) void Bridge.spotifyRefresh().then((s) => s && apply(s));
+  // The Japanese dictionary takes seconds to build and holds the page while it
+  // does: built now, in the background, the card never stalls on it later.
+  if (prefs.romanize && romajiLangs.includes("ja")) {
+    window.setTimeout(() => void ensureJapaneseTokenizer(), 2000);
+  }
 }
 
 void start();

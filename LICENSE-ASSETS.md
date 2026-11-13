@@ -65,6 +65,7 @@ The terms, as published by their owners:
 | --- | --- |
 | VOICEVOX software | Commercial and non-commercial use allowed, **with a credit** — [voicevox.hiroshiba.jp/term](https://voicevox.hiroshiba.jp/term/) |
 | zundamon's voice | Commercial and non-commercial use allowed, **with the credit** `VOICEVOX:ずんだもん` — [zunko.jp/con_ongen_kiyaku.html](https://zunko.jp/con_ongen_kiyaku.html), © SSS LLC |
+| Shikoku Metan's voice (the launch greetings) | Commercial and non-commercial use allowed, **with the credit** `VOICEVOX:四国めたん` — [zunko.jp/con_ongen_kiyaku.html](https://zunko.jp/con_ongen_kiyaku.html), © SSS LLC |
 
 **The credit is required wherever the app is presented to someone else**, not only in the
 source: a README, a release page, a store listing, an about screen. Settings → General

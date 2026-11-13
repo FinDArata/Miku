@@ -8,7 +8,13 @@
   <body>
     <!-- "deep": a press anywhere on the card drags it, text included. -->
     <div id="lyrics" data-tauri-drag-region="deep">
-      <div id="song"></div>
+      <div id="song">
+        <span id="song-art"><img alt="" draggable="false" /></span>
+        <span id="song-text"><b id="song-title"></b><span id="song-artist"></span></span>
+        <span id="song-grip" aria-hidden="true">⋮⋮</span>
+      </div>
+      <!-- Miku, singing along in the corner (drawn by src/mochi/chibi.ts). -->
+      <canvas id="song-miku" aria-hidden="true"></canvas>
       <div id="rows"></div>
     </div>
     <script type="module" src="/src/lyrics/main.ts"></script>

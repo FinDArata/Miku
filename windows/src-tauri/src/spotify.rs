@@ -1921,21 +1921,29 @@ mod win {
     // ── Artwork ───────────────────────────────────────────────────────────────
 
     /// The track's cover, as a data URL (the page may not load anything
-    /// remote). Read once per track; Spotify sometimes adds the thumbnail a
-    /// moment after the title, and the next event brings it then.
+    /// remote). Read again on every event: a browser changes the title first
+    /// and the thumbnail a moment later, so the first read for a new song is
+    /// often still the last song's picture — kept, it would stay wrong.
     fn artwork(app: &AppHandle, track: &Track, props: &MediaProperties) {
         let Some(key) = track.art_url.clone() else { return };
-        let cached = ART.lock().unwrap().iter().find(|(k, _)| *k == key).map(|(_, d)| d.clone());
-        let data = match cached {
-            Some(data) => data,
-            None => {
-                let Some(data) = thumbnail(props).as_deref().and_then(data_url) else { return };
-                let mut art = ART.lock().unwrap();
-                art.push_back((key.clone(), data.clone()));
-                while art.len() > 12 {
-                    art.pop_front();
+        let fresh = thumbnail(props).as_deref().and_then(data_url);
+        let data = {
+            let mut art = ART.lock().unwrap();
+            let slot = art.iter().position(|(k, _)| *k == key);
+            match (fresh, slot) {
+                (Some(data), Some(i)) => {
+                    art[i].1 = data.clone();
+                    data
                 }
-                data
+                (Some(data), None) => {
+                    art.push_back((key.clone(), data.clone()));
+                    while art.len() > 12 {
+                        art.pop_front();
+                    }
+                    data
+                }
+                (None, Some(i)) => art[i].1.clone(),
+                (None, None) => return,
             }
         };
         super::emit_artwork(app, Artwork { art_url: key, data_url: data });

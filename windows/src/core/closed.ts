@@ -37,6 +37,8 @@ export interface ClosedContent {
   dot: string | null;
   /** A note before the text (what plays). */
   note: boolean;
+  /** The synth strip (the "mochi" style): Miku's head and an equaliser before the text. */
+  eq?: boolean;
 }
 
 export interface ClosedInputs {
@@ -63,8 +65,14 @@ export function closedContent(style: ClosedIsland, input: ClosedInputs): ClosedC
   switch (style) {
     case "hidden":
     case "empty":
-    case "mochi":
       return null;
+    case "mochi": {
+      // The synth strip (docs/mockups/notch-combined.png): Miku, an equaliser
+      // and one short thing — the song when one plays, else the time.
+      const m = input.music;
+      const text = m?.title ? m.title : time(input.now, input.locale);
+      return { text, dot: null, note: false, eq: true };
+    }
     case "time":
       return plain(time(input.now, input.locale));
     case "datetime": {

@@ -140,6 +140,19 @@ export interface Settings {
   /** The card's size in px. */
   lyricsWidth: number;
   lyricsHeight: number;
+  /** The floating card cannot be dragged. */
+  lyricsLocked: boolean;
+  /** Clicks pass through the floating card; Settings turns it off again. */
+  lyricsClickThrough: boolean;
+  /** Miku and the cover on the floating card. */
+  lyricsShowMiku: boolean;
+  lyricsShowCover: boolean;
+  /** The floating words with no card behind them. */
+  lyricsTransparent: boolean;
+  /** The weather page's city; empty until the user types one. */
+  weatherCity: string;
+  /** Which languages' lyrics are romanised: "ja", "ko" (and "zh" later). */
+  lyricsRomajiLangs: string[];
   /** `#RRGGBB` for the words, and for the card behind them. */
   lyricsTextColor: string;
   lyricsBackground: string;
@@ -218,6 +231,13 @@ export const DEFAULT_SETTINGS: Settings = {
   lyricsFontSize: 16,
   lyricsWidth: 420,
   lyricsHeight: 160,
+  lyricsLocked: false,
+  lyricsClickThrough: false,
+  lyricsShowMiku: true,
+  lyricsShowCover: true,
+  lyricsTransparent: false,
+  weatherCity: "",
+  lyricsRomajiLangs: ["ja", "ko"],
   lyricsTextColor: "#ffffff",
   lyricsBackground: "#08090c",
   absenceInterval: 180,
@@ -582,7 +602,8 @@ class AppState {
    */
   defaultView(): IslandViewName {
     if (this.pendingApproval) return this.pendingApproval.questions ? "question" : "approval";
-    return this.tasks.length === 0 ? "empty" : "overview";
+    // The widget deck, agents or none (its Agents page lists them).
+    return "overview";
   }
 }
 

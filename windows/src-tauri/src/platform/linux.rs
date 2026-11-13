@@ -1098,3 +1098,7 @@ mod claude_launch_tests {
         }
     }
 }
+
+/// Windows 11 rounds the lyrics card's window; a Linux compositor decides that
+/// itself, so there is nothing to ask for here.
+pub fn round_corners(_win: &tauri::WebviewWindow) {}

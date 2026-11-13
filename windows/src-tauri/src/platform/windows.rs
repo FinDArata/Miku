@@ -313,6 +313,25 @@ fn hwnd_of(win: &WebviewWindow) -> Option<HWND> {
     Some(HWND(raw as *mut _))
 }
 
+/// Asks Windows 11 to round the window's corners, Acrylic included, so a card
+/// drawn with rounded corners has no square of blur showing past them. Windows
+/// 10 has no such preference and keeps square corners; nothing fails there.
+pub fn round_corners(win: &WebviewWindow) {
+    use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND};
+    let Some(hwnd) = hwnd_of(win) else { return };
+    let pref = DWMWCP_ROUND;
+    // SAFETY: a valid window handle and a pointer to a 4-byte value of the
+    // documented type for this attribute.
+    let _ = unsafe {
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_WINDOW_CORNER_PREFERENCE,
+            &pref as *const _ as *const core::ffi::c_void,
+            std::mem::size_of_val(&pref) as u32,
+        )
+    };
+}
+
 /// Keeps the settings window from showing the "no drop" cursor.
 ///
 /// wry installs its drop target by walking the webview's child windows **once**,

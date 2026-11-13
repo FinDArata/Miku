@@ -40,8 +40,8 @@ const T = {
 
 export const GREETING_END = T.end;
 
-/** The greeting's own sound, played from the start (sounds/greeting.wav). */
-const GREETING_SOUND = "greeting";
+/** The greeting's own sound, played from the start: one spoken hello, at random. */
+const GREETING_SOUNDS = ["greeting-matteta", "greeting-yoroshiku", "greeting-ganbarou"] as const;
 
 // ── The day's hello ───────────────────────────────────────────────────────────
 
@@ -521,6 +521,7 @@ export class Greeting {
   private engine = new BotEngine();
   /** Today's hello, picked once at start. */
   private sig: GreetSignature = "wave";
+  private sound: string = GREETING_SOUNDS[0];
 
   onComplete: (() => void) | null = null;
 
@@ -538,7 +539,8 @@ export class Greeting {
     this.cancelTimers();
     // The score plays from the start; it outlives greetComplete a little on
     // purpose and fades when the greeting view goes away (see leave()).
-    Sound.play(GREETING_SOUND);
+    this.sound = GREETING_SOUNDS[Math.floor(Math.random() * GREETING_SOUNDS.length)];
+    Sound.play(this.sound);
     this.timers.push(window.setTimeout(() => this.fire(), (T.end + 0.05) * 1000));
   }
 
@@ -552,13 +554,13 @@ export class Greeting {
     const t = (performance.now() - this.startMs) / 1000;
     if (!Number.isFinite(this.tc) || this.tc > t) this.tc = t;
     this.cancelTimers();
-    Sound.fadeOut(GREETING_SOUND, 0.25);
+    Sound.fadeOut(this.sound, 0.25);
   }
 
   /** The greeting view is gone: let what is left of its sound fade away. */
   leave() {
     this.cancelTimers();
-    Sound.fadeOut(GREETING_SOUND, 0.2);
+    Sound.fadeOut(this.sound, 0.2);
   }
 
   get elapsed(): number {

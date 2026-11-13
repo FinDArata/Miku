@@ -8,7 +8,7 @@ import {
 } from "../core/closed";
 import {
   EXPANDED_CORNER, EXPANDED_W, NOTCH_W, PANEL_H, PANEL_W,
-  ROUNDED_CORNER, VIEW_LAYOUTS, botGlowColor, botGlowOpacity, botPosition, chatPromptHeight,
+  ROUNDED_CORNER, STAGE_CORNER, VIEW_LAYOUTS, botGlowColor, botGlowOpacity, botPosition, chatPromptHeight,
   islandSize,
   QUESTION_PICKER_H,
   type BotEmoteName, type IslandMode, type IslandViewName,
@@ -16,7 +16,8 @@ import {
 import { Sound } from "../core/sound";
 import { State, type Ritual } from "../core/state";
 import { withMode } from "../core/approval-modes";
-import { SPOTIFY_ID, Spotify, islandDances, desktopDances, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { SPOTIFY_ID, Spotify, currentArtwork, formatTime, islandDances, desktopDances, spotifyPosition, type SpotifyState } from "../core/spotify";
+import { CHIBI_H, CHIBI_W, drawChibi } from "../mochi/chibi";
 import { cachedSong, fetchSong, knownMissing } from "../lyrics/fetch";
 import { lineIndexAt, nextSungLine, previousSungLine, type Song } from "../lyrics/lrc";
 import { ensureJapaneseTokenizer, japaneseReady, languageOfLines, romanizeMixed } from "../lyrics/romanize";
@@ -29,14 +30,15 @@ import { bandStats } from "../mochi/music";
 import { skyTint, type SkyTint } from "../mochi/sky";
 import { BREAK_AFTER_MS, BreakTracker } from "../mochi/session";
 import { miniBotCount, syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
-import { SeasonCache, VariantCache, parseOutfit, parseVariant } from "../mochi/wardrobe";
+import { SeasonCache, VariantCache, parseOutfit, parseVariant, resolveVariant } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { dominantPct, planColor } from "../core/plan";
-import { language, tl } from "../i18n/i18n";
+import { language, t, tl } from "../i18n/i18n";
 import { claudeCompactPillVisible, closePlanCard, openPlanColor, planCardOpen } from "../views/usage";
 import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../views/views";
-import { h } from "../views/dom";
+import { h, svg } from "../views/dom";
+import { ICONS } from "../views/icons";
 import { IslandStateMachine } from "./fsm";
 import { refreshHookPills } from "./integrations";
 import { restoreAlertFocus } from "./hooks";
@@ -60,8 +62,12 @@ const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading"
 /** Seconds between the drop and the moment the progress bar starts filling. */
 const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
 
-/** How often the island's lyric line is re-read while a song plays, in ms. */
-const TICK_MS = 200;
+/** The synth strip (closed island, "mochi" style): Miku's centre from the left
+ *  edge, and the room her head and the equaliser take before the text. */
+const SYNTH_BOT_X = 16;
+const SYNTH_EXTRA = 54;
+/** How often the stage re-reads the sung line and its clock, in ms (Miku has her own frame loop). */
+const LYRICS_TICK_MS = 200;
 
 /** How long after a words-less answer the same track may be asked again, in ms.
  *  LRCLIB answers 503 in busy minutes, and that answer must not blank the pill
@@ -89,6 +95,7 @@ export class Island {
   private closedEl!: HTMLElement;
   private closedDot!: HTMLElement;
   private closedText!: HTMLElement;
+  private closedEq!: HTMLElement;
   private closedKey = "";
   /** Width of the closed island for what it shows now. */
   private closedW = 120;
@@ -268,7 +275,7 @@ export class Island {
       foldApproval: () => this.foldApproval(),
       setFocus: (id) => {
         State.setFocus(id);
-        // Another slide: Miku sings it in ("mi-ku", scripts/gen-sounds.mjs).
+        // Another slide: a two-note chime (scripts/gen-sounds.mjs).
         Sound.play("slide");
         // A pill with a waiting request opens on its card: going back to it
         // after looking at another pill brings the card up again.
@@ -421,7 +428,9 @@ export class Island {
     });
     this.closedDot = h("span", { class: "dot" });
     this.closedText = h("span", { class: "text" });
-    this.closedEl = h("div", { id: "island-closed" }, this.closedDot, this.closedText);
+    // The synth strip's equaliser: five bars, moved by CSS while something plays or works.
+    this.closedEq = h("span", { class: "eq" }, h("i"), h("i"), h("i"), h("i"), h("i"), h("i"), h("i"));
+    this.closedEl = h("div", { id: "island-closed" }, this.closedEq, this.closedDot, this.closedText);
     this.botGlow = h("div", { id: "bot-glow" });
     this.botCanvas = h("canvas", { id: "bot-canvas" });
     this.greetingCanvas = h("canvas", { id: "greeting-canvas" });
@@ -885,7 +894,7 @@ export class Island {
     if (State.mode === "expanded" && State.view === "question" && State.pendingApproval?.questions) {
       h = QUESTION_PICKER_H;
     }
-    const r = State.mode === "expanded" ? EXPANDED_CORNER : ROUNDED_CORNER;
+    const r = State.mode === "expanded" ? EXPANDED_CORNER : lyrics ? STAGE_CORNER : ROUNDED_CORNER;
     return { w, h, r };
   }
 
@@ -1093,6 +1102,9 @@ export class Island {
     if (key === this.lyricsRetryKey && Date.now() < this.lyricsRetryAt) return;
     this.lyricsKey = key;
     this.lyricsTitle = track.title;
+    this.lyricsArtist = track.artist;
+    // A new song: the last one's cover must not stay up while this one's loads.
+    this.lyricsArt = null;
     const mine = ++this.lyricsGeneration;
     const cached = cachedSong(track);
     if (!cached && this.lyricsLoading) {
@@ -1141,7 +1153,13 @@ export class Island {
     if (languageOfLines(lines) === "japanese" && !japaneseReady()) {
       const ready = await ensureJapaneseTokenizer();
       if (mine !== this.lyricsGeneration) return;
-      if (ready) this.lyricsLanguage = "japanese";
+      if (ready) {
+        this.lyricsLanguage = "japanese";
+        // Lines drawn while the dictionary loaded were read without it (kanji
+        // left as written): read them again now that it is here.
+        this.lyricsRomanized.clear();
+        this.lyricsShownKey = "";
+      }
     }
     const spoken = languageOfLines(lines);
     if (spoken !== this.lyricsLanguage) {
@@ -1155,48 +1173,171 @@ export class Island {
   private lyricsLanguage: "japanese" | "chinese" | null = null;
   /** The title the words belong to, kept across a feed app's takeover. */
   private lyricsTitle = "";
+  private lyricsArtist = "";
+  /** The cover the words belong to, kept like the title while a feed app holds the session. */
+  private lyricsArt: string | null = null;
   private lyricsPausedAt: number | null = null;
-  private lyricsEls: { title: HTMLElement; past: HTMLElement; current: HTMLElement; next: HTMLElement } | null = null;
+  private lyricsEls: {
+    art: HTMLElement; artImg: HTMLImageElement; title: HTMLElement; artist: HTMLElement; album: HTMLElement;
+    src: HTMLElement; miku: HTMLCanvasElement; past: HTMLElement; current: HTMLElement; next: HTMLElement;
+    elapsed: HTMLElement; total: HTMLElement; bar: HTMLElement; play: HTMLElement;
+  } | null = null;
+  private stageStart = performance.now();
 
+  /**
+   * The song's stage (docs/mockups/notch-music.png): the cover with title,
+   * artist and album, Miku singing under three spotlights on an LED floor, the
+   * words, the song's clock and its buttons, and the way out to the floating card.
+   */
   private buildLyricsPill() {
     if (this.lyricsEls) return this.lyricsEls;
-    const title = h("span", { class: "lyrics-pill-title" });
-    const past = h("span", { class: "lyrics-pill-row past" });
-    const current = h("span", { class: "lyrics-pill-row current" });
-    const next = h("span", { class: "lyrics-pill-row next" });
-    this.lyricsPill.replaceChildren(title, past, current, next);
-    this.lyricsEls = { title, past, current, next };
+    const artImg = h("img", { alt: "", draggable: "false" }) as HTMLImageElement;
+    const art = h("div", { class: "ms-art" }, artImg);
+    const title = h("div", { class: "ms-title" });
+    const artist = h("div", { class: "ms-artist" });
+    const album = h("div", { class: "ms-album" });
+    const src = h("span", { class: "ms-src" });
+    const head = h("div", { class: "ms-head" },
+      art,
+      h("div", { class: "ms-text" }, title, artist, album),
+      src,
+    );
+    const miku = h("canvas", { class: "ms-miku" }) as HTMLCanvasElement;
+    const stage = h("div", { class: "ms-stage" },
+      h("div", { class: "ms-beam left" }), h("div", { class: "ms-beam right" }), h("div", { class: "ms-beam mid" }),
+      miku,
+    );
+    const past = h("div", { class: "ms-line past" });
+    const current = h("div", { class: "ms-line current" });
+    const next = h("div", { class: "ms-line next" });
+    const elapsed = h("span");
+    const total = h("span");
+    const bar = h("i");
+    const prog = h("div", { class: "ms-prog" }, elapsed, h("div", { class: "ms-bar" }, bar), total);
+    // Buttons act on the player; none of their presses may open the island's card.
+    const button = (cls: string, label: string, onClick: () => void, ...kids: (Node | string)[]) => {
+      const b = h("button", { class: cls, title: label }, ...kids);
+      b.addEventListener("mousedown", (e) => e.stopPropagation());
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onClick();
+      });
+      return b;
+    };
+    const play = button("ms-play", t("Play"), () => {
+      const st = Spotify.state;
+      if (!st.running) return;
+      Spotify.state = { ...st, playing: !st.playing, position: spotifyPosition(st, Date.now()), positionAt: Date.now() };
+      State.notify();
+      void Bridge.spotifyControl("playPause");
+    });
+    const ctl = h("div", { class: "ms-ctl" },
+      button("ms-skip", t("Previous"), () => void Bridge.spotifyControl("previous"), svg(ICONS.backward, 14)),
+      play,
+      button("ms-skip", t("Next"), () => void Bridge.spotifyControl("next"), svg(ICONS.forward, 14)),
+      // The way out to the floating card, where a right-click alone was before.
+      button("ms-detach", t("Detach from top"), () => void Bridge.lyricsSetPlacement("floating"), `⇱ ${t("Detach lyrics")}`),
+    );
+    this.lyricsPill.replaceChildren(head, stage, h("div", { class: "ms-floor" }),
+      h("div", { class: "ms-lyr" }, past, current, next), prog, ctl);
+    this.lyricsEls = { art, artImg, title, artist, album, src, miku, past, current, next, elapsed, total, bar, play };
     return this.lyricsEls;
+  }
+
+  /** The parts that move every tick: Miku, the clock and the play button. */
+  private paintStage(s: SpotifyState) {
+    const els = this.lyricsEls;
+    if (!els) return;
+    const d = s.track?.duration ?? 0;
+    const pos = Math.min(d, spotifyPosition(s, Date.now()));
+    els.elapsed.textContent = formatTime(pos);
+    els.total.textContent = d > 0 ? formatTime(d) : "";
+    els.bar.style.width = d > 0 ? `${(pos / d) * 100}%` : "0%";
+    const icon = s.playing ? "pause" : "play";
+    if (els.play.dataset.icon !== icon) {
+      els.play.dataset.icon = icon;
+      els.play.replaceChildren(svg(s.playing ? ICONS.pause : ICONS.play, 13));
+      els.play.title = s.playing ? t("Pause") : t("Play");
+    }
+  }
+
+  /** Miku on the stage, one frame per screen refresh while the stage is up. */
+  private stageRaf: number | null = null;
+  private stageLoop = () => {
+    this.stageRaf = null;
+    if (this.lyricsPill.hidden || !this.lyricsEls) return;
+    this.paintStageMiku(Spotify.state);
+    this.stageRaf = requestAnimationFrame(this.stageLoop);
+  };
+
+  private paintStageMiku(s: SpotifyState) {
+    const els = this.lyricsEls;
+    if (!els) return;
+    const c = els.miku;
+    const x = c.getContext("2d");
+    const w = c.clientWidth;
+    const hh = c.clientHeight;
+    if (!x || !w || !hh) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(w * dpr)) c.width = Math.round(w * dpr);
+    if (c.height !== Math.round(hh * dpr)) c.height = Math.round(hh * dpr);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.clearRect(0, 0, c.width, c.height);
+    const k = Math.min(c.width / CHIBI_W, c.height / CHIBI_H);
+    x.setTransform(k, 0, 0, k, (c.width - CHIBI_W * k) / 2, c.height - CHIBI_H * k);
+    const variant = resolveVariant(parseVariant(State.settings.mikuVariant), new Date());
+    drawChibi(x, s.playing ? "singing" : "idle", s.playing ? (performance.now() - this.stageStart) / 1000 : 0, variant, { noShadow: true });
   }
 
   private drawLyricsPill(s: SpotifyState) {
     const lines = this.lyricsSong.timed;
     if (!lines.length) return;
+    this.buildLyricsPill();
+    this.paintStage(s);
     const index = Math.max(0, lineIndexAt(lines, Math.max(0, spotifyPosition(s, Date.now()))));
-    // The pill wears the song's own title, never the name of whatever took the
+    // The stage wears the song's own title, never the name of whatever took the
     // session over: a feed app's title belongs to the feed, not to these words.
     const title = this.lyricsTitle || (s.track?.title ?? "");
+    const artist = this.lyricsArtist || (s.track?.artist ?? "");
+    const album = this.lyricsFeedHold ? "" : (s.track?.album ?? "");
+    if (!this.lyricsFeedHold) this.lyricsArt = currentArtwork(s) ?? this.lyricsArt;
+    const art = this.lyricsArt;
     // The same line (most of the song): nothing to redraw, nothing to romanize.
-    const key = `${this.lyricsKey}|${this.lyricsLanguage}|${index}|${title}`;
+    const romanizeOn = State.settings.lyricsRomanize !== false;
+    const key = `${this.lyricsKey}|${this.lyricsLanguage}|${index}|${title}|${album}|${romanizeOn}|${(State.settings.lyricsRomajiLangs ?? []).join(",")}|${art ? art.length : 0}`;
     if (key === this.lyricsShownKey && this.lyricsEls) return;
     this.lyricsShownKey = key;
 
     const els = this.buildLyricsPill();
     // The neighbours skip the instrumental gaps LRCLIB stamps: a verse's first
     // line would otherwise have an empty line above it, and a gap would leave
-    // the whole pill wordless.
+    // the whole stage wordless.
     const before = previousSungLine(lines, index);
     const after = nextSungLine(lines, index);
     const read = (i: number) => {
       if (i < 0 || i >= lines.length) return "";
+      if (!romanizeOn) return lines[i].text;
       let text = this.lyricsRomanized.get(i);
       if (text === undefined) {
-        text = romanizeMixed(lines[i].text, this.lyricsLanguage);
+        text = romanizeMixed(lines[i].text, this.lyricsLanguage, State.settings.lyricsRomajiLangs);
         this.lyricsRomanized.set(i, text);
       }
       return text;
     };
     els.title.textContent = title;
+    els.artist.textContent = artist;
+    els.album.textContent = album;
+    // Spotify by name; any other player (a browser tab, YouTube Music…) as "now playing".
+    // (Windows builds every track id as spotify:…, so only the source says who plays it.)
+    const fromSpotify = /spotify/i.test(s.track?.source ?? "");
+    els.src.textContent = fromSpotify ? "SPOTIFY" : t("Now playing").toUpperCase();
+    els.src.classList.toggle("spotify", fromSpotify);
+    els.art.classList.toggle("has-art", !!art);
+    if (art) {
+      if (els.artImg.getAttribute("src") !== art) els.artImg.setAttribute("src", art);
+    } else {
+      els.artImg.removeAttribute("src");
+    }
     els.past.textContent = read(before);
     els.current.textContent = read(index);
     els.next.textContent = read(after);
@@ -1231,6 +1372,8 @@ export class Island {
     this.lyricsFeedHold = false;
     this.lyricsFeedSince = null;
     this.lyricsTitle = "";
+    this.lyricsArtist = "";
+    this.lyricsArt = null;
     this.lyricsPausedAt = null;
     this.lyricsPill.replaceChildren();
     this.lyricsEls = null;
@@ -1244,6 +1387,7 @@ export class Island {
   }
 
   private startLyricsTicker() {
+    if (this.stageRaf == null) this.stageRaf = requestAnimationFrame(this.stageLoop);
     if (this.lyricsTicker != null) return;
     this.lyricsTicker = window.setInterval(() => {
       if (!this.lyricsActive()) {
@@ -1253,10 +1397,12 @@ export class Island {
         return;
       }
       this.drawLyricsPill(Spotify.state);
-    }, TICK_MS);
+    }, LYRICS_TICK_MS);
   }
 
   private stopLyricsTicker() {
+    if (this.stageRaf != null) cancelAnimationFrame(this.stageRaf);
+    this.stageRaf = null;
     if (this.lyricsTicker == null) return;
     window.clearInterval(this.lyricsTicker);
     this.lyricsTicker = null;
@@ -1294,17 +1440,21 @@ export class Island {
         music: State.spotifyPlaying && track ? { title: track.title, artist: track.artist } : null,
       })
       : null;
-    const key = content ? `${style}|${content.text}|${content.dot ?? ""}|${content.note}` : style;
+    // The equaliser moves only while a song plays; without one it lies still.
+    const live = content?.eq === true && State.spotifyPlaying;
+    this.closedEl.classList.toggle("live", live);
+    const key = content ? `${style}|${content.text}|${content.dot ?? ""}|${content.note}|${content.eq ?? false}` : style;
     const shown = State.mode === "hidden" && this.closedShows;
     this.closedEl.classList.toggle("on", shown && content != null);
     if (key === this.closedKey) return;
     this.closedKey = key;
     this.closedText.textContent = content?.text ?? "";
     this.closedEl.classList.toggle("note", content?.note === true);
+    this.closedEl.classList.toggle("synth", content?.eq === true);
     this.closedDot.style.display = content?.dot ? "" : "none";
     if (content?.dot) this.closedDot.style.background = content.dot;
     // Measured as drawn: the font and the language decide the width.
-    const extras = (content?.dot ? 12 : 0) + (content?.note ? 16 : 0);
+    const extras = (content?.dot ? 12 : 0) + (content?.note ? 16 : 0) + (content?.eq ? SYNTH_EXTRA : 0);
     const w = closedWidth(content ? this.closedText.scrollWidth : 0, extras);
     if (w !== this.closedW) {
       this.closedW = w;
@@ -1686,7 +1836,8 @@ export class Island {
     let p = botPosition(State.mode, State.view, this.height.value, State.uploadProgress);
     // The closed island with Mochi in it, as on a Mac without a notch.
     if (State.mode === "hidden" && closedIsland(State.settings.closedIsland) === "mochi") {
-      p = { cx: this.width.value / 2, cy: this.height.value / 2, diameter: CLOSED_BOT_D, opacity: 1 };
+      // The synth strip: her head at the left end, the equaliser and text after it.
+      p = { cx: SYNTH_BOT_X, cy: this.height.value / 2, diameter: CLOSED_BOT_D, opacity: 1 };
     }
     this.botCx.target = p.cx;
     this.botCy.target = p.cy;
@@ -1696,10 +1847,11 @@ export class Island {
     // The drop canvas draws its own Mochi; two of them would overlap. Out on the
     // desktop, he isn't here at all.
     const away = State.mochiOnDesktop;
-    const visible = p.opacity > 0 && !greetingActive && !this.uploadActive && !away;
+    const deck = State.mode === "expanded" && State.view === "overview";
+    const visible = p.opacity > 0 && !greetingActive && !this.uploadActive && !away && !deck;
     this.botCanvas.style.opacity = visible ? "1" : "0";
 
-    if (State.mode === "expanded" && State.view !== "uploading" && !greetingActive && !this.uploadActive && !away) {
+    if (State.mode === "expanded" && State.view !== "uploading" && !greetingActive && !this.uploadActive && !away && !deck) {
       const d = p.diameter;
       const color = botGlowColor(State.effectiveState);
       const opacity = botGlowOpacity(State.effectiveState);
@@ -1864,6 +2016,8 @@ export class Island {
     // A wardrobe try-on never outlives the wardrobe.
     if (State.wardrobePreview && !(expanded && State.view === "wardrobe")) State.wardrobePreview = null;
 
+    // The deck has its own bar on top; the island's header steps aside for it.
+    this.islandEl.dataset.view = State.view;
     this.header.sync();
     for (const [name, view] of this.views) {
       const on = name === State.view;
@@ -1901,6 +2055,7 @@ export class Island {
     this.updateClock();
 
     syncMiniBotStates(State.tasks);
+    this.fsm.quickReturn = this.wantsLyricsPill();
     this.engine.setState(State.effectiveState);
   }
 

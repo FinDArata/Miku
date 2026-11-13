@@ -19,7 +19,7 @@
 // (src-tauri/src/sounds.rs), so nobody is stuck with these.
 //
 // CREDIT, which the licence requires wherever the app is presented:
-//   VOICEVOX:ずんだもん
+//   VOICEVOX:ずんだもん, VOICEVOX:四国めたん (the greetings)
 //
 // Licence: the software may be used commercially and non-commercially with the
 // credit above (https://voicevox.hiroshiba.jp/term/); the voice follows the
@@ -34,7 +34,9 @@ import { fileURLToPath } from "node:url";
 const ENGINE = "http://127.0.0.1:50021";
 /** zundamon, ささやき (whisper). The shortest and softest of its styles. */
 const SPEAKER = 22;
-const CREDIT = "VOICEVOX:ずんだもん";
+const CREDIT = "VOICEVOX:ずんだもん, VOICEVOX:四国めたん";
+/** 四国めたん ノーマル, for the greetings: the speaker and what it changes in the query. */
+const METAN = { speaker: 2, speedScale: 1.05, pitchScale: 0.08, intonationScale: 1.4, postPhonemeLength: 0.15 };
 
 // `--flag` alone is true, `--key=value` carries the value.
 const args = Object.fromEntries(process.argv.slice(2).map((a) => {
@@ -70,6 +72,15 @@ const CUES = [
   ["greeting", "おはよう"],
   // a light attention sound
   ["blip", "ねえ"],
+  // The launch greetings, one picked at random each opening (src/mochi/greeting.ts).
+  // 四国めたん ノーマル, pitched up and sing-song, closer to Miku than a whisper.
+  ...[
+    // Never a line that names her: this is not Miku's voice, and must not pass
+    // for it (Piapro guideline D-1, the voice library's own terms).
+    ["greeting-matteta", "待ってたよ！"],
+    ["greeting-yoroshiku", "今日もよろしくね！"],
+    ["greeting-ganbarou", "一緒にがんばろうね！"],
+  ].map(([name, text]) => [name, text, METAN]),
 ];
 
 function readWav(buf) {
@@ -147,8 +158,10 @@ if (!(await reachable())) {
 
 const dir = soundsFolder();
 const results = [];
-for (const [name, text] of CUES) {
-  const q = await fetch(`${ENGINE}/audio_query?text=${encodeURIComponent(text)}&speaker=${SPEAKER}`, { method: "POST" });
+// `--only=<prefix>` renders just the cues whose name starts with it.
+for (const [name, text, voice = {}] of CUES.filter(([n]) => !args.only || n.startsWith(args.only))) {
+  const { speaker = SPEAKER, ...tune } = voice;
+  const q = await fetch(`${ENGINE}/audio_query?text=${encodeURIComponent(text)}&speaker=${speaker}`, { method: "POST" });
   if (!q.ok) { results.push([name, text, "query failed " + q.status, ""]); continue; }
   const query = await q.json();
   // Tighter than speech: no slow start, no long tail, and it should not shout.
@@ -156,8 +169,9 @@ for (const [name, text] of CUES) {
   query.prePhonemeLength = 0.05;
   query.postPhonemeLength = 0.1;
   query.volumeScale = 0.9;
+  Object.assign(query, tune);
 
-  const synth = await fetch(`${ENGINE}/synthesis?speaker=${SPEAKER}`, {
+  const synth = await fetch(`${ENGINE}/synthesis?speaker=${speaker}`, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(query),
   });
   if (!synth.ok) { results.push([name, text, "synthesis failed " + synth.status, ""]); continue; }

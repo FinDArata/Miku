@@ -44,6 +44,7 @@ mod update;
 mod voice;
 #[cfg(windows)]
 mod webview_drop;
+mod widgets;
 mod whatsapp;
 
 use std::process::Command;
@@ -1023,6 +1024,8 @@ pub fn run() {
             lyrics::lyrics_visible,
             lyrics::lyrics_prefs,
             lyrics::lyrics_fetch,
+            widgets::widget_system,
+            widgets::widget_weather,
             recap::recap_history,
             recap::recap_prefs,
             recap::recap_set_enabled,

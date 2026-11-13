@@ -112,6 +112,20 @@ pub struct Settings {
     /// `#RRGGBB` for the words, and for the card behind them.
     pub lyrics_text_color: String,
     pub lyrics_background: String,
+    /// The floating card stays where it is: a press no longer drags it.
+    pub lyrics_locked: bool,
+    /// Clicks pass through the floating card to what is under it. Settings →
+    /// General turns it off again (the card itself cannot be clicked then).
+    pub lyrics_click_through: bool,
+    /// Miku singing in the floating card's corner, and the cover in its header.
+    pub lyrics_show_miku: bool,
+    pub lyrics_show_cover: bool,
+    /// No card at all: the words float on their own, no Acrylic behind them.
+    pub lyrics_transparent: bool,
+    /// The city the island's weather page shows; empty until the user types one.
+    pub weather_city: String,
+    /// Which languages' lyrics are romanised: "ja", "ko" (and "zh" later).
+    pub lyrics_romaji_langs: Vec<String>,
     /// How an agent's tool use is approved, by tool name — "ask" puts the card
     /// up, "always" lets it through without asking. The key "*" covers every
     /// tool the map has nothing about; a missing entry asks, everywhere.
@@ -195,6 +209,13 @@ impl Default for Settings {
             lyrics_height: 160.0,
             lyrics_text_color: "#ffffff".into(),
             lyrics_background: "#08090c".into(),
+            lyrics_locked: false,
+            lyrics_click_through: false,
+            lyrics_show_miku: true,
+            lyrics_show_cover: true,
+            lyrics_transparent: false,
+            weather_city: String::new(),
+            lyrics_romaji_langs: vec!["ja".into(), "ko".into()],
             approval_modes: BTreeMap::new(),
         }
     }
@@ -620,7 +641,14 @@ mod tests {
   "lyricsWidth": 420.0,
   "lyricsHeight": 160.0,
   "lyricsTextColor": "#ffffff",
-  "lyricsBackground": "#08090c"
+  "lyricsBackground": "#08090c",
+  "lyricsLocked": false,
+  "lyricsClickThrough": false,
+  "lyricsShowMiku": true,
+  "lyricsShowCover": true,
+  "lyricsTransparent": false,
+  "weatherCity": "",
+  "lyricsRomajiLangs": ["ja", "ko"]
 }"##;
 
     fn custom() -> Value {
@@ -1040,6 +1068,13 @@ mod tests {
                 "lyricsHeight",
                 "lyricsTextColor",
                 "lyricsBackground",
+                "lyricsLocked",
+                "lyricsClickThrough",
+                "lyricsShowMiku",
+                "lyricsShowCover",
+                "lyricsTransparent",
+                "weatherCity",
+                "lyricsRomajiLangs",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

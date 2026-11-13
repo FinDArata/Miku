@@ -285,12 +285,23 @@ export const Bridge = {
     background?: string;
     width?: number;
     height?: number;
+    locked?: boolean;
+    clickThrough?: boolean;
+    romanize?: boolean;
+    showMiku?: boolean;
+    showCover?: boolean;
+    transparent?: boolean;
   }) => call<void>("lyrics_set_look", { ...look }),
   /** Whether the overlay is on, for the page's first frame. */
   lyricsVisible: () => call<boolean>("lyrics_visible"),
   /** The overlay's two preferences, for a window that has just opened. */
   lyricsPrefs: () => call<LyricsPrefs>("lyrics_prefs"),
   /** A track's words from LRCLIB. `null`: none of it, or nobody answered. */
+  // ── The widget deck (src-tauri/src/widgets.rs) ──────────────────────────────
+  /** The machine now, for the deck's PC page. */
+  widgetSystem: () => call<SystemSnapshot>("widget_system"),
+  /** The weather for a city the user typed (also remembered as theirs); null when not found. */
+  widgetWeather: (city: string) => call<WeatherNow | null>("widget_weather", { city }),
   lyricsFetch: (artist: string, title: string, album: string, duration: number) =>
     call<LyricsAnswer | null>("lyrics_fetch", { artist, title, album, duration }),
 
@@ -430,6 +441,33 @@ export interface LyricsAnswer {
   busy?: boolean;
 }
 
+/** widgets.rs: one reading of the machine. */
+export interface SystemSnapshot {
+  cpuPct: number;
+  ramPct: number;
+  ramUsed: number;
+  ramTotal: number;
+  battery: { pct: number; charging: boolean } | null;
+  uptime: number;
+  cores: number;
+  top: { name: string; cpuPct: number } | null;
+  diskUsed: number;
+  diskTotal: number;
+  /** Bytes a second. */
+  netDown: number;
+  netUp: number;
+}
+
+/** widgets.rs: the weather where the user said they are. */
+export interface WeatherNow {
+  place: string;
+  temp: number;
+  humidity: number;
+  wind: number;
+  code: number;
+  hours: { time: string; temp: number; code: number }[];
+}
+
 /** The floating overlay's two preferences (Settings → General). */
 export interface LyricsPrefs {
   romanize: boolean;
@@ -444,6 +482,13 @@ export interface LyricsPrefs {
   /** `#rrggbb` for the words, and for the card behind them. */
   textColor: string;
   background: string;
+  /** The card stays put / lets clicks through (its right-click menu, Settings). */
+  locked?: boolean;
+  clickThrough?: boolean;
+  showMiku?: boolean;
+  showCover?: boolean;
+  transparent?: boolean;
+  romajiLangs?: string[];
 }
 
 export interface HookStatus {

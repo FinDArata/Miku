@@ -56,6 +56,13 @@ export class IslandStateMachine {
   openOnHover = false;
   /** Grace period after the pointer leaves a hover-opened island, seconds. */
   hoverCloseDelay = 0.6;
+  /**
+   * The compact island has something of its own to go back to (the song's
+   * stage): opened over it, the island folds back this soon after the pointer
+   * leaves, seconds, rather than after the full auto-close delay.
+   */
+  quickReturn = false;
+  quickReturnDelay = 1.5;
   /** How long the pointer rests on the compact island before Open on hover opens it, seconds. */
   hoverOpenDelay = 0.5;
   /** Open because of a hover, until the user clicks inside it. */
@@ -194,7 +201,7 @@ export class IslandStateMachine {
   private scheduleHomeCollapse() {
     this.clear("homeCollapse");
     if (this.pinned) return;
-    const ms = (this.byHover ? this.hoverCloseDelay : this.homeDelay) * 1000;
+    const ms = (this.byHover ? this.hoverCloseDelay : this.quickReturn ? Math.min(this.quickReturnDelay, this.homeDelay) : this.homeDelay) * 1000;
     this.homeCollapseDueAt = performance.now() + ms;
     this.homeCollapse = window.setTimeout(() => {
       this.homeCollapse = null;

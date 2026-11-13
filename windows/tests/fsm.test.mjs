@@ -455,3 +455,15 @@ test("a pinned island folds to the compact island and stays, hold or not", () =>
   seconds(600);
   assert.equal(fsm.state, "petit");
 });
+
+test("opened over the song's stage, the island folds back soon after the pointer leaves", () => {
+  fsm.reveal();
+  fsm.quickReturn = true;
+  fsm.click();
+  assert.equal(fsm.state, "home");
+  fsm.mouseLeft();
+  seconds(1.4);
+  assert.equal(fsm.state, "home");
+  seconds(0.1);
+  assert.equal(fsm.state, "petit");
+});

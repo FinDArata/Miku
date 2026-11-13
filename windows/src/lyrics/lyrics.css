@@ -154,24 +154,58 @@ body.acrylic #lyrics {
   text-overflow: ellipsis;
 }
 
-/* The title line, small, at the very top: the one thing that says which song. */
+/* The song at the top of the card: cover, title and artist, left-aligned. */
 #song {
   position: absolute;
-  top: 5px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: var(--lyrics-title);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--lyrics-ink) 32%, transparent);
+  top: 8px;
+  left: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.8);
+}
+#song.empty { display: none; }
+#song-art {
+  flex: none;
+  width: calc(var(--lyrics-title) * 3.2);
+  height: calc(var(--lyrics-title) * 3.2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1b3b4a, #2b1a4d);
+  display: grid;
+  place-items: center;
+}
+#song-art::before { content: "♪"; color: rgba(57, 197, 187, 0.85); font-size: var(--lyrics-title); }
+#song-art.has-art::before { content: none; }
+#song-art img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#song-art.has-art img { display: block; }
+#song-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+#song-title,
+#song-artist {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+#song-title { font-size: calc(var(--lyrics-title) * 1.15); color: #39c5bb; }
+#song-artist { font-size: var(--lyrics-title); font-weight: 500; color: color-mix(in srgb, var(--lyrics-ink) 55%, transparent); }
+
+/* Miku in the bottom-left corner; the words keep clear of her. */
+#song-miku {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  width: 58px;
+  height: 58px;
   pointer-events: none;
 }
+#rows { padding: calc(var(--lyrics-title) * 3.2) 0 0 46px; }
 
 /* A row that is not there takes no space: an overlay with an ad keeps the
    card the same size it always is. */
@@ -281,3 +315,78 @@ body.acrylic #lyrics {
   background: rgba(46, 230, 200, 0.16);
   color: #63f0d9;
 }
+
+/* Locked in place: nothing says "drag me" any more. */
+body.locked #lyrics { cursor: default; }
+
+/* ── Miku's dress for the card (docs/mockups/notch-music.png) ───────────────── */
+#lyrics {
+  border-color: rgba(57, 197, 187, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(57, 197, 187, 0.08);
+  border-radius: 18px;
+}
+#lyrics:hover { border-color: rgba(57, 197, 187, 0.7); }
+#song-grip {
+  margin-left: auto;
+  flex: none;
+  color: #5d6d86;
+  font-size: 14px;
+  letter-spacing: -2px;
+}
+body.locked #song-grip { visibility: hidden; }
+.row.current .line {
+  color: #39c5bb;
+  text-shadow: 0 0 12px rgba(57, 197, 187, 0.7), 0 1px 5px rgba(0, 0, 0, 0.8);
+}
+body.no-miku #song-miku { display: none; }
+body.no-miku #rows { padding-left: 0; }
+body.no-cover #song-art { display: none; }
+#lyrics-menu .menu-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#lyrics-menu .menu-state { font-size: 0.85em; color: #8fa3b8; }
+#lyrics-menu .menu-state.on { color: #39c5bb; }
+
+
+/* ── The window wraps the card: no margin of empty window around it (the
+   Acrylic blur covers the whole window, so any margin showed as a frame). ── */
+#lyrics {
+  inset: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+#lyrics.menu-open { left: 0; top: 0; }
+
+/* Transparent: no card, no border — the words float with their own shadow. */
+body.see-through #lyrics,
+body.see-through.acrylic #lyrics {
+  background: transparent;
+  border-color: transparent;
+}
+body.see-through #lyrics:hover { border-color: rgba(57, 197, 187, 0.35); }
+body.see-through .row .line,
+body.see-through #song-text {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+
+/* ── The card's menu, dressed like the mockup (docs/mockups/notch-music.png) ── */
+#lyrics-menu {
+  background: #0e1424;
+  border: 1px solid #26324c;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+#lyrics-menu .menu-item {
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e9f6f5;
+}
+#lyrics-menu .menu-item:hover,
+#lyrics-menu .menu-item.menu-first { background: #18213a; }
+#lyrics-menu .menu-sep { background: #1d2742; margin: 4px 6px; }
+#lyrics-menu input[type="range"] { accent-color: #39c5bb; }
+#lyrics-menu .menu-head { color: #39c5bb; letter-spacing: 0.12em; }
+
+/* Windows 11 rounds this window by 8 px (platform::round_corners): the card
+   follows that curve exactly, so no square of blur shows past it. */
+#lyrics { border-radius: 8px; }

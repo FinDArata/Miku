@@ -42,7 +42,8 @@ lopdf = { version = "0.46", default-features = false }
 # The system health pill (system_health.rs): CPU, memory, and a laptop's battery.
 # MIT, pure Rust. Only `system` and `multithread`: no disk, network or component
 # walk, since nothing in this pill reads a disk or a socket.
-sysinfo = { version = "0.33", default-features = false, features = ["system", "multithread"] }
+# "disk" and "network" for the widget deck's PC page (widgets.rs).
+sysinfo = { version = "0.33", default-features = false, features = ["system", "multithread", "disk", "network"] }
 
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
@@ -57,6 +58,8 @@ windows = { version = "0.61", features = [
   "Media_Control",
   "Storage_Streams",
   "Win32_Foundation",
+  # The floating lyrics card: Windows 11 rounds its window (and its Acrylic).
+  "Win32_Graphics_Dwm",
   # The Spotify pill's volume: Spotify's session in the Windows mixer.
   "Win32_Media_Audio",
   "Win32_System_Com",

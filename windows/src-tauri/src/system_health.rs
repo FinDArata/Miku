@@ -111,6 +111,11 @@ fn read_health(system: &mut System) -> Health {
     }
 }
 
+/// The battery now, for the widget deck's PC page (widgets.rs).
+pub fn battery_now() -> Option<Battery> {
+    read_battery()
+}
+
 /// The battery, when this machine has one. sysinfo does not report batteries on
 /// every platform, so a missing one is `None` rather than an error.
 #[cfg(windows)]

@@ -1,5 +1,5 @@
 // SoundEngine — port of SoundEngine.swift.
-// The 30 WAVs are the macOS app's own files (see SOUNDS_DIR in vite.config.ts);
+// The WAVs are the macOS app's own files (see SOUNDS_DIR in vite.config.ts);
 // they are served at /sounds/<name>.wav. Default volume 0.12, slider range 0–0.2,
 // exactly like the Mac player, and several sounds may overlap.
 // A file of the user's own in the sounds folder (src-tauri/src/sounds.rs)
@@ -12,6 +12,8 @@ export const SOUND_NAMES = [
   "work", "finish", "error", "approval", "question", "approve", "gulp", "tick",
   "send", "love", "pop", "proud", "wink", "yawn", "attach", "think", "search",
   "rate", "sleep", "greeting", "slide",
+  // The launch greetings, one at random (voice/, scripts/voice-cues.mjs).
+  "greeting-matteta", "greeting-yoroshiku", "greeting-ganbarou",
 ] as const;
 
 export type SoundName = (typeof SOUND_NAMES)[number];
@@ -23,6 +25,7 @@ export type SoundName = (typeof SOUND_NAMES)[number];
  * play of a day.
  */
 const SPOKEN = new Set(["approve", "blip", "error", "finish", "greeting", "question"]);
+const isSpoken = (name: string) => SPOKEN.has(name) || name.startsWith("greeting-");
 
 class SoundEngine {
   enabled = true;
@@ -140,7 +143,7 @@ class SoundEngine {
     if (ctx.state === "suspended") void ctx.resume();
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.playbackRate.value = 1 + (Math.random() * 2 - 1) * (SPOKEN.has(name) ? 0.005 : 0.02);
+    src.playbackRate.value = 1 + (Math.random() * 2 - 1) * (isSpoken(name) ? 0.005 : 0.02);
     const gain = ctx.createGain();
     src.connect(gain);
     let out: AudioNode = gain;

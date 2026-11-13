@@ -17,7 +17,8 @@
 - The overview is one stage across the whole island instead of two side-by-side cards: Miku on her mark, and one pill's slide beside her. A pager in the header (a dot per slide, in its colour, plus ‹ ›) shows where you are; swipe sideways on a trackpad, drag the stage, or press ← / → to move. A slide that wants a look rings its dot in the badge's colour.
 - **Edit** in the pager lists every pill that can have a slide, the ones on first: click to switch one on or off (the same four slots as Settings, saved right away). Escape or the check mark ends it.
 - A pill's own slide reads like a title card: what kind of pill it is in small spaced capitals in its colour, its name large, then its state as a chip and what can be done as capsules on one line.
-- Changing slides has its own sound, `slide`: Miku sings "mi-ku" up a fourth, synthesised in `gen-sounds.mjs` from the vowels' formants rather than recorded. It is the 30th sound, and like the others it can be replaced by a file of your own.
+- Changing slides has its own sound, `slide`: two glassy notes a fifth apart, like a music box turning a page, synthesised in `gen-sounds.mjs`. It is the 30th sound, and like the others it can be replaced by a file of your own.
+- The launch greeting says hello out loud, a different line each time, picked at random from three: "待ってたよ！", "今日もよろしくね！" and "一緒にがんばろうね！". They are spoken by VOICEVOX:四国めたん, pitched up, and never say her name (the voice is not Miku's and must not pass for it), and committed in `windows/voice/` (`scripts/voice-cues.mjs --only=greeting-` renders them again).
 
 ### Miku's rooms wear Miku: the hub and the pill, redrawn
 

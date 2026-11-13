@@ -183,13 +183,13 @@ test("with a dictionary, kanji reads as full rōmaji", () => {
     東京: "トウキョウ", タワー: "タワー",
   }));
   assert.equal(japaneseReady(), true);
-  assert.equal(romanizeJapaneseFull("私の心"), "watashinokokoro");
-  assert.equal(romanizeJapaneseFull("今日は晴れ"), "kyouwahare");
-  assert.equal(romanizeJapaneseFull("東京タワー"), "toukyoutawā");
+  assert.equal(romanizeJapaneseFull("私の心"), "watashi no kokoro");
+  assert.equal(romanizeJapaneseFull("今日は晴れ"), "kyou wa hare");
+  assert.equal(romanizeJapaneseFull("東京タワー"), "toukyou tawā");
 });
 
 test("a Korean line still goes the Hangul way while Japanese is ready", () => {
-  assert.equal(romanizeMixed("사랑해"), "Saranghae");
+  assert.equal(romanizeMixed("사랑해"), "saranghae");
 });
 
 test("without a dictionary, Japanese kanji stays as written", () => {
@@ -208,10 +208,99 @@ test("a song's language is decided by its lines, not by one of them", () => {
 });
 
 test("Hangul reads as Revised Romanization, with the final carried over", () => {
-  assert.equal(romanizeHangul("사랑해"), "Saranghae");
-  assert.equal(romanizeHangul("안녕하세요"), "Annyeonghaseyo");
-  assert.equal(romanizeHangul("있어"), "Isseo");
-  assert.equal(romanizeHangul("한국어"), "Hangugeo");
+  assert.equal(romanizeHangul("사랑해"), "saranghae");
+  assert.equal(romanizeHangul("안녕하세요"), "annyeonghaseyo");
+  assert.equal(romanizeHangul("있어"), "isseo");
+  assert.equal(romanizeHangul("한국어"), "hangugeo");
+});
+
+test("Hangul is lowercase word by word, never capitalised mid-line", () => {
+  assert.equal(romanizeMixed("빨리 와"), "ppalli wa");
+  assert.equal(romanizeMixed("너를 사랑해 Baby"), "neoreul saranghae Baby");
+});
+
+test("Hangul sound changes across a syllable: nasal, liquid, ㅎ, palatal", () => {
+  assert.equal(romanizeHangul("합니다"), "hamnida");
+  assert.equal(romanizeHangul("국물"), "gungmul");
+  assert.equal(romanizeHangul("신라"), "silla");
+  assert.equal(romanizeHangul("빨리"), "ppalli");
+  assert.equal(romanizeHangul("종로"), "jongno");
+  assert.equal(romanizeHangul("좋아"), "joa");
+  assert.equal(romanizeHangul("좋다"), "jota");
+  assert.equal(romanizeHangul("축하"), "chuka");
+  assert.equal(romanizeHangul("같이"), "gachi");
+  assert.equal(romanizeHangul("굳이"), "guji");
+  // No change across a space: each word is said on its own.
+  assert.equal(romanizeHangul("국 물"), "guk mul");
+});
+
+test("Japanese punctuation reads as Latin, and a dash is not a long vowel", () => {
+  assert.equal(romanizeJapanese("あい—ずっと"), "ai—zutto");
+  assert.equal(romanizeJapanese("あっ、まって"), "a, matte");
+  assert.equal(romanizeJapanese("「まっちゃ」"), "“matcha”");
+});
+
+/** Tokens with kuromoji's parts of speech, as the real dictionary gives them. */
+const posTokenizer = (tokens) => ({ tokenize: () => tokens });
+
+test("with parts of speech, particles are said as sung and words stay whole", () => {
+  useJapanese(posTokenizer([
+    { surface_form: "私", reading: "ワタシ", pos: "名詞" },
+    { surface_form: "は", reading: "ハ", pos: "助詞", pos_detail_1: "係助詞" },
+    { surface_form: "東京", reading: "トウキョウ", pos: "名詞" },
+    { surface_form: "へ", reading: "ヘ", pos: "助詞", pos_detail_1: "格助詞" },
+    { surface_form: "行き", reading: "イキ", pos: "動詞", pos_detail_1: "自立" },
+    { surface_form: "たい", reading: "タイ", pos: "助動詞" },
+  ]));
+  assert.equal(romanizeJapaneseFull("私は東京へ行きたい"), "watashi wa toukyou e ikitai");
+  useJapanese(posTokenizer([
+    { surface_form: "待っ", reading: "マッ", pos: "動詞", pos_detail_1: "自立" },
+    { surface_form: "て", reading: "テ", pos: "助詞", pos_detail_1: "接続助詞" },
+    { surface_form: "、", reading: "、", pos: "記号" },
+    { surface_form: "ね", reading: "ネ", pos: "助詞", pos_detail_1: "終助詞" },
+  ]));
+  assert.equal(romanizeJapaneseFull("待って、ね"), "matte, ne");
+  useJapanese(null);
+});
+
+test("々 and full-width punctuation stay inside the Japanese run", () => {
+  // 時 + 々 cut apart: the word is written out (時時) and read again.
+  useJapanese({
+    tokenize: (text) => text.includes("々")
+      ? [{ surface_form: "時", reading: "トキ", pos: "名詞" }, { surface_form: "々", reading: null, pos: "記号" }]
+      : [{ surface_form: "時時", reading: "トキドキ", pos: "副詞" }, { surface_form: "！", reading: "！", pos: "記号" }],
+  });
+  assert.equal(romanizeMixed("時々！", "japanese"), "tokidoki!");
+  useJapanese(null);
+});
+
+test("a lyric kanji the dictionary cannot read is written out first", () => {
+  const seen = [];
+  useJapanese({ tokenize: (text) => { seen.push(text); return [{ surface_form: "煌", reading: null, pos: "名詞" }]; } });
+  assert.equal(romanizeJapaneseFull("燦きに"), "kou");
+  assert.equal(seen[0], "きらめきに");
+  useJapanese(null);
+});
+
+test("二人 and 一人 are read futari and hitori, as a song says them", () => {
+  const seen = [];
+  useJapanese({ tokenize: (text) => { seen.push(text); return []; } });
+  romanizeJapaneseFull("二人で笑いながら一人じゃない");
+  assert.equal(seen[0], "ふたりで笑いながらひとりじゃない");
+  useJapanese(null);
+});
+
+test("a romanised run and a Latin word written together get a space", () => {
+  assert.equal(romanizeMixed("まちでdancin'", "japanese"), "machide dancin'");
+  assert.equal(romanizeMixed("Miku♪"), "Miku♪");
+});
+
+test("only the languages the user picked are romanised", () => {
+  assert.equal(romanizeMixed("사랑해 カタカナ", null, ["ja"]), "사랑해 katakana");
+  assert.equal(romanizeMixed("사랑해 カタカナ", null, ["ko"]), "saranghae カタカナ");
+  assert.equal(romanizeMixed("사랑해", null, []), "사랑해");
+  // Not told which: every language, as before.
+  assert.equal(romanizeMixed("사랑해"), "saranghae");
 });
 
 test("the script of a line is its own", () => {

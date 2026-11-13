@@ -83,46 +83,174 @@ body {
 
 /* ── Island ─────────────────────────────────────────────────────────────── */
 
+/* The song's stage (docs/mockups/notch-music.png): header, Miku under the
+   spotlights on an LED floor, the words, the clock and the buttons. */
 #lyrics-pill {
+  --ms-teal: #39c5bb;
+  --ms-pink: #e8457c;
   position: absolute;
-  inset: 6px 10px;
+  inset: 0;
   z-index: 4;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: rgba(14, 15, 17, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 26px 26px;
+  background: linear-gradient(#0d1322, #18213a);
+  border: 1px solid #2b3858;
+  border-top: none;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   pointer-events: auto;
   cursor: default;
+  color: #e9f6f5;
+}
+#lyrics-pill[hidden] { display: none; }
+
+#lyrics-pill .ms-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #0a0f1a;
+  border-bottom: 1px solid #1d2742;
+}
+#lyrics-pill .ms-art {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2b1a4d, #1a3b5c);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+}
+#lyrics-pill .ms-art::before { content: "♪"; color: rgba(255, 255, 255, 0.8); font-size: 20px; }
+#lyrics-pill .ms-art.has-art::before { content: none; }
+#lyrics-pill .ms-art img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#lyrics-pill .ms-art.has-art img { display: block; }
+#lyrics-pill .ms-text { min-width: 0; flex: 1; }
+#lyrics-pill .ms-title,
+#lyrics-pill .ms-artist,
+#lyrics-pill .ms-album { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#lyrics-pill .ms-title { font-size: 14px; font-weight: 700; }
+#lyrics-pill .ms-artist { font-size: 12px; color: #8fa3b8; margin-top: 1px; }
+#lyrics-pill .ms-album { font-size: 11px; color: #5d6d86; margin-top: 1px; }
+#lyrics-pill .ms-album:empty { display: none; }
+#lyrics-pill .ms-src {
+  align-self: flex-start;
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #39c5bb;
+  border: 1px solid rgba(57, 197, 187, 0.4);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+#lyrics-pill .ms-src.spotify { color: #5fd37a; border-color: rgba(95, 211, 122, 0.4); }
+
+/* The stage takes what the words leave: a long line wraps, Miku gets smaller. */
+#lyrics-pill .ms-stage { position: relative; flex: 1 1 104px; min-height: 64px; overflow: hidden; }
+#lyrics-pill .ms-beam {
+  position: absolute;
+  top: -10px;
+  width: 120px;
+  height: 260px;
+  background: linear-gradient(rgba(57, 197, 187, 0.38), rgba(57, 197, 187, 0));
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+#lyrics-pill .ms-beam.left { left: 20px; transform: rotate(-12deg); }
+#lyrics-pill .ms-beam.right { right: 20px; transform: rotate(12deg); }
+#lyrics-pill .ms-beam.mid { left: calc(50% - 60px); }
+#lyrics-pill .ms-miku {
+  position: absolute;
+  left: calc(50% - 55px);
+  top: 4px;
+  width: 110px;
+  height: calc(100% - 4px);
+}
+#lyrics-pill .ms-floor {
+  flex: none;
+  height: 10px;
+  background: repeating-linear-gradient(90deg, var(--ms-teal) 0 18px, #1b6c6a 18px 20px, var(--ms-pink) 20px 38px, #7a2547 38px 40px);
+  opacity: 0.9;
+  box-shadow: 0 0 20px rgba(57, 197, 187, 0.6);
 }
 
-#lyrics-pill[hidden] { display: none; }
-#lyrics-pill .lyrics-pill-title {
+#lyrics-pill .ms-lyr {
+  flex: none;
+  padding: 7px 16px 6px;
+  background: linear-gradient(#0d1322, #0a0f1a);
+  text-align: center;
+  border-top: 1px solid #222c45;
+}
+#lyrics-pill .ms-line {
+  line-height: 1.25;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+#lyrics-pill .ms-line.past,
+#lyrics-pill .ms-line.next { font-size: 12.5px; color: #55657e; min-height: 1.25em; }
+#lyrics-pill .ms-line.current {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 2px 0;
+  color: var(--ms-teal);
+  text-shadow: 0 0 10px rgba(57, 197, 187, 0.6);
+}
+
+#lyrics-pill .ms-prog {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: Consolas, ui-monospace, monospace;
+  font-size: 11px;
+  color: #8fa3b8;
+  padding: 2px 16px 4px;
+  background: #0a0f1a;
+}
+#lyrics-pill .ms-bar { flex: 1; height: 4px; border-radius: 2px; background: #1f2840; overflow: hidden; }
+#lyrics-pill .ms-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ms-teal), var(--ms-pink));
+}
+
+#lyrics-pill .ms-ctl {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 0 0 6px;
+  background: #0a0f1a;
+  flex: none;
+  height: 40px;
+}
+#lyrics-pill .ms-ctl button { border: none; background: transparent; color: #8fa3b8; cursor: pointer; display: grid; place-items: center; }
+#lyrics-pill .ms-ctl .ms-skip:hover { color: #e9f6f5; }
+#lyrics-pill .ms-ctl .ms-play {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ms-teal);
+  color: #062a28;
+}
+#lyrics-pill .ms-ctl .ms-detach {
   position: absolute;
-  top: 3px;
-  left: 14px;
   right: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-  color: var(--dim-3);
-  font-size: 9px;
-  text-transform: uppercase;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #2d3858;
+  border-radius: 8px;
 }
-#lyrics-pill .lyrics-pill-row {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-  line-height: 1.15;
-}
-#lyrics-pill .past, #lyrics-pill .next { color: var(--dim-3); font-size: 11px; }
-#lyrics-pill .current { color: var(--ink); font-size: 16px; font-weight: 700; }
+#lyrics-pill .ms-ctl .ms-detach:hover { border-color: var(--ms-teal); color: var(--ms-teal); }
 
 #island {
   position: absolute;
@@ -172,6 +300,8 @@ body {
 
 @keyframes footlights {
   50% { opacity: 0.8; }
+}
+
 /* The weather (Snow/Sakura): behind everything the island shows, above the
    black. Cross-faded, so a wardrobe pick swaps the sky without a blink. */
 #ambient-canvas {
@@ -4174,3 +4304,425 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+
+/* ── The synth strip (closed island, "mochi" style; docs/mockups/notch-combined.png):
+   Miku's head at the left (the bot canvas), an equaliser, then the time or the
+   song. The bars dance while a song plays or an agent works. */
+#island-closed.synth {
+  justify-content: flex-start;
+  padding: 0 12px 0 32px;
+  gap: 7px;
+}
+#island-closed .eq { display: none; }
+#island-closed.synth .eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+#island-closed.synth .eq i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(#e8457c, #39c5bb);
+  transform-origin: bottom;
+  transform: scaleY(0.3);
+}
+#island-closed.synth.live .eq i { animation: synth-bounce 0.9s ease-in-out infinite; }
+#island-closed.synth .eq i:nth-child(2) { animation-delay: -0.3s; }
+#island-closed.synth .eq i:nth-child(3) { animation-delay: -0.6s; }
+#island-closed.synth .eq i:nth-child(4) { animation-delay: -0.15s; }
+#island-closed.synth .eq i:nth-child(5) { animation-delay: -0.45s; }
+#island-closed.synth .eq i:nth-child(6) { animation-delay: -0.75s; }
+#island-closed.synth .eq i:nth-child(7) { animation-delay: -0.2s; }
+@keyframes synth-breathe {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(0.45); }
+}
+@keyframes synth-bounce {
+  0%, 100% { transform: scaleY(0.3); }
+  25% { transform: scaleY(1); }
+  50% { transform: scaleY(0.55); }
+  75% { transform: scaleY(0.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #island-closed.synth .eq i { animation: none; }
+}
+
+
+/* ── Twin-tail (docs/mockups/notch-combined.png): an agent asking. A teal→pink
+   bar glows along the top like her twin tails, Miku stands bigger on the left
+   (layout.ts), and the card is the board she holds up. */
+.card.twintail {
+  border: 2px solid #39c5bb;
+  background: linear-gradient(180deg, rgba(18, 26, 43, 0.96), rgba(12, 17, 30, 0.96));
+  box-shadow: 0 0 0 4px rgba(57, 197, 187, 0.12), 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+.card.twintail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, #e8457c, #39c5bb, #e8457c);
+  box-shadow: 0 0 12px rgba(57, 197, 187, 0.7);
+  pointer-events: none;
+}
+.card.twintail .tt-heading {
+  font: 700 12px var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #39c5bb;
+  margin-bottom: 2px;
+}
+.card.twintail .code {
+  background: #0b1120;
+  border-radius: 8px;
+}
+.card.twintail .btn.primary {
+  background: #39c5bb;
+  color: #062a28;
+}
+
+
+/* ══ Miku's stage, everywhere in the island (docs/mockups/notch-*.png) ═══════
+   The island is no longer a black notch: it is a small stage. Navy instead of
+   black, a teal→pink bar along the top like her twin tails, an LED floor along
+   the bottom, spotlights on her mark, navy cards with teal headings, teal
+   capsules for what can be pressed. Last in the file so it wins over the
+   upstream look without rewriting it rule by rule. */
+
+:root {
+  --stage-top: #0d1322;
+  --stage-bottom: #18213a;
+  --stage-panel: rgba(10, 15, 26, 0.92);
+  --stage-line: #26324c;
+  --stage-line-2: #2d3858;
+  --stage-teal: #39c5bb;
+  --stage-pink: #e8457c;
+}
+
+/* The island itself: navy, a thin edge, at every size. */
+#island {
+  background: linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  box-shadow: inset 0 0 0 1px var(--stage-line-2), 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+#island[data-mode="hidden"] {
+  background: linear-gradient(180deg, #0a0f1a, #121a2b);
+  box-shadow: inset 0 0 0 1px var(--stage-line), 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+#island[data-mode="expanded"] {
+  background:
+    radial-gradient(70% 90% at 50% -20%, rgba(57, 197, 187, 0.16), transparent 60%),
+    linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  box-shadow: inset 0 0 0 1px var(--stage-line-2), 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+/* Twin tails: a teal→pink bar glowing along the top edge. */
+#island[data-mode="expanded"] #island-clip::before,
+#island[data-mode="compact"] #island-clip::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--stage-pink), var(--stage-teal), var(--stage-pink));
+  box-shadow: 0 0 14px rgba(57, 197, 187, 0.65);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* The LED floor along the bottom, where the footlight dots were. */
+#island[data-mode="expanded"] #island-clip::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--stage-teal) 0 16px, #1b6c6a 16px 18px, var(--stage-pink) 18px 34px, #7a2547 34px 36px);
+  box-shadow: 0 0 16px rgba(57, 197, 187, 0.55);
+  opacity: 0.85;
+  animation: none;
+}
+
+/* Header: the tabs as a navy capsule; the open tab is a teal button. */
+.tabs {
+  background: #0a0f1a;
+  border: 1px solid var(--stage-line);
+}
+.tab.on {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 12px rgba(57, 197, 187, 0.45);
+}
+.header-actions button:hover { color: var(--stage-teal); }
+
+/* Cards: navy panels with a hairline edge, like the widgets in the mockups. */
+.card {
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+}
+
+/* Her mark on the left card: three spotlights and a strip of LED floor. */
+.overview > .left > .card::before {
+  background:
+    linear-gradient(rgba(57, 197, 187, 0.3), rgba(57, 197, 187, 0)) 58px 0 / 1px 100% no-repeat,
+    conic-gradient(from 168deg at 58px -6px, transparent 0deg, rgba(57, 197, 187, 0.2) 8deg, rgba(57, 197, 187, 0.2) 16deg, transparent 24deg),
+    conic-gradient(from 150deg at 20px -6px, transparent 0deg, rgba(57, 197, 187, 0.12) 10deg, transparent 20deg),
+    conic-gradient(from 190deg at 96px -6px, transparent 0deg, rgba(232, 69, 124, 0.12) 10deg, transparent 20deg),
+    radial-gradient(60px 20px at 58px 100%, rgba(57, 197, 187, 0.35), transparent 75%);
+}
+.overview > .left > .card::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  width: 96px;
+  bottom: 8px;
+  height: 5px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, var(--stage-teal) 0 10px, #1b6c6a 10px 12px, var(--stage-pink) 12px 22px, #7a2547 22px 24px);
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.55);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* A slide's kind ("INTEGRATION") in teal, spaced like the mockups' headings. */
+.int-card.idle .int-head > span {
+  color: var(--stage-teal);
+  letter-spacing: 0.18em;
+}
+.int-card.idle .int-status {
+  background: #141c30;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+.int-card.idle .int-actions .link-btn {
+  color: #cfeeea;
+  background: #18213a;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+.int-card.idle .int-actions .link-btn:hover {
+  color: var(--stage-teal);
+  background: rgba(57, 197, 187, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.6), 0 0 10px rgba(57, 197, 187, 0.3);
+}
+
+/* Buttons: teal to press, navy for the rest. */
+.btn.primary {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 14px rgba(57, 197, 187, 0.4);
+}
+.btn.secondary {
+  background: #18213a;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+  color: var(--ink);
+}
+
+
+/* ══ The widget deck (views/deck.ts; docs/mockups/notch-widgets.png) ═════════
+   Opens in place of the old overview: a bar to swipe between widgets on top,
+   Miku full-length on the left in the page's pose, the widget on the right. */
+#island[data-view="overview"] #header { display: none; }
+.view.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+.dk-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  flex: none;
+}
+.dk-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: #0a0f1a;
+  border: 1px solid var(--stage-line);
+}
+.dk-tab {
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  font: 600 11px var(--font);
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: default;
+  transition: background 0.15s, color 0.15s;
+}
+.dk-tab:hover { color: var(--ink); }
+.dk-tab.on {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.45);
+}
+.dk-arrow, .dk-icon {
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font: 700 17px var(--font);
+  cursor: default;
+}
+.dk-arrow:hover, .dk-icon:hover { color: var(--stage-teal); background: rgba(57, 197, 187, 0.1); }
+.dk-icon { margin-left: 2px; }
+
+.dk-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
+}
+.dk-left {
+  position: relative;
+  width: 140px;
+  flex: none;
+}
+.dk-miku {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 16px;
+  width: 100%;
+  height: calc(100% - 16px);
+}
+.dk-floor {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(rgba(57, 197, 187, 0.45), transparent 70%);
+}
+.dk-body {
+  flex: 1;
+  min-width: 0;
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  border-radius: 16px;
+  padding: 10px 14px;
+  overflow: hidden;
+}
+.dk-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.dk-title { font: 800 12.5px var(--font); letter-spacing: 0.14em; color: var(--stage-teal); }
+.dk-meta { font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; margin-left: auto; }
+.dk-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 92px;
+  align-items: center;
+  gap: 8px;
+  font: 500 12px var(--font);
+  padding: 3px 0;
+  border-top: 1px solid #18213a;
+}
+.dk-val { text-align: right; font: 500 11px ui-monospace, Consolas, monospace; color: #cfd8e3; }
+.dk-bar { height: 7px; border-radius: 4px; background: #1a2238; overflow: hidden; }
+.dk-bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.dk-say {
+  margin-top: 8px;
+  font: 500 12px var(--font);
+  background: #141c30;
+  border-left: 3px solid var(--stage-teal);
+  padding: 6px 9px;
+  border-radius: 0 8px 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dk-dim { font: 500 11px var(--font); color: #8fa3b8; }
+.dk-big { font: 800 34px var(--font); line-height: 1; }
+.dk-big.pink { color: var(--stage-pink); margin-top: 4px; }
+.dk-song { display: flex; align-items: center; gap: 10px; }
+.dk-art { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex: none; background: linear-gradient(135deg, #2b1a4d, #1a3b5c); }
+.dk-art img { width: 100%; height: 100%; object-fit: cover; }
+.dk-song-text { min-width: 0; }
+.dk-song-title { font: 700 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-song-artist { font: 500 12px var(--font); color: #8fa3b8; }
+.dk-prog { grid-template-columns: 40px 1fr 40px; border-top: 0; margin-top: 6px; }
+.dk-ctl { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 2px; }
+.dk-ctl.left { justify-content: flex-start; margin-top: 8px; }
+.dk-ctl button { border: 0; background: transparent; color: #8fa3b8; display: grid; place-items: center; cursor: default; }
+.dk-ctl .dk-play { width: 30px; height: 30px; border-radius: 50%; background: var(--stage-teal); color: #062a28; }
+.dk-focus { display: flex; align-items: center; gap: 16px; }
+.dk-ring {
+  --done: 0%;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--stage-pink) 0 var(--done), #1f2840 var(--done) 100%);
+  flex: none;
+}
+.dk-ring > div {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: #0a0f1a;
+  display: grid;
+  place-items: center;
+  font: 700 18px ui-monospace, Consolas, monospace;
+}
+.dk-focus-side { display: flex; flex-direction: column; gap: 6px; }
+.dk-weather { display: flex; align-items: center; gap: 12px; }
+.dk-weather-text { font: 600 13px var(--font); }
+.dk-hours { display: flex; justify-content: space-between; margin-top: 8px; }
+.dk-hours > div { display: flex; flex-direction: column; align-items: center; font: 500 10.5px var(--font); color: #8fa3b8; }
+.dk-hours b { font-size: 15px; margin: 2px 0; }
+.dk-city { display: flex; gap: 8px; margin-top: 4px; }
+.dk-input {
+  flex: 1;
+  min-width: 0;
+  background: #0b1120;
+  border: 1px solid var(--stage-line-2);
+  border-radius: 10px;
+  color: var(--ink);
+  font: 500 12.5px var(--font);
+  padding: 7px 10px;
+  outline: none;
+}
+.dk-input:focus { border-color: var(--stage-teal); }
+.dk-agent { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid #18213a; font: 500 12px var(--font); min-width: 0; }
+.dk-agent .dk-dim { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dk-dot { width: 8px; height: 8px; border-radius: 50%; background: #8fa3b8; flex: none; }
+.dk-dot.working, .dk-dot.thinking, .dk-dot.searching { background: var(--stage-teal); box-shadow: 0 0 6px var(--stage-teal); }
+.dk-dot.approval, .dk-dot.question { background: #ffd36b; }
+.dk-dot.error { background: var(--stage-pink); }
+.dk-dot.finished { background: #5fd37a; }
+
+/* No stage floor under the open island, and no pose line under Miku. */
+#island[data-mode="expanded"] #island-clip::after { display: none; }
+.dk-place {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  font: 500 11px var(--font);
+  cursor: default;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.dk-place:hover { color: var(--stage-teal); background: rgba(57, 197, 187, 0.1); }
+.dk-focus { gap: 12px; }
+.dk-left { width: 120px; }
+.dk-miku { bottom: 0; height: 100%; }
+.dk-floor { bottom: 4px; }

@@ -2,34 +2,20 @@
 // colours and wording are copied from the Swift views so both platforms read
 // identically.
 
+import { buildDeck } from "./deck";
 import { h, svg, clear, dot } from "./dom";
 import { ICONS } from "./icons";
-import { Ticker } from "./ticker";
 import { State, type AgentTask } from "../core/state";
 import { washRGBA, type IslandViewName, type Wash } from "../core/layout";
 import { buildPrompt } from "./chat";
 import { buildChoose, buildUpload, buildUploading } from "./upload";
-import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
-import { highlightRow, listRows, openRow } from "./github";
-import { MAX_DECLARED, declarablePills, pillDefinition, sanitizeDeclared, sessionSubtitle } from "../core/pills";
-import { pillColor } from "../core/pill-colors";
-import {
-  PlanCard, buildPlanPill, claudePillVisible, codexPillVisible, planCardOpen, refreshCodexPlanUsage,
-} from "./usage";
-import { buildDiffCard } from "./diff";
+import { pillDefinition } from "../core/pills";
+import { buildPlanPill, claudePillVisible, codexPillVisible, refreshCodexPlanUsage } from "./usage";
 import { lastTextStep } from "../core/diff";
-import { Bridge } from "../core/bridge";
 import { buildRecap } from "./recap";
 import { buildWardrobe } from "./wardrobe";
 import { buildUpdate } from "./update";
 import { buildWhatsNew } from "./whatsnew";
-import { buildSpotifyCard } from "./spotify";
-import { SPOTIFY_ID } from "../core/spotify";
-import { buildWhatsAppCard } from "./whatsapp";
-import { buildSystemCard, SYSTEM_ID } from "./system";
-import { WHATSAPP_ID } from "../core/whatsapp";
-import { MAIL_ID } from "../core/mail";
-import { buildMailCard } from "./mail";
 import type { Outfit, OutfitSelection, VariantSelection } from "../mochi/wardrobe";
 import type { MikuVariantId } from "../mochi/variants";
 import { language, t, tn, tl, type Msg } from "../i18n/i18n";
@@ -236,393 +222,6 @@ export function buildHeader(actions: ViewActions): ViewHost {
 
 // ── Overview ──────────────────────────────────────────────────────────────────
 
-function buildOverview(actions: ViewActions): ViewHost {
-  /** The diff open in the left card (a FileDiff id), as activeDiffId on macOS. */
-  let activeDiffId: number | null = null;
-  const closeDiff = () => {
-    if (activeDiffId == null) return;
-    activeDiffId = null;
-    State.notify();
-  };
-  const ticker = new Ticker((diffId) => {
-    actions.blip();
-    activeDiffId = diffId;
-    State.notify();
-  });
-  const who = h("div", { class: "who" });
-  const tickerBody = h("div", { class: "card-body" }, who, ticker.el);
-  const leftBody = h("div", { class: "left-body" });
-  const jump = h(
-    "button",
-    { class: "icon-btn jump", title: tl("Open"), onclick: () => actions.openTarget() },
-    svg(ICONS.arrowUpRight, 12),
-  );
-  const left = card(null, leftBody, jump);
-  // Edit: every pill that can have a slide, each switched on or off here.
-  const editPanel = h("div", { class: "slide-edit" });
-  // Opened from a plan pill in the header: stands in for the left card.
-  const plan = new PlanCard();
-  let planTimer: number | null = null;
-  // Spotify's card and pill are kept and updated in place: the progress bar
-  // runs on, and a slider being dragged must not be rebuilt under the pointer.
-  const spotifyCard = buildSpotifyCard();
-  // WhatsApp's card too: its reply field keeps the draft and the keyboard while messages arrive.
-  // Mail's card too (classic Outlook): the search field keeps its text and the keyboard.
-  const mailCard = buildMailCard({ keyboard: (on) => actions.keyboard(on) });
-  // The System pill's card: its numbers change every three seconds, so it is
-  // kept and updated in place rather than rebuilt.
-  const systemCard = buildSystemCard();
-  const whatsappCard = buildWhatsAppCard({
-    openSettings: () => actions.openSettingsWindow(),
-    keyboard: (on) => actions.keyboard(on),
-    holdOpen: (on) => actions.holdOpen(on),
-  });
-
-  const el = h("div", { class: "view overview" }, h("div", { class: "left" }, left));
-
-  let detailOpen = false;
-  let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | "plan" | "diff" | "spotify" | "whatsapp" | "mail" | "system" | "edit" | null = null;
-  let cardKey = "";
-  /** The list row highlighted at the last sync, to scroll only when it moves. */
-  let shownSelection: number | null = null;
-
-  // Leaving the overview or folding the island closes the diff, as on macOS,
-  // and ends choosing the slides.
-  State.subscribe(() => {
-    if (State.view !== "overview" || State.mode !== "expanded") {
-      activeDiffId = null;
-      slideEditing = false;
-    }
-  });
-  // Escape steps back out of the diff, or out of Edit, before it closes the island.
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key !== "Escape" || State.view !== "overview") return;
-      if (slideEditing) {
-        e.stopImmediatePropagation();
-        slideEditing = false;
-        State.notify();
-        return;
-      }
-      if (activeDiffId == null) return;
-      e.stopImmediatePropagation();
-      closeDiff();
-    },
-    true,
-  );
-
-  // ── Slides: swipe, drag or ←/→ to the next pill ──
-  /** Plays the slide arriving from `dir` (1: from the right). */
-  function slideIn(dir: number, cls = "slide") {
-    leftBody.classList.remove("slide-next", "slide-prev", "edge-next", "edge-prev");
-    void leftBody.offsetWidth; // restarts the animation
-    leftBody.classList.add(`${cls === "edge" ? "edge" : "slide"}-${dir > 0 ? "next" : "prev"}`);
-  }
-  function go(dir: 1 | -1) {
-    if (!stepSlide(actions, dir)) slideIn(dir, "edge");
-  }
-
-  // A trackpad's sideways swipe (or Shift + wheel): one slide per gesture.
-  let wheelAcc = 0;
-  let wheelAt = 0;
-  let wheelLock = 0;
-  left.addEventListener("wheel", (e) => {
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0;
-    if (!d || slideEditing) return;
-    e.preventDefault();
-    const now = performance.now();
-    if (now - wheelAt > 220) wheelAcc = 0;
-    wheelAt = now;
-    if (now < wheelLock) return;
-    wheelAcc += d;
-    if (Math.abs(wheelAcc) < 40) return;
-    go(wheelAcc > 0 ? 1 : -1);
-    wheelAcc = 0;
-    wheelLock = now + 450;
-  }, { passive: false });
-
-  // Dragging the stage sideways, like a phone. Never from a control, nor from
-  // Miku's own spot (pressing her there picks her up to carry her out).
-  const MIKU_ZONE = 108;
-  const SWIPE = 60;
-  let drag: { x: number; dx: number } | null = null;
-  left.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || slideEditing) return;
-    if (e.clientX - left.getBoundingClientRect().left < MIKU_ZONE) return;
-    if ((e.target as Element).closest("button, a, input, textarea, select, [contenteditable], [role=slider]")) return;
-    drag = { x: e.clientX, dx: 0 };
-  });
-  window.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    drag.dx = e.clientX - drag.x;
-    if (Math.abs(drag.dx) < 6) return;
-    leftBody.style.transition = "none";
-    leftBody.style.transform = `translateX(${drag.dx * 0.35}px)`;
-  });
-  window.addEventListener("pointerup", () => {
-    if (!drag) return;
-    const dx = drag.dx;
-    drag = null;
-    leftBody.style.transition = "";
-    leftBody.style.transform = "";
-    if (Math.abs(dx) >= SWIPE) go(dx < 0 ? 1 : -1);
-  });
-
-  window.addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-    if (State.view !== "overview" || State.mode !== "expanded" || slideEditing) return;
-    if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
-    if ((e.target as Element | null)?.closest?.("input, textarea, [contenteditable]")) return;
-    e.preventDefault();
-    go(e.key === "ArrowRight" ? 1 : -1);
-  });
-
-  function renderEdit() {
-    clear(editPanel);
-    const d = sanitizeDeclared(State.settings, State.os);
-    const main = pillDefinition(d.mainPill);
-    // The main pill first, then the slides that are on (in their order), then the rest.
-    const rest = declarablePills(State.os).filter((p) => p.id !== d.mainPill);
-    const rank = (id: string) => (d.activeIntegrations.includes(id) ? d.activeIntegrations.indexOf(id) : MAX_DECLARED);
-    const defs = [...(main ? [main] : []), ...rest.sort((a, b) => rank(a.id) - rank(b.id))];
-    const note = h("div", { class: "slide-edit-note", text: `${d.activeIntegrations.length + 1}/${MAX_DECLARED + 1}` });
-    const grid = h("div", { class: "slide-edit-grid" });
-    for (const def of defs) {
-      const isMain = def.id === d.mainPill;
-      const on = isMain || d.activeIntegrations.includes(def.id);
-      const chip = h("button", {
-        class: `slide-chip${on ? " on" : ""}${isMain ? " main" : ""}`,
-        title: def.name,
-        onclick: () => {
-          // The main pill always has its slide: it is changed in Settings.
-          if (isMain) return;
-          if (!on && d.activeIntegrations.length >= MAX_DECLARED) {
-            note.textContent = t("All {max} slots are in use. Turn one off to make room for {name}.", { max: MAX_DECLARED, name: def.name });
-            note.classList.add("warn");
-            return;
-          }
-          actions.toggleSlide(def.id);
-        },
-      }, h("i"), h("span", { text: def.name }));
-      chip.style.setProperty("--pill", pillColor(def.id, def.color, State.settings.pillColors));
-      grid.append(chip);
-    }
-    editPanel.append(grid, note);
-  }
-
-  const hooks: IntegrationCardHooks = {
-    get detailOpen() {
-      return detailOpen;
-    },
-    openDetail() {
-      detailOpen = true;
-      cardKey = "";
-      State.notify();
-    },
-    closeDetail() {
-      detailOpen = false;
-      cardKey = "";
-      State.notify();
-    },
-    openSettings: () => actions.openSettingsWindow(),
-  };
-
-  /** The countdowns move every 30 s while a card is open, and only then. */
-  function syncPlanTimer(open: boolean) {
-    const stop = () => {
-      if (planTimer != null) window.clearInterval(planTimer);
-      planTimer = null;
-    };
-    if (!open) return stop();
-    if (planTimer != null) return;
-    planTimer = window.setInterval(() => {
-      if (planCardOpen() && State.mode === "expanded") State.notify();
-      else stop();
-    }, 30_000);
-  }
-
-  return {
-    el,
-    tick(nowMs: number) {
-      if (mode !== "ticker") return false;
-      ticker.tick(nowMs);
-      return ticker.animating;
-    },
-    command(command) {
-      if (command === "openSelection") {
-        // Ctrl+O: what a click on the highlighted row does.
-        if (mode !== "card" || State.cardSelection == null) return;
-        openRow(listRows(leftBody)[State.cardSelection]);
-        return;
-      }
-      // Ctrl+E (⌘E, islandToggleDiff): closes the diff that is open, else
-      // opens the focused pill's latest edit.
-      if (activeDiffId != null) {
-        closeDiff();
-        return;
-      }
-      const task = State.focusTask;
-      const diffs = task ? State.sessionDiffs.get(task.id) : undefined;
-      const last = diffs?.[diffs.length - 1];
-      if (last?.id == null) return;
-      activeDiffId = last.id;
-      State.notify();
-    },
-    sync() {
-      const task = State.focusTask;
-      if (task?.id !== lastFocus) {
-        const from = State.tasks.findIndex((x) => x.id === lastFocus);
-        const to = State.tasks.findIndex((x) => x.id === task?.id);
-        if (from >= 0 && to >= 0) slideIn(to > from ? 1 : -1);
-        lastFocus = task?.id ?? null;
-        detailOpen = false;
-        activeDiffId = null;
-        cardKey = "";
-        mode = null;
-      }
-
-      if (slideEditing) {
-        const key = `edit~${State.settings.mainPill}~${State.settings.activeIntegrations.join(",")}~${language()}`;
-        if (mode !== "edit" || key !== cardKey) {
-          mode = "edit";
-          cardKey = key;
-          renderEdit();
-          clear(leftBody);
-          leftBody.append(editPanel);
-        }
-        jump.style.display = "none";
-        State.cardItemCount = 0;
-        return;
-      }
-      if (mode === "edit") {
-        mode = null;
-        cardKey = "";
-      }
-
-      // A workspace or agent pill with a live session keeps the ticker; every
-      // other pill shows its own card, exactly like IntegrationCardView.
-      const sessionActive = task != null && hasSessionTicker(task);
-
-      const planOpen = planCardOpen();
-      if (mode === "plan" && !planOpen) {
-        mode = null;
-        cardKey = "";
-      }
-      syncPlanTimer(planOpen);
-
-      // A diff that has since been dropped (cap, expiry, session end) just closes.
-      const diff = task && activeDiffId != null ? State.findDiff(task.id, activeDiffId) : null;
-      if (!diff) activeDiffId = null;
-
-      if (planOpen) {
-        if (mode !== "plan") {
-          clear(leftBody);
-          leftBody.append(plan.el);
-          mode = "plan";
-        }
-        plan.sync();
-      } else if (task && diff) {
-        const key = `diff~${task.id}~${diff.id}`;
-        if (key !== cardKey) {
-          cardKey = key;
-          mode = "diff";
-          clear(leftBody);
-          leftBody.append(buildDiffCard(diff, {
-            dismiss: () => {
-              actions.blip();
-              closeDiff();
-            },
-            open: (path) => void Bridge.openFileInVSCode(path),
-          }));
-        }
-      } else if (task && sessionActive) {
-        if (mode !== "ticker") {
-          clear(leftBody);
-          leftBody.append(tickerBody);
-          mode = "ticker";
-          cardKey = "";
-        }
-        clear(who);
-        // The agent's name is already the pill's: the label says what kind of
-        // pill it is, as on the Mac (PillDefinition.sessionSubtitle).
-        who.append(
-          dot(task.color, 7),
-          h("span", { class: "name", text: task.name }),
-          h("span", { class: "tool", text: t(sessionSubtitle(task.id)) }),
-        );
-        if (task.steps.length > 1) {
-          who.append(h("span", {
-            class: "count",
-            text: `${Math.min(task.stepIndex + 1, task.steps.length)}/${task.steps.length}`,
-          }));
-        }
-        ticker.sync(task);
-      } else if (task && task.id === SPOTIFY_ID) {
-        // Its own card for every state: playing, idle, not installed.
-        if (mode !== "spotify") {
-          clear(leftBody);
-          leftBody.append(spotifyCard.el);
-          mode = "spotify";
-          cardKey = "";
-        }
-        spotifyCard.sync();
-      } else if (task && task.id === SYSTEM_ID) {
-        // The gauges are redrawn in place: the card's own copy of the reading
-        // is what changed, three seconds at a time.
-        if (mode !== "system") {
-          clear(leftBody);
-          leftBody.append(systemCard.el);
-          mode = "system";
-          cardKey = "";
-        }
-        systemCard.sync();
-      } else if (task && task.id === MAIL_ID) {
-        if (mode !== "mail") {
-          clear(leftBody);
-          leftBody.append(mailCard.el);
-          mode = "mail";
-          cardKey = "";
-        }
-        mailCard.sync();
-      } else if (task && task.id === WHATSAPP_ID) {
-        // Its own card in every state: not linked, no message, conversations, one open.
-        if (mode !== "whatsapp") {
-          clear(leftBody);
-          leftBody.append(whatsappCard.el);
-          mode = "whatsapp";
-          cardKey = "";
-        }
-        whatsappCard.sync();
-      } else if (task) {
-        const info = State.integrations[task.id];
-        const key = [
-          language(), task.id, task.color, detailOpen, task.state, task.steps.join("|"),
-          info?.loaded, info?.error, info?.configured,
-          JSON.stringify(info?.data ?? {}),
-        ].join("~");
-        if (key !== cardKey) {
-          cardKey = key;
-          mode = "card";
-          clear(leftBody);
-          leftBody.append(renderIntegrationCard(task, hooks));
-        }
-      }
-
-      jump.style.display = detailOpen || mode === "plan" || mode === "diff" ? "none" : "";
-
-      // Ctrl+↓ Ctrl+↑ walk the open GitHub list (cardItemCount / cardSelection).
-      const rows = mode === "card" ? listRows(leftBody) : [];
-      State.cardItemCount = rows.length;
-      if (State.cardSelection != null && State.cardSelection >= rows.length) State.cardSelection = null;
-      highlightRow(rows, State.cardSelection, State.cardSelection !== shownSelection);
-      shownSelection = State.cardSelection;
-
-    },
-  };
-}
-
 /**
  * IntegrationCardView.agentSessionActive: a workspace tool or an agent — or
  * any other tagged agent — with something going on.
@@ -697,7 +296,9 @@ function buildApproval(actions: ViewActions): ViewHost {
   const code = h("div", { class: "code" });
   const row = h("div", { class: "actions" });
   const more = h("div", { class: "queued-more" });
-  const cardEl = card("amber", stack(116, 16, who, code, row), foldButton(actions), more);
+  const heading = h("div", { class: "tt-heading", text: `✋ ${t("Miku asks for permission")}` });
+  const cardEl = card("amber", stack(140, 16, heading, who, code, row), foldButton(actions), more);
+  cardEl.classList.add("twintail");
   // Two ghost cards that fan out behind this one while a queue waits: real
   // siblings, so they never cross the card's own face.
   const g1 = h("div", { class: "ghost" });
@@ -793,7 +394,10 @@ function buildQuestion(actions: ViewActions): ViewHost {
   const title = h("div", { class: "title question-text" });
   const row = h("div", { class: "actions options" });
   const fold = foldButton(actions);
-  const el = h("div", { class: "view" }, card("cyan", stack(116, 16, who, title, row), fold));
+  const heading = h("div", { class: "tt-heading", text: `💬 ${t("Miku has a question")}` });
+  const questionCard = card("cyan", stack(140, 16, heading, who, title, row), fold);
+  questionCard.classList.add("twintail");
+  const el = h("div", { class: "view" }, questionCard);
 
   // Where we are in the request on screen: which question, what is answered so
   // far, and what is ticked in a pick-several question.
@@ -1046,7 +650,9 @@ export function buildViews(
   onChatHeightChange: () => void,
 ): Map<IslandViewName, ViewHost> {
   const map = new Map<IslandViewName, ViewHost>();
-  map.set("overview", buildOverview(actions));
+  // The widget deck (views/deck.ts) is what the island opens on; the old
+  // overview of slides is gone from the Miku build.
+  map.set("overview", buildDeck(actions));
   map.set("empty", buildEmpty(actions));
   map.set("approval", buildApproval(actions));
   map.set("question", buildQuestion(actions));

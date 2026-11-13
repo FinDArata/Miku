@@ -4,6 +4,7 @@
 // island's settings are drawn here, one Notch page at a time.
 
 import "./settings.css";
+import { ensureJapaneseTokenizer, languageOfLines, romanizeMixed } from "../lyrics/romanize";
 import { Bridge, onEvent, type HookPreview, type HookStatus, type ShortcutsReport, type SubscriptionStatus } from "../core/bridge";
 import { CUSTOM_SERVER_KEY, providerDef, urlExposure } from "../core/providers";
 import {
@@ -1214,7 +1215,7 @@ function generalSection(): HTMLElement {
     // Required by the voice library's terms: the credit has to be somewhere a
     // user can find it. `scripts/voice-cues.mjs` writes the cues made with it.
     anchor("general.voicecredit", h("div", { class: "hint" },
-      h("span", { text: t("Voice cues can be made with VOICEVOX:ずんだもん, © SSS LLC, under its terms.") }),
+      h("span", { text: t("Voice cues can be made with VOICEVOX:ずんだもん / VOICEVOX:四国めたん, © SSS LLC, under its terms.") }),
     )),
     anchor("general.behavior", h("div", { class: "row" },
       h("label", { text: t("Open on hover") }),
@@ -1316,30 +1317,73 @@ function lyricsRows(toggle: (on: boolean, onChange: (v: boolean) => void) => HTM
     void Bridge.lyricsSetPlacement(value);
   });
 
+  /** A setting with its one-line explanation under the name (the mockup's rows). */
+  const named = (name: string, sub: string, control: HTMLElement) =>
+    h("div", { class: "row lyr-row" },
+      h("label", {}, h("span", { class: "lyr-name", text: name }), h("span", { class: "lyr-sub", text: sub })),
+      control);
+
+  // The languages to romanise: Japanese and Korean now, Mandarin later.
+  const langs = new Set(settings.lyricsRomajiLangs ?? ["ja", "ko"]);
+  const chip = (code: string, label: string) => {
+    const b = h("button", { class: langs.has(code) ? "lyr-chip on" : "lyr-chip", text: label });
+    b.addEventListener("click", () => {
+      if (langs.has(code)) langs.delete(code);
+      else langs.add(code);
+      b.classList.toggle("on", langs.has(code));
+      settings.lyricsRomajiLangs = [...langs];
+      void save();
+      void paintPreview();
+    });
+    return b;
+  };
+  const soon = h("span", { class: "lyr-chip soon", text: `${t("Mandarin")} · ${t("Soon")}` });
+
+  // What the switches do, on two real lines.
+  const SAMPLES = ["私の心は君のもの", "사랑해요"];
+  const preview = h("div", { class: "lyr-preview" });
+  const paintPreview = async () => {
+    if (settings.lyricsRomanize !== false && langs.has("ja")) await ensureJapaneseTokenizer();
+    preview.replaceChildren(h("div", { class: "lyr-preview-head", text: t("Preview") }));
+    for (const line of SAMPLES) {
+      const out = settings.lyricsRomanize === false
+        ? line
+        : romanizeMixed(line, languageOfLines([line]), [...langs]);
+      preview.append(h("div", { text: line }));
+      if (out !== line) preview.append(h("div", { class: "lyr-preview-out", text: `→ ${out}` }));
+    }
+  };
+  void paintPreview();
+
+  const translate = toggle(false, () => undefined);
+  translate.classList.add("disabled");
+  translate.setAttribute("aria-disabled", "true");
+
   return [
-    anchor("general.lyrics", h("div", { class: "row" },
-      h("label", { text: t("Floating lyrics") }),
-      el,
-    )),
-    h("div", { class: "row" },
-      h("label", { text: t("Placement") }),
-      placement,
-    ),
-    h("div", { class: "row" },
-      h("label", { text: t("Romanise the lyrics") }),
-      toggle(settings.lyricsRomanize, (v) => { settings.lyricsRomanize = v; void save(); }),
-    ),
-    h("div", { class: "row" },
-      h("label", { text: t("Show lyrics for videos too") }),
-      toggle(settings.lyricsVideos, (v) => { settings.lyricsVideos = v; void save(); }),
-    ),
-    h("div", { class: "hint", text: t("Japanese, Korean and Chinese lines are shown in the letters you read: rōmaji, latin and pinyin.") }),
-    h("div", { class: "row" },
-      h("label", { text: t("Show the words as written") }),
-      toggle(settings.lyricsShowOriginal, (v) => { settings.lyricsShowOriginal = v; void save(); }),
-    ),
-    h("div", { class: "hint", text: t("Under a romanised line, the original is kept in smaller type.") }),
+    h("div", { class: "lyr-title" }, h("span", { text: `🎵 ${t("Lyrics")}` }), h("span", { class: "lyr-crumb", text: `${t("Settings")} › ${t("Music")}` })),
+    anchor("general.lyrics", named(t("Show the lyrics"), t("On the stage under Miku while a song plays, or on a floating card"), el)),
+    named(t("Placement"), t("In the island, or a card you can drag anywhere"), placement),
+    named(t("Romanise the lyrics"), t("Japanese and Korean letters become Latin"),
+      toggle(settings.lyricsRomanize, (v) => { settings.lyricsRomanize = v; void save(); void paintPreview(); })),
+    h("div", { class: "lyr-langs" },
+      h("div", { class: "lyr-sub", text: t("Languages to romanise") }),
+      h("div", { class: "lyr-chips" }, chip("ja", t("Japanese")), chip("ko", t("Korean")), soon)),
+    named(t("Show the words as written"), t("Small, under the romanised line"),
+      toggle(settings.lyricsShowOriginal, (v) => { settings.lyricsShowOriginal = v; void save(); })),
+    named(t("Translation"), t("Needs a translation service you set up yourself. Coming later."), translate),
+    named(t("Show lyrics for videos too"), t("Ordinary browser videos may open the lyrics as well"),
+      toggle(settings.lyricsVideos, (v) => { settings.lyricsVideos = v; void save(); })),
+    preview,
     h("div", { class: "subhead", text: t("The card") }),
+    h("div", { class: "row" },
+      h("label", { text: t("Lock position") }),
+      toggle(settings.lyricsLocked, (v) => { settings.lyricsLocked = v; void save(); }),
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Click through the card") }),
+      toggle(settings.lyricsClickThrough, (v) => { settings.lyricsClickThrough = v; void save(); }),
+    ),
+    h("div", { class: "hint", text: t("Clicks go to the window under the card. Turn it off here to drag the card or open its menu again.") }),
     slider(t("Opacity"), 0, 1, 0.05, () => settings.lyricsOpacity, (v) => { settings.lyricsOpacity = v; }),
     h("div", { class: "hint", text: t("Lower lets the wallpaper show through the card; the words keep their shadow.") }),
     slider(t("Text size"), 10, 40, 1, () => settings.lyricsFontSize, (v) => { settings.lyricsFontSize = v; }),

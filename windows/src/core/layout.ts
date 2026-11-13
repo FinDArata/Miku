@@ -63,8 +63,15 @@ export const NOTCH_W = 184;
 export const NOTCH_H = 32;
 export const COMPACT_W = NOTCH_W; // hovering must not widen the pill
 export const EXPANDED_W = 640;
+/** The widget deck (views/deck.ts) wraps its widget instead of the full panel width. */
+export const DECK_W = 500;
 
 export const ROUNDED_CORNER = 14; // hidden / compact
+/** The song's stage fills the compact island edge to edge, no taller than the
+ *  island's window (PANEL_H in island.rs), with its own rounder corners. */
+export const STAGE_W = 372;
+export const STAGE_H = 312;
+export const STAGE_CORNER = 26;
 export const EXPANDED_CORNER = 22;
 
 /** Invisible hover strip that wakes the island when hidden. */
@@ -72,10 +79,13 @@ export const WAKE_STRIP_W = 240;
 export const WAKE_STRIP_H = 6;
 
 export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
-  overview: { height: 160, botX: 68, botY: null, botDiameter: 58, agentMode: "pills" },
+  // The widget deck draws its own full-length Miku (views/deck.ts).
+  overview: { height: 240, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
   empty: { height: 160, botX: 70, botY: null, botDiameter: 62, agentMode: "none" },
-  approval: { height: 160, botX: 62, botY: null, botDiameter: 56, agentMode: "column" },
-  question: { height: 160, botX: 62, botY: null, botDiameter: 56, agentMode: "column" },
+  // Twin-tail (docs/mockups/notch-combined.png): a bigger Miku asking, beside
+  // the board she holds up.
+  approval: { height: 200, botX: 70, botY: 118, botDiameter: 84, agentMode: "column" },
+  question: { height: 200, botX: 70, botY: 118, botDiameter: 84, agentMode: "column" },
   error: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
   finished: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
   confused: { height: 160, botX: 76, botY: null, botDiameter: 66, agentMode: "column" },
@@ -130,10 +140,12 @@ export function islandSize(
       // slides into the top edge of the screen instead of sitting there as a bar.
       return { w: NOTCH_W, h: 0 };
     case "compact":
-      return lyrics ? { w: 440, h: 96 } : { w: COMPACT_W, h: NOTCH_H };
+      // The song's stage (island.ts buildLyricsPill): 372 wide plus the side
+      // insets, and no taller than the island's window (PANEL_H in island.rs).
+      return lyrics ? { w: STAGE_W, h: STAGE_H } : { w: COMPACT_W, h: NOTCH_H };
     case "expanded": {
       const h = view === "prompt" ? chatPromptHeight(chatCount) : VIEW_LAYOUTS[view].height;
-      return { w: EXPANDED_W, h };
+      return { w: view === "overview" ? DECK_W : EXPANDED_W, h };
     }
   }
 }

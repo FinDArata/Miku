@@ -38,7 +38,8 @@ static WATCH: Mutex<Option<Watch>> = Mutex::new(None);
 /// Starts or stops the system-audio watch. Safe to call often: an equal call
 /// is a no-op, and a failed capture simply leaves nothing running — the dance
 /// falls back to its own rhythm until the next try.
-pub fn set_watch(app: &tauri::AppHandle, on: bool) {
+// Generic over the runtime so the test below can hand it a mock app.
+pub fn set_watch<R: tauri::Runtime>(app: &tauri::AppHandle<R>, on: bool) {
     let mut slot = WATCH.lock().unwrap();
     if !on {
         slot.take();

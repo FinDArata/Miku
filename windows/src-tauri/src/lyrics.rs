@@ -153,7 +153,13 @@ pub fn setup(app: &AppHandle) {
             // The remembered spot, whether or not the card is up yet: a drag
             // that only lands the window when it is first shown would lose it.
             place(app, &win, pref.spot, &screen);
-            crate::apply_glass(&win);
+            let see_through = app
+                .try_state::<crate::Shared>()
+                .is_some_and(|s| s.settings.lock().unwrap().lyrics_transparent);
+            if !see_through {
+                crate::apply_glass(&win);
+            }
+            crate::platform::round_corners(&win);
             // The window only appears where the words are drawn in it: in the
             // island, the top pill follows the same Music events instead.
             if pref.shown && pref.placement == "floating" {
@@ -287,6 +293,12 @@ pub fn lyrics_set_look(
     background: Option<String>,
     width: Option<f64>,
     height: Option<f64>,
+    locked: Option<bool>,
+    click_through: Option<bool>,
+    romanize: Option<bool>,
+    show_miku: Option<bool>,
+    show_cover: Option<bool>,
+    transparent: Option<bool>,
 ) {
     let (changed, snapshot) = {
         let Some(shared) = app.try_state::<crate::Shared>() else { return };
@@ -317,15 +329,51 @@ pub fn lyrics_set_look(
             s.lyrics_height = clamp(v, 90.0, 400.0);
             changed = true;
         }
+        if let Some(v) = locked {
+            s.lyrics_locked = v;
+            changed = true;
+        }
+        if let Some(v) = click_through {
+            s.lyrics_click_through = v;
+            changed = true;
+        }
+        if let Some(v) = romanize {
+            s.lyrics_romanize = v;
+            changed = true;
+        }
+        if let Some(v) = show_miku {
+            s.lyrics_show_miku = v;
+            changed = true;
+        }
+        if let Some(v) = show_cover {
+            s.lyrics_show_cover = v;
+            changed = true;
+        }
+        if let Some(v) = transparent {
+            s.lyrics_transparent = v;
+            changed = true;
+        }
         if !changed {
             return;
         }
         (true, s.clone())
     };
     if changed {
+        if let (Some(clear), Some(win)) = (transparent, window(&app)) {
+            set_glass(&win, !clear);
+        }
         crate::settings::save_soon(&app);
         // Every window hears the change, the overlay included: it repaints.
         let _ = tauri::Emitter::emit(&app, "settings-changed", &snapshot);
+    }
+}
+
+/// Acrylic behind the card, or nothing at all (the transparent card).
+fn set_glass(win: &WebviewWindow, on: bool) {
+    if on {
+        crate::apply_glass(win);
+    } else {
+        let _ = win.set_effects(None::<tauri::utils::config::WindowEffectsConfig>);
     }
 }
 
@@ -415,6 +463,12 @@ pub struct LyricsPrefsView {
     pub font_size: f64,
     pub text_color: String,
     pub background: String,
+    pub locked: bool,
+    pub click_through: bool,
+    pub show_miku: bool,
+    pub show_cover: bool,
+    pub transparent: bool,
+    pub romaji_langs: Vec<String>,
 }
 
 impl LyricsPrefsView {
@@ -428,6 +482,12 @@ impl LyricsPrefsView {
             font_size: s.lyrics_font_size,
             text_color: s.lyrics_text_color.clone(),
             background: s.lyrics_background.clone(),
+            locked: s.lyrics_locked,
+            click_through: s.lyrics_click_through,
+            show_miku: s.lyrics_show_miku,
+            show_cover: s.lyrics_show_cover,
+            transparent: s.lyrics_transparent,
+            romaji_langs: s.lyrics_romaji_langs.clone(),
         }
     }
 }

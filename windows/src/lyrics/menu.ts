@@ -28,6 +28,13 @@ export interface MenuHost {
   setPlacement?(placement: "island" | "floating"): void;
   /** Opens the full settings window, for everything else. */
   openSettings(): void;
+  /** Whether the card is locked in place, and the way to change it. */
+  locked?(): boolean;
+  setLocked?(on: boolean): void;
+  /** Lets clicks through the card. Only Settings turns it off again. */
+  setClickThrough?(): void;
+  /** On/off rows at the end of the menu: romaji, Miku, the cover. */
+  toggles?(): { label: string; on: boolean; set(on: boolean): void }[];
   /** Grows the window while the menu is up (the card is smaller than it). */
   grow(width: number, height: number): void;
   /** Puts the window back to the card's own size. */
@@ -38,7 +45,7 @@ export interface MenuHost {
 const EDGE = 8;
 /** The room the menu needs; below it the list scrolls instead of clipping. */
 const MENU_W = 226;
-const MENU_H = 268;
+const MENU_H = 470;
 
 /**
  * Builds the menu once and keeps it in the document, hidden. A right-click
@@ -114,40 +121,59 @@ export function buildContextMenu(host: MenuHost): {
     const look = host.look();
     menu.replaceChildren();
 
+    // In the order of docs/mockups/notch-music.png: the way back, how the card
+    // sits, how big and how see-through, what it shows; the rest at the end.
+    const item = (label: string, onClick: () => void, state?: boolean, cls = "") => {
+      const b = document.createElement("button");
+      b.className = `menu-item${state === undefined ? "" : " menu-toggle"}${cls ? ` ${cls}` : ""}`;
+      b.append(label);
+      if (state !== undefined) {
+        const tag = document.createElement("span");
+        tag.className = state ? "menu-state on" : "menu-state";
+        tag.textContent = state ? "on" : "off";
+        b.append(tag);
+      }
+      b.addEventListener("click", () => {
+        close();
+        onClick();
+      });
+      menu.append(b);
+    };
+    const sep = () => {
+      const el = document.createElement("div");
+      el.className = "menu-sep";
+      menu.append(el);
+    };
+
+    // The card can step back into the island, and the island's own button
+    // brings it back out: this is MiniLyrics' detach, one click away.
+    const placement = host.placement?.() ?? "floating";
+    item(`⇲  ${placement === "floating" ? t("Return to top") : t("Detach from top")}`,
+      () => host.setPlacement?.(placement === "floating" ? "island" : "floating"), undefined, "menu-first");
+    if (host.setLocked) {
+      const isLocked = host.locked?.() === true;
+      item(`📌  ${t("Lock position")}`, () => host.setLocked?.(!isLocked), isLocked);
+    }
+    if (host.setClickThrough) {
+      item(`🖱️  ${t("Click through the card")}`, () => host.setClickThrough?.(), false);
+      menu.lastElementChild?.setAttribute("title", t("Turn it off again in Settings → General"));
+    }
+    sep();
+    menu.append(
+      slider(t("Text size"), 10, 40, 1, look.fontSize, (v) => host.apply({ fontSize: v })),
+      slider(t("Opacity"), 0, 1, 0.05, look.opacity, (v) => host.apply({ opacity: v })),
+    );
+    const switches = host.toggles?.() ?? [];
+    if (switches.length) sep();
+    for (const sw of switches) item(sw.label, () => sw.set(!sw.on), sw.on);
+    sep();
     menu.append(heading(t("The card")));
     menu.append(
-      slider(t("Opacity"), 0, 1, 0.05, look.opacity, (v) => host.apply({ opacity: v })),
-      slider(t("Text size"), 10, 40, 1, look.fontSize, (v) => host.apply({ fontSize: v })),
       slider(t("Width"), 200, 900, 10, look.width, (v) => host.apply({ width: v })),
-      slider(t("Height"), 90, 400, 10, look.height, (v) => host.apply({ height: v })),
       colour(t("Text colour"), look.textColor, (v) => host.apply({ textColor: v })),
       colour(t("Card colour"), look.background, (v) => host.apply({ background: v })),
     );
-
-    const sep = document.createElement("div");
-    sep.className = "menu-sep";
-    menu.append(sep);
-
-    // The card can step back into the island, and the island's own menu brings
-    // it back out: this is MiniLyrics' detach, one click away.
-    const placement = host.placement?.() ?? "floating";
-    const move = document.createElement("button");
-    move.className = "menu-item";
-    move.textContent = placement === "floating" ? t("Return to top") : t("Detach from top");
-    move.addEventListener("click", () => {
-      close();
-      host.setPlacement?.(placement === "floating" ? "island" : "floating");
-    });
-    menu.append(move);
-
-    const more = document.createElement("button");
-    more.className = "menu-item";
-    more.textContent = t("All settings…");
-    more.addEventListener("click", () => {
-      close();
-      host.openSettings();
-    });
-    menu.append(more);
+    item(t("All settings…"), () => host.openSettings());
 
     // The menu is taller than the card: the window grows first, so nothing of
     // it is clipped, and it shrinks back when the menu closes. The card keeps
