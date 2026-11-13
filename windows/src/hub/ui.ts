@@ -25,6 +25,7 @@ export const HUB_ICONS: Record<string, string> = {
   copy: "M8.5 8.5h11v11.5h-11zM5 15.5V4h11",
   trash: "M5 7h14M10 4h4M7 7l1 13h8l1-13M10 11v6M14 11v6",
   x: "M6.5 6.5l11 11M17.5 6.5l-11 11",
+  back: "M19 12H5M11 6l-6 6 6 6",
   plus: "M12 5v14M5 12h14",
   pencil: "M4.5 19.5l4-1 10.5-10.5-3-3L5.5 15.5l-1 4z",
   download: "M12 4v11M7 10l5 5 5-5M5 20h14",

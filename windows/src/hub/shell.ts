@@ -12,6 +12,7 @@ import { hero, liveMochi, setVoiceLevel, setWindowShown } from "./hero";
 import { characterGreet, setStagePolling, setStageState, watchMusic, type StageState } from "./character";
 import { icon, keyLabel } from "./ui";
 import { searchSettings, type SettingsSearchHit } from "./search";
+import { mainMenu } from "./menu";
 
 /**
  * Everything a page can be: the sections the sidebar lists, and the tabs a
@@ -382,7 +383,6 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
     searchClear,
   );
   searchBox.querySelector("svg")?.classList.add("hub-search-icon");
-  side.append(searchBox);
 
   const groupsContainer = h("div", { class: "hub-groups" });
   const resultsContainer = h("div", { class: "hub-search-results", style: "display:none" });
@@ -395,7 +395,6 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   labels.set("home", homeLabel);
   groupsContainer.append(homeButton);
 
-  side.append(groupsContainer, resultsContainer);
 
   /**
    * One row per section. A section whose sections are tabs (the island, Mail)
@@ -438,12 +437,10 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
     if (!query) {
       searchClear.style.display = "none";
       resultsContainer.style.display = "none";
-      groupsContainer.style.display = "";
       searchHits = [];
       return;
     }
     searchClear.style.display = "";
-    groupsContainer.style.display = "none";
     resultsContainer.style.display = "";
     searchHits = searchSettings(query, (pageId) => DRAWN.find((p) => p.id === pageId)?.title() ?? pageId);
     if (searchHits.length === 0) {
@@ -500,14 +497,30 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
 
   side.append(h("div", { class: "spacer" }), statusLine, h("div", { class: "hub-version", text: `Miku ${opts.version}` }));
 
+  // The window opens on the main menu; a bubble (or a deep link) opens the pages.
+  const menu = mainMenu(
+    [HOME_PAGE, ...FLOW_PAGES, NOTCH_PAGE, ...(status.platform === "windows" ? [MAIL_PAGE] : [])],
+    (page) => void show(page),
+  );
+
+  // The panel's top bar: back to the menu, and every section as a chip (the
+  // sidebar keeps her, the search and the status).
+  const topbar = h("div", { class: "hub-topbar" },
+    menu.back,
+    groupsContainer,
+    h("div", { class: "hub-topbar-search" }, searchBox, resultsContainer),
+  );
+
   clear(root);
-  root.append(side, h("main", { class: "hub-panel" }, scroll));
+  root.append(menu.bg, side, h("main", { class: "hub-panel" }, topbar, scroll), menu.el);
   drawStatus();
   await show(current);
 
   void onEvent<string>("hub-page", (page) => {
     const id = (page === "settings" ? "flowsettings" : page) as PageId;
-    if (DRAWN.some((p) => p.id === id)) void show(id);
+    if (!DRAWN.some((p) => p.id === id)) return;
+    void show(id);
+    menu.open();
   });
   // What the agents are up to, announced by the backend as soon as it changes
   // (stage.rs); the stage's poll only covers what an announcement missed.
@@ -536,6 +549,7 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
         if (label) label.textContent = p.title();
       }
       notchGroup.textContent = t("Notch");
+      menu.relabel();
       drawStatus();
       void show(current);
     },

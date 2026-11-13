@@ -61,6 +61,8 @@ export interface ChibiOptions {
   lid?: number;
   /** Added to where the pose looks, in design units. */
   look?: readonly [number, number];
+  /** Head pitch, −1 chin up … 1 chin down: the face rides up and the head lifts. */
+  pitch?: number;
   /** Arm rest angles [L shoulder, L elbow, R shoulder, R elbow], so poses can be blended. */
   arms?: readonly [number, number, number, number];
   /** Mini bots: the colour that tints the hair, to tell them apart. */
@@ -399,11 +401,13 @@ function mouth(x: Ctx, kind: Mouth, t: number) {
   }
 }
 
-function head(x: Ctx, p: Pose, t: number, c: Tones, lid?: number) {
+function head(x: Ctx, p: Pose, t: number, c: Tones, lid?: number, faceDy = 0) {
   const skin = x.createRadialGradient(260, 209, 0, 260, 209, 124);
   skin.addColorStop(0, c.skinHi);
   skin.addColorStop(1, c.skinLo);
   fill(x, FACE, skin);
+  x.save();
+  x.translate(0, faceDy);
   for (const bx of [186, 334]) {
     const blush = x.createRadialGradient(bx, 258, 0, bx, 258, 20);
     blush.addColorStop(0, "rgba(255,157,174,0.45)");
@@ -415,6 +419,7 @@ function head(x: Ctx, p: Pose, t: number, c: Tones, lid?: number) {
   eye(x, 212, 1, left, p, t, c, lid);
   eye(x, 308, -1, right, p, t, c, lid);
   mouth(x, p.mouth ?? "smile", t);
+  x.restore();
 
   fill(x, HAIR, lin(x, 60, 300, c.hairTop, c.hairBot));
   stroke(x, HAIR_STRANDS, c.hairBack, 2.5, 0.5);
@@ -636,9 +641,11 @@ export function drawChibi(
       break;
   }
   const tilt = (p.tilt ?? 0) + 2 * wave(t, 2.6);
-  spin(x, 260, 288, tilt, () => hairBack(x, c, t));
+  // Looking up: the head lifts off the neck a little and the face slides up under the bangs.
+  const up = Math.max(-1, Math.min(1, -(o.pitch ?? 0)));
+  spin(x, 260, 288 + 3 * up, tilt, () => { x.translate(0, -3 * up); hairBack(x, c, t); });
   lower(x, c);
-  spin(x, 260, 288, tilt, () => head(x, p, t, c, o.lid));
+  spin(x, 260, 288 + 3 * up, tilt, () => { x.translate(0, -3 * up); head(x, p, t, c, o.lid, -7 * up); });
   arm(x, -1, p.L, t, c, "upper");
   arm(x, 1, p.R, t, c, "upper");
   shirt(x, c);

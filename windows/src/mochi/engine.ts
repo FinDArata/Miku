@@ -1202,6 +1202,7 @@ export class BotEngine {
       eyes: plain && this.eyeOverride ? CHIBI_EYES[this.eyeOverride] : undefined,
       lid: this.open,
       look: [this.yaw * 9, this.pitch * 8],
+      pitch: this.pitch * 2,
       arms: this.arms,
       tint: this.isMini && this.bodyColor ? this.bodyColor : undefined,
       skipFx: ENGINE_FX,
