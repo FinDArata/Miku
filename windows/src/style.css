@@ -4864,3 +4864,7 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 .ag-tl { font: 500 10.5px ui-monospace, Consolas, monospace; color: #cfd8e3; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ag-tl b { color: #8fa3b8; font-weight: 500; margin-right: 5px; }
 @media (prefers-reduced-motion: reduce) { .ag-spin, .ag-chip i.live { animation: none; } }
+
+/* The sign keeps to a width the folded window can hold; long lines end in "…". */
+.hg-sign { max-width: 230px; }
+.hg-sign > span { display: block; overflow: hidden; text-overflow: ellipsis; }

@@ -40,7 +40,7 @@ import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../vie
 import { h, svg } from "../views/dom";
 import { ICONS } from "../views/icons";
 import { IslandStateMachine } from "./fsm";
-import { HANG_H, HANG_W, NOTICE_H, NOTICE_W, Notices } from "./notices";
+import { HANG_H, NOTICE_H, NOTICE_W, Notices } from "./notices";
 import { openDeckOn } from "../views/deck";
 import { refreshHookPills } from "./integrations";
 import { restoreAlertFocus } from "./hooks";
@@ -970,7 +970,7 @@ export class Island {
       rw = Math.max(rw, NOTICE_W);
       rh = Math.max(rh, NOTICE_H);
     } else if (this.notices?.hangOn) {
-      rw = Math.max(rw, HANG_W);
+      rw = Math.max(rw, this.notices.hangWidth());
       rh = hh + HANG_H;
     }
     const rect = { x: (viewportW - rw) / 2, y: 0, w: rw, h: rh };
@@ -1457,7 +1457,7 @@ export class Island {
     let size = this.closedShows ? { w: this.closedW, h: CLOSED_H } : { w: 0, h: 0 };
     // The notice card, or Miku hanging under the capsule, need their room too.
     if (this.notices?.noticeOn) size = { w: Math.max(size.w, NOTICE_W + 20), h: Math.max(size.h, NOTICE_H + 12) };
-    else if (this.notices?.hangOn) size = { w: Math.max(size.w, HANG_W), h: Math.max(size.h, CLOSED_H) + HANG_H };
+    else if (this.notices?.hangOn) size = { w: Math.max(size.w, this.notices.hangWidth()), h: Math.max(size.h, CLOSED_H) + HANG_H };
     if (!force && size.w === this.collapsedTo.w && size.h === this.collapsedTo.h) return;
     this.collapsedTo = size;
     if (size.w > 0) void Bridge.setCollapsed(true, size.w, size.h);

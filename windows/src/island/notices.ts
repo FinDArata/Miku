@@ -67,6 +67,7 @@ export class Notices {
   /** LINE / Discord messages seen as toasts and not opened yet. */
   private pcUnread: { line: string[]; discord: string[] } = { line: [], discord: [] };
   private shownNotice = false;
+  private lastHangWidth = 0;
 
   constructor(private host: NoticeHost) {
     this.noticeMiku = h("canvas", { class: "nt-miku" }) as HTMLCanvasElement;
@@ -324,7 +325,24 @@ export class Notices {
       this.hangEl.classList.remove("on");
       this.shownHang = false;
     }
-    if (was !== this.shownHang) this.host.relayout();
+    // Shown, hidden, or its sign changed width: the window follows.
+    const width = this.shownHang ? this.hangWidth() : 0;
+    if (was !== this.shownHang || width !== this.lastHangWidth) {
+      this.lastHangWidth = width;
+      this.host.relayout();
+    }
+  }
+
+  /**
+   * The width Miku and her sign need, centred on the capsule: Miku is in the
+   * middle and the sign to her right, so the room is twice the far edge of the
+   * sign from the centre (the window is centred too).
+   */
+  hangWidth(): number {
+    const sign = this.hangSign.offsetWidth || 0;
+    // .hg is 92 wide around the centre, the sign starts 86 px into it.
+    const right = -46 + 86 + sign + 10;
+    return Math.max(HANG_W, Math.ceil(right * 2));
   }
 
   /** Where the capsule ends: Miku hangs from there. */
