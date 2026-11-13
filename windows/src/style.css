@@ -259,10 +259,16 @@ body {
   background: #000;
   border-radius: 0 0 14px 14px;
   overflow: visible;
-  will-change: width, height, transform;
-  /* The open/close sweep is a scale of a target-laid-out panel (island.ts
-     applyGeometry): it grows from the top edge, where the notch hangs. */
-  transform-origin: top center;
+  transform: translateX(-50%);
+  will-change: width, height;
+}
+
+/* Laid out at the island's final size; the shell resizes around it
+   (island.ts applyGeometry), so nothing inside is ever stretched. */
+#island-body {
+  position: absolute;
+  top: 0;
+  border-radius: inherit;
 }
 
 #island-clip {

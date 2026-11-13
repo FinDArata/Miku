@@ -87,6 +87,7 @@ export class Island {
   private root: HTMLElement;
   private islandEl!: HTMLElement;
   private clipEl!: HTMLElement;
+  private bodyEl!: HTMLElement;
   private contentEl!: HTMLElement;
   private viewsEl!: HTMLElement;
   private botCanvas!: HTMLCanvasElement;
@@ -487,9 +488,11 @@ export class Island {
       this.uploadCanvas.el,
       this.contentEl,
     );
-    this.islandEl = h(
+    // The body is laid out at the island's final size and never scaled: the
+    // shell around it resizes, so Miku and the text keep their shape in flight.
+    this.bodyEl = h(
       "div",
-      { id: "island" },
+      { id: "island-body" },
       this.clipEl,
       this.botGlow,
       this.botCanvas,
@@ -498,6 +501,7 @@ export class Island {
       this.closedEl,
       this.countdown,
     );
+    this.islandEl = h("div", { id: "island" }, this.bodyEl);
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.greetingCanvas.width = Math.round(EXPANDED_W * dpr);
@@ -518,7 +522,7 @@ export class Island {
       },
     });
     this.root.append(this.wakeStrip, this.islandEl, this.notices.hangEl, this.notices.noticeEl);
-    this.islandEl.append(this.lyricsPill);
+    this.bodyEl.append(this.lyricsPill);
     this.applyGeometry();
   }
 
@@ -918,9 +922,19 @@ export class Island {
   private animateGeometry(shrinking: boolean) {
     const { w, h, r } = this.targetSize();
     // The destination is where the DOM lays out while the spring runs: the
-    // panel is built at its final size once, and the eye sees a scale — see
-    // applyGeometry.
+    // body is built at its final size once and the shell resizes around it —
+    // see applyGeometry. Miku's place is measured from the body's left edge,
+    // so it moves with the body to stay where she is on screen.
+    const shift = (w - this.sizeTarget.w) / 2;
+    this.botCx.value += shift;
+    this.botCx.target += shift;
     this.sizeTarget = { w, h, r };
+    // Folding, she settles with the 340 ms curve instead of trailing out of
+    // the shrinking shell; opening keeps the softer spring.
+    for (const s of [this.botCx, this.botCy, this.botSize]) {
+      if (shrinking) s.configure(0.3, 0.95);
+      else s.configure(0.5, 0.72);
+    }
     if (shrinking) {
       this.width.curveTowards(w);
       this.height.curveTowards(h);
@@ -938,24 +952,22 @@ export class Island {
     const hh = this.height.value;
     const r = this.radius.value;
     const t = this.sizeTarget;
-    const sx = t.w > 0 ? w / t.w : 1;
-    const sy = t.h > 0 ? hh / t.h : 1;
-    this.islandEl.style.width = `${t.w}px`;
-    this.islandEl.style.height = `${t.h}px`;
-    if (sx > 0.998 && sx < 1.002 && sy > 0.998 && sy < 1.002) {
-      // At rest: no transform, so text stays crisp and the radius is exact.
-      this.islandEl.style.transform = `translateX(-50%)`;
-      this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
-    } else {
-      // In flight: layout at the target, scale for the eye. The radius is
-      // pre-divided by the scale per axis, so what the user sees sweeps exactly
-      // as it did when width and height animated themselves — but the panel's
-      // DOM lays out once per animation, not every frame.
-      const rx = r / sx;
-      const ry = r / sy;
-      this.islandEl.style.transform = `translateX(-50%) scale(${sx}, ${sy})`;
-      this.islandEl.style.borderRadius = `0 0 ${rx}px ${rx}px / 0 0 ${ry}px ${ry}px`;
-    }
+    // The shell takes the animated size; the body inside keeps the final one
+    // (fixed px, so only the shell lays out per frame) and stays centred. A
+    // scale here stretched Miku, the text and the border out of shape.
+    this.islandEl.style.width = `${w}px`;
+    this.islandEl.style.height = `${hh}px`;
+    this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
+    const dx = (w - t.w) / 2;
+    this.bodyEl.style.width = `${t.w}px`;
+    this.bodyEl.style.height = `${t.h}px`;
+    this.bodyEl.style.left = `${dx}px`;
+    // While the shell is still smaller than the panel, the panel is cut to it.
+    const side = Math.max(0, -dx);
+    const bottom = Math.max(0, t.h - hh);
+    this.clipEl.style.clipPath = side > 0.5 || bottom > 0.5
+      ? `inset(0 ${side}px ${bottom}px round 0 0 ${r}px ${r}px)`
+      : "";
     // These follow the island as it resizes, so they belong here rather than in
     // the state-driven DOM sync.
     this.clockEl.style.height = `${t.h}px`;
@@ -1767,7 +1779,9 @@ export class Island {
   }
 
   private frame = (nowMs: number) => {
-    const dt = Math.min(0.05, (nowMs - this.lastFrame) / 1000);
+    // rAF's stamp is the frame's start, which can fall before the
+    // performance.now() taken in ensureRunning: never step backwards.
+    const dt = Math.max(0, Math.min(0.05, (nowMs - this.lastFrame) / 1000));
     this.lastFrame = nowMs;
 
     this.width.step(dt, nowMs);
