@@ -9580,6 +9580,36 @@
       "tr": "Mesajlar",
       "ko": "메시지",
       "ja": "メッセージ"
+    },
+    "TASKS": {
+      "zh-Hans": "任务",
+      "hi": "कार्य",
+      "es": "TAREAS",
+      "ar": "المهام",
+      "fr": "TÂCHES",
+      "bn": "কাজ",
+      "pt-BR": "TAREFAS",
+      "ru": "ЗАДАЧИ",
+      "id": "TUGAS",
+      "de": "AUFGABEN",
+      "tr": "GÖREVLER",
+      "ko": "작업",
+      "ja": "タスク"
+    },
+    "HISTORY": {
+      "zh-Hans": "记录",
+      "hi": "इतिहास",
+      "es": "HISTORIAL",
+      "ar": "السجل",
+      "fr": "HISTORIQUE",
+      "bn": "ইতিহাস",
+      "pt-BR": "HISTÓRICO",
+      "ru": "ИСТОРИЯ",
+      "id": "RIWAYAT",
+      "de": "VERLAUF",
+      "tr": "GEÇMİŞ",
+      "ko": "기록",
+      "ja": "履歴"
     }
   }
 }

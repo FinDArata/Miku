@@ -48,6 +48,37 @@ const MAX_FIELD_LEN: usize = 2_000;
 
 mod statusline;
 
+/// Lines and characters of a tool's output the island is given (its end).
+const OUTPUT_TAIL_LINES: usize = 3;
+const OUTPUT_TAIL_CHARS: usize = 300;
+
+/// The last few non-empty lines of a tool's output: Bash's stdout and stderr,
+/// or the response itself when it is text. None when there is nothing to show.
+fn output_tail(v: &Value) -> Option<String> {
+    let text = match v {
+        Value::String(s) => s.clone(),
+        Value::Object(o) => {
+            let part = |k: &str| o.get(k).and_then(Value::as_str).unwrap_or("").to_string();
+            let joined = [part("stdout"), part("stderr"), part("output"), part("error")]
+                .into_iter()
+                .filter(|s| !s.trim().is_empty())
+                .collect::<Vec<_>>()
+                .join("
+");
+            if joined.is_empty() { return None } else { joined }
+        }
+        _ => return None,
+    };
+    let lines: Vec<&str> = text.lines().map(str::trim_end).filter(|l| !l.trim().is_empty()).collect();
+    let tail = lines[lines.len().saturating_sub(OUTPUT_TAIL_LINES)..].join("
+");
+    if tail.is_empty() {
+        return None;
+    }
+    let chars: Vec<char> = tail.chars().collect();
+    Some(chars[chars.len().saturating_sub(OUTPUT_TAIL_CHARS)..].iter().collect())
+}
+
 /// The live diff needs the whole text of a file edit, once it has happened:
 /// PostToolUse of these tools keeps its edit strings far longer than the rest.
 const DIFF_TOOLS: &[&str] = &["Edit", "MultiEdit", "Write"];
@@ -177,6 +208,11 @@ fn prepare(raw: &[u8], args: &Args, env: &dyn Fn(&str) -> Option<String>, cwd: &
     let name = normalize::refine(normalize::event(&raw_event), map);
     map.insert("hook_event_name".into(), Value::String(name.clone()));
 
+    // The island's Agents page shows the end of what a tool printed: a few
+    // lines, taken before the whole output is dropped.
+    if let Some(tail) = map.get("tool_response").or_else(|| map.get("tool_output")).and_then(output_tail) {
+        map.insert("miku_output_tail".into(), Value::String(tail));
+    }
     for field in DROPPED_FIELDS {
         map.remove(*field);
     }
@@ -443,6 +479,18 @@ mod tests {
         assert_eq!(ev.name, "PermissionRequest");
 
         // Cursor: a stop that failed, and its tool output left behind.
+        assert_eq!(
+            output_tail(&serde_json::json!({"stdout": "a
+b
+
+c
+d
+", "stderr": ""})).as_deref(),
+            Some("b
+c
+d")
+        );
+        assert_eq!(output_tail(&serde_json::json!({"stdout": "  "})), None);
         let (v, ev) = run(r#"{"hook_event_name":"stop","status":"error","tool_output":"huge"}"#, "cursor", "");
         assert_eq!(ev.name, "StopFailure");
         assert!(v.get("tool_output").is_none());

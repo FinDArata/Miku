@@ -16,6 +16,7 @@ import type { Island } from "./island";
 import { parseClaudePlan, restorePlanUsage } from "../core/plan";
 import { setClaudePlanUsage, storedClaudePlanUsage } from "../views/usage";
 import { N_, t } from "../i18n/i18n";
+import { stepFinished, stepStarted, todosFrom, turnStarted } from "../core/agent-live";
 
 const CLAUDE_ID = "integration_claude";
 const CURSOR_ID = "agent_cursor";
@@ -137,6 +138,8 @@ interface HookPayload {
   rate_limits?: unknown;
   /** SubagentStart / SubagentStop: "Explore", "general-purpose"…; "" for Claude Code's own helpers. */
   agent_type?: string;
+  /** PostToolUse: the end of what the tool printed (the relay keeps a few lines). */
+  miku_output_tail?: string;
 }
 
 const PROJECT_ALIASES: Record<string, string> = {
@@ -436,6 +439,7 @@ function handleHook(island: Island, payload: HookPayload) {
       // The field is `prompt`; reading `message` meant this step was always blank.
       const asked = payload.prompt ?? payload.message;
       if (asked) State.appendStep(agentId, asked.slice(0, 60));
+      turnStarted(agentId);
       surface("overview", false);
       break;
     }
@@ -453,7 +457,11 @@ function handleHook(island: Island, payload: HookPayload) {
         surface("overview", true);
       } else {
         State.updateTask(agentId, "working");
-        State.appendStep(agentId, stepLabel(tool, payload.tool_input ?? {}));
+        const label = stepLabel(tool, payload.tool_input ?? {});
+        State.appendStep(agentId, label);
+        // The deck's Agents page: what runs, since when, and the task list.
+        stepStarted(agentId, label);
+        if (tool === "TodoWrite") todosFrom(agentId, payload.tool_input ?? {});
         surface("overview", false);
       }
       break;
@@ -470,6 +478,7 @@ function handleHook(island: Island, payload: HookPayload) {
         dropPendingCard(island);
       }
       State.updateTask(agentId, "working");
+      stepFinished(agentId, payload.miku_output_tail);
       recordDiff(agentId, payload);
       break;
 
@@ -477,6 +486,7 @@ function handleHook(island: Island, payload: HookPayload) {
       supersedeStop();
       State.updateTask(agentId, "working");
       State.appendStep(agentId, t("⚠ failed"));
+      stepFinished(agentId, payload.miku_output_tail);
       break;
 
     case "Notification": {

@@ -18,6 +18,7 @@ import { Spotify, currentArtwork, formatTime, spotifyPosition } from "../core/sp
 import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "../mochi/chibi";
 import { parseVariant, resolveVariant } from "../mochi/wardrobe";
 import { N_, language, t } from "../i18n/i18n";
+import { agentLive, elapsed, splitStep } from "../core/agent-live";
 
 export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents";
 export const DECK_PAGES: readonly DeckPage[] = ["pc", "music", "focus", "weather", "meeting", "agents"];
@@ -321,14 +322,71 @@ export function buildDeck(actions: ViewActions): ViewHost {
     );
   }
 
+  /** The agent the Agents page shows; the busiest one until the user picks. */
+  let agentPick: string | null = null;
+
   function agentsPage(): HTMLElement {
     const tasks = State.tasks.filter((x) => !x.isIntegration);
     if (!tasks.length) return h("div", {}, header(t("AGENTS"), ""), say(t("No agent is running. Start Claude Code or Codex and Miku follows it.")));
-    return h("div", {}, header(t("AGENTS"), `${tasks.length}`),
-      ...tasks.slice(0, 4).map((x) => h("div", { class: "dk-agent" },
-        h("i", { class: `dk-dot ${x.state}` }),
-        h("b", { text: x.name }),
-        h("span", { class: "dk-dim", text: x.steps[x.steps.length - 1] ?? x.state }))));
+    const busy = (x: (typeof tasks)[number]) => x.state === "working" || x.state === "thinking" || x.state === "searching";
+    const task = tasks.find((x) => x.id === agentPick) ?? tasks.find(busy) ?? tasks[0];
+    const live = agentLive(task.id);
+
+    // One chip per agent; the dot glows while it works.
+    const chips = h("div", { class: "ag-chips" }, ...tasks.slice(0, 5).map((x) => {
+      const c = h("button", { class: x.id === task.id ? "ag-chip on" : "ag-chip", style: `--ac:${x.color}` },
+        h("i", { class: busy(x) ? "live" : "" }), x.name);
+      c.addEventListener("click", () => {
+        agentPick = x.id;
+        render();
+      });
+      return c;
+    }));
+
+    // What runs now (or how the turn ended).
+    const now = (() => {
+      if (live.running) {
+        const [tool, what] = splitStep(live.running.label);
+        return h("div", { class: "ag-now" },
+          h("span", { class: "ag-spin" }), h("span", { class: "ag-tool", text: tool }),
+          h("span", { class: "ag-cmd", text: what }),
+          h("span", { class: "ag-el", text: elapsed(Date.now() - live.running.at) }));
+      }
+      const last = task.steps[task.steps.length - 1] ?? "";
+      const icon = task.state === "finished" ? "✓" : task.state === "error" ? "✗" : task.state === "approval" || task.state === "question" ? "✋" : "•";
+      return h("div", { class: `ag-now ${task.state}` }, h("span", { class: "ag-mark", text: icon }), h("span", { class: "ag-cmd", text: last }));
+    })();
+
+    const out = live.output
+      ? h("div", { class: "ag-out" }, ...live.output.split("\n").slice(-3).map((l) =>
+        h("div", { class: /error|fail|✗|exception/i.test(l) ? "bad" : "", text: l })))
+      : null;
+
+    const done = live.todos.filter((x) => x.status === "completed").length;
+    const todos = live.todos.length
+      ? h("div", { class: "ag-col" },
+        h("div", { class: "ag-sec" }, `${t("TASKS")} ${done}/${live.todos.length}`,
+          h("span", { class: "ag-pb" }, h("i", { style: `width:${(done / live.todos.length) * 100}%` }))),
+        ...live.todos.slice(0, 4).map((x) => h("div", {
+          class: `ag-todo ${x.status === "completed" ? "done" : x.status === "in_progress" ? "cur" : ""}`,
+          text: `${x.status === "completed" ? "☑" : x.status === "in_progress" ? "▸" : "☐"} ${x.content}`,
+        })))
+      : null;
+    const hist = live.history.slice(-3).reverse();
+    const history = hist.length
+      ? h("div", { class: "ag-col" }, h("div", { class: "ag-sec", text: t("HISTORY") }),
+        ...hist.map((x) => h("div", { class: "ag-tl" },
+          h("b", { text: new Date(x.at).toLocaleTimeString(language(), { hour: "2-digit", minute: "2-digit" }) }), x.label)))
+      : null;
+
+    const where = task.sessionCwd ? task.sessionCwd.split(/[\\/]/).filter(Boolean).pop() ?? "" : "";
+    return h("div", { class: "ag", style: `--ac:${task.color}` },
+      chips,
+      h("div", { class: "dk-head" }, h("div", { class: "dk-title", text: task.name.toUpperCase() }), h("div", { class: "dk-meta", text: where })),
+      now,
+      ...(out ? [out] : []),
+      ...(todos || history ? [h("div", { class: todos && history ? "ag-cols" : "ag-cols one" }, ...(todos ? [todos] : []), ...(history ? [history] : []))] : []),
+    );
   }
 
   /** The pose for the page, as the mockup draws her. */
@@ -396,7 +454,9 @@ export function buildDeck(actions: ViewActions): ViewHost {
         drawChibi(x, pose(), (now - started) / 1000, resolveVariant(parseVariant(State.settings.mikuVariant), new Date()), { noShadow: true });
       }
       // Clocks on the page (the song, the focus timer) move once a second.
-      if (now - lastRender > 1000 && (page === "music" || (page === "focus" && focusEnd != null))) {
+      // The Agents page's running step shows how long it has been going.
+      const agentRunning = page === "agents" && State.tasks.some((x) => agentLive(x.id).running);
+      if (now - lastRender > 1000 && (page === "music" || agentRunning || (page === "focus" && focusEnd != null))) {
         lastRender = now;
         if (page === "focus" && focusEnd != null && Date.now() >= focusEnd) {
           // A round is over: focus → break → focus.
