@@ -4726,3 +4726,103 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 .dk-left { width: 120px; }
 .dk-miku { bottom: 0; height: 100%; }
 .dk-floor { bottom: 4px; }
+
+/* ══ Notices (island/notices.ts; docs/mockups/notch-prototype.html) ══════════
+   The card that grows out of the capsule when something arrives, and Miku
+   hanging under the capsule with a sign while something is still unseen. */
+.nt-card {
+  --nt: #39c5bb;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 30;
+  width: 470px;
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px 12px 10px;
+  border-radius: 0 0 22px 22px;
+  background: linear-gradient(#0d1322, #18213a);
+  box-shadow: inset 0 0 0 1px #2d3858, 0 20px 50px rgba(0, 0, 0, 0.55);
+  color: #e9f6f5;
+  transform: translateX(-50%) scale(0.3, 0.15);
+  transform-origin: 50% 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.55, 1), opacity 0.2s ease;
+}
+.nt-card.on { transform: translateX(-50%) scale(1); opacity: 1; pointer-events: auto; }
+.nt-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, #e8457c, var(--nt), #e8457c);
+  box-shadow: 0 0 14px var(--nt);
+}
+.nt-miku { width: 74px; height: 92px; flex: none; }
+.nt-body { flex: 1; min-width: 0; opacity: 0; transform: translateY(-6px); transition: opacity 0.25s 0.18s, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s; }
+.nt-card.on .nt-body { opacity: 1; transform: none; }
+.nt-src { display: flex; align-items: center; gap: 6px; font: 800 10.5px var(--font); letter-spacing: 0.12em; }
+.nt-time { margin-left: auto; font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; letter-spacing: 0; }
+.nt-who { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.nt-av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 800 12px var(--font); color: #06231a; flex: none; }
+.nt-name { font: 700 13px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt-msg { font: 500 12.5px var(--font); margin-top: 4px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.nt-big { font-weight: 700; }
+.nt-dim { color: #8fa3b8; font-size: 11.5px; }
+.nt-acts { display: flex; gap: 6px; margin-top: 9px; align-items: center; }
+.nt-btn { font: 700 11.5px var(--font); padding: 6px 12px; border-radius: 999px; border: 0; cursor: default; white-space: nowrap; transition: transform 0.12s, filter 0.15s; }
+.nt-btn:active { transform: scale(0.94); }
+.nt-btn:hover { filter: brightness(1.12); }
+.nt-btn.p { background: #39c5bb; color: #062a28; }
+.nt-btn.s { background: #18213a; color: #e9f6f5; box-shadow: inset 0 0 0 1px #2d3858; }
+.nt-btn[disabled] { opacity: 0.5; }
+.nt-input { flex: 1; min-width: 0; background: #0b1120; border: 1px solid #2d3858; border-radius: 10px; padding: 6px 10px; font: 500 11.5px var(--font); color: #e9f6f5; outline: none; }
+.nt-input:focus { border-color: #39c5bb; }
+
+.hg {
+  position: fixed;
+  left: 50%;
+  top: 18px;
+  z-index: 20;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  transform: translateY(-70px) scale(0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.55s cubic-bezier(0.34, 1.45, 0.55, 1), opacity 0.25s ease;
+}
+.hg.on { transform: none; opacity: 1; pointer-events: auto; }
+.hg-thread { position: absolute; left: 50%; top: 0; width: 1.5px; height: 14px; background: linear-gradient(rgba(57, 197, 187, 0.8), transparent); }
+.hg-miku { position: absolute; left: 0; top: 2px; width: 92px; height: 92px; transform-origin: 50% 0; animation: hg-swing 3.2s ease-in-out infinite; }
+@keyframes hg-swing { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.hg-sign {
+  --hg: #26324c;
+  position: absolute;
+  left: 86px;
+  top: 32px;
+  white-space: nowrap;
+  font: 700 12px var(--font);
+  color: #e9f6f5;
+  padding: 6px 11px;
+  border-radius: 11px;
+  background: #121a2b;
+  border: 1px solid var(--hg);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 12px color-mix(in srgb, var(--hg) 35%, transparent);
+  transform: translateX(-10px);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.55, 1) 0.15s, opacity 0.25s 0.15s;
+}
+.hg.on .hg-sign { transform: none; opacity: 1; }
+.hg-sign small { display: block; font-weight: 500; color: #8fa3b8; font-size: 10.5px; margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.hg-bdg { min-width: 16px; height: 16px; border-radius: 8px; font-size: 9.5px; font-weight: 800; display: inline-grid; place-items: center; padding: 0 4px; color: #06231a; background: #25d366; margin-left: 5px; }
+.hg-sign.pulse { animation: hg-pulse 1.4s ease-in-out infinite; }
+@keyframes hg-pulse { 0%, 100% { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 6px rgba(255, 211, 107, 0.3); } 50% { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45), 0 0 18px rgba(255, 211, 107, 0.9); } }
+@media (prefers-reduced-motion: reduce) { .hg-miku, .hg-sign.pulse { animation: none; } }
+
+/* The capsule: the equaliser only while a song plays (time and weather otherwise). */
+#island-closed.synth:not(.live) .eq { display: none; }

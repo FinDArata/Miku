@@ -136,6 +136,8 @@ export function buildDeck(actions: ViewActions): ViewHost {
     render();
     weather = await Bridge.widgetWeather(city);
     weatherAt = Date.now();
+    // The capsule wears it too, small.
+    State.weatherBrief = weather ? `${weatherLook(weather.code).icon} ${Math.round(weather.temp)}°` : null;
     weatherBusy = false;
     State.settings.weatherCity = city;
     render();

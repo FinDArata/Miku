@@ -334,8 +334,10 @@ const PARTICLE: Record<string, string> = { は: "wa", へ: "e", を: "o" };
  * auxiliaries (たい, ます, た), the て/で/ば that join a verb, a verb or noun
  * suffix. 食べ|たい → "tabetai", 待っ|て → "matte" (the っ needs the て).
  */
-function joinsPrevious(token: JapaneseToken): boolean {
-  if (token.pos === "助動詞") return true;
+function joinsPrevious(token: JapaneseToken, previous: string | undefined): boolean {
+  // An auxiliary ends a verb or an adjective (食べ|たい, 見|た); after a noun or
+  // a particle it is a word of its own (了解 です, から だっけ, きれい だ).
+  if (token.pos === "助動詞") return previous === "動詞" || previous === "形容詞" || previous === "助動詞";
   if (token.pos === "助詞" && token.pos_detail_1 === "接続助詞" && /^[てでば]$/.test(token.surface_form)) return true;
   if ((token.pos === "動詞" || token.pos === "形容詞") &&
       (token.pos_detail_1 === "接尾" || token.pos_detail_1 === "非自立")) return true;
@@ -375,6 +377,7 @@ export function romanizeJapaneseFull(text: string): string {
   if (tokens.some((t) => t.surface_form.startsWith("々"))) {
     tokens = japaneseTokenizer.tokenize(known.replace(/(\p{Script=Han})々/gu, "$1$1"));
   }
+  let previous: string | undefined;
   for (const token of tokens) {
     const surface = token.surface_form;
     if (/^\s+$/.test(surface)) { words.push([" "]); continue; }
@@ -384,8 +387,9 @@ export function romanizeJapaneseFull(text: string): string {
     // Unknown word: kana still romanises; a kanji the table knows gets its on'yomi.
     else reading = [...surface].map((ch) => MISSING_KANJI[ch] ?? ch).join("");
     const last = words.at(-1);
-    if (last && last[0] !== " " && (joinsPrevious(token) || last.at(-1)?.endsWith("っ"))) last.push(reading);
+    if (last && last[0] !== " " && (joinsPrevious(token, previous) || last.at(-1)?.endsWith("っ") || reading.startsWith("っ"))) last.push(reading);
     else words.push([reading]);
+    previous = token.pos;
   }
   return latinPunctuation(words.map((w) => (w[0] === " " ? "" : romanizeJapanese(w.join("")))).join(" "));
 }

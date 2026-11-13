@@ -48,6 +48,8 @@ export interface ClosedInputs {
   planUsage: PlanUsage | null;
   /** The song playing, if one plays on a declared music pill. */
   music: { title: string; artist: string } | null;
+  /** The weather in a few characters ("☁ 27°"), once the deck has read it. */
+  weather?: string | null;
 }
 
 function time(now: Date, locale?: string): string {
@@ -70,7 +72,9 @@ export function closedContent(style: ClosedIsland, input: ClosedInputs): ClosedC
       // The synth strip (docs/mockups/notch-combined.png): Miku, an equaliser
       // and one short thing — the song when one plays, else the time.
       const m = input.music;
-      const text = m?.title ? m.title : time(input.now, input.locale);
+      const text = m?.title
+        ? m.title
+        : input.weather ? `${time(input.now, input.locale)} · ${input.weather}` : time(input.now, input.locale);
       return { text, dot: null, note: false, eq: true };
     }
     case "time":

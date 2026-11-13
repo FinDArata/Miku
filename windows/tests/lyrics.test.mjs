@@ -290,6 +290,20 @@ test("二人 and 一人 are read futari and hitori, as a song says them", () => 
   useJapanese(null);
 });
 
+test("an auxiliary after a noun or a particle is a word of its own", () => {
+  useJapanese({ tokenize: () => [
+    { surface_form: "了解", reading: "リョウカイ", pos: "名詞" },
+    { surface_form: "です", reading: "デス", pos: "助動詞" },
+    { surface_form: "から", reading: "カラ", pos: "助詞" },
+    { surface_form: "だ", reading: "ダ", pos: "助動詞" },
+    { surface_form: "っけ", reading: "ッケ", pos: "助詞" },
+    { surface_form: "食べ", reading: "タベ", pos: "動詞" },
+    { surface_form: "たい", reading: "タイ", pos: "助動詞" },
+  ] });
+  assert.equal(romanizeJapaneseFull("x"), "ryoukai desu kara dakke tabetai");
+  useJapanese(null);
+});
+
 test("a romanised run and a Latin word written together get a space", () => {
   assert.equal(romanizeMixed("まちでdancin'", "japanese"), "machide dancin'");
   assert.equal(romanizeMixed("Miku♪"), "Miku♪");

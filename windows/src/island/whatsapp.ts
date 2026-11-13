@@ -13,6 +13,8 @@ export interface WhatsAppHost {
   /** The compact island, so the badge is seen. */
   reveal(): void;
   emote(name: BotEmoteName): void;
+  /** A new message's card grows out of the capsule (island/notices.ts). */
+  notify?(): void;
 }
 
 export type WaPillEvent = { kind: "message"; name: string } | { kind: "read" } | { kind: "reset" };
@@ -62,6 +64,8 @@ export function handlePillEvent(island: WhatsAppHost, e: WaPillEvent, now = perf
         lastAnnounce = now;
         island.emote("happy");
         Sound.play("pop");
+        // One card for a burst; the state's own report may land just after this.
+        window.setTimeout(() => island.notify?.(), 300);
       }
       island.reveal();
       if (resetTimer != null) window.clearTimeout(resetTimer);

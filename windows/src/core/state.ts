@@ -312,6 +312,8 @@ class AppState {
   ritual: Ritual | null = null;
 
   integrations: Record<string, IntegrationInfo> = {};
+  /** The weather in a few characters ("☁ 27°") for the capsule, once the deck has read it. */
+  weatherBrief: string | null = null;
 
   /** Claude's 5 h / weekly limits, from the status line (null until the first call). */
   planUsage: PlanUsage | null = null;

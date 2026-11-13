@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miku Notch Prototype</title>
+<style>
+:root {
+  --teal: #39c5bb; --pink: #e8457c; --ink: #e9f6f5; --dim: #8fa3b8;
+  --line: #26324c; --line2: #2d3858; --navy: #0d1322; --navy2: #18213a;
+  --spring: cubic-bezier(.34, 1.45, .55, 1);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: #070a12;
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 16px 28px; gap: 16px;
+}
+h1 { font-size: 20px; font-weight: 700; align-self: stretch; max-width: 1100px; margin: 0 auto; width: 100%; }
+h1 span { color: var(--teal); }
+.hint { color: var(--dim); font-size: 13px; max-width: 1100px; width: 100%; line-height: 1.5; }
+
+/* the fake desktop */
+.desk {
+  position: relative; width: 100%; max-width: 1100px; height: 560px; border-radius: 14px; overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 75% 85%, rgba(232,69,124,.18), transparent 70%),
+    radial-gradient(70% 60% at 20% 90%, rgba(57,197,187,.16), transparent 70%),
+    linear-gradient(160deg, #18223a 0%, #10172a 55%, #0b1020 100%);
+  border: 1px solid #1e2740;
+}
+.desk::after { /* taskbar */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
+  background: rgba(8,11,20,.85); border-top: 1px solid #1e2740;
+}
+.window {
+  position: absolute; left: 7%; top: 120px; width: 46%; height: 300px; border-radius: 10px;
+  background: #121a2c; border: 1px solid #222d48; box-shadow: 0 20px 40px rgba(0,0,0,.35);
+}
+.window::before { content: ""; display: block; height: 28px; border-bottom: 1px solid #222d48; background: #0f1626; border-radius: 10px 10px 0 0; }
+.window i { display: block; height: 8px; margin: 14px 18px; border-radius: 4px; background: #1d2740; }
+
+/* ── the island ─────────────────────────────────────────────────────────── */
+.island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 5; }
+
+.capsule {
+  position: relative; z-index: 3;
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 5px;
+  border-radius: 0 0 15px 15px;
+  background: linear-gradient(#0a0f1a, #121a2b);
+  box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0,0,0,.45);
+  font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  transition: transform .25s var(--spring), box-shadow .25s;
+}
+.capsule:hover { transform: translateY(1px) scale(1.03); box-shadow: inset 0 0 0 1px rgba(57,197,187,.5), 0 8px 22px rgba(0,0,0,.5); }
+.capsule canvas.head { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(#1c3a4a, #0e1626); flex: none; }
+.capsule .slot { display: flex; align-items: center; gap: 8px; transition: opacity .25s; }
+.mono { font-family: Consolas, ui-monospace, monospace; font-size: 11.5px; }
+.dimt { color: var(--dim); font-weight: 500; }
+.cover { width: 20px; height: 20px; border-radius: 5px; flex: none;
+  background: radial-gradient(circle at 30% 30%, #ff8fb3 0 22%, transparent 23%), radial-gradient(circle at 70% 70%, #39c5bb 0 28%, transparent 29%), linear-gradient(135deg, #2b1a4d, #1a3b5c); }
+.eq { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+.eq i { width: 2.5px; height: 100%; border-radius: 1px; background: linear-gradient(var(--pink), var(--teal)); transform-origin: bottom; animation: eq .9s ease-in-out infinite; }
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}.eq i:nth-child(4){animation-delay:-.15s}.eq i:nth-child(5){animation-delay:-.45s}.eq i:nth-child(6){animation-delay:-.75s}
+@keyframes eq { 0%,100%{transform:scaleY(.3)} 25%{transform:scaleY(1)} 50%{transform:scaleY(.55)} 75%{transform:scaleY(.85)} }
+
+/* Miku hanging under the capsule */
+.under {
+  position: relative; z-index: 1; margin-top: -6px; height: 92px; width: 92px;
+  transform: translateY(-70px) scale(.6); opacity: 0; pointer-events: none;
+  transition: transform .55s var(--spring), opacity .25s ease;
+}
+.under.on { transform: none; opacity: 1; pointer-events: auto; cursor: pointer; }
+.under .thread { position: absolute; left: 50%; top: 0; width: 1.5px; height: 14px; background: linear-gradient(rgba(57,197,187,.8), transparent); }
+.under canvas { position: absolute; left: 0; top: 2px; width: 92px; height: 92px; animation: swing 3.2s ease-in-out infinite; transform-origin: 50% 0; }
+@keyframes swing { 0%,100%{transform:rotate(-2.5deg)} 50%{transform:rotate(2.5deg)} }
+.sign {
+  position: absolute; left: 88px; top: 34px; white-space: nowrap;
+  font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 11px;
+  background: #121a2b; border: 1px solid var(--b, var(--line));
+  box-shadow: 0 8px 18px rgba(0,0,0,.45), 0 0 12px color-mix(in srgb, var(--b, #000) 35%, transparent);
+  transform: translateX(-10px); opacity: 0; transition: transform .4s var(--spring) .15s, opacity .25s .15s;
+}
+.under.on .sign { transform: none; opacity: 1; }
+.sign small { display: block; font-weight: 500; color: var(--dim); font-size: 10.5px; margin-top: 1px; }
+.bdg { min-width: 16px; height: 16px; border-radius: 8px; font-size: 9.5px; font-weight: 800; display: inline-grid; place-items: center; padding: 0 4px; color: #06231a; margin-left: 4px; }
+.sign.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ box-shadow: 0 8px 18px rgba(0,0,0,.45), 0 0 6px rgba(255,211,107,.3);} 50%{ box-shadow: 0 8px 18px rgba(0,0,0,.45), 0 0 18px rgba(255,211,107,.9);} }
+
+/* the notification card that grows out of the capsule */
+.card {
+  position: absolute; top: 0; left: 50%; z-index: 4; width: 470px;
+  transform: translateX(-50%) scale(.3, .15); transform-origin: 50% 0; opacity: 0; pointer-events: none;
+  border-radius: 0 0 22px 22px; background: linear-gradient(var(--navy), var(--navy2));
+  box-shadow: inset 0 0 0 1px var(--line2), 0 20px 50px rgba(0,0,0,.55);
+  padding: 12px 14px 12px 10px; display: flex; gap: 10px;
+  transition: transform .5s var(--spring), opacity .2s ease;
+}
+.card.on { transform: translateX(-50%) scale(1); opacity: 1; pointer-events: auto; }
+.card::before { content: ""; position: absolute; top: 0; left: 14%; right: 14%; height: 3px; border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--pink), var(--c, var(--teal)), var(--pink)); box-shadow: 0 0 14px var(--c, var(--teal)); }
+.card canvas { width: 78px; height: 96px; flex: none; }
+.card .nb { flex: 1; min-width: 0; opacity: 0; transform: translateY(-6px); transition: opacity .25s .18s, transform .35s var(--ease) .18s; }
+.card.on .nb { opacity: 1; transform: none; }
+.src { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .12em; color: var(--c); }
+.src .t { margin-left: auto; font: 500 10.5px Consolas, monospace; color: var(--dim); letter-spacing: 0; }
+.who { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 12px; color: #06231a; flex: none; }
+.name { font-weight: 700; font-size: 13px; }
+.msg { font-size: 12.5px; margin-top: 4px; line-height: 1.35; }
+.rom { font-size: 11.5px; color: var(--teal); margin-top: 2px; }
+.tr { font-size: 11.5px; color: #ffb3cc; margin-top: 1px; }
+.acts { display: flex; gap: 6px; margin-top: 9px; align-items: center; }
+.btn { font: 700 11.5px "Segoe UI", system-ui, sans-serif; padding: 6px 12px; border-radius: 999px; border: 0; cursor: pointer; white-space: nowrap; transition: transform .12s, filter .15s; }
+.btn:active { transform: scale(.94); }
+.btn:hover { filter: brightness(1.12); }
+.p { background: var(--teal); color: #062a28; } .s { background: #18213a; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.input { flex: 1; min-width: 0; background: #0b1120; border: 1px solid var(--line2); border-radius: 10px; padding: 6px 10px; font-size: 11.5px; color: var(--ink); outline: none; }
+.input:focus { border-color: var(--teal); }
+
+/* the deck (opened by clicking the capsule) */
+.deck {
+  position: absolute; top: 0; left: 50%; z-index: 6; width: 500px; height: 240px;
+  transform: translateX(-50%) scale(.26, .13); transform-origin: 50% 0; opacity: 0; pointer-events: none;
+  border-radius: 0 0 22px 22px; background: linear-gradient(var(--navy), var(--navy2));
+  box-shadow: inset 0 0 0 1px var(--line2), 0 20px 50px rgba(0,0,0,.55); padding: 10px 12px 12px;
+  display: flex; flex-direction: column; gap: 8px; transition: transform .55s var(--spring), opacity .2s;
+}
+.deck.on { transform: translateX(-50%) scale(1); opacity: 1; pointer-events: auto; }
+.deck::before { content: ""; position: absolute; top: 0; left: 14%; right: 14%; height: 3px; border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--pink), var(--teal), var(--pink)); box-shadow: 0 0 14px rgba(57,197,187,.65); }
+.dtop { display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity .25s .2s; }
+.deck.on .dtop, .deck.on .dmain { opacity: 1; }
+.tabs { display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: #0a0f1a; border: 1px solid var(--line); }
+.tab { font-size: 11px; font-weight: 600; color: var(--dim); padding: 4px 9px; border-radius: 999px; cursor: pointer; border: 0; background: none; }
+.tab.on { background: var(--teal); color: #062a28; box-shadow: 0 0 10px rgba(57,197,187,.45); }
+.x { margin-left: auto; color: var(--dim); background: none; border: 0; font-size: 15px; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.x:hover { color: var(--teal); background: rgba(57,197,187,.1); }
+.dmain { flex: 1; display: flex; gap: 8px; min-height: 0; opacity: 0; transition: opacity .25s .25s; }
+.dmain canvas { width: 116px; height: 100%; flex: none; }
+.dbody { flex: 1; background: rgba(10,15,26,.92); border: 1px solid var(--line); border-radius: 16px; padding: 10px 13px; }
+.dt { font-size: 12.5px; font-weight: 800; letter-spacing: .14em; color: var(--teal); margin-bottom: 6px; display: flex; }
+.dt span { margin-left: auto; font: 500 10.5px Consolas, monospace; color: var(--dim); letter-spacing: 0; }
+.row { display: grid; grid-template-columns: 40px 1fr 80px; gap: 8px; align-items: center; font-size: 12px; padding: 4px 0; border-top: 1px solid #18213a; }
+.bar { height: 7px; border-radius: 4px; background: #1a2238; overflow: hidden; } .bar i { display: block; height: 100%; border-radius: 4px; transition: width .6s var(--ease); }
+.val { text-align: right; font: 500 11px Consolas, monospace; color: #cfd8e3; }
+
+/* controls */
+.ctrl { width: 100%; max-width: 1100px; display: flex; flex-wrap: wrap; gap: 8px; }
+.ctrl button { font: 600 12.5px "Segoe UI", system-ui, sans-serif; padding: 8px 13px; border-radius: 10px; border: 1px solid #26324c; background: #121a2b; color: var(--ink); cursor: pointer; transition: border-color .15s, background .15s; }
+.ctrl button:hover { border-color: var(--teal); background: #16213a; }
+.ctrl button.on { border-color: var(--teal); background: rgba(57,197,187,.14); }
+.ctrl .sep { width: 1px; background: #26324c; margin: 0 4px; }
+.status { width: 100%; max-width: 1100px; font: 500 12px Consolas, monospace; color: var(--dim); }
+body.still *, body.still *::before, body.still *::after { transition: none !important; animation: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; } }
+@media (max-width: 640px) { .card { width: calc(100vw - 40px); } .deck { width: calc(100vw - 40px); } .window { display: none; } }
+</style>
+</head>
+<body>
+<h1>Miku Notch: <span>prototipe interaktif</span></h1>
+<p class="hint">Klik tombol di bawah buat simulasi. Kartu notif nutup sendiri setelah 6 detik (hover = ditahan), lalu Miku turun ke bawah kapsul sampai kamu klik dia. Klik kapsul = buka deck. Miku digambar pakai engine chibi asli dari app.</p>
+
+<div class="desk" id="desk">
+  <div class="window"><i></i><i style="width:70%"></i><i></i><i style="width:55%"></i><i></i><i style="width:80%"></i></div>
+  <div class="island">
+    <div class="capsule" id="capsule" title="Buka deck">
+      <canvas class="head" id="head"></canvas>
+      <span class="slot" id="slot"></span>
+    </div>
+    <div class="under" id="under" title="Buka">
+      <span class="thread"></span>
+      <canvas id="hang"></canvas>
+      <div class="sign" id="sign"></div>
+    </div>
+    <div class="card" id="card"><canvas id="cardMiku"></canvas><div class="nb" id="cardBody"></div></div>
+    <div class="deck" id="deck">
+      <div class="dtop">
+        <div class="tabs"><button class="tab on">PC</button><button class="tab">Music</button><button class="tab">Chat</button><button class="tab">Agents</button></div>
+        <button class="x" id="deckClose" title="Tutup">✕</button>
+      </div>
+      <div class="dmain"><canvas id="deckMiku"></canvas>
+        <div class="dbody"><div class="dt">PC SPECS<span id="up">Up 6h 12m</span></div><div id="rows"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ctrl" id="ctrl">
+  <button data-a="wa">💬 WA masuk</button>
+  <button data-a="line">💬 LINE (Jepang)</button>
+  <button data-a="wakr">💬 WA (Korea)</button>
+  <button data-a="discord">🎮 Discord mention</button>
+  <span class="sep"></span>
+  <button data-a="ask">✋ Agen minta izin</button>
+  <button data-a="done">✓ Agen selesai</button>
+  <span class="sep"></span>
+  <button data-a="music" id="musicBtn">🎵 Lagu</button>
+  <button data-a="focus" id="focusBtn">🔕 Mode fokus</button>
+  <button data-a="read">↺ Baca semua</button>
+</div>
+<div class="status" id="status"></div>
+
+<script>(()=>{var e0=["classic","snow","sakura"],W="classic",v=[1,.914,.863],D=[.98,.98,.99],t0={id:"classic",label:"Miku",hair:[.224,.773,.733],hairDark:[.141,.588,.565],hairHi:"rgba(126,232,224,0.62)",eye1:[.337,.851,.812],eye2:[.043,.463,.459],eyeInk:"rgb(20,44,46)",skin:v,tie:[.224,.773,.733],shirt:D,skirt:[.376,.408,.451],skirtShade:[.286,.318,.361],trim:[.878,.898,.925],gloves:[.169,.184,.212],headset:[.243,.259,.29],armband:[.169,.184,.212]},n0={id:"snow",label:"Snow Miku",hair:[.894,.933,.976],hairDark:[.678,.769,.886],hairHi:"rgba(255,255,255,0.78)",eye1:[.478,.796,.949],eye2:[.129,.408,.643],eyeInk:"rgb(26,46,70)",skin:v,tie:[.404,.678,.886],shirt:D,skirt:[.541,.698,.851],skirtShade:[.427,.588,.749],trim:[.945,.969,.992],gloves:[.847,.902,.961],headset:[.867,.914,.969],armband:[.404,.678,.886],furCollar:!0,extra:{behind:(e,t,n)=>{for(let r=0;r<7;r++){let o=r/7*Math.PI*2+n*.25;H(e,150+Math.cos(o)*108,56+Math.sin(o)*100,7,"rgba(255,255,255,0.4)")}},front:(e,t,n)=>{H(e,104,34,9,"rgba(255,255,255,0.92)",n*.6),H(e,196,30,7,"rgba(255,255,255,0.85)",-n*.5)}}},r0={id:"sakura",label:"Sakura Miku",hair:[.961,.659,.78],hairDark:[.886,.498,.647],hairHi:"rgba(255,214,232,0.75)",eye1:[.969,.616,.737],eye2:[.678,.239,.404],eyeInk:"rgb(58,24,38)",skin:v,tie:[.937,.478,.655],shirt:D,skirt:[.945,.804,.851],skirtShade:[.886,.686,.757],trim:[1,1,1],gloves:[1,.949,.965],headset:[1,.925,.949],armband:[.937,.478,.655],extra:{front:(e,t,n)=>{O(e,100,40,11,n*.4),O(e,202,36,9,-n*.35);for(let r=0;r<4;r++){let o=(n*.16+r*.25)%1,s=84+r*44+Math.sin(n*1.1+r)*6,a=150+o*130;e.save(),e.globalAlpha=.55*(1-o),e.translate(s,a),e.rotate(n*.9+r),o0(e,5.5),e.restore()}}}},K={classic:t0,snow:n0,sakura:r0};function H(e,t,n,r,o,s=0){e.save(),e.translate(t,n),e.rotate(s),e.strokeStyle=o,e.lineWidth=Math.max(1,r*.2),e.lineCap="round";for(let a=0;a<6;a++){let i=a/6*Math.PI*2,u=Math.cos(i),m=Math.sin(i);e.beginPath(),e.moveTo(0,0),e.lineTo(u*r,m*r),e.moveTo(u*r*.6,m*r*.6),e.lineTo(u*r*.6+m*r*.34,m*r*.6-u*r*.34),e.moveTo(u*r*.6,m*r*.6),e.lineTo(u*r*.6-m*r*.34,m*r*.6+u*r*.34),e.stroke()}e.restore()}function O(e,t,n,r,o=0){e.save(),e.translate(t,n),e.rotate(o);for(let s=0;s<5;s++){let a=s/5*Math.PI*2;e.save(),e.rotate(a),e.fillStyle=s%2?"rgba(255,214,232,0.96)":"rgba(249,183,208,0.96)",e.beginPath(),e.ellipse(0,-r*.62,r*.42,r*.62,0,0,Math.PI*2),e.fill(),e.restore()}e.fillStyle="rgba(255,238,168,0.98)",e.beginPath(),e.arc(0,0,r*.2,0,Math.PI*2),e.fill(),e.restore()}function o0(e,t){e.fillStyle="rgba(249,183,208,0.9)",e.beginPath(),e.moveTo(0,-t),e.quadraticCurveTo(t*.9,-t*.2,0,t),e.quadraticCurveTo(-t*.9,-t*.2,0,-t),e.fill()}var K0=new Set(e0);var _=520,J=510,a0={idle:{L:[20,10],R:[-20,-10]},working:{L:[28,-40,2,9,.2],R:[-28,40,2,9,.26],look:[0,6],scan:!0,laptop:!0,fx:"ticks"},thinking:{L:[15,-60],R:[-20,175,2,4,2.2],look:[4,-5],mouth:"flat",tilt:-6,fx:"dots"},searching:{L:[25,10],R:[-60,-60,6,8,1.4],hold:"glass",look:[6,0],mouth:"o",body:"sway"},approval:{L:[40,-80],R:[-100,-30,6,10,.5],mouth:"o",brows:"up",fx:"bang"},question:{L:[60,70],R:[-60,-70],tilt:8,mouth:"o",brows:"up",fx:"question"},error:{L:[10,5],R:[-10,-5],body:"shake",brows:"worry",mouth:"wavy",fx:"sweat"},finished:{L:[110,20,6,8,.45],R:[-110,-20,6,8,.45],body:"bounce",eyes:"happy",mouth:"open",fx:"stars"},ratelimit:{L:[15,5],R:[-15,-5],eyes:"flat",brows:"worry",mouth:"wavy",fx:"sweat"},sleeping:{L:[12,5,1,1,3],R:[-12,-5,1,1,3],eyes:"closed",mouth:"o",tilt:10,fx:"zzz"},dizzy:{L:[40,10,8,8,.5],R:[-40,-10,8,8,.5],eyes:"spiral",mouth:"wavy",body:"sway",fx:"stars"},love:{L:[15,-70],R:[-15,70],eyes:"heart",mouth:"open",fx:"hearts"},surprised:{L:[70,0,3,3,.12],R:[-70,0,3,3,.12],eyes:"wide",mouth:"big",brows:"up",fx:"lines"},proud:{L:[55,-110],R:[-55,110],eyes:"happy",mouth:"cat",fx:"star"},wink:{L:[20,10],R:[-100,-30,6,10,.6],hold:"peace",eyes:["open","happy"],mouth:"open",tilt:6,fx:"winkStar"},yawn:{L:[15,5],R:[-20,175,2,3,2.4],eyes:"closed",mouth:"big",fx:"tear"},happy:{L:[50,10,10,8,.5],R:[-50,-10,10,8,.5],eyes:"happy",mouth:"open",body:"sway"},annoyed:{L:[15,-75],R:[-15,75],eyes:"flat",brows:"angry",mouth:"pout",fx:"vein"},wave:{L:[20,10],R:[-100,-30,6,14,.35],eyes:"happy",mouth:"open"},singing:{L:[75,20,10,12,.8],R:[-35,155,2,3,.8],hold:"mic",eyes:"happy",mouth:"sing",body:"sway",fx:"notes"},leek:{L:[20,10],R:[-100,-30,8,22,.45],hold:"leek",mouth:"open"},dance:{L:[100,30,14,16,.5],R:[-30,-20,14,16,.5],eyes:"happy",mouth:"open",body:"sway",fx:"notes"}};var A=[1,1,1],g=[0,0,0],b=(e,t,n)=>[e[0]+(t[0]-e[0])*n,e[1]+(t[1]-e[1])*n,e[2]+(t[2]-e[2])*n],h=(e,t=1)=>`rgba(${Math.round(e[0]*255)},${Math.round(e[1]*255)},${Math.round(e[2]*255)},${t})`,s0={classic:{hair:[.24,.71,.74],hairDark:[.11,.52,.56],tie:[.184,.663,.69],skirt:[.227,.259,.322],skirtShade:[.118,.133,.169],gloves:[.17,.19,.24],headset:[.17,.19,.24]}};function i0(e){return{hairTop:h(b(e.hair,A,.12)),hairBot:h(b(e.hair,e.hairDark,.55)),tailTop:h(e.hair),tailBot:h(b(e.hairDark,g,.08)),hairBack:h(e.hairDark),hairDeep:h(b(e.hairDark,g,.2)),hairHi:h(b(e.hair,A,.5)),skin:h(b(e.skin,[.98,.84,.76],.5)),skinHi:h(b(e.skin,A,.3)),skinLo:h(b(e.skin,[.96,.8,.7],.6)),neck:h(b(e.skin,[.84,.62,.52],.5)),eyeTop:h(b(e.eye2,g,.25)),eyeMid:h(b(e.eye1,e.eye2,.35)),eyeBot:h(b(e.eye1,A,.5)),eyeRim:h(b(e.eye2,g,.4)),pupil:h(b(e.eye2,g,.65),.9),ink:e.eyeInk,trim:h(e.tie),tie:h(b(e.tie,A,.12)),knot:h(b(e.tie,g,.18)),shirtHi:h(e.shirt),shirtLo:h(b(e.shirt,[.6,.64,.7],.85)),skirtTop:h(e.skirt),skirtBot:h(e.skirtShade),sleeveTop:h(b(e.gloves,A,.08)),sleeveBot:h(b(e.gloves,g,.3)),gear:h(e.headset),gearLo:h(b(e.headset,g,.4)),accent:e.id==="classic"?"#F0468A":h(e.tie)}}var I="#F5C542",F="#F0468A",V="#C9687E",Q="#B3475F",E="#1E222B",u0="M166 96 C96 80 40 150 44 250 C46 320 70 380 60 440 C56 458 50 466 44 474 C96 462 140 410 150 330 C156 280 150 220 166 170 C172 150 178 130 180 112 Z",l0="M150 150 C124 210 120 300 124 372 C142 330 144 270 144 226 C144 196 146 172 150 150 Z",h0="M112 120 C72 170 64 250 76 330",c0="M-9 -30 H9 A4 4 0 0 1 13 -26 V26 A4 4 0 0 1 9 30 H-9 A4 4 0 0 1 -13 26 V-26 A4 4 0 0 1 -9 -30 Z",b0="M146 176 C136 62 384 62 374 176 C374 240 340 298 260 298 C180 298 146 240 146 176 Z",m0="M226 410 L258 410 L256 462 C257 474 250 480 242 480 L228 480 C219 480 219 470 226 466 Z",C0="M214 356 L306 356 L334 404 C300 418 220 418 186 404 Z",p0="M190 396 C224 410 296 410 330 396 L334 404 C300 418 220 418 186 404 Z",k0="M160 190 C160 130 360 130 360 190 C360 222 356 244 336 262 C314 280 284 288 260 288 C236 288 206 280 184 262 C164 244 160 222 160 190 Z",d0="M262 60 C190 56 138 100 138 180 C138 226 146 262 160 300 C167 270 170 244 172 222 C174 208 176 198 180 188 L190 214 C194 198 198 188 204 180 L222 198 C226 184 230 176 236 172 C246 200 262 232 280 252 C277 226 279 196 290 170 L306 198 C312 186 320 178 326 172 L342 212 C344 198 345 192 346 186 C348 198 349 210 350 222 C352 244 354 270 362 300 C376 262 382 226 382 180 C382 100 334 56 262 60 Z",y0="M262 62 C250 100 240 138 236 172 M262 62 C278 100 288 136 290 170 M262 62 C226 92 208 134 204 180 M262 62 C300 92 322 132 326 172",f0="M176 118 C204 84 236 72 258 70 C230 82 200 100 176 118 Z",M0="M146 232 C150 264 168 286 192 290",L0="M234 294 C244 289 276 289 286 294 C290 296 292 300 292 306 L300 362 C276 370 244 370 220 362 L228 306 C228 300 230 296 234 294 Z",g0="M221 355 C244 363 276 363 299 355 L300 362 C276 370 244 370 220 362 Z",R0="M240 292 L259 301 L250 314 L236 300 Z M280 292 L261 301 L270 314 L284 300 Z",I0="M255 309 L265 309 L268 344 L260 354 L252 344 Z",S0="M254 301 L266 301 L264 310 L256 310 Z",w0="M253.5 334 L266.5 334 M253 339 L267 339",B0="M-9 2 L9 2 L26 44 C10 54 -10 54 -26 44 Z",T0="M-24 37 C-10 46 10 46 24 37 L26 44 C10 54 -10 54 -26 44 Z",A0="M-23 -2 C-23 -26 23 -26 23 -2 L21 12 C18 27 -18 27 -21 12 Z",F0="M-27 -6 C-22 -30 20 -32 25 -8 C16 -22 -14 -22 -22 -8 Z M-26 -6 L-34 -13 L-23 -13 Z",E0="M206 362 C206 356 210 352 216 352 L304 352 C310 352 314 356 314 362 L318 404 L202 404 Z",P0="M0 -14 L4 -4 L14 0 L4 4 L0 14 L-4 4 L-14 0 L-4 -4 Z",j="M0 8 C-16 -6 -7 -18 0 -9 C7 -18 16 -6 0 8 Z",H0="M5 -14 Q18 -12 17 -2 Q12 -8 8 -8 Z",z="M0 -20 C-8 -4 -12 4 -12 10 C-12 18 -6 24 0 24 C6 24 12 18 12 10 C12 4 8 -4 0 -20 Z",v0={rest:"M192 194 C202 188 216 187 226 190 M294 190 C304 187 318 188 328 194",worry:"M192 197 L226 187 M294 187 L328 197",angry:"M192 186 L226 196 M294 196 L328 186",up:"M192 188 C202 181 216 180 226 184 M294 184 C304 180 318 181 328 188"},q=new Map;function X(e){let t=q.get(e);return t||q.set(e,t=new Path2D(e)),t}var N=e=>e*Math.PI/180,B=(e,t,n=0)=>-Math.cos(Math.PI*(e-n)/t),T=(e,t,n=0)=>(B(e,t,n)+1)/2;function c(e,t,n,r=1){e.globalAlpha=r,e.fillStyle=n,e.fill(X(t)),e.globalAlpha=1}function y(e,t,n,r,o=1){e.globalAlpha=o,e.strokeStyle=n,e.lineWidth=r,e.lineCap="round",e.lineJoin="round",e.stroke(X(t)),e.globalAlpha=1}function d(e,t,n,r,o,s,a){e.strokeStyle=s,e.lineWidth=a,e.lineCap="round",e.beginPath(),e.moveTo(t,n),e.lineTo(r,o),e.stroke()}function C(e,t,n,r,o,s){e.fillStyle=s,e.beginPath(),e.ellipse(t,n,r,o,0,0,Math.PI*2),e.fill()}function M(e,t,n,r,o,s){e.fillStyle=s,e.fillRect(t,n,r,o)}function R(e,t,n,...r){let o=e.createLinearGradient(0,t,0,n);return r.forEach((s,a)=>o.addColorStop(a/(r.length-1),s)),o}function p(e,t,n,r,o=0,s=1,a=s,i=1){e.save(),e.translate(t,n),o&&e.rotate(N(o)),(s!==1||a!==1)&&e.scale(s,a);let u=e.globalAlpha;e.globalAlpha=u*i,r(),e.globalAlpha=u,e.restore()}function Z(e,t,n,r,o){e.save(),e.translate(t,n),e.rotate(N(r)),e.translate(-t,-n),o(),e.restore()}function Y(e,t){e.save(),e.translate(_,0),e.scale(-1,1),t(),e.restore()}function U(e,t,n,r){Z(e,170,100,1+3*B(n,2,r),()=>{c(e,u0,R(e,96,474,t.tailTop,t.tailBot)),c(e,l0,t.hairDeep,.5),y(e,h0,t.hairHi,7,.55)})}function D0(e,t,n){U(e,t,n,0),Y(e,()=>U(e,t,n,.7));for(let[r,o]of[[172,-20],[348,20]])p(e,r,84,()=>{c(e,c0,R(e,-30,30,t.gear,t.gearLo)),M(e,-9,-30,6,60,t.accent)},o);c(e,b0,t.hairBack)}function V0(e,t){let n=()=>p(e,-4,0,()=>{M(e,228,396,28,20,t.skinLo),c(e,m0,R(e,410,480,t.sleeveTop,t.sleeveBot)),M(e,226,410,32,7,t.trim)});n(),Y(e,n),M(e,250,278,20,20,t.neck),c(e,C0,R(e,356,412,t.skirtTop,t.skirtBot)),c(e,p0,t.trim)}function $(e,t,n,r,o,s,a,i){if(r==="happy"||r==="closed"){let f=r==="happy";e.strokeStyle=a.ink,e.lineWidth=5.5,e.lineCap="round",e.beginPath(),e.moveTo(t-21,f?236:230),e.quadraticCurveTo(t,f?208:242,t+21,f?236:230),e.stroke();return}if(r==="heart"){p(e,t,232,()=>c(e,j,F),0,1.6+.7*T(s,.5));return}if(r==="spiral"){p(e,t,230,()=>{e.strokeStyle=a.ink,e.lineWidth=4,e.lineCap="round",e.beginPath();for(let f=0;f<=Math.PI*5;f+=.3)e.lineTo(Math.cos(f)*f*1.3,Math.sin(f)*f*1.3);e.stroke()},s*280*n);return}let u=s%4/4,m=i!==void 0?Math.max(.08,Math.min(1,i)):u>.92?Math.max(.08,1-Math.sin(Math.PI*(u-.92)/.08)):1,l=r==="wide"?.7:1,k=(o.look?.[0]??0)+(o.scan?5*B(s,1.6):0),L=o.look?.[1]??0;e.save(),e.translate(0,232),e.scale(1,m),e.translate(0,-232),p(e,t,228,()=>c(e,A0,"#FFFFFF"),0,n,1),p(e,t+k,228+L,()=>{C(e,1,3,17,20,R(e,-17,23,a.eyeTop,a.eyeMid,a.eyeBot)),e.strokeStyle=a.eyeRim,e.lineWidth=2,e.stroke(),C(e,1,5,8,11,a.pupil)},0,n*l,l),C(e,t-7+k,219+L,6.5*l,6.5*l,"#FFFFFF"),C(e,t+8+k,241+L,3*l,3*l,"#FFFFFF"),p(e,t,228,()=>c(e,F0,a.ink),0,n,1),r==="flat"&&(M(e,t-30,196,60,30,a.skinHi),d(e,t-24,226,t+24,226,a.ink,5.5)),e.restore()}function G0(e,t,n){let r=o=>y(e,o,V,2.5);switch(t){case"smile":return r("M251 265 Q260 272 269 265");case"open":return c(e,"M250 262 C253 277 267 277 270 262 Z",V);case"o":return C(e,260,267,4.5,4.5,V);case"big":return C(e,260,268,8,10,Q);case"flat":return r("M254 267 L266 267");case"wavy":return r("M250 268 Q255 262 260 268 Q265 274 270 268");case"cat":return r("M250 264 Q255 272 260 264 Q265 272 270 264");case"pout":return r("M252 270 Q260 263 268 270");case"sing":return C(e,260,267,7,9*(.45+.65*T(n,.3)),Q)}}function Z0(e,t,n,r,o,s=0){let a=e.createRadialGradient(260,209,0,260,209,124);a.addColorStop(0,r.skinHi),a.addColorStop(1,r.skinLo),c(e,k0,a),e.save(),e.translate(0,s);for(let l of[186,334]){let k=e.createRadialGradient(l,258,0,l,258,20);k.addColorStop(0,"rgba(255,157,174,0.45)"),k.addColorStop(1,"rgba(255,157,174,0)"),C(e,l,258,20,20,k)}let i=t.eyes??"open",[u,m]=typeof i=="string"?[i,i]:i;$(e,212,1,u,t,n,r,o),$(e,308,-1,m,t,n,r,o),G0(e,t.mouth??"smile",n),e.restore(),c(e,d0,R(e,60,300,r.hairTop,r.hairBot)),y(e,y0,r.hairBack,2.5,.5),c(e,f0,"#FFFFFF",.4),y(e,v0[t.brows??"rest"],r.hairDeep,2.5);for(let l of[144,376])d(e,l,204,l,224,r.gear,16),d(e,l+(l<260?-4:4),210,l+(l<260?-4:4),218,r.accent,4);y(e,M0,r.gearLo,3),d(e,193,289,199,289,r.gearLo,10)}function _0(e,t){let n=e.createLinearGradient(220,290,300,370);n.addColorStop(0,t.shirtLo),n.addColorStop(.45,t.shirtHi),n.addColorStop(1,t.shirtLo),c(e,L0,n),c(e,g0,t.trim),c(e,R0,t.trim),c(e,I0,t.tie),c(e,S0,t.knot),y(e,w0,t.sleeveBot,2.2),M(e,273,320,14,6,"#D8D24A")}function N0(e,t,n){switch(t){case"mic":M(e,-4,48,8,14,E),C(e,0,67,8,8,"#C9CFD8"),M(e,-8,60,16,3,E);return;case"leek":d(e,0,46,0,108,"#F4F7E8",9);for(let r of[-11,0,12])d(e,0,104,r,r?150:158,"#6BBF4A",8);return;case"peace":d(e,-3,58,-9,76,n.skin,6),d(e,3,58,9,76,n.skin,6);return;case"glass":d(e,0,54,0,72,E,6),C(e,0,92,20,20,"rgba(223,246,250,0.7)"),e.strokeStyle=E,e.lineWidth=5,e.stroke();return}}function P(e,t,n,r,o,s,a){let[i,u,m=3,l=4,k=1.8]=n,L=B(r,k);p(e,t<0?233:287,305,()=>{if(s==="upper")return d(e,0,0,0,22,o.skin,16);p(e,0,22,()=>{a&&N0(e,a,o),C(e,0,0,8,8,o.skin),C(e,0,54,9,8,o.skin),c(e,B0,R(e,2,54,o.sleeveTop,o.sleeveBot)),M(e,-9,1,18,5,o.trim),c(e,T0,o.trim)},u+l*L)},i+m*L)}function O0(e){c(e,E0,R(e,352,404,"#E3E7EC","#B4BCC7")),C(e,260,378,10,10,"#2FA9B0"),y(e,"M255 378 L259 382 L266 374","#FFFFFF",2.5),d(e,197,407,323,407,"#8E97A3",10)}function S(e,t,n,r,o,s,a=2){let i=((r-o)/a%1+1)%1;p(e,t,n+12-56*i,s,0,1,1,i<.2?i/.2:1-(i-.2)/.8)}function w(e,t,n,r,o,s,a=.6,i=1){let u=T(r,a,o);p(e,t,n,s,0,i*(.5+.6*u),i*(.5+.6*u),.2+.8*u)}var G=e=>.8+.35*T(e,.5);function W0(e,t,n){let r=()=>c(e,P0,I),o=()=>c(e,j,F),s=()=>{C(e,0,10,7,5,F),M(e,5,-14,3,24,F),c(e,H0,F)},a=(i,u,m,l)=>{let k=n/m%1;p(e,i,u+28*k,l,0,1,1,1-k)};switch(t){case"dots":for(let i=0;i<3;i++)w(e,404+i*27,70-i*20,n,i*.3,()=>C(e,0,0,7+i*3.5,7+i*3.5,"#9FE6E6"),.9);return;case"question":p(e,436,62-5*T(n,1.6),()=>{y(e,"M-17 -18 C-17 -40 17 -40 17 -16 C17 0 0 0 0 16",I,9),C(e,0,36,6,6,I)});return;case"bang":p(e,440,70,()=>{d(e,0,-34,0,0,I,12),C(e,0,24,7,7,I)},0,G(n));return;case"sweat":a(352,150,1.2,()=>{c(e,z,"#E4F7FF"),y(e,z,"#7CC4E8",2)});return;case"stars":w(e,96,60,n,0,r),w(e,430,48,n,.2,r,.6,1.3),w(e,260,30,n,.4,r,.6,.8);return;case"hearts":S(e,110,90,n,0,o),S(e,410,80,n,.7,o),S(e,260,50,n,1.3,o);return;case"lines":p(e,430,80,()=>y(e,"M0 -34 L0 -12 M26 -22 L12 -6 M34 6 L14 6",I,7),0,G(n));return;case"star":w(e,420,70,n,0,r,.6,1.4);return;case"winkStar":w(e,366,208,n,0,r,.6,.9);return;case"tear":a(336,244,2.4,()=>{C(e,0,0,5,5,"#E4F7FF"),e.strokeStyle="#7CC4E8",e.lineWidth=1.5,e.stroke()});return;case"vein":p(e,352,124,()=>y(e,"M-10 -4 Q-4 -4 -4 -10 M4 -10 Q4 -4 10 -4 M10 4 Q4 4 4 10 M-4 10 Q-4 4 -10 4","#E0354F",4),0,G(n));return;case"notes":S(e,100,90,n,0,s),S(e,424,84,n,.6,s),S(e,64,180,n,1.2,s);return;case"ticks":{let i=(u,m,l,k,L)=>w(e,u,m,n,L,()=>d(e,0,0,l,k,I,6),.25);i(186,350,-12,-10,0),i(176,372,-14,0,.12),i(334,350,12,-10,.06),i(344,372,14,0,.18);return}case"zzz":for(let i=0;i<3;i++)S(e,400+i*22,110-i*26,n,i*.9,()=>y(e,"M-8 -8 H8 L-8 8 H8","#9FE6E6",4),2.7);return}}function x(e,t,n,r=W,o={}){let s=a0[t],a={...s,eyes:o.eyes??s.eyes,look:o.look?[(s.look?.[0]??0)+o.look[0],(s.look?.[1]??0)+o.look[1]]:s.look,L:o.arms?[o.arms[0],o.arms[1],s.L[2],s.L[3],s.L[4]]:s.L,R:o.arms?[o.arms[2],o.arms[3],s.R[2],s.R[3],s.R[4]]:s.R},i={...K[r],...s0[r]};o.tint&&(i.hair=b(i.hair,o.tint,.62),i.hairDark=b(i.hairDark,o.tint,.62));let u=i0(i);switch(o.noShadow||C(e,260,484,92,8,"rgba(0,0,0,0.14)"),e.save(),a.body??"bob"){case"bob":e.translate(0,-5*T(n,1.6));break;case"bounce":e.translate(0,-18*T(n,.4));break;case"shake":e.translate(4*B(n,.1),0);break;case"sway":e.translate(260,480),e.rotate(N(4*B(n,1))),e.translate(-260,-480);break}let m=(a.tilt??0)+2*B(n,2.6),l=Math.max(-1,Math.min(1,-(o.pitch??0)));Z(e,260,288+3*l,m,()=>{e.translate(0,-3*l),D0(e,u,n)}),V0(e,u),Z(e,260,288+3*l,m,()=>{e.translate(0,-3*l),Z0(e,a,n,u,o.lid,-7*l)}),P(e,-1,a.L,n,u,"upper"),P(e,1,a.R,n,u,"upper"),_0(e,u),P(e,-1,a.L,n,u,"fore"),P(e,1,a.R,n,u,"fore",a.hold),a.laptop&&O0(e),a.fx&&!o.skipFx?.has(a.fx)&&W0(e,a.fx,n),e.restore()}window.MikuChibi={drawChibi:x,CHIBI_W:_,CHIBI_H:J};})();
+</script>
+<script>
+const { drawChibi, CHIBI_W, CHIBI_H } = window.MikuChibi;
+const $ = (id) => document.getElementById(id);
+const VARIANT = "classic";
+
+// ── Drawing Miku on a canvas, every frame ────────────────────────────────────
+const canvases = [];
+function miku(canvas, getPose, crop) {
+  canvases.push({ canvas, getPose, crop });
+}
+const t0 = performance.now();
+function frame(now) {
+  for (const { canvas, getPose, crop } of canvases) {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) continue;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(w * dpr)) canvas.width = Math.round(w * dpr);
+    if (canvas.height !== Math.round(h * dpr)) canvas.height = Math.round(h * dpr);
+    const x = canvas.getContext("2d");
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.clearRect(0, 0, canvas.width, canvas.height);
+    if (crop) {
+      // Head only: zoom on the face.
+      const k = canvas.width / 260;
+      x.setTransform(k, 0, 0, k, -130 * k, -150 * k);
+    } else {
+      const k = Math.min(canvas.width / CHIBI_W, canvas.height / CHIBI_H);
+      x.setTransform(k, 0, 0, k, (canvas.width - CHIBI_W * k) / 2, canvas.height - CHIBI_H * k);
+    }
+    drawChibi(x, getPose(), (now - t0) / 1000, VARIANT, { noShadow: true });
+  }
+  requestAnimationFrame(frame);
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+const state = {
+  music: false, focus: false,
+  unread: { wa: 0, line: 0, discord: 0 }, senders: [],
+  ask: false, done: false, held: 0,
+  cardPose: "idle", deck: false,
+};
+
+// What hangs under the capsule: the most important thing not yet seen.
+function pending() {
+  if (state.ask) return { pose: "approval", col: "#ffd36b", pulse: true,
+    html: `<span style="color:#ffd36b">✋ Codex minta izin</span><small>./gradlew assembleRelease</small>` };
+  const u = state.unread, total = u.wa + u.line + u.discord;
+  if (total) return { pose: "approval", col: "#25d366",
+    html: `💬 Pesan${u.wa ? `<span class="bdg" style="background:#25d366">${u.wa}</span>` : ""}${u.line ? `<span class="bdg" style="background:#06c755">${u.line}</span>` : ""}${u.discord ? `<span class="bdg" style="background:#5865f2;color:#fff">${u.discord}</span>` : ""}<small>${[...new Set(state.senders)].slice(-3).join(", ")}</small>` };
+  if (state.done) return { pose: "finished", col: "#5fd37a",
+    html: `<span style="color:#5fd37a">✓ Claude selesai</span><small>12 file · 4m 12s</small>` };
+  if (state.held) return { pose: "sleeping", col: "#8fa3b8",
+    html: `🔕 ${state.held} notif ditahan<small>Mode fokus</small>` };
+  return null;
+}
+
+function renderCapsule() {
+  const now = new Date();
+  const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  $("slot").innerHTML = state.music
+    ? `<span class="cover"></span><span style="max-width:120px;overflow:hidden;text-overflow:ellipsis">Bokutachi No Uta</span><span class="eq">${"<i></i>".repeat(6)}</span>`
+    : `<span class="mono">${time}</span><span class="dimt">·</span><span>☁ 27°</span>`;
+}
+
+function renderUnder() {
+  const p = pending();
+  const under = $("under");
+  if (p && !state.cardOpen && !state.deck) {
+    $("sign").innerHTML = p.html;
+    $("sign").style.setProperty("--b", p.col);
+    $("sign").classList.toggle("pulse", !!p.pulse);
+    under.classList.add("on");
+  } else {
+    under.classList.remove("on");
+  }
+  $("status").textContent = `belum dilihat → WA ${state.unread.wa} · LINE ${state.unread.line} · Discord ${state.unread.discord} · izin ${state.ask ? 1 : 0} · selesai ${state.done ? 1 : 0} · ditahan ${state.held}`;
+}
+
+// ── The notification card ────────────────────────────────────────────────────
+let cardTimer = null, hovering = false;
+const card = $("card");
+card.addEventListener("mouseenter", () => { hovering = true; clearTimeout(cardTimer); });
+card.addEventListener("mouseleave", () => { hovering = false; scheduleClose(4000); });
+function scheduleClose(ms) {
+  clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => { if (!hovering && !state.askOpen) closeCard(); }, ms);
+}
+function openCard(n) {
+  state.cardOpen = true;
+  state.cardPose = n.pose;
+  card.style.setProperty("--c", n.col);
+  $("cardBody").innerHTML = n.html;
+  card.classList.add("on");
+  renderUnder();
+  card.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => { n.onAct?.(b.dataset.close); closeCard(); }));
+  if (!n.sticky) scheduleClose(6000);
+}
+function closeCard() {
+  card.classList.remove("on");
+  state.cardOpen = false;
+  state.askOpen = false;
+  setTimeout(renderUnder, 220);
+}
+
+const who = (av, col, name) => `<div class="who"><span class="av" style="background:${col}">${av}</span><span class="name">${name}</span></div>`;
+const NOTES = {
+  wa: () => ({ key: "wa", sender: "Rina", col: "#25d366", pose: "approval",
+    html: `<div class="src">💬 WHATSAPP<span class="t">baru saja</span></div>${who("R", "#25d366", "Rina")}<div class="msg">Bro, build-nya udah bisa di-test belum? 🙏</div><div class="acts"><input class="input" placeholder="Balas…"><button class="btn p" data-close="sent">Kirim</button><button class="btn s" data-close="later">Nanti</button></div>` }),
+  line: () => ({ key: "line", sender: "Yuki", col: "#06c755", pose: "finished",
+    html: `<div class="src">💬 LINE<span class="t">1 mnt</span></div>${who("Y", "#06c755", "Yuki")}<div class="msg">今夜ライブ行く？ 🎤</div><div class="rom">konya raibu iku?</div><div class="tr">🌐 “Malam ini ke live?”</div><div class="acts"><button class="btn p" data-close="open">Buka di LINE</button><button class="btn s" data-close="later">Tandai dilihat</button></div>` }),
+  wakr: () => ({ key: "wa", sender: "Jiwoo", col: "#25d366", pose: "approval",
+    html: `<div class="src">💬 WHATSAPP<span class="t">baru saja</span></div>${who("J", "#25d366", "Jiwoo")}<div class="msg">오늘 저녁에 시간 있어?</div><div class="rom">oneul jeonyeoge sigan isseo?</div><div class="tr">🌐 “Malam ini ada waktu?”</div><div class="acts"><input class="input" placeholder="Balas…"><button class="btn p" data-close="sent">Kirim</button></div>` }),
+  discord: () => ({ key: "discord", sender: "sora", col: "#5865f2", pose: "approval",
+    html: `<div class="src">🎮 DISCORD · @MENTION<span class="t">1 mnt</span></div><div class="who"><span class="av" style="background:#8b93ff">S</span><span class="name">sora</span><span style="font-size:11px;color:var(--dim)">di #dev-miku</span></div><div class="msg"><span style="background:rgba(88,101,242,.25);color:#c9cdff;border-radius:4px;padding:0 3px">@kamu</span> PR-nya keren, boleh aku coba build?</div><div class="acts"><button class="btn p" data-close="open">Buka di Discord</button><button class="btn s" data-close="later">Nanti</button></div>` }),
+};
+
+function incoming(kind) {
+  const n = NOTES[kind]();
+  // Counted until read; "Kirim"/"Buka" reads it.
+  state.unread[n.key]++;
+  state.senders.push(n.sender);
+  n.onAct = (a) => {
+    if (a === "sent" || a === "open") { state.unread[n.key] = Math.max(0, state.unread[n.key] - 1); state.senders = state.senders.filter((s) => s !== n.sender); }
+  };
+  if (state.focus || state.deck) { state.held += state.focus ? 1 : 0; renderUnder(); return; }
+  openCard(n);
+}
+
+function askPermission() {
+  state.ask = true;
+  if (state.deck) { renderUnder(); return; }
+  state.askOpen = true;
+  openCard({ col: "#ffd36b", pose: "approval", sticky: true,
+    html: `<div class="src" style="color:#ffd36b">✋ MIKU MINTA IZIN<span class="t">Codex</span></div><div class="msg">Codex mau jalanin:</div><div class="msg mono" style="background:#0b1120;border-radius:8px;padding:6px 9px;margin-top:6px">./gradlew assembleRelease</div><div class="acts"><button class="btn p" data-close="allow">Izinkan</button><button class="btn s" data-close="deny">Tolak</button><button class="btn s" data-close="fold" title="Lipat, jawab nanti">Nanti</button></div>`,
+    onAct: (a) => { if (a !== "fold") state.ask = false; } });
+}
+
+function agentDone() {
+  state.done = true;
+  if (state.focus) { state.held++; renderUnder(); return; }
+  openCard({ col: "#5fd37a", pose: "finished",
+    html: `<div class="src" style="color:#5fd37a">✓ AGEN SELESAI<span class="t">Claude Code</span></div><div class="msg"><b>12 file berubah</b>, semua test lolos</div><div class="msg" style="color:var(--dim)">my-app · 4m 12s · <span style="color:#5fd37a">+412</span> <span style="color:#ff8fb3">−88</span></div><div class="acts"><button class="btn p" data-close="seen">Lihat diff</button><button class="btn s" data-close="later">Nanti</button></div>`,
+    onAct: (a) => { if (a === "seen") state.done = false; } });
+}
+
+// Clicking Miku under the capsule: open what she holds.
+$("under").addEventListener("click", () => {
+  const p = pending();
+  if (!p) return;
+  if (state.ask) return askPermission();
+  const u = state.unread;
+  if (u.wa + u.line + u.discord) { state.unread = { wa: 0, line: 0, discord: 0 }; state.senders = []; }
+  else if (state.done) state.done = false;
+  else if (state.held) state.held = 0;
+  renderUnder();
+});
+
+// The deck.
+function deck(on) {
+  state.deck = on;
+  $("deck").classList.toggle("on", on);
+  if (on) { clearTimeout(cardTimer); card.classList.remove("on"); state.cardOpen = false; }
+  renderUnder();
+}
+$("capsule").addEventListener("click", () => deck(true));
+$("deckClose").addEventListener("click", () => deck(false));
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+}));
+function rows() {
+  const r = (k, p, col, v) => `<div class="row"><span>${k}</span><div class="bar"><i style="width:${p}%;background:${col}"></i></div><span class="val">${v}</span></div>`;
+  const cpu = 8 + Math.round(Math.random() * 20), ram = 60 + Math.round(Math.random() * 6);
+  $("rows").innerHTML = r("CPU", cpu, "#39c5bb", `${cpu}% · 24c`) + r("RAM", ram, "#39c5bb", `${(ram * 0.319).toFixed(1)}/31.9G`)
+    + r("Disk", 65, "#5fd37a", "65% · 2589G") + r("Net", 22, "#8fa3ff", "↓24K ↑9K");
+}
+
+// Controls.
+$("ctrl").addEventListener("click", (e) => {
+  const a = e.target.closest("button")?.dataset.a;
+  if (!a) return;
+  if (NOTES[a]) incoming(a);
+  else if (a === "ask") askPermission();
+  else if (a === "done") agentDone();
+  else if (a === "music") { state.music = !state.music; $("musicBtn").classList.toggle("on", state.music); renderCapsule(); }
+  else if (a === "focus") { state.focus = !state.focus; $("focusBtn").classList.toggle("on", state.focus); if (!state.focus) state.held = 0; renderUnder(); }
+  else if (a === "read") { Object.assign(state, { unread: { wa: 0, line: 0, discord: 0 }, senders: [], ask: false, done: false, held: 0 }); closeCard(); renderUnder(); }
+});
+
+// The Mikus on the page.
+miku($("head"), () => (state.music ? "singing" : "idle"), true);
+miku($("hang"), () => pending()?.pose ?? "idle");
+miku($("cardMiku"), () => state.cardPose);
+miku($("deckMiku"), () => (state.music ? "singing" : "idle"));
+
+renderCapsule(); renderUnder(); rows();
+setInterval(renderCapsule, 15000);
+setInterval(rows, 3000);
+requestAnimationFrame(frame);
+// ?still&a=wa,close — a fixed scene for checking the layout (no motion).
+const q = new URLSearchParams(location.search);
+if (q.has("still")) {
+  document.body.classList.add("still");
+  for (const step of (q.get("a") || "").split(",").filter(Boolean)) {
+    if (step === "close") closeCard();
+    else if (step === "deck") deck(true);
+    else document.querySelector(`[data-a="${step}"]`)?.click();
+  }
+} else {
+  // A first message after a moment, so the page shows what it does.
+  setTimeout(() => incoming("wa"), 1200);
+}
+</script>
+</body>
+</html>

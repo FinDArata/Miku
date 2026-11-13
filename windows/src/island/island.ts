@@ -40,6 +40,7 @@ import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../vie
 import { h, svg } from "../views/dom";
 import { ICONS } from "../views/icons";
 import { IslandStateMachine } from "./fsm";
+import { HANG_H, HANG_W, NOTICE_H, NOTICE_W, Notices } from "./notices";
 import { refreshHookPills } from "./integrations";
 import { restoreAlertFocus } from "./hooks";
 import { DesktopLink } from "./desktop";
@@ -66,6 +67,7 @@ const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
  *  edge, and the room her head and the equaliser take before the text. */
 const SYNTH_BOT_X = 16;
 const SYNTH_EXTRA = 54;
+const SYNTH_HEAD = 26;
 /** How often the stage re-reads the sung line and its clock, in ms (Miku has her own frame loop). */
 const LYRICS_TICK_MS = 200;
 
@@ -106,6 +108,8 @@ export class Island {
   private closedLife: number | null = null;
   /** The size the window was last folded to, so a new one is only sent on a change. */
   private collapsedTo = { w: 0, h: 0 };
+  /** The notice card and Miku under the capsule (island/notices.ts). */
+  private notices!: Notices;
   private countdown!: HTMLElement;
   private compactPlan!: HTMLElement;
   private compactPlanDot!: HTMLElement;
@@ -500,7 +504,16 @@ export class Island {
     this.greetingCanvas.style.width = `${EXPANDED_W}px`;
     this.greetingCanvas.style.height = "150px";
 
-    this.root.append(this.wakeStrip, this.islandEl);
+    this.notices = new Notices({
+      openApproval: () => this.alert(State.pendingApproval?.questions ? "question" : "approval"),
+      openDeck: () => this.setView("overview"),
+      relayout: () => {
+        if (State.mode === "hidden") this.sendCollapsedSize(true);
+        this.pushedRect = { x: -1, y: -1, w: -1, h: -1 };
+        this.applyGeometry();
+      },
+    });
+    this.root.append(this.wakeStrip, this.islandEl, this.notices.hangEl, this.notices.noticeEl);
     this.islandEl.append(this.lyricsPill);
     this.applyGeometry();
   }
@@ -946,7 +959,17 @@ export class Island {
     this.uploadCanvas.el.style.left = `${(t.w - EXPANDED_W) / 2}px`;
 
     const viewportW = window.innerWidth > 0 ? window.innerWidth : PANEL_W;
-    const rect = { x: (viewportW - w) / 2, y: 0, w, h: hh };
+    this.notices?.place(hh);
+    let rw = w;
+    let rh = hh;
+    if (this.notices?.noticeOn) {
+      rw = Math.max(rw, NOTICE_W);
+      rh = Math.max(rh, NOTICE_H);
+    } else if (this.notices?.hangOn) {
+      rw = Math.max(rw, HANG_W);
+      rh = hh + HANG_H;
+    }
+    const rect = { x: (viewportW - rw) / 2, y: 0, w: rw, h: rh };
     const p = this.pushedRect;
     if (Math.abs(p.x - rect.x) > 0.5 || Math.abs(p.w - rect.w) > 0.5 || Math.abs(p.h - rect.h) > 0.5) {
       this.pushedRect = rect;
@@ -1408,6 +1431,11 @@ export class Island {
     this.lyricsTicker = null;
   }
 
+  /** A new WhatsApp message: its card grows out of the capsule. */
+  notify() {
+    this.notices.whatsapp();
+  }
+
   /** The pointer is on the folded window (Rust's `closed-hover`): the island wakes. */
   wakeFromClosed() {
     if (State.mode !== "hidden") return;
@@ -1417,7 +1445,10 @@ export class Island {
 
   /** Tells Rust the folded window's size: the closed island's, or none (the strip). */
   private sendCollapsedSize(force = false) {
-    const size = this.closedShows ? { w: this.closedW, h: CLOSED_H } : { w: 0, h: 0 };
+    let size = this.closedShows ? { w: this.closedW, h: CLOSED_H } : { w: 0, h: 0 };
+    // The notice card, or Miku hanging under the capsule, need their room too.
+    if (this.notices?.noticeOn) size = { w: Math.max(size.w, NOTICE_W + 20), h: Math.max(size.h, NOTICE_H + 12) };
+    else if (this.notices?.hangOn) size = { w: Math.max(size.w, HANG_W), h: Math.max(size.h, CLOSED_H) + HANG_H };
     if (!force && size.w === this.collapsedTo.w && size.h === this.collapsedTo.h) return;
     this.collapsedTo = size;
     if (size.w > 0) void Bridge.setCollapsed(true, size.w, size.h);
@@ -1438,12 +1469,13 @@ export class Island {
         locale: language(),
         planUsage: State.planUsage,
         music: State.spotifyPlaying && track ? { title: track.title, artist: track.artist } : null,
+        weather: State.weatherBrief,
       })
       : null;
     // The equaliser moves only while a song plays; without one it lies still.
     const live = content?.eq === true && State.spotifyPlaying;
     this.closedEl.classList.toggle("live", live);
-    const key = content ? `${style}|${content.text}|${content.dot ?? ""}|${content.note}|${content.eq ?? false}` : style;
+    const key = content ? `${style}|${content.text}|${content.dot ?? ""}|${content.note}|${content.eq ?? false}|${live}` : style;
     const shown = State.mode === "hidden" && this.closedShows;
     this.closedEl.classList.toggle("on", shown && content != null);
     if (key === this.closedKey) return;
@@ -1454,7 +1486,8 @@ export class Island {
     this.closedDot.style.display = content?.dot ? "" : "none";
     if (content?.dot) this.closedDot.style.background = content.dot;
     // Measured as drawn: the font and the language decide the width.
-    const extras = (content?.dot ? 12 : 0) + (content?.note ? 16 : 0) + (content?.eq ? SYNTH_EXTRA : 0);
+    // Miku's head always; the equaliser only while it shows (a song).
+    const extras = (content?.dot ? 12 : 0) + (content?.note ? 16 : 0) + (content?.eq ? (live ? SYNTH_EXTRA : SYNTH_HEAD) : 0);
     const w = closedWidth(content ? this.closedText.scrollWidth : 0, extras);
     if (w !== this.closedW) {
       this.closedW = w;
@@ -2062,6 +2095,7 @@ export class Island {
   /** The clock sits in the middle of the compact island, where the notch is on a Mac. */
   private updateClock() {
     this.updateClosed();
+    this.notices?.sync();
     const on = State.mode === "compact" && State.settings.showClock;
     this.clockEl.style.opacity = on ? "1" : "0";
     // The compact island is only as wide as the notch now: when the plan
