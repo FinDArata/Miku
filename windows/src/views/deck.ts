@@ -21,6 +21,34 @@ import { N_, language, t } from "../i18n/i18n";
 import { agentLive, elapsed, splitStep } from "../core/agent-live";
 
 export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents";
+
+/** The page (and agent) the deck opens on next time, asked by a notice. */
+let wanted: { page: DeckPage; agent?: string } | null = null;
+
+/** Opens the deck on a page next time it shows — a notice about an agent opens on that agent. */
+export function openDeckOn(page: DeckPage, agent?: string) {
+  wanted = { page, agent };
+}
+
+/** How long an agent that finished still opens the deck on the Agents page. */
+const RECENT_MS = 2 * 60_000;
+
+/**
+ * An agent at work or waiting, or one that finished in the last two minutes
+ * (`lastStepAt` says when it last did something): the deck opens on them.
+ */
+export function agentsActive(
+  tasks: readonly { id: string; isIntegration: boolean; state: string }[],
+  lastStepAt: (id: string) => number | undefined,
+  now = Date.now(),
+): boolean {
+  return tasks.some((x) => {
+    if (x.isIntegration) return false;
+    if (["working", "thinking", "searching", "approval", "question"].includes(x.state)) return true;
+    const at = lastStepAt(x.id);
+    return (x.state === "finished" || x.state === "error") && at != null && now - at < RECENT_MS;
+  });
+}
 export const DECK_PAGES: readonly DeckPage[] = ["pc", "music", "focus", "weather", "meeting", "agents"];
 
 /** The next or previous page, wrapping round. */
@@ -420,11 +448,24 @@ export function buildDeck(actions: ViewActions): ViewHost {
 
   const started = performance.now();
   let lastRender = 0;
+  /** Whether the deck was on screen at the last sync (its opening is a change of this). */
+  let shown = false;
   return {
     el,
     sync() {
       // The PC page reads the machine while it is on screen, and only then.
       const want = State.mode === "expanded" && State.view === "overview";
+      // Just opened: a notice's page first, else the agents while one is busy.
+      if (want && !shown) {
+        if (wanted) {
+          page = wanted.page;
+          if (wanted.agent) agentPick = wanted.agent;
+        } else if (agentsActive(State.tasks, (id) => agentLive(id).history.at(-1)?.at)) {
+          page = "agents";
+        }
+        wanted = null;
+      }
+      shown = want;
       if (want && pcTimer == null) {
         void readPc();
         pcTimer = window.setInterval(() => {

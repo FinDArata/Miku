@@ -32,8 +32,8 @@ export const HANG_H = 96;
 export interface NoticeHost {
   /** Opens the island on the waiting card (approval or question). */
   openApproval(): void;
-  /** Opens the island's deck (the Agents page lives there). */
-  openDeck(): void;
+  /** Opens the island's deck on the Agents page, on this agent. */
+  openAgents(agentId?: string): void;
   /** The room changed: window size and click area follow. */
   relayout(): void;
 }
@@ -61,7 +61,7 @@ export class Notices {
   private raf: number | null = null;
   private readonly started = performance.now();
   /** The agent that finished while the island was closed, until it is seen. */
-  private finished: { name: string; step: string } | null = null;
+  private finished: { id: string; name: string; step: string } | null = null;
   private lastStates = new Map<string, string>();
   private shownHang = false;
   /** LINE / Discord messages seen as toasts and not opened yet. */
@@ -180,13 +180,13 @@ export class Notices {
   }
 
   /** An agent finished while the island was closed. */
-  private agentFinished(name: string, step: string) {
-    this.finished = { name, step };
+  private agentFinished(id: string, name: string, step: string) {
+    this.finished = { id, name, step };
     const view = h("button", { class: "nt-btn p", text: t("Open") });
     view.addEventListener("click", () => {
       this.finished = null;
       this.close();
-      this.host.openDeck();
+      this.host.openAgents(id);
     });
     const later = h("button", { class: "nt-btn s", text: t("Later") });
     later.addEventListener("click", () => this.close());
@@ -286,7 +286,7 @@ export class Notices {
         html: [h("span", { style: "color:#5fd37a", text: `✓ ${f.name} ${t("finished")}` }), h("small", { text: f.step })],
         open: () => {
           this.finished = null;
-          this.host.openDeck();
+          this.host.openAgents(f.id);
         },
       };
     }
@@ -301,7 +301,7 @@ export class Notices {
       const before = this.lastStates.get(task.id);
       this.lastStates.set(task.id, task.state);
       if (before && before !== "finished" && task.state === "finished" && State.mode !== "expanded") {
-        this.agentFinished(task.name, task.steps[task.steps.length - 1] ?? "");
+        this.agentFinished(task.id, task.name, task.steps[task.steps.length - 1] ?? "");
       }
     }
     // Opening the island is seeing it.

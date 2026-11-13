@@ -49,3 +49,16 @@ test("a step label splits into its tool and what it acts on; time reads m:ss", (
   assert.equal(elapsed(725_000), "12:05");
   assert.equal(elapsed(-5), "0:00");
 });
+
+test("the deck opens on the agents while one works, waits, or finished moments ago", async () => {
+  const { agentsActive } = await import("../src/views/deck.ts");
+  const at = { a: 1_000_000 };
+  const last = (id) => at[id];
+  const now = 1_000_000 + 60_000;
+  assert.equal(agentsActive([{ id: "a", isIntegration: false, state: "working" }], last, now), true);
+  assert.equal(agentsActive([{ id: "a", isIntegration: false, state: "approval" }], last, now), true);
+  assert.equal(agentsActive([{ id: "a", isIntegration: false, state: "finished" }], last, now), true);
+  assert.equal(agentsActive([{ id: "a", isIntegration: false, state: "finished" }], last, now + 120_000), false);
+  assert.equal(agentsActive([{ id: "a", isIntegration: false, state: "idle" }], last, now), false);
+  assert.equal(agentsActive([{ id: "w", isIntegration: true, state: "working" }], last, now), false);
+});

@@ -41,6 +41,7 @@ import { h, svg } from "../views/dom";
 import { ICONS } from "../views/icons";
 import { IslandStateMachine } from "./fsm";
 import { HANG_H, HANG_W, NOTICE_H, NOTICE_W, Notices } from "./notices";
+import { openDeckOn } from "../views/deck";
 import { refreshHookPills } from "./integrations";
 import { restoreAlertFocus } from "./hooks";
 import { DesktopLink } from "./desktop";
@@ -506,7 +507,10 @@ export class Island {
 
     this.notices = new Notices({
       openApproval: () => this.alert(State.pendingApproval?.questions ? "question" : "approval"),
-      openDeck: () => this.setView("overview"),
+      openAgents: (agentId) => {
+        openDeckOn("agents", agentId);
+        this.setView("overview");
+      },
       relayout: () => {
         if (State.mode === "hidden") this.sendCollapsedSize(true);
         this.pushedRect = { x: -1, y: -1, w: -1, h: -1 };
