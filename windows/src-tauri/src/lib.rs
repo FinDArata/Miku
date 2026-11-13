@@ -25,6 +25,8 @@ mod music;
 mod net;
 mod notes;
 mod openai_compat;
+#[cfg(windows)]
+mod pc_notifications;
 mod pipe;
 mod platform;
 #[cfg(target_os = "linux")]
@@ -257,6 +259,18 @@ fn open_url(url: String) {
         return;
     }
     platform::open_url(&url);
+}
+
+/// Opens LINE or Discord (their own link schemes), for the island's message
+/// cards. Only these two fixed addresses: no URL comes from the page.
+#[tauri::command]
+fn open_chat_app(app: String) {
+    let url = match app.as_str() {
+        "discord" => "discord://",
+        "line" => "line://",
+        _ => return,
+    };
+    platform::open_url(url);
 }
 
 /// Opens a GitLab link only when it belongs to the configured instance. This
@@ -1024,6 +1038,7 @@ pub fn run() {
             lyrics::lyrics_visible,
             lyrics::lyrics_prefs,
             lyrics::lyrics_fetch,
+            open_chat_app,
             widgets::widget_system,
             widgets::widget_weather,
             recap::recap_history,
@@ -1164,6 +1179,8 @@ pub fn run() {
             // Mochi reacts to the charger and to a low battery whether or not
             // the System pill is declared, so the battery is watched on its own.
             system_health::start_battery_watch(handle.clone());
+            #[cfg(windows)]
+            pc_notifications::start(handle.clone());
             // WhatsApp (experimental): nothing runs unless it is turned on and its pill is active.
             whatsapp::start(&handle, &loaded.active_integrations);
             shortcuts::apply(&handle, &loaded.shortcuts);

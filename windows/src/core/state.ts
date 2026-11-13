@@ -153,6 +153,8 @@ export interface Settings {
   weatherCity: string;
   /** Which languages' lyrics are romanised: "ja", "ko" (and "zh" later). */
   lyricsRomajiLangs: string[];
+  /** LINE and Discord from the notifications Windows shows (opt-in). */
+  pcNotifications: boolean;
   /** `#RRGGBB` for the words, and for the card behind them. */
   lyricsTextColor: string;
   lyricsBackground: string;
@@ -238,6 +240,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lyricsTransparent: false,
   weatherCity: "",
   lyricsRomajiLangs: ["ja", "ko"],
+  pcNotifications: false,
   lyricsTextColor: "#ffffff",
   lyricsBackground: "#08090c",
   absenceInterval: 180,

@@ -18,6 +18,7 @@ import { WhatsApp, preview, type WaConversation } from "../core/whatsapp";
 import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "../mochi/chibi";
 import { parseVariant, resolveVariant } from "../mochi/wardrobe";
 import { h } from "../views/dom";
+import { ensureJapaneseTokenizer, languageOfLines, romanizeMixed, scriptOf } from "../lyrics/romanize";
 import { t } from "../i18n/i18n";
 
 /** How long a notice stays up without the pointer on it. */
@@ -63,6 +64,8 @@ export class Notices {
   private finished: { name: string; step: string } | null = null;
   private lastStates = new Map<string, string>();
   private shownHang = false;
+  /** LINE / Discord messages seen as toasts and not opened yet. */
+  private pcUnread: { line: string[]; discord: string[] } = { line: [], discord: [] };
   private shownNotice = false;
 
   constructor(private host: NoticeHost) {
@@ -137,6 +140,42 @@ export class Notices {
         h("span", { class: "nt-name", text: conv.name })),
       h("div", { class: "nt-msg", text: last ? preview(last, conv.isGroup) : "" }),
       h("div", { class: "nt-acts" }, input, send, later),
+    ]);
+  }
+
+  /** A LINE or Discord toast Windows showed: its card, and a reply that opens the app. */
+  async pcNotification(n: { app: string; title: string; body: string }) {
+    const app = n.app === "discord" ? "discord" : "line";
+    const color = app === "discord" ? "#5865f2" : "#06c755";
+    const label = app === "discord" ? "🎮 DISCORD" : "💬 LINE";
+    this.pcUnread[app].push(n.title);
+    // Japanese or Korean: the line in letters to read, as the lyrics do.
+    let rom = "";
+    if (State.settings.lyricsRomanize !== false && scriptOf(n.body) !== "latin") {
+      const lang = languageOfLines([n.body]);
+      if (lang === "japanese") await ensureJapaneseTokenizer();
+      rom = romanizeMixed(n.body, lang, State.settings.lyricsRomajiLangs);
+      if (rom === n.body) rom = "";
+    }
+    const openApp = h("button", { class: "nt-btn p", text: app === "discord" ? t("Open Discord") : t("Open LINE") });
+    openApp.addEventListener("click", () => {
+      this.pcUnread[app] = [];
+      this.close();
+      void Bridge.openChatApp(app);
+    });
+    const seen = h("button", { class: "nt-btn s", text: t("Mark as read") });
+    seen.addEventListener("click", () => {
+      this.pcUnread[app] = [];
+      this.close();
+    });
+    this.open(color, "approval", [
+      h("div", { class: "nt-src", style: `color:${color}` }, label, h("span", { class: "nt-time", text: t("just now") })),
+      h("div", { class: "nt-who" },
+        h("span", { class: "nt-av", style: `background:${color}`, text: (n.title || "?").slice(0, 1).toUpperCase() }),
+        h("span", { class: "nt-name", text: n.title })),
+      h("div", { class: "nt-msg", text: n.body }),
+      ...(rom ? [h("div", { class: "nt-rom", text: rom })] : []),
+      h("div", { class: "nt-acts" }, openApp, seen),
     ]);
   }
 
@@ -218,14 +257,26 @@ export class Notices {
       };
     }
     const unread = WhatsApp.view.unread;
-    if (unread > 0) {
+    const line = this.pcUnread.line.length;
+    const discord = this.pcUnread.discord.length;
+    if (unread + line + discord > 0) {
       const names = [...WhatsApp.view.conversations].filter((c) => c.unread > 0)
-        .sort((a, b) => b.lastActivity - a.lastActivity).map((c) => c.name).slice(0, 3);
+        .sort((a, b) => b.lastActivity - a.lastActivity).map((c) => c.name);
+      const all = [...names, ...this.pcUnread.line, ...this.pcUnread.discord];
+      const badge = (n: number, bg: string, fg = "#06231a") =>
+        n > 0 ? [h("b", { class: "hg-bdg", style: `background:${bg};color:${fg}`, text: String(n) })] : [];
       return {
-        pose: "approval", color: "#25d366", pulse: false,
-        html: [h("span", {}, "💬 WhatsApp", h("b", { class: "hg-bdg", text: String(unread) })),
-          h("small", { text: names.join(", ") })],
-        open: () => this.whatsapp(),
+        pose: "approval", color: unread ? "#25d366" : line ? "#06c755" : "#5865f2", pulse: false,
+        html: [h("span", {}, `💬 ${t("Messages")}`, ...badge(unread, "#25d366"), ...badge(line, "#06c755"), ...badge(discord, "#5865f2", "#fff")),
+          h("small", { text: [...new Set(all)].slice(0, 3).join(", ") })],
+        open: () => {
+          if (unread > 0) return this.whatsapp();
+          // LINE / Discord: open the app with the most, and count them as seen.
+          const app = line >= discord ? "line" : "discord";
+          this.pcUnread = { line: [], discord: [] };
+          this.sync();
+          void Bridge.openChatApp(app);
+        },
       };
     }
     if (this.finished) {

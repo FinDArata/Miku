@@ -126,6 +126,8 @@ pub struct Settings {
     pub weather_city: String,
     /// Which languages' lyrics are romanised: "ja", "ko" (and "zh" later).
     pub lyrics_romaji_langs: Vec<String>,
+    /// LINE and Discord messages from the notifications Windows shows (opt-in).
+    pub pc_notifications: bool,
     /// How an agent's tool use is approved, by tool name — "ask" puts the card
     /// up, "always" lets it through without asking. The key "*" covers every
     /// tool the map has nothing about; a missing entry asks, everywhere.
@@ -216,6 +218,7 @@ impl Default for Settings {
             lyrics_transparent: false,
             weather_city: String::new(),
             lyrics_romaji_langs: vec!["ja".into(), "ko".into()],
+            pc_notifications: false,
             approval_modes: BTreeMap::new(),
         }
     }
@@ -648,7 +651,8 @@ mod tests {
   "lyricsShowCover": true,
   "lyricsTransparent": false,
   "weatherCity": "",
-  "lyricsRomajiLangs": ["ja", "ko"]
+  "lyricsRomajiLangs": ["ja", "ko"],
+  "pcNotifications": false
 }"##;
 
     fn custom() -> Value {
@@ -1075,6 +1079,7 @@ mod tests {
                 "lyricsTransparent",
                 "weatherCity",
                 "lyricsRomajiLangs",
+                "pcNotifications",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

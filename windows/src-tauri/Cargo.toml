@@ -46,6 +46,9 @@ lopdf = { version = "0.46", default-features = false }
 sysinfo = { version = "0.33", default-features = false, features = ["system", "multithread", "disk", "network"] }
 
 [target.'cfg(windows)'.dependencies]
+# LINE and Discord in the island: read-only look at Windows' own notification
+# store (pc_notifications.rs). Bundled SQLite, MIT.
+rusqlite = { version = "0.32", features = ["bundled"] }
 keyring = { version = "3", features = ["windows-native"] }
 # The island's file drop reads paths straight from WebView2 (webview_drop.rs).
 # Same versions as wry, so nothing new is compiled.

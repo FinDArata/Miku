@@ -1431,6 +1431,11 @@ export class Island {
     this.lyricsTicker = null;
   }
 
+  /** A LINE / Discord toast Windows showed (pc_notifications.rs). */
+  pcNotification(n: { app: string; title: string; body: string }) {
+    void this.notices.pcNotification(n);
+  }
+
   /** A new WhatsApp message: its card grows out of the capsule. */
   notify() {
     this.notices.whatsapp();

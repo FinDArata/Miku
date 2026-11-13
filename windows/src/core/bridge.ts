@@ -63,6 +63,8 @@ export const Bridge = {
   listMonitors: () => call<{ key: string; label: string }[]>("list_monitors"),
 
   openUrl: (url: string) => call<void>("open_url", { url }),
+  /** LINE or Discord, from the island's message cards (lib.rs open_chat_app). */
+  openChatApp: (app: "line" | "discord") => call<void>("open_chat_app", { app }),
   /** Opens a GitLab link only when it belongs to the configured instance. */
   openGitLabUrl: (url: string) => call<void>("open_gitlab_url", { url }),
   /** Opens the configured Gitea instance without exposing its URL to the page. */

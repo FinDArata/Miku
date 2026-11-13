@@ -189,6 +189,8 @@ async function main() {
   registerVoiceHandlers();
   registerSpotifyHandlers(island);
   registerWhatsAppHandlers(island);
+  // LINE and Discord, from the notifications Windows shows (opt-in, Settings).
+  void onEvent<{ app: string; title: string; body: string }>("pc-notification", (n) => island.pcNotification(n));
   // New versions: Rust offers the card, the island opens it when nothing else waits.
   await Updates.register(island);
   // Rust may have read Spotify before this page listened: ask once.
