@@ -24,18 +24,6 @@ Approve permissions, watch your agents work, drop a file, chat with Claude, dict
 
 Miku is a chibi **drawn entirely in code**: no sprites, no images, no Live2D. A canvas engine draws her twin-tails, headset, tie and blinking eyes at 60 fps. She follows your cursor with her eyes, bobs to the beat, gets annoyed when you poke her (and dizzy if you insist), and tells you the moment Claude Code needs you.
 
-She comes in her three official looks. The wardrobe switches them by hand, or with the season: Snow in winter, Sakura in spring.
-
-<table>
-<tr>
-<td align="center" width="33%"><img src="docs/media/miku/miku-classic.png" width="200" alt="Classic Miku"><br><b>Miku</b><br><sub>teal twin-tails, notes around her</sub></td>
-<td align="center" width="33%"><img src="docs/media/miku/miku-snow.png" width="200" alt="Snow Miku"><br><b>Snow Miku</b><br><sub>falling snowflakes</sub></td>
-<td align="center" width="33%"><img src="docs/media/miku/miku-sakura.png" width="200" alt="Sakura Miku"><br><b>Sakura Miku</b><br><sub>falling petals</sub></td>
-</tr>
-</table>
-
-The skin paints the whole app, not only her: the island's stage light, the tabs, the buttons and the settings window all wear her colour.
-
 ### She shows you what your agents are doing
 
 <table>
@@ -59,9 +47,33 @@ When Miku launches, the footlights come on from left to right, a spotlight falls
 </tr>
 </table>
 
+## Themes
+
+She comes in her three official looks, and **each look is a theme for the whole app**. Pick one in the wardrobe (right-click Miku, or the Wardrobe page in the Miku window), or let the season choose: Snow in winter, Sakura in spring.
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="docs/media/miku/miku-classic.png" width="200" alt="Classic Miku"><br><b>Miku</b><br><sub>teal twin-tails, notes around her</sub></td>
+<td align="center" width="33%"><img src="docs/media/miku/miku-snow.png" width="200" alt="Snow Miku"><br><b>Snow Miku</b><br><sub>falling snowflakes</sub></td>
+<td align="center" width="33%"><img src="docs/media/miku/miku-sakura.png" width="200" alt="Sakura Miku"><br><b>Sakura Miku</b><br><sub>falling petals</sub></td>
+</tr>
+</table>
+
+The theme's accent is her tie colour, straight from her palette, so Miku and the interface always agree. It paints the island's stage light and footlights, the tabs, the buttons, the dictation pill and the Miku window, and fades from one colour to the next instead of snapping. Hovering a look in the Wardrobe page tries it on every window; only a click keeps it.
+
+## The island
+
+One island at the top of your screen, changing shape with what's going on:
+
+- **Closed: the synth strip.** A small capsule with Miku's head and the time (and the weather, once the Weather page has read it). While a song plays it shows the title and an equaliser. Click it to open the island; it never pops open just because the pointer passes by. Settings → General lets you show the date, your Claude usage, what's playing, an empty capsule, or nothing at all instead.
+- **Something arrives: a notice.** A WhatsApp, LINE or Discord message, or an agent that finished, grows a card out of the capsule for a few seconds. Whatever you haven't seen yet hangs under the capsule: Miku on a thread holding a sign with the count.
+- **A song plays: her stage.** Cover, title and artist, Miku singing under spotlights, three lines of synced lyrics (with rōmaji for Japanese and Korean), and *Detach lyrics* for a floating lyrics card.
+- **Open: the widget deck.** A tab bar with **PC** (CPU, RAM, disk, network, the busiest program), **Music**, **Focus** (a pomodoro), **Weather** (Open-Meteo, for a city you type), **Meeting** (Cal.com) and **Agents**, with Miku standing full-length beside each page.
+- **An agent asks: the twin-tail card.** Allow / Deny / Always, or the choices of an `AskUserQuestion`. Fold it away with Escape and it keeps waiting under the capsule until you answer.
+
 ## Features
 
-- 🤖 **Your agents, live**: Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude Desktop and others. See what each session reads, edits and runs, step by step, with the file name and +N −M counts of every edit and the full diff a click away. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)).
+- 🤖 **Your agents, live**: Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, Muse Code, OpenCode, Amp, Hermes, ZCode, Claude Desktop and others. The Agents page shows the step each one is running and for how long, the end of what the last tool printed, Claude Code's task list, and every edit with its +N −M counts and the full diff a click away. Tag a hook payload with `miku_agent` to give any agent its own pill (see [`docs/AGENTS.md`](docs/AGENTS.md)).
 - ✅ **Approve and answer from the island**: permission requests show up with **Allow / Deny / Always**, and `AskUserQuestion` prompts show their choices right there. Several requests wait their turn in a stack. Nothing is ever approved without your click.
 - 💬 **Chat with Claude**: with your own API key, or **on the subscription you already pay for** through the official CLI (Claude Code, Antigravity, Gemini CLI, Codex, Cursor, Copilot, ZCode).
 - 🎙️ **Flow dictation**: hold a key anywhere (right Ctrl by default), speak, let go: your words are pasted where you type. Runs offline with Parakeet; on Linux it works on X11 and Wayland.
@@ -70,6 +82,8 @@ When Miku launches, the footlights come on from left to right, a spotlight falls
 - ✉️ **Mail** *(Windows, classic Outlook)*: search, filters, automatic sorting with rules and Undo, mail plans from the chat that run only when you click Run.
 - 📎 **Drop a file on the island**: Miku swallows it, then ask Claude about it.
 - 🔌 **Integrations**: GitHub, GitLab, Gitea, Vercel, Stripe, n8n, Resend, Notion, Cal.com, WhatsApp (experimental), each with its own pill.
+- 💌 **LINE and Discord** *(Windows, off by default)*: their notifications show up in the island, read from the toasts Windows already shows. Nothing is sent or written anywhere.
+- 🪟 **The Miku window**: opens on a main menu, sections as bubbles over Miku's head, with search across all settings. Closing it asks whether to keep Miku running in the tray or quit.
 - 🖥️ **Miku on the desktop**: drag her out of the island and she floats on your desktop, follows your cursor, and flies home when something needs you.
 - ⌨️ **Keyboard shortcuts** for everything, all customisable.
 - 🔊 **30 sounds composed in code**, including Miku singing "mi-ku" when you change slides. Drop a file with the same name in the sounds folder to replace any of them.
@@ -137,14 +151,14 @@ Agents on a server can reach Miku through an SSH tunnel: see [`docs/REMOTE.md`](
 
 | Do this | Miku does that |
 |---|---|
-| Hover the top edge of the screen | peeks out and says hi 👋 |
-| Click the island | opens her stage |
+| Click the strip at the top of the screen | opens her stage |
+| Press Escape | folds back to the strip |
 | Hover Miku | blinks, eyes grow |
 | Click Miku | squish + annoyed |
 | Click 3 times fast | 😵‍💫 dizzy for a few seconds |
 | Swipe or press ← / → on the overview | the next pill's slide, with a little "mi-ku" |
 | Drag a file onto the island | swallows it |
-| Right-click Miku | the wardrobe: classic, Snow or Sakura |
+| Right-click Miku | the wardrobe: classic, Snow or Sakura, and the theme with it |
 | Hold right Ctrl and speak, in any app | your words are pasted |
 
 ## How it works
@@ -159,7 +173,7 @@ Issues and PRs are welcome: new integrations, new emotes, new sounds, bug fixes.
 
 ## Credits
 
-Miku is a fork of **[Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app. This fork is maintained by [FinDArata](https://github.com/FinDArata) and rebuilt around Windows, Linux and Miku. The original macOS code still lives in `NotchBuddy/` under its upstream names; its history is in [docs/CHANGELOG-COUCOU.md](docs/CHANGELOG-COUCOU.md).
+Miku is a fork of **[Coucou](https://github.com/Louis-CFM/coucou) by [Louis Raillé](https://louisraille.fr)**, who wrote the original app. This fork is maintained by [FinDArata](https://github.com/FinDArata) and rebuilt around Windows, Linux and Miku; the upstream macOS and iPhone apps are not part of it. The original project's history is in [docs/CHANGELOG-COUCOU.md](docs/CHANGELOG-COUCOU.md).
 
 ## License
 
