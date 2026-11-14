@@ -239,7 +239,7 @@ header stay where they are, and commands, code and file paths stay left to
 right. Steps already in a session's ticker keep the language they were written
 in, as on the Mac.
 
-The translations are the Mac's own (`NotchBuddy/Resources/Localizable.xcstrings`,
+The translations come from the upstream Mac app's catalog (`src/i18n/Localizable.xcstrings`,
 turned into `src/i18n/strings.json` by `node scripts/gen-strings.mjs`), plus
 `src/i18n/extra.json` for what only Windows and Linux show. Both are keyed by
 the English text; a string missing in a language shows in English. The Rust

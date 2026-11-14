@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-### The iPhone app is gone from the tree
+### The Apple apps are gone from the tree
 
-- Miku is Windows and Linux first, with no iOS plans for now, so the upstream iPhone app, its widgets, its notification extension, their assets and the iPhone pages of the site are removed. The Mac app's source stays, and the Windows/Linux build still reads its string catalog.
+- Miku is Windows and Linux first, with no Apple plans for now, so the upstream Mac app, iPhone app, widgets and notification extension are removed, with their assets, the iPhone Live Activity relay, the Homebrew cask, the Mac scripts and tests, the Mac CI and the iPhone pages of the site.
+- The string catalog the translations come from now lives in `windows/src/i18n/Localizable.xcstrings`, and the What's new check in `windows/scripts/test-whats-new.py`.
 
 ### The launch greeting is a live stage
 

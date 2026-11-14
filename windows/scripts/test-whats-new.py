@@ -3,19 +3,18 @@
 
 Coucou shows, once after it updated itself, what the new version brings (an icon, a title and a
 line per item, in every language the app speaks). The entries live in
-  NotchBuddy/Resources/whats-new.json   (Mac, the 16 languages of Localizable.xcstrings)
   windows/src/whats-new/whats-new.json  (Windows and Linux, the languages of strings.json)
 This test fails when the version the app is about to ship has no entry, or an entry is
-incomplete. release.sh runs it too, so a release can't go out without its "What's new".
+incomplete.
 
-    python3 scripts/test-whats-new.py
+    python3 windows/scripts/test-whats-new.py
 """
 import json
 import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 
 # The icons both apps know (WhatsNew.swift maps them to SF Symbols, src/whats-new/icons.ts to SVG).
 ICONS = {
@@ -23,7 +22,6 @@ ICONS = {
     "sparkles", "bolt", "puzzle", "paint", "eye", "keyboard", "heart", "clock", "download", "bug",
 }
 
-MAC_LANGS = ["en", "fr", "es", "pt-BR", "ru", "zh-Hans", "hi", "ar", "bn", "id", "de", "tr", "th", "zh-Hant", "ko", "ja"]
 
 MAX_ITEMS = 4
 MAX_TITLE = 48     # characters, any language: one line in the card
@@ -35,13 +33,6 @@ failures = []
 def fail(msg):
     failures.append(msg)
     print(f"  ✗ {msg}")
-
-
-def mac_version():
-    text = (ROOT / "NotchBuddy/project.yml").read_text(encoding="utf-8")
-    # The first target is the GitHub app (NotchBuddy); the App Store build has its own numbers.
-    m = re.search(r'CFBundleShortVersionString:\s*"([0-9.]+)"', text)
-    return m.group(1)
 
 
 def windows_version():
@@ -114,11 +105,7 @@ def main():
     # Windows runners print in cp1252 by default: ✓ and the translations need UTF-8.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    only = sys.argv[1] if len(sys.argv) > 1 else None
-    if only in (None, "mac"):
-        check("Mac", ROOT / "NotchBuddy/Resources/whats-new.json", mac_version(), MAC_LANGS)
-    if only in (None, "windows"):
-        check("Windows and Linux", ROOT / "windows/src/whats-new/whats-new.json", windows_version(), windows_langs())
+    check("Windows and Linux", ROOT / "windows/src/whats-new/whats-new.json", windows_version(), windows_langs())
     if failures:
         print(f"\n{len(failures)} failure(s)")
         sys.exit(1)

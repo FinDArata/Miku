@@ -86,8 +86,7 @@ upstream project remain **© Louis Raillé** and are **not** covered by this bui
 or the MIT License:
 
 - the names "Coucou" and "Mochi", the Mochi character design, expressions and animations;
-- the upstream app icon and menu bar icon (`NotchBuddy/Assets.xcassets/`);
-- the upstream sounds (`NotchBuddy/Resources/sounds/`, copies in `android/app/src/main/res/`);
+- the upstream sounds (copies in `android/app/src/main/res/`);
 - the images, GIFs and videos in `docs/media/` and `design/`.
 
 They are kept in this repository only because the platform code that was not
