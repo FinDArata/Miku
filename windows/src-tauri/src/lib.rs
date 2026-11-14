@@ -811,11 +811,17 @@ fn create_settings_window(app: &AppHandle) {
         Ok(win) => {
             let this = win.clone();
             win.on_window_event(move |event| match event {
-                // Closing it must only hide it, or it could never be reopened.
+                // Closing it must never destroy it, or it could never be reopened:
+                // the page asks "to the tray or quit?" (hub_close). A second X
+                // while that question is up hides it anyway, so a page that
+                // can't answer never traps the window.
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
-                    let _ = this.hide();
-                    set_hub_shown(&this, false);
+                    if CLOSE_ASKED.swap(true, Ordering::Relaxed) {
+                        hide_hub(&this);
+                    } else {
+                        let _ = this.emit_to(HUB_LABEL, "hub-close-asked", ());
+                    }
                 }
                 // Minimised (a 0×0 resize on Windows) or back from it.
                 tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Focused(true) => {
@@ -838,6 +844,31 @@ static HUB_SHOWN: AtomicBool = AtomicBool::new(false);
 fn set_hub_shown(win: &tauri::WebviewWindow, shown: bool) {
     if HUB_SHOWN.swap(shown, Ordering::Relaxed) != shown {
         let _ = win.emit_to(HUB_LABEL, "hub-visible", shown);
+    }
+}
+
+/// The window's X was clicked and the page's "to the tray or quit?" is up.
+static CLOSE_ASKED: AtomicBool = AtomicBool::new(false);
+
+fn hide_hub(win: &tauri::WebviewWindow) {
+    CLOSE_ASKED.store(false, Ordering::Relaxed);
+    let _ = win.hide();
+    set_hub_shown(win, false);
+}
+
+/// The page's answer to `hub-close-asked`: "tray" hides the window, "quit"
+/// quits Miku, anything else (Cancel) keeps it open.
+#[tauri::command]
+fn hub_close(app: AppHandle, choice: String) {
+    CLOSE_ASKED.store(false, Ordering::Relaxed);
+    match choice.as_str() {
+        "quit" => app.exit(0),
+        "tray" => {
+            if let Some(win) = app.get_webview_window(HUB_LABEL) {
+                hide_hub(&win);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -1025,6 +1056,7 @@ pub fn run() {
             github_refresh,
             open_n8n,
             open_settings_window,
+            hub_close,
             set_paused,
             shortcuts_status,
             shortcuts_suspend,

@@ -522,6 +522,8 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
     void show(id);
     menu.open();
   });
+  // The window's X: to the tray, or quit Miku altogether.
+  void onEvent("hub-close-asked", () => askClose());
   // What the agents are up to, announced by the backend as soon as it changes
   // (stage.rs); the stage's poll only covers what an announcement missed.
   void onEvent<StageState>("hub-stage", (state) => setStageState(state));
@@ -555,4 +557,32 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
     },
     current: () => current,
   };
+}
+
+/** "To the tray or quit?", over the window. Escape or a click outside is Cancel. */
+function askClose() {
+  if (document.querySelector(".hub-close-ask")) return;
+  let overlay: HTMLElement;
+  const answer = (choice: "tray" | "quit" | "cancel") => {
+    overlay.remove();
+    document.removeEventListener("keydown", onKey);
+    void FlowBridge.hubClose(choice);
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") answer("cancel");
+  };
+  const tray = h("button", { class: "hub-close-tray", onclick: () => answer("tray") }, t("Minimize to tray"));
+  const box = h("div", { class: "hub-close-box", role: "dialog", "aria-modal": "true", "aria-labelledby": "hub-close-title" },
+    h("h2", { id: "hub-close-title", text: t("Close the Miku window?") }),
+    h("p", { text: t("In the tray, Miku keeps the island, your agents and dictation running.") }),
+    h("div", { class: "hub-close-actions" },
+      h("button", { onclick: () => answer("cancel") }, t("Cancel")),
+      h("button", { class: "hub-close-quit", onclick: () => answer("quit") }, t("Quit")),
+      tray,
+    ),
+  );
+  overlay = h("div", { class: "hub-close-ask", onclick: (e: Event) => { if (e.target === overlay) answer("cancel"); } }, box);
+  document.addEventListener("keydown", onKey);
+  document.body.append(overlay);
+  tray.focus();
 }

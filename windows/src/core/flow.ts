@@ -202,6 +202,8 @@ export const FlowBridge = {
   status: () => call<FlowStatus>("flow_status"),
   /** The Miku window is on screen (shown, not minimised); `hub-visible` tells when it changes. */
   hubShown: () => call<boolean>("hub_shown"),
+  /** The answer to the window's X (`hub-close-asked`): "tray", "quit" or "cancel". */
+  hubClose: (choice: "tray" | "quit" | "cancel") => call<void>("hub_close", { choice }),
   setPrefs: (prefs: FlowPrefs) => call<void>("flow_set_prefs", { prefs }),
   history: () => call<FlowEntry[]>("flow_history"),
   deleteEntry: (id: string) => callOrThrow<void>("flow_delete", { id }),

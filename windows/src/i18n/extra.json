@@ -9610,6 +9610,51 @@
       "tr": "GEÇMİŞ",
       "ko": "기록",
       "ja": "履歴"
+    },
+    "Close the Miku window?": {
+      "zh-Hans": "关闭 Miku 窗口？",
+      "hi": "Miku विंडो बंद करें?",
+      "es": "¿Cerrar la ventana de Miku?",
+      "ar": "إغلاق نافذة Miku؟",
+      "fr": "Fermer la fenêtre de Miku ?",
+      "bn": "Miku উইন্ডো বন্ধ করবেন?",
+      "pt-BR": "Fechar a janela da Miku?",
+      "ru": "Закрыть окно Miku?",
+      "id": "Tutup jendela Miku?",
+      "de": "Miku-Fenster schließen?",
+      "tr": "Miku penceresi kapatılsın mı?",
+      "ko": "Miku 창을 닫을까요?",
+      "ja": "Miku のウィンドウを閉じますか？"
+    },
+    "In the tray, Miku keeps the island, your agents and dictation running.": {
+      "zh-Hans": "在托盘中，Miku 会继续运行灵动岛、你的代理和听写。",
+      "hi": "ट्रे में, Miku आइलैंड, आपके एजेंट और डिक्टेशन चालू रखती है।",
+      "es": "En la bandeja, Miku mantiene en marcha la isla, tus agentes y el dictado.",
+      "ar": "في شريط النظام، تُبقي Miku الجزيرة ووكلاءك والإملاء قيد التشغيل.",
+      "fr": "Dans la zone de notification, Miku garde l’île, tes agents et la dictée en marche.",
+      "bn": "ট্রেতে Miku আইল্যান্ড, আপনার এজেন্ট আর ডিকটেশন চালু রাখে।",
+      "pt-BR": "Na bandeja, a Miku mantém a ilha, seus agentes e o ditado funcionando.",
+      "ru": "В трее Miku продолжает показывать остров, следить за агентами и принимать диктовку.",
+      "id": "Di tray, Miku tetap menjalankan island, agen-agenmu, dan dikte.",
+      "de": "Im Infobereich hält Miku die Insel, deine Agenten und das Diktat am Laufen.",
+      "tr": "Tepsideyken Miku adayı, ajanlarını ve dikteyi çalışır durumda tutar.",
+      "ko": "트레이에서도 Miku는 아일랜드, 에이전트, 받아쓰기를 계속 실행합니다.",
+      "ja": "トレイにいる間も、Miku はアイランド、エージェント、音声入力を動かし続けます。"
+    },
+    "Minimize to tray": {
+      "zh-Hans": "最小化到托盘",
+      "hi": "ट्रे में छोटा करें",
+      "es": "Minimizar a la bandeja",
+      "ar": "تصغير إلى شريط النظام",
+      "fr": "Réduire dans la zone de notification",
+      "bn": "ট্রেতে ছোট করুন",
+      "pt-BR": "Minimizar para a bandeja",
+      "ru": "Свернуть в трей",
+      "id": "Kecilkan ke tray",
+      "de": "In den Infobereich minimieren",
+      "tr": "Tepsiye küçült",
+      "ko": "트레이로 최소화",
+      "ja": "トレイに最小化"
     }
   }
 }

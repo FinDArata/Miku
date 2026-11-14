@@ -2589,3 +2589,66 @@ body.hub-open .hub-hero-block > :not(.hub-hero) {
     animation: none;
   }
 }
+
+/* The window's X: "to the tray or quit?" (shell.ts, askClose). */
+.hub-close-ask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.hub-close-box {
+  width: min(420px, 100%);
+  padding: 22px 22px 18px;
+  border-radius: 16px;
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-body);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+.hub-close-box h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--hub-text);
+}
+.hub-close-box p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hub-secondary);
+}
+.hub-close-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.hub-close-actions button {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--hub-line);
+  background: var(--hub-field);
+  color: var(--hub-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hub-close-actions button:hover {
+  border-color: var(--hub-accent-line);
+}
+.hub-close-actions button:focus-visible {
+  outline: 2px solid var(--hub-accent-bright);
+  outline-offset: 2px;
+}
+.hub-close-actions .hub-close-quit {
+  color: var(--hub-red);
+}
+.hub-close-actions .hub-close-tray {
+  background: var(--hub-accent);
+  border-color: var(--hub-accent);
+  color: var(--hub-on-accent);
+  font-weight: 600;
+}

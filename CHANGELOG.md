@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Closing the Miku window asks first
+
+- The window's X now asks whether to minimize Miku to the tray (the island, your agents and dictation keep running) or quit her. Escape or a click outside cancels; a second X while the question is up hides the window anyway, so it can never get stuck.
+
 ### The Apple apps are gone from the tree
 
 - Miku is Windows and Linux first, with no Apple plans for now, so the upstream Mac app, iPhone app, widgets and notification extension are removed, with their assets, the iPhone Live Activity relay, the Homebrew cask, the Mac scripts and tests, the Mac CI and the iPhone pages of the site.
