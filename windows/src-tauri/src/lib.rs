@@ -852,7 +852,7 @@ static CLOSE_ASKED: AtomicBool = AtomicBool::new(false);
 
 fn hide_hub(win: &tauri::WebviewWindow) {
     CLOSE_ASKED.store(false, Ordering::Relaxed);
-    let _ = win.hide();
+    platform::hide_window(win);
     set_hub_shown(win, false);
 }
 
@@ -936,7 +936,7 @@ pub fn show_hub(app: &AppHandle, page: Option<&str>) {
         let _ = win.emit("hub-page", page.to_string());
     }
     let _ = win.unminimize();
-    let _ = win.show();
+    platform::show_window(&win);
     let _ = win.set_focus();
     set_hub_shown(&win, true);
 }

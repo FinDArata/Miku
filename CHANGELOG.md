@@ -5,6 +5,7 @@
 ### Closing the Miku window asks first
 
 - The window's X now asks whether to minimize Miku to the tray (the island, your agents and dictation keep running) or quit her. Escape or a click outside cancels; a second X while the question is up hides the window anyway, so it can never get stuck.
+- Fixed: closing the Miku window on Windows left a white, empty copy of it on screen until it was opened again.
 
 ### The Apple apps are gone from the tree
 

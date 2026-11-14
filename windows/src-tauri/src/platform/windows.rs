@@ -41,7 +41,8 @@ use ::windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, EnumChildWindows, EnumWindows, GetClassNameW, GetCursorPos,
     GetForegroundWindow, GetWindow, GetWindowLongPtrW, GetWindowTextW, GetWindowThreadProcessId,
     IsIconic, IsWindow, IsWindowVisible, SetForegroundWindow, SetWindowLongPtrW, ShowWindow,
-    GWL_EXSTYLE, GW_OWNER, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
+    GWL_EXSTYLE, GW_OWNER, SW_HIDE, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WS_EX_NOACTIVATE,
+    WS_EX_TOOLWINDOW,
 };
 
 use super::LocalTime;
@@ -849,3 +850,32 @@ pub fn prepare_pill_window(win: &WebviewWindow, _mode: super::DesktopMode) -> bo
 pub fn set_pill_edge(_win: &WebviewWindow, _edge: &str) {}
 
 pub fn set_pill_input(_win: &WebviewWindow, _rects: Vec<(f64, f64, f64, f64)>) {}
+
+/// Hides a window with a bare `SW_HIDE`. tao's `hide()` also rewrites the
+/// styles and refreshes the frame (`SWP_FRAMECHANGED`) of the window it just
+/// hid, and DWM then keeps drawing a white ghost of it — title bar and an
+/// empty client area — over the desktop until it is shown again. tao still
+/// believes the window visible, so it must come back with `show_window`:
+/// tao's own `show()` sees nothing to change and does nothing.
+pub fn hide_window(win: &WebviewWindow) {
+    match hwnd_of(win) {
+        Some(hwnd) => unsafe {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+        },
+        None => {
+            let _ = win.hide();
+        }
+    }
+}
+
+/// Shows a window, also one hidden by `hide_window`: tao's `show()` first, so
+/// it knows the window is visible (its `set_focus` checks that), then a bare
+/// `SW_SHOW` for when tao thought it never stopped being visible.
+pub fn show_window(win: &WebviewWindow) {
+    let _ = win.show();
+    if let Some(hwnd) = hwnd_of(win) {
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+        }
+    }
+}

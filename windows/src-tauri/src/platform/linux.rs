@@ -1102,3 +1102,13 @@ mod claude_launch_tests {
 /// Windows 11 rounds the lyrics card's window; a Linux compositor decides that
 /// itself, so there is nothing to ask for here.
 pub fn round_corners(_win: &tauri::WebviewWindow) {}
+
+/// Hides a window (Windows needs a workaround, see platform/windows.rs).
+pub fn hide_window(win: &WebviewWindow) {
+    let _ = win.hide();
+}
+
+/// Shows a window hidden by `hide_window`.
+pub fn show_window(win: &WebviewWindow) {
+    let _ = win.show();
+}

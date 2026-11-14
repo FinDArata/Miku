@@ -195,6 +195,8 @@ export async function startHub(root: HTMLElement, opts: HubOptions) {
   await onEvent<boolean>("hub-visible", (shown) => {
     setWindowShown(shown);
     setStagePolling(shown);
+    // Hidden by a second X while "to the tray or quit?" was up: not there next time.
+    if (!shown) document.querySelector<HTMLButtonElement>(".hub-close-ask .hub-close-cancel")?.click();
   });
   // While you dictate: the loudest of the pill's bands.
   await onEvent<number[]>("flow-bands", (bands) => setVoiceLevel(Math.max(0, ...bands)));
@@ -576,7 +578,7 @@ function askClose() {
     h("h2", { id: "hub-close-title", text: t("Close the Miku window?") }),
     h("p", { text: t("In the tray, Miku keeps the island, your agents and dictation running.") }),
     h("div", { class: "hub-close-actions" },
-      h("button", { onclick: () => answer("cancel") }, t("Cancel")),
+      h("button", { class: "hub-close-cancel", onclick: () => answer("cancel") }, t("Cancel")),
       h("button", { class: "hub-close-quit", onclick: () => answer("quit") }, t("Quit")),
       tray,
     ),
