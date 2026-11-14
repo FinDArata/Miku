@@ -21,8 +21,14 @@ export class IslandStateMachine {
     this.homeDelay = seconds;
     if (this.state === "home" && this.homeCollapse != null) this.scheduleHomeCollapse();
   }
-  /** petit → hidden delay, seconds. */
+  /** petit → hidden delay, seconds (only while `peeks`). */
   petitToHiddenDelay = 60;
+  /**
+   * The compact island as a stop on the way: hovering the closed island peeks
+   * at it, folding rests on it. Off, the island goes closed ↔ open directly and
+   * the compact island only stays for what lives in it (a folded card, the lyrics).
+   */
+  peeks = false;
   /** miku → petit once the greeting animation ends (no hover). */
   greetAutoCollapseDelay = 0.6;
   /** miku → petit while the mouse hovers the greeting. */
@@ -97,7 +103,7 @@ export class IslandStateMachine {
         // The closed island only peeks: a PC has no notch, so the pointer
         // lands on it far more often than on a Mac's, on its way elsewhere.
         this.cancelTimers();
-        this.transition("petit");
+        if (this.peeks) this.transition("petit");
         if (this.openOnHover && !this.pinned) this.scheduleHoverOpen();
         break;
       case "petit":
@@ -127,14 +133,14 @@ export class IslandStateMachine {
         break;
       case "miku":
         this.clear("greetCollapse");
-        this.transition("petit");
+        this.transition(this.rest);
         break;
     }
   }
 
   click() {
     this.byHover = false;
-    if (this.state !== "petit") return;
+    if (this.state !== "petit" && (this.peeks || this.state !== "hidden")) return;
     this.cancelTimers();
     this.transition("home");
   }
@@ -145,12 +151,14 @@ export class IslandStateMachine {
     if (this.greetCollapse == null) this.scheduleGreetCollapse(this.greetAutoCollapseDelay);
   }
 
-  /** Non-alert work event: show compact from hidden. */
-  reveal() {
-    if (this.state !== "hidden") return;
+  /** Non-alert work event: show compact from hidden. `always`: even without
+   *  `peeks` (the lyrics, which live in the compact island). */
+  reveal(always = false) {
+    if (this.state !== "hidden" || (!this.peeks && !always)) return;
     this.cancelTimers();
     this.transition("petit");
-    this.schedulePetitHide();
+    // Without `peeks` the lyrics hold it from here; the timer is the fallback.
+    this.schedulePetitHide(this.petitToHiddenDelay);
   }
 
   /**
@@ -175,7 +183,7 @@ export class IslandStateMachine {
   forcePetit() {
     this.byHover = false;
     this.cancelTimers();
-    this.transition("petit");
+    this.transition(this.rest);
   }
 
   forceHidden() {
@@ -186,16 +194,20 @@ export class IslandStateMachine {
 
   // ── Timers ──────────────────────────────────────────────────────────────────
 
-  private schedulePetitHide() {
+  private schedulePetitHide(delay = this.peeks ? this.petitToHiddenDelay : 0) {
     this.clear("petitHide");
     // A card folded away while it waits for an answer keeps the compact island
     // on screen, so it can be reopened (isHeldOpen on macOS). So does the lyrics
     // pill: retracting the island would take the words with it.
     if (this.pinned || this.held) return;
+    if (delay === 0) {
+      this.transition("hidden");
+      return;
+    }
     this.petitHide = window.setTimeout(() => {
       this.petitHide = null;
       if (this.state === "petit" && !this.pinned && !this.held) this.transition("hidden");
-    }, this.petitToHiddenDelay * 1000);
+    }, delay * 1000);
   }
 
   private scheduleHomeCollapse() {
@@ -209,7 +221,7 @@ export class IslandStateMachine {
       // An alert pinned while the countdown ran keeps the island open.
       if (this.state === "home" && !this.pinned) {
         this.byHover = false;
-        this.transition("petit");
+        this.transition(this.rest);
       }
     }, ms);
   }
@@ -218,7 +230,7 @@ export class IslandStateMachine {
     this.clear("hoverOpen");
     this.hoverOpen = window.setTimeout(() => {
       this.hoverOpen = null;
-      if (this.state !== "petit" || this.pinned || !this.openOnHover) return;
+      if ((this.state !== "petit" && this.state !== "hidden") || this.pinned || !this.openOnHover) return;
       this.cancelTimers();
       this.byHover = true;
       this.transition("home");
@@ -229,7 +241,7 @@ export class IslandStateMachine {
     this.clear("greetCollapse");
     this.greetCollapse = window.setTimeout(() => {
       this.greetCollapse = null;
-      if (this.state === "miku") this.transition("petit");
+      if (this.state === "miku") this.transition(this.rest);
     }, delay * 1000);
   }
 
@@ -245,6 +257,11 @@ export class IslandStateMachine {
     this.clear("petitHide");
     this.clear("homeCollapse");
     this.clear("greetCollapse");
+  }
+
+  /** Where a fold lands: the compact island only when something lives in it. */
+  private get rest(): FsmState {
+    return this.peeks || this.pinned || this.held ? "petit" : "hidden";
   }
 
   private transition(next: FsmState) {

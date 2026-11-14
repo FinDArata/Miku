@@ -10,6 +10,7 @@ let transitions;
 beforeEach(() => {
   mock.timers.enable({ apis: ["setTimeout"] });
   fsm = new IslandStateMachine();
+  fsm.peeks = true; // the tests below describe the compact island as a stop; see the end for without
   transitions = [];
   fsm.onTransition = (from, to) => transitions.push(`${from}>${to}`);
 });
@@ -466,4 +467,56 @@ test("opened over the song's stage, the island folds back soon after the pointer
   assert.equal(fsm.state, "home");
   seconds(0.1);
   assert.equal(fsm.state, "petit");
+});
+
+// ── Without the compact island as a stop (peeks off, the default) ─────────────
+
+test("peeks off: hovering the closed island does nothing, a click opens it", () => {
+  fsm.peeks = false;
+  fsm.mouseEntered();
+  assert.equal(fsm.state, "hidden");
+  fsm.click();
+  assert.equal(fsm.state, "home");
+});
+
+test("peeks off: folds go straight to the closed island", () => {
+  fsm.peeks = false;
+  fsm.launch();
+  fsm.greetComplete();
+  seconds(0.6);
+  assert.equal(fsm.state, "hidden");
+  fsm.forceHome();
+  fsm.mouseLeft();
+  seconds(15);
+  assert.equal(fsm.state, "hidden");
+  fsm.forceHome();
+  fsm.forcePetit();
+  assert.equal(fsm.state, "hidden");
+});
+
+test("peeks off: a work event stays closed, the lyrics still reveal", () => {
+  fsm.peeks = false;
+  fsm.reveal();
+  assert.equal(fsm.state, "hidden");
+  fsm.reveal(true);
+  assert.equal(fsm.state, "petit");
+});
+
+test("peeks off: a folded card keeps the compact island until it is answered", () => {
+  fsm.peeks = false;
+  fsm.forceHome();
+  fsm.pinned = true;
+  fsm.forcePetit();
+  assert.equal(fsm.state, "petit");
+  fsm.pinned = false;
+  fsm.mouseLeft();
+  assert.equal(fsm.state, "hidden");
+});
+
+test("peeks off: open on hover opens straight from the closed island", () => {
+  fsm.peeks = false;
+  fsm.openOnHover = true;
+  fsm.mouseEntered();
+  seconds(0.5);
+  assert.equal(fsm.state, "home");
 });

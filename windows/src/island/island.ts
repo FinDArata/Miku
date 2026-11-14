@@ -4,7 +4,7 @@
 import { Tracked, Spring, clamp } from "../core/anim";
 import { Bridge, IS_TAURI, onDragDrop } from "../core/bridge";
 import {
-  CLOSED_BOT_D, CLOSED_H, closedContent, closedIsland, closedWidth, type ClosedContent,
+  CLOSED_BOT_D, CLOSED_H, CLOSED_PAD, closedContent, closedIsland, closedWidth, type ClosedContent,
 } from "../core/closed";
 import {
   EXPANDED_CORNER, EXPANDED_W, NOTCH_W, PANEL_H, PANEL_W,
@@ -65,10 +65,11 @@ const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading"
 const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
 
 /** The synth strip (closed island, "mochi" style): Miku's centre from the left
- *  edge, and the room her head and the equaliser take before the text. */
+ *  edge, and what it adds to closedWidth's 2×CLOSED_PAD so the island hugs its
+ *  content: style.css pads it 32 (her head) + 12, the equaliser is 33 + a 7 gap. */
 const SYNTH_BOT_X = 16;
-const SYNTH_EXTRA = 54;
-const SYNTH_HEAD = 26;
+const SYNTH_HEAD = 32 + 12 - 2 * CLOSED_PAD;
+const SYNTH_EXTRA = SYNTH_HEAD + 33 + 7;
 /** How often the stage re-reads the sung line and its clock, in ms (Miku has her own frame loop). */
 const LYRICS_TICK_MS = 200;
 
@@ -694,7 +695,7 @@ export class Island {
   /** Music started playing: the compact island, without the peek sound (musicReveal). */
   revealSilently() {
     this.silentReveal = true;
-    this.fsm.reveal();
+    this.fsm.reveal(this.wantsLyricsPill());
     this.silentReveal = false;
   }
 
