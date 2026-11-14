@@ -1,6 +1,6 @@
 # Miku — guide for AI coding agents
 
-Miku is a fork of **Coucou** by Louis Raillé, rebranded and maintained by FinDArata. The product focus is the Tauri app in `windows/` (Windows **and** Linux). The original macOS code (`NotchBuddy/`) and Apple-only pieces (`relay/`, `Casks/`, root `scripts/` and `tests/`) still carry upstream names, are not built on this machine, and stay untouched.
+Miku is a fork of **Coucou** by Louis Raillé, rebranded and maintained by FinDArata. The product focus is the Tauri app in `windows/` (Windows **and** Linux). The original macOS code (`NotchBuddy/`) and Apple-only pieces (`relay/`, `Casks/`, root `scripts/` and `tests/`) still carry upstream names, are not built on this machine, and stay untouched. The upstream iPhone app (targets `CoucouPhone`, `CoucouWidgets`, `CoucouNotificationContent`) was removed; `windows/scripts/gen-strings.mjs` still reads `NotchBuddy/Resources/Localizable.xcstrings`, so keep that file.
 
 The mascot is **Hatsune Miku**, drawn in code (`windows/src/mochi/engine.ts` + `variants.ts`), in three official looks: classic, Snow and Sakura. She is © Crypton Future Media, INC., used under the Piapro Character License: this build is non-commercial and must not imply endorsement. The upstream Coucou/Mochi assets are still in the tree for the un-rebuilt platforms and remain © Louis Raillé — never ship them in a distributed Miku build. See `LICENSE-ASSETS.md`.
 

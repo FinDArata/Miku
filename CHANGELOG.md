@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### The iPhone app is gone from the tree
+
+- Miku is Windows and Linux first, with no iOS plans for now, so the upstream iPhone app, its widgets, its notification extension, their assets and the iPhone pages of the site are removed. The Mac app's source stays, and the Windows/Linux build still reads its string catalog.
+
 ### The launch greeting is a live stage
 
 - Miku no longer drops in, bounces and slides aside the way the old marshmallow did. The footlights come on from left to right, a spotlight falls on her mark, and she rises through the stage floor on a lift, waves to the crowd, and watches her name light up karaoke-style beside her.
