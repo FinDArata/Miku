@@ -6,6 +6,7 @@
 
 - Miku is Windows and Linux first, with no Apple plans for now, so the upstream Mac app, iPhone app, widgets and notification extension are removed, with their assets, the iPhone Live Activity relay, the Homebrew cask, the Mac scripts and tests, the Mac CI and the iPhone pages of the site.
 - The string catalog the translations come from now lives in `windows/src/i18n/Localizable.xcstrings`, and the What's new check in `windows/scripts/test-whats-new.py`.
+- The site no longer offers a Mac download or Android companion: the home, support, privacy and terms pages describe the Windows and Linux app only.
 
 ### The launch greeting is a live stage
 
