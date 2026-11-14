@@ -1484,6 +1484,8 @@ export class Island {
    */
   private updateClosed() {
     const style = closedIsland(State.settings.closedIsland);
+    // Without a strip to click, hovering the top edge peeks at the compact island.
+    this.fsm.peeks = !this.closedShows;
     const track = Spotify.state.track;
     const content: ClosedContent | null = State.mode === "hidden" || this.collapsed
       ? closedContent(style, {

@@ -46,20 +46,20 @@
       "ko": "+ 서브에이전트",
       "ja": "+ サブエージェント"
     },
-    "A PC has no notch: once closed, a small island stays at the top of the screen. Hover it to bring Miku back. Hidden, move the pointer to the very top of the screen.": {
-      "zh-Hans": "PC 没有刘海：关闭后，屏幕顶部会留一个小灵动岛。将指针移到上面即可唤回 Miku。若选择隐藏，请将指针移到屏幕最顶端。",
-      "hi": "PC में नॉच नहीं होता: बंद होने पर स्क्रीन के ऊपर एक छोटा आइलैंड रहता है। Miku को वापस लाने के लिए पॉइंटर उस पर रखें। छिपा होने पर, पॉइंटर को स्क्रीन के सबसे ऊपर ले जाएँ।",
-      "es": "Un PC no tiene notch: al cerrarse, una pequeña isla se queda arriba de la pantalla. Pasa el puntero por encima para recuperar Miku. Si está oculta, lleva el puntero al borde superior de la pantalla.",
-      "ar": "لا يحتوي الكمبيوتر على نتوء: عند الإغلاق تبقى جزيرة صغيرة أعلى الشاشة. مرّر المؤشر فوقها لإعادة Miku. إن كانت مخفية، حرّك المؤشر إلى أعلى حافة الشاشة.",
-      "fr": "Un PC n'a pas d'encoche : une fois fermée, une petite island reste en haut de l'écran. Survolez-la pour faire revenir Miku. Masquée, amenez le pointeur tout en haut de l'écran.",
-      "bn": "PC-তে নচ নেই: বন্ধ হলে স্ক্রিনের উপরে একটি ছোট আইল্যান্ড থাকে। Miku ফিরিয়ে আনতে পয়েন্টার তার উপর রাখুন। লুকানো থাকলে পয়েন্টার স্ক্রিনের একেবারে উপরে নিন।",
-      "pt-BR": "Um PC não tem notch: fechada, uma pequena ilha fica no topo da tela. Passe o ponteiro sobre ela para trazer o Miku de volta. Oculta, leve o ponteiro até o topo da tela.",
-      "ru": "У ПК нет выреза: после закрытия вверху экрана остаётся маленький остров. Наведите на него указатель, чтобы вернуть Miku. Если он скрыт, переведите указатель к самому верху экрана.",
-      "id": "PC tidak punya notch: setelah ditutup, pulau kecil tetap ada di bagian atas layar. Arahkan penunjuk ke atasnya untuk memunculkan Miku. Jika disembunyikan, bawa penunjuk ke tepi paling atas layar.",
-      "de": "Ein PC hat keine Notch: Geschlossen bleibt eine kleine Insel oben am Bildschirm. Fahre mit dem Zeiger darüber, um Miku zurückzuholen. Ausgeblendet: Zeiger ganz an den oberen Bildschirmrand bewegen.",
-      "tr": "PC'de çentik yoktur: kapandığında ekranın üstünde küçük bir ada kalır. Miku'yu geri getirmek için işaretçiyi üzerine getirin. Gizliyse işaretçiyi ekranın en üstüne götürün.",
-      "ko": "PC에는 노치가 없습니다. 닫으면 화면 위쪽에 작은 아일랜드가 남습니다. 포인터를 올리면 Miku가 돌아옵니다. 숨긴 경우 포인터를 화면 맨 위로 가져가세요.",
-      "ja": "PC にはノッチがありません。閉じると画面上部に小さなアイランドが残ります。ポインタを乗せると Miku が戻ります。隠している場合は、ポインタを画面の一番上へ移動してください。"
+    "A PC has no notch: once closed, a small island stays at the top of the screen. Click it to bring Miku back. Hidden, move the pointer to the very top of the screen.": {
+      "zh-Hans": "PC 没有刘海：关闭后，屏幕顶部会留一个小灵动岛。点击它即可唤回 Miku。若选择隐藏，请将指针移到屏幕最顶端。",
+      "hi": "PC में नॉच नहीं होता: बंद होने पर स्क्रीन के ऊपर एक छोटा आइलैंड रहता है। Miku को वापस लाने के लिए उस पर क्लिक करें। छिपा होने पर, पॉइंटर को स्क्रीन के सबसे ऊपर ले जाएँ।",
+      "es": "Un PC no tiene notch: al cerrarse, una pequeña isla se queda arriba de la pantalla. Haz clic en ella para recuperar Miku. Si está oculta, lleva el puntero al borde superior de la pantalla.",
+      "ar": "لا يحتوي الكمبيوتر على نتوء: عند الإغلاق تبقى جزيرة صغيرة أعلى الشاشة. انقر عليها لإعادة Miku. إن كانت مخفية، حرّك المؤشر إلى أعلى حافة الشاشة.",
+      "fr": "Un PC n'a pas d'encoche : une fois fermée, une petite island reste en haut de l'écran. Cliquez dessus pour faire revenir Miku. Masquée, amenez le pointeur tout en haut de l'écran.",
+      "bn": "PC-তে নচ নেই: বন্ধ হলে স্ক্রিনের উপরে একটি ছোট আইল্যান্ড থাকে। Miku ফিরিয়ে আনতে তাতে ক্লিক করুন। লুকানো থাকলে পয়েন্টার স্ক্রিনের একেবারে উপরে নিন।",
+      "pt-BR": "Um PC não tem notch: fechada, uma pequena ilha fica no topo da tela. Clique nela para trazer o Miku de volta. Oculta, leve o ponteiro até o topo da tela.",
+      "ru": "У ПК нет выреза: после закрытия вверху экрана остаётся маленький остров. Нажмите на него, чтобы вернуть Miku. Если он скрыт, переведите указатель к самому верху экрана.",
+      "id": "PC tidak punya notch: setelah ditutup, pulau kecil tetap ada di bagian atas layar. Klik pulau itu untuk memunculkan Miku. Jika disembunyikan, bawa penunjuk ke tepi paling atas layar.",
+      "de": "Ein PC hat keine Notch: Geschlossen bleibt eine kleine Insel oben am Bildschirm. Klicke darauf, um Miku zurückzuholen. Ausgeblendet: Zeiger ganz an den oberen Bildschirmrand bewegen.",
+      "tr": "PC'de çentik yoktur: kapandığında ekranın üstünde küçük bir ada kalır. Miku'yu geri getirmek için üzerine tıklayın. Gizliyse işaretçiyi ekranın en üstüne götürün.",
+      "ko": "PC에는 노치가 없습니다. 닫으면 화면 위쪽에 작은 아일랜드가 남습니다. 클릭하면 Miku가 돌아옵니다. 숨긴 경우 포인터를 화면 맨 위로 가져가세요.",
+      "ja": "PC にはノッチがありません。閉じると画面上部に小さなアイランドが残ります。クリックすると Miku が戻ります。隠している場合は、ポインタを画面の一番上へ移動してください。"
     },
     "A few replies a minute at most: wait a moment.": {
       "zh-Hans": "每分钟最多回复几条：请稍等。",
