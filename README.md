@@ -69,7 +69,7 @@ One island at the top of the screen that changes shape with what's going on:
 
 <table>
 <tr>
-<td align="center"><img src="docs/media/miku/capsule-music.png" width="190" alt="The closed capsule playing music, with a live equalizer"><br><sub><b>Closed</b> — the capsule, with what's playing</sub></td>
+<td align="center"><img src="docs/media/miku/capsule-music.png" width="160" alt="The closed capsule playing music, with a live equalizer"><br><sub><b>Closed</b> — the capsule, with what's playing</sub></td>
 <td align="center"><img src="docs/media/miku/deck-pc.png" width="300" alt="The widget deck open on the PC page: CPU, RAM, Disk, Net"><br><sub><b>Open</b> — the PC page, your busiest process included</sub></td>
 <td align="center"><img src="docs/media/miku/deck-focus.png" width="300" alt="The Focus page, a pomodoro timer at 25:00"><br><sub><b>Focus</b> — 25 minutes of focus, then 5 of rest</sub></td>
 </tr>
