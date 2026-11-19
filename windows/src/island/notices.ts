@@ -354,8 +354,9 @@ export class Notices {
       this.pcTarget[app] = null;
       this.close();
       // Where the app itself said the toast leads — a chat of its own, when
-      // it says one — or the app as a whole.
-      void Bridge.openChatApp(app, target);
+      // it says one — or the toast itself pressed, which opens the chat it
+      // was shown for, or the app as a whole.
+      void Bridge.openChatApp(app, target, n.title);
     });
     const seen = h("button", { class: "nt-btn s", text: t("Mark as read") });
     seen.addEventListener("click", () => {
@@ -684,14 +685,15 @@ export class Notices {
         open: () => {
           if (unread > 0) return this.whatsapp();
           // LINE / Discord: open the app with the most, at the chat its
-          // newest unread toast said it leads (when it said one), and count
-          // them as seen.
+          // newest unread toast said it leads (when it said one) — or the
+          // toast itself pressed — and count them as seen.
           const app = line >= discord ? "line" : "discord";
           const target = this.pcTarget[app];
+          const title = this.pcUnread[app].at(-1) ?? null;
           this.pcUnread = { line: [], discord: [] };
           this.pcTarget = { line: null, discord: null };
           this.sync();
-          void Bridge.openChatApp(app, target);
+          void Bridge.openChatApp(app, target, title);
         },
       };
     }

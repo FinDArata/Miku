@@ -64,8 +64,11 @@ export const Bridge = {
 
   openUrl: (url: string) => call<void>("open_url", { url }),
   /** LINE or Discord, from the island's message cards (lib.rs open_chat_app);
-   *  `target` is where the app itself said the toast leads, when it said. */
-  openChatApp: (app: "line" | "discord", target?: string | null) => call<void>("open_chat_app", { app, target }),
+   *  `target` is where the app itself said the toast leads, when it said;
+   *  `title` is the toast's own title, so the card's click can press the
+   *  toast itself when no target was named. */
+  openChatApp: (app: "line" | "discord", target?: string | null, title?: string | null) =>
+    call<void>("open_chat_app", { app, target, title }),
   /** Opens a GitLab link only when it belongs to the configured instance. */
   openGitLabUrl: (url: string) => call<void>("open_gitlab_url", { url }),
   /** Opens the configured Gitea instance without exposing its URL to the page. */

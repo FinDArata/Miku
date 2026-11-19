@@ -980,3 +980,147 @@ pub fn show_window(win: &WebviewWindow) {
         }
     }
 }
+
+// ── Pressing a chat app's own toast ──────────────────────────────────────────
+
+use ::windows::Win32::UI::Accessibility::{
+    CUIAutomation8, IUIAutomation, IUIAutomationElement, IUIAutomationInvokePattern,
+    IUIAutomationTreeWalker, UIA_InvokePatternId, TreeScope_Children, TreeScope_Descendants,
+};
+use ::windows::Win32::UI::Input::KeyboardAndMouse::{
+    keybd_event, SendInput, INPUT, INPUT_0, INPUT_MOUSE, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP,
+    MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEINPUT, VK_LWIN,
+};
+use ::windows::Win32::UI::WindowsAndMessaging::SetCursorPos;
+use ::windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED};
+
+/// The letter both "Notification Center" and the other UI languages' names for
+/// it ("Pusat Notifikasi") share, on a `Windows.UI.Core.CoreWindow` — how the
+/// open center is told apart from the other shell surfaces.
+fn is_center(e: &IUIAutomationElement) -> bool {
+    unsafe {
+        e.CurrentClassName().map(|c| c.to_string() == "Windows.UI.Core.CoreWindow").unwrap_or(false)
+            && e.CurrentName().map(|n| n.to_string().to_lowercase().contains("otif")).unwrap_or(false)
+    }
+}
+
+fn win_n() {
+    unsafe {
+        keybd_event(VK_LWIN.0 as u8, 0, KEYBD_EVENT_FLAGS(0), 0);
+        keybd_event(0x4E, 0, KEYBD_EVENT_FLAGS(0), 0);
+        keybd_event(0x4E, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_LWIN.0 as u8, 0, KEYEVENTF_KEYUP, 0);
+    }
+}
+
+/// Presses the app's own toast in the Notification Center — the very one the
+/// island's message card was built from — so what happens is what a click on
+/// the toast itself performs: the activation that opens the chat it was shown
+/// for. The center is opened when it is down, the entry is found by the title
+/// the island read from the toast's payload, and the clickable card above the
+/// title text is invoked through UI Automation. Returns whether it was
+/// pressed; a false lets the caller open the app as a whole instead.
+pub fn press_native_toast(title: &str) -> bool {
+    // A panic in the automation must never take the island down: any failure
+    // just falls back to opening the app.
+    std::panic::catch_unwind(|| unsafe { press_on_thread(title) }).unwrap_or(false)
+}
+
+unsafe fn press_on_thread(title: &str) -> bool {
+    // An apartment may already be on this thread in another mode; UIA works
+    // either way. Only a real failure stops here.
+    let mode = CoInitializeEx(None, COINIT_MULTITHREADED);
+    if mode.is_err() && mode != RPC_E_CHANGED_MODE {
+        return false;
+    }
+    let Ok(automation): ::windows::core::Result<IUIAutomation> = CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER) else {
+        return false;
+    };
+    let Ok(root) = automation.GetRootElement() else { return false };
+    let Ok(true_cond) = automation.CreateTrueCondition() else { return false };
+
+    // The center may be up already (do not fold it when leaving), or need one
+    // Win+N, or have been mid-toggle: each try is checked by looking again.
+    let center_open = || -> bool {
+        root.FindAll(TreeScope_Children, &true_cond)
+            .map(|c| (0..c.Length().unwrap_or(0)).filter_map(|i| c.GetElement(i).ok()).any(|e| is_center(&e)))
+            .unwrap_or(false)
+    };
+
+    let was_open = center_open();
+    if !was_open {
+        win_n();
+        std::thread::sleep(std::time::Duration::from_millis(900));
+        if !center_open() {
+            win_n();
+            std::thread::sleep(std::time::Duration::from_millis(900));
+            if !center_open() {
+                return false;
+            }
+        }
+    }
+
+    // Find the toast by the title it shows, then press the clickable card
+    // above the title text with a real click — the exact press a finger would
+    // make (Invoke/DoDefaultAction on these cards are no-ops on some builds).
+    let mut pressed = false;
+    let Ok(tops) = root.FindAll(TreeScope_Children, &true_cond) else { return false };
+    'surfaces: for i in 0..tops.Length().unwrap_or(0) {
+        let Ok(surface) = tops.GetElement(i) else { continue };
+        let Ok(cards) = surface.FindAll(TreeScope_Descendants, &true_cond) else { continue };
+        for j in 0..cards.Length().unwrap_or(0) {
+            let Ok(e) = cards.GetElement(j) else { continue };
+            let Ok(name) = e.CurrentName() else { continue };
+            if name.to_string() != title {
+                continue;
+            }
+            // The title text is not itself clickable: walk up to the card.
+            let Ok(walker): ::windows::core::Result<IUIAutomationTreeWalker> = automation.ControlViewWalker() else { break };
+            let mut cur = e;
+            for _ in 0..10 {
+                if cur.GetCurrentPatternAs::<IUIAutomationInvokePattern>(UIA_InvokePatternId).is_ok() {
+                    let Ok(r) = cur.CurrentBoundingRectangle() else { break };
+                    let (cx, cy) = ((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+                    let mut saved = POINT::default();
+                    let _ = GetCursorPos(&mut saved);
+                    let _ = SetCursorPos(cx, cy);
+                    let inputs = [
+                        INPUT { r#type: INPUT_MOUSE, Anonymous: INPUT_0 { mi: MOUSEINPUT { dx: 0, dy: 0, mouseData: 0, dwFlags: MOUSEEVENTF_LEFTDOWN, time: 0, dwExtraInfo: 0 } } },
+                        INPUT { r#type: INPUT_MOUSE, Anonymous: INPUT_0 { mi: MOUSEINPUT { dx: 0, dy: 0, mouseData: 0, dwFlags: MOUSEEVENTF_LEFTUP, time: 0, dwExtraInfo: 0 } } },
+                    ];
+                    SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
+                    std::thread::sleep(std::time::Duration::from_millis(300));
+                    let _ = SetCursorPos(saved.x, saved.y);
+                    pressed = true;
+                    break;
+                }
+                let Ok(parent) = walker.GetParentElement(&cur) else { break };
+                cur = parent;
+            }
+            break 'surfaces;
+        }
+    }
+
+    // Fold the center back down, but only if we were the ones who opened it
+    // and the activation (which takes a beat, and folds it itself when the
+    // app came to front) left it standing.
+    if pressed {
+        std::thread::sleep(std::time::Duration::from_millis(600));
+        if !was_open && center_open() {
+            win_n();
+        }
+    }
+    pressed
+}
+
+#[cfg(test)]
+mod toast_press {
+    /// Needs a desk with the Notification Center working: show a probe toast
+    /// first (any toast titled exactly so), then
+    /// `cargo test --lib -- --ignored press_native --nocapture`.
+    #[test]
+    #[ignore]
+    fn a_matching_toast_in_the_center_is_pressed() {
+        assert!(super::press_native_toast("MIKUPROBE pesan uji"));
+    }
+}

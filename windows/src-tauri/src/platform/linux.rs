@@ -1133,3 +1133,9 @@ pub fn hide_window(win: &WebviewWindow) {
 pub fn show_window(win: &WebviewWindow) {
     let _ = win.show();
 }
+
+/// The chat toasts here do not come from a pressable store; the island's
+/// message card just opens the app. (See platform/windows.rs.)
+pub fn press_native_toast(_title: &str) -> bool {
+    false
+}

@@ -532,11 +532,12 @@ export function buildDeck(actions: ViewActions): ViewHost {
         h("div", { class: "nh-msg", text: e.text }),
         ...(e.rom && State.settings.noticeRomanize !== false ? [h("div", { class: "nh-rom", text: e.rom })] : []));
       // What a click does: the chat app for LINE / Discord — at the chat the
-      // app said its toast leads, when it said one — the agent's page,
-      // otherwise just read.
+      // app said its toast leads, when it said one, or the toast itself
+      // pressed (its title is the entry's who) — the agent's page, otherwise
+      // just read.
       const open = () => {
         NoticeHistory.markRead(e.id);
-        if (e.app === "line" || e.app === "discord") void Bridge.openChatApp(e.app, e.target ?? null);
+        if (e.app === "line" || e.app === "discord") void Bridge.openChatApp(e.app, e.target ?? null, e.who);
         if (e.kind === "agent") {
           agentPick = e.app;
           go("agents");

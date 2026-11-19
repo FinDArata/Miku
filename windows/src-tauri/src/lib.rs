@@ -302,13 +302,24 @@ fn chat_deep_link(app: &str, said: &str) -> Option<String> {
 }
 
 /// Opens LINE or Discord (their own link schemes), for the island's message
-/// cards. Only these two fixed addresses, or a place the app itself wrote in
-/// its toast's launch attribute — where a click on the toast was said to
-/// lead, e.g. a chat of its own. No URL comes from the page.
+/// cards. First a place the app itself wrote in its toast's launch attribute
+/// — where a click on the toast was said to lead, e.g. a chat of its own; no
+/// URL comes from the page. When it named none, the app's own toast — the one
+/// the card was built from — is pressed instead: the same activation a click
+/// on it performs, which opens the chat it was shown for. When even that is
+/// not possible, the app opens as a whole.
 #[tauri::command]
-fn open_chat_app(app: String, target: Option<String>) {
+fn open_chat_app(app: String, target: Option<String>, title: Option<String>) {
     let said = target.map(|t| t.trim().to_string()).unwrap_or_default();
     if let Some(url) = chat_deep_link(&app, &said) {
+        platform::open_url(&url);
+        return;
+    }
+    let title = title.as_deref().map(str::trim).filter(|t| !t.is_empty());
+    if title.is_some_and(|t| platform::press_native_toast(t)) {
+        return;
+    }
+    if let Some(url) = chat_deep_link(&app, "") {
         platform::open_url(&url);
     }
 }

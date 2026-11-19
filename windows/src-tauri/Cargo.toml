@@ -98,6 +98,11 @@ windows = { version = "0.61", features = [
   "Win32_UI_WindowsAndMessaging",
   # Flow dictation's keyboard hook.
   "Win32_System_LibraryLoader",
+  # The island pressing a chat app's own toast (platform/windows.rs).
+  "Win32_UI_Accessibility",
+  # The probe example's toast (examples/uia_probe.rs).
+  "UI_Notifications",
+  "Data_Xml_Dom",
 ] }
 # The clipboard for Flow dictation, kept out of the clipboard history. MIT/Apache-2.0.
 arboard = { version = "3.6", default-features = false }
