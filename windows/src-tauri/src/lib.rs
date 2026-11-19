@@ -281,6 +281,26 @@ fn open_url(url: String) {
     platform::open_url(&url);
 }
 
+/// The address a message card opens: the app itself, or where the app said
+/// its toast leads — a chat of its own, when it wrote one in the toast's
+/// launch attribute. Discord writes none today (its Windows toast is built
+/// without a launch), so it opens as a whole; when it or another source says
+/// a discord.com address, it becomes the `discord://app/open#<route>` form
+/// the app's own deep links use. A launch naming another scheme is not ours
+/// to follow. Unknown apps open nothing.
+fn chat_deep_link(app: &str, said: &str) -> Option<String> {
+    match app {
+        "discord" if said.starts_with("discord://") => Some(said.to_string()),
+        "discord" if said.starts_with("https://discord.com/") => {
+            Some(format!("discord://app/open#{}", &said["https://discord.com".len()..]))
+        }
+        "discord" => Some("discord://".to_string()),
+        "line" if said.starts_with("line://") => Some(said.to_string()),
+        "line" => Some("line://".to_string()),
+        _ => None,
+    }
+}
+
 /// Opens LINE or Discord (their own link schemes), for the island's message
 /// cards. Only these two fixed addresses, or a place the app itself wrote in
 /// its toast's launch attribute — where a click on the toast was said to
@@ -288,15 +308,9 @@ fn open_url(url: String) {
 #[tauri::command]
 fn open_chat_app(app: String, target: Option<String>) {
     let said = target.map(|t| t.trim().to_string()).unwrap_or_default();
-    let url = match app.as_str() {
-        // Discord writes no launch today: the app opens as a whole, and a
-        // future one that says which chat a message lives in gets followed.
-        "discord" if said.starts_with("discord://") => said,
-        "discord" => "discord://".to_string(),
-        "line" => "line://".to_string(),
-        _ => return,
-    };
-    platform::open_url(&url);
+    if let Some(url) = chat_deep_link(&app, &said) {
+        platform::open_url(&url);
+    }
 }
 
 /// Opens a GitLab link only when it belongs to the configured instance. This
@@ -1343,7 +1357,33 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{diff_file, is_forge_instance_url};
+    use super::{chat_deep_link, diff_file, is_forge_instance_url};
+
+    #[test]
+    fn chat_cards_follow_where_the_app_said_its_toast_leads() {
+        // A toast that said nothing opens the app as a whole (Discord writes
+        // no launch today).
+        assert_eq!(chat_deep_link("discord", ""), Some("discord://".to_string()));
+        assert_eq!(chat_deep_link("line", ""), Some("line://".to_string()));
+        // A chat the app itself named is followed as it stands.
+        assert_eq!(
+            chat_deep_link("discord", "discord://-/channels/@me/123456789012345678"),
+            Some("discord://-/channels/@me/123456789012345678".to_string())
+        );
+        assert_eq!(chat_deep_link("line", "line://ti/g/42"), Some("line://ti/g/42".to_string()));
+        // The discord.com address the app deep-links by becomes its own
+        // open-link form.
+        assert_eq!(
+            chat_deep_link("discord", "https://discord.com/channels/@me/123456789012345678"),
+            Some("discord://app/open#/channels/@me/123456789012345678".to_string())
+        );
+        // A launch naming another scheme is not ours to follow.
+        assert_eq!(chat_deep_link("discord", "ms-phone://conversation/1"), Some("discord://".to_string()));
+        assert_eq!(chat_deep_link("line", "https://line.me/R/ti/g/42"), Some("line://".to_string()));
+        // Unknown apps open nothing.
+        assert_eq!(chat_deep_link("whatsapp", ""), None);
+    }
+
 
     #[test]
     fn forge_links_stay_on_the_configured_instance() {

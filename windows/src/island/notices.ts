@@ -93,6 +93,9 @@ export class Notices {
   private shownHang = false;
   /** LINE / Discord messages seen as toasts and not opened yet. */
   private pcUnread: { line: string[]; discord: string[] } = { line: [], discord: [] };
+  /** Where each app's newest unread toast said it leads — a chat to open,
+   *  when the app wrote one in the toast's launch (Discord writes none today). */
+  private pcTarget: { line: string | null; discord: string | null } = { line: null, discord: null };
   /** The chat app whose card is up, while it is up (pcRead folds it). */
   private noticeChatApp: "line" | "discord" | null = null;
   private shownNotice = false;
@@ -334,6 +337,7 @@ export class Notices {
     const color = app === "discord" ? "#5865f2" : "#06c755";
     const label = app === "discord" ? "Discord" : "LINE";
     this.pcUnread[app].push(n.title);
+    this.pcTarget[app] = n.target ?? null;
     Sound.notify(app, `app-${app}`);
     // Japanese or Korean: the line in letters to read (Settings → Romaji under notices).
     let rom = "";
@@ -346,20 +350,23 @@ export class Notices {
     const openApp = h("button", { class: "nt-btn p", text: app === "discord" ? t("Open Discord") : t("Open LINE") });
     openApp.addEventListener("click", () => {
       this.pcUnread[app] = [];
+      const target = this.pcTarget[app];
+      this.pcTarget[app] = null;
       this.close();
       // Where the app itself said the toast leads — a chat of its own, when
       // it says one — or the app as a whole.
-      void Bridge.openChatApp(app, n.target ?? null);
+      void Bridge.openChatApp(app, target);
     });
     const seen = h("button", { class: "nt-btn s", text: t("Mark as read") });
     seen.addEventListener("click", () => {
       this.pcUnread[app] = [];
+      this.pcTarget[app] = null;
       NoticeHistory.markAppRead(app);
       this.close();
     });
     void NoticeHistory.add({
       kind: "chat", app, color,
-      label, who: n.title, text: n.body,
+      label, who: n.title, text: n.body, target: n.target ?? undefined,
     });
     const shown = this.open(color, "approval", [
       source(app, color, label),
@@ -382,6 +389,7 @@ export class Notices {
     const key = app === "discord" ? "discord" : "line";
     if (!this.pcUnread[key].length && this.noticeChatApp !== key) return;
     this.pcUnread[key] = [];
+    this.pcTarget[key] = null;
     NoticeHistory.markAppRead(key);
     if (this.noticeChatApp === key) this.close();
     else this.sync();
@@ -675,11 +683,15 @@ export class Notices {
           h("small", { text: [...new Set(all)].slice(0, 3).join(", ") })],
         open: () => {
           if (unread > 0) return this.whatsapp();
-          // LINE / Discord: open the app with the most, and count them as seen.
+          // LINE / Discord: open the app with the most, at the chat its
+          // newest unread toast said it leads (when it said one), and count
+          // them as seen.
           const app = line >= discord ? "line" : "discord";
+          const target = this.pcTarget[app];
           this.pcUnread = { line: [], discord: [] };
+          this.pcTarget = { line: null, discord: null };
           this.sync();
-          void Bridge.openChatApp(app);
+          void Bridge.openChatApp(app, target);
         },
       };
     }

@@ -32,6 +32,8 @@ export interface NoticeEntry {
   text: string;
   /** The text in letters to read, when it is not Latin. */
   rom?: string;
+  /** Where the app said its toast leads — a chat to open, when it wrote one. */
+  target?: string;
   read: boolean;
 }
 
@@ -172,6 +174,7 @@ export async function add(n: {
   label: string;
   who: string;
   text: string;
+  target?: string;
 }): Promise<void> {
   let rom = "";
   if (State.settings.noticeRomanize !== false && scriptOf(n.text) !== "latin") {
