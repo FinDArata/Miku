@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Miku — island update preview</title>
+  <style>html,body{background:#3a4a5a !important}</style></head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Mock what the island asks at boot: settings, and a newer version out.
+      window.__answers = {
+        boot: { settings: { language: "id" }, cursorPoll: true },
+        update_status: {
+          consent: true,
+          current: "0.6.0",
+          latest: { version: "0.7.0", headline: "Pulau tetap di layar", pageUrl: "https://github.com/FinDArata/Miku/releases" },
+          canInstall: true,
+          phase: { kind: "idle" },
+          check: "none",
+          platform: "windows",
+        },
+      };
+    </script>
+    <script type="module">
+      import "./tauri-mock.ts";
+      await import("/src/main.ts");
+      const { Updates } = await import("/src/island/update.ts");
+      // Pretend Rust offered the announcement, as the schedule loop would.
+      Updates.offer("announce");
+      window.__updates = Updates;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,870 @@
+{
+  "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
+  "releases": [
+    {
+      "version": "0.0.8",
+      "items": [
+        {
+          "icon": "shield",
+          "title": {
+            "en": "The relay pipe is yours alone",
+            "zh-Hans": "中继管道只属于你",
+            "hi": "रिले पाइप अब केवल आपका है",
+            "es": "La canalización es solo tuya",
+            "ar": "أنبوب الترحيل لك وحدك",
+            "fr": "Le tube du relais n'appartient qu'à vous",
+            "bn": "রিলে পাইপ এখন শুধু আপনার",
+            "pt-BR": "O encanamento do relay é só seu",
+            "ru": "Канал реле теперь только ваш",
+            "id": "Pipa relay hanya milikmu",
+            "de": "Das Relay-Rohr gehört nur dir",
+            "tr": "Röle hattı artık yalnızca senin",
+            "ko": "릴레이 파이프는 이제 당신만의 것",
+            "ja": "リレーのパイプはあなただけのもの",
+            "th": "ท่อรีเลย์เป็นของคุณคนเดียว",
+            "zh-Hant": "中繼管道只屬於你"
+          },
+          "detail": {
+            "en": "Every connection is asked who it is before anything reaches the island.",
+            "zh-Hans": "在任何东西抵达岛屿之前，先确认每个连接者的身份。",
+            "hi": "द्वीप तक कुछ भी पहुँचने से पहले हर संपर्क से उसकी पहचान पूछी जाती है।",
+            "es": "Cada conexión debe decir quién es antes de que algo llegue a la isla.",
+            "ar": "يُسأل كل اتصال عن هويته قبل أن يصل أي شيء إلى الجزيرة.",
+            "fr": "Chaque connexion doit dire qui elle est avant que quoi que ce soit atteigne l'île.",
+            "bn": "দ্বীপে কিছু পৌঁছানোর আগেই প্রতিটি সংযোগকে জিজ্ঞেস করা হয় সে কে।",
+            "pt-BR": "Cada conexão diz quem é antes que algo chegue à ilha.",
+            "ru": "Каждое подключение называет себя прежде, чем что-то дойдёт до острова.",
+            "id": "Setiap koneksi ditanya siapa dia sebelum apa pun mencapai pulau.",
+            "de": "Jede Verbindung sagt, wer sie ist, bevor etwas die Insel erreicht.",
+            "tr": "Adaya hiçbir şey ulaşmadan her bağlantıya kim olduğu sorulur.",
+            "ko": "섬에 무언가 닿기 전에 모든 연결의 신원을 확인합니다.",
+            "ja": "島に何かが届く前に、すべての接続の身元を確かめます。",
+            "th": "ทุกการเชื่อมต่อถูกถามว่าเป็นใคร ก่อนอะไรจะถึงเกาะ",
+            "zh-Hant": "在任何東西抵達島嶼之前，先確認每個連線者的身分。"
+          }
+        },
+        {
+          "icon": "languages",
+          "title": {
+            "en": "Thai and Traditional Chinese",
+            "zh-Hans": "泰文与繁体中文",
+            "hi": "थाई और पारंपरिक चीनी",
+            "es": "Tailandés y chino tradicional",
+            "ar": "التايلاندية والصينية التقليدية",
+            "fr": "Thaï et chinois traditionnel",
+            "bn": "থাই ও প্রচলিত চীনা",
+            "pt-BR": "Tailandês e chinês tradicional",
+            "ru": "Тайский и традиционный китайский",
+            "id": "Thailand dan Tionghoa Tradisional",
+            "de": "Thai und Traditionelles Chinesisch",
+            "tr": "Tayca ve Geleneksel Çince",
+            "ko": "태국어와 번체어",
+            "ja": "タイ語と繁体字中国語",
+            "th": "ไทยและจีนตัวเต็ม",
+            "zh-Hant": "泰文與繁體中文"
+          },
+          "detail": {
+            "en": "Sixteen languages now; a Traditional Chinese system reads 繁體中文.",
+            "zh-Hans": "现在有 16 种语言；繁体中文系统会显示繁體中文。",
+            "hi": "अब 16 भाषाएँ; पारंपरिक चीनी सिस्टम 繁體中文 पढ़ता है।",
+            "es": "Dieciséis idiomas ahora; un sistema en chino tradicional lee 繁體中文.",
+            "ar": "ست عشرة لغة الآن؛ والنظام بالصينية التقليدية يعرض 繁體中文.",
+            "fr": "Seize langues désormais ; un système en chinois traditionnel lit 繁體中文.",
+            "bn": "এখন ষোলোটি ভাষা; প্রচলিত চীনা সিস্টেম 繁體中文 পড়ে।",
+            "pt-BR": "Dezesseis idiomas agora; um sistema em chinês tradicional lê 繁體中文.",
+            "ru": "Теперь шестнадцать языков; система с традиционным китайским читает 繁體中文.",
+            "id": "Kini enam belas bahasa; sistem Tionghoa Tradisional membaca 繁體中文.",
+            "de": "Jetzt sechzehn Sprachen; ein traditionell-chinesisches System liest 繁體中文.",
+            "tr": "Artık on altı dil; Geleneksel Çince sistem 繁體中文 görür.",
+            "ko": "이제 16개 언어; 번체 시스템은 繁體中文으로 표시됩니다.",
+            "ja": "言語は 16 に。繁体字のシステムでは繁體中文で表示されます。",
+            "th": "ตอนนี้มีสิบหกภาษา เครื่องจีนตัวเต็มจะอ่านเป็น繁體中文",
+            "zh-Hant": "現在共 16 種語言；繁體中文系統會顯示繁體中文。"
+          }
+        },
+        {
+          "icon": "paint",
+          "title": {
+            "en": "The wardrobe is in Settings",
+            "zh-Hans": "衣柜进设置里了",
+            "hi": "वॉर्डरोब अब सेटिंग्स में है",
+            "es": "El armario está en Ajustes",
+            "ar": "خزانة الملابس في الإعدادات",
+            "fr": "La garde-robe est dans les réglages",
+            "bn": "ওয়ারড্রোব এখন সেটিংসে",
+            "pt-BR": "O guarda-roupa está nas Configurações",
+            "ru": "Гардероб теперь в настройках",
+            "id": "Lemari pakaian ada di Pengaturan",
+            "de": "Der Kleiderschrank ist in den Einstellungen",
+            "tr": "Gardırop artık Ayarlar'da",
+            "ko": "옷장이 설정 안으로",
+            "ja": "ワードローブが設定の中に",
+            "th": "ตู้เสื้อผ้าอยู่ในการตั้งค่าแล้ว",
+            "zh-Hant": "衣櫃走進設定了"
+          },
+          "detail": {
+            "en": "General → Miku's look opens it; it used to live behind a hotkey.",
+            "zh-Hans": "常规 → Miku 的造型 即可打开；以前只能靠快捷键。",
+            "hi": "सामान्य → Miku का लुक खोलता है; पहले यह हॉटकी के पीछे था।",
+            "es": "General → El aspecto de Miku lo abre; antes solo vivía bajo un atajo.",
+            "ar": "عام ← مظهر Miku يفتحها؛ كانت مخفية خصل اختصار.",
+            "fr": "Général → Le look de Miku l'ouvre ; elle vivait derrière un raccourci.",
+            "bn": "সাধারণ → Miku-র চেহারা খুলবে; আগে ছিল হটকির আড়ালে।",
+            "pt-BR": "Geral → O visual da Miku abre; antes morava num atalho.",
+            "ru": "Общие → Внешний вид Miku открывает; раньше жила за горячей клавишей.",
+            "id": "Umum → Tampilan Miku membukanya; dulu tersembunyi di balik pintasan.",
+            "de": "Allgemein → Mikus Aussehen öffnet ihn; früher versteckte er sich hinter einem Kurzbefehl.",
+            "tr": "Genel → Miku'nun görünümü açar; eskiden bir kısayolun ardında saklıydı.",
+            "ko": "일반 → Miku의 모습으로 열립니다; 전에는 단축키 뒤에 숨어 있었어요.",
+            "ja": "一般 → Miku の見た目 で開けます。以前はショートカットの奥にいました。",
+            "th": "ทั่วไป → ลุคของมิกุ เปิดได้เลย ก่อนนี้ซ่อนอยู่หลังปุ่มลัด",
+            "zh-Hant": "一般 → Miku 的造型 即可開啟；以前藏在熱鍵後面。"
+          }
+        },
+        {
+          "icon": "heart",
+          "title": {
+            "en": "A hello for new installs",
+            "zh-Hans": "给新安装的问候",
+            "hi": "नए इंस्टॉल के लिए नमस्ते",
+            "es": "Un saludo para las instalaciones nuevas",
+            "ar": "تحية للتثبيتات الجديدة",
+            "fr": "Un bonjour aux nouvelles installations",
+            "bn": "নতুন ইনস্টলের জন্য অভ্যর্থনা",
+            "pt-BR": "Um olá para as instalações novas",
+            "ru": "Приветствие для новых установок",
+            "id": "Sapaan untuk pemasangan baru",
+            "de": "Ein Hallo für neue Installationen",
+            "tr": "Yeni kurulumlara bir selam",
+            "ko": "새 설치를 위한 인사",
+            "ja": "新規インストールへのご挨拶",
+            "th": "ทักทายสำหรับการติดตั้งใหม่",
+            "zh-Hant": "給新安裝的問候"
+          },
+          "detail": {
+            "en": "A first-run card says who Miku is and points to the hook setup.",
+            "zh-Hans": "首次运行的卡片介绍 Miku 是谁，并指向 hook 设置。",
+            "hi": "पहली बार चलने पर कार्ड बताता है Miku कौन है और hook सेटअप की ओर ले जाता है।",
+            "es": "Una tarjeta de primera ejecución dice quién es Miku y lleva a los hooks.",
+            "ar": "بطاقة التشغيل الأول تعرّف بـ Miku وتشير إلى إعداد الخطّافات.",
+            "fr": "Une carte de premier lancement dit qui est Miku et mène aux hooks.",
+            "bn": "প্রথম চালানোর কার্ড বলে Miku কে, এবং hook সেটআপের পথ দেখায়।",
+            "pt-BR": "Um cartão de primeira execução diz quem é a Miku e leva aos hooks.",
+            "ru": "Карточка первого запуска рассказывает, кто такая Miku, и ведёт к настройке hooks.",
+            "id": "Kartu pertama memperkenalkan Miku dan mengarah ke pengaturan hooks.",
+            "de": "Eine Erstkarte sagt, wer Miku ist, dan führt zu den Hooks.",
+            "tr": "İlk çalıştırma kartı Miku'nun kim olduğunu söyler ve hook kurulumuna götürür.",
+            "ko": "첫 실행 카드가 Miku가 누구인지 알리고 hook 설정으로 안내합니다.",
+            "ja": "初回カードが Miku の紹介と hooks の設定へ案内します。",
+            "th": "การ์ดครั้งแรกแนะนำว่ามิกุคือใคร พร้อมพาไปตั้งค่า hooks",
+            "zh-Hant": "首次執行的卡片介紹 Miku 是誰，並帶你前往 hook 設定。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "The island heals itself",
+            "zh-Hans": "岛屿会自我修复",
+            "hi": "द्वीप अब खुद ठीक होता है",
+            "es": "La isla se cura sola",
+            "ar": "الجزيرة تشفي نفسها",
+            "fr": "L'île se répare toute seule",
+            "bn": "দ্বীপ নিজেই সারে",
+            "pt-BR": "A ilha se cura sozinha",
+            "ru": "Остров чинит себя сам",
+            "id": "Pulau menyembuhkan dirinya",
+            "de": "Die Insel heilt sich selbst",
+            "tr": "Ada kendi kendini onarır",
+            "ko": "섬이 스스로 회복합니다",
+            "ja": "島は自分で治る",
+            "th": "เกาะซ่อมแซมตัวเองได้",
+            "zh-Hant": "島嶼會自我修復"
+          },
+          "detail": {
+            "en": "A killed island window comes back with the same shape.",
+            "zh-Hans": "被杀掉的岛窗口会以原样回来。",
+            "hi": "बंद किया गया द्वीप विंडो उसी आकृति में लौटता है।",
+            "es": "Una ventana de la isla eliminada vuelve con su misma forma.",
+            "ar": "نافذة الجزيرة المقتولة تعود بالشكل نفسه.",
+            "fr": "Une fenêtre d'île tuée revient avec sa même forme.",
+            "bn": "মেরে ফেলা দ্বীপ উইন্ডো একই আকৃতিতে ফিরে আসে।",
+            "pt-BR": "Uma janela da ilha morta volta com a mesma forma.",
+            "ru": "Убитое окно острова возвращается в том же виде.",
+            "id": "Jendela pulau yang dimatikan kembali dengan bentuk yang sama.",
+            "de": "Ein getötetes Insel-Fenster kommt in derselben Form zurück.",
+            "tr": "Öldürülen ada penceresi aynı biçimde geri gelir.",
+            "ko": "죽은 섬 창이 같은 모양으로 돌아옵니다.",
+            "ja": "消えた島のウィンドウは同じ形で戻ります。",
+            "th": "หน้าต่างเกาะที่ถูกฆ่าจะกลับมาในรูปเดิม",
+            "zh-Hant": "被殺掉的島嶼視窗會以原樣回來。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.7",
+      "items": [
+        {
+          "icon": "bolt",
+          "title": {
+            "en": "Faster frames, lighter boot",
+            "zh-Hans": "画面更流畅，启动更轻快",
+            "hi": "तेज़ फ़्रेम, हल्का बूट",
+            "es": "Fotogramas más ágiles, arranque ligero",
+            "ar": "إطارات أسرع وإقلاع أخف",
+            "fr": "Des images plus fluides, un démarrage léger",
+            "bn": "দ্রুত ফ্রেম, হালকা বুট",
+            "pt-BR": "Quadros mais leves, inicialização rápida",
+            "ru": "Кадры быстрее, запуск легче",
+            "id": "Frame lebih lancar, boot lebih ringan",
+            "de": "Flüssigere Bilder, leichter Start",
+            "tr": "Daha akıcı kareler, hafif açılış",
+            "ko": "더 부드러운 프레임, 가벼운 시작",
+            "ja": "軽やかなフレーム、すいすいの起動"
+          },
+          "detail": {
+            "en": "Colours and gradients are reused, pages redraw only when changed, and the backend stops repeating itself.",
+            "zh-Hans": "颜色与渐变改为复用，页面只在变化时重绘，后端不再重复发送相同的数据。",
+            "hi": "रंग और ग्रेडिएंट दोबारा इस्तेमाल होते हैं, बदलने पर ही दोबारा बनता है, बैकएंड दोहराना बंद।",
+            "es": "Colores y degradados reutilizados, las páginas se redibujan solo al cambiar y el backend no repite.",
+            "ar": "الألوان والتدرجات تُعاد استعمالها، والصفحات تُرسم عند التغيير فقط، والخادم لا يعيد ما لم يتغير.",
+            "fr": "Couleurs et dégradés réutilisés, pages redessinées seulement si elles changent, le backend se calme.",
+            "bn": "রং ও গ্রেডিয়েন্ট আবার ব্যবহার হয়, বদলালেই নতুন করে আঁকা হয়, ব্যাকএন্ড দোহরায় না।",
+            "pt-BR": "Cores e gradientes reutilizados, páginas se redesenham só ao mudar e o backend não se repete.",
+            "ru": "Цвета и градиенты переиспользуются, страницы перерисовываются лишь при изменении.",
+            "id": "Warna dan gradasi dipakai ulang, halaman digambar ulang hanya saat berubah, backend tak mengulang.",
+            "de": "Farben und Verläufe wiederverwendet, Seiten nur bei Änderung neu, das Backend wiederholt nichts.",
+            "tr": "Renkler ve degradeler yeniden kullanılır, sayfalar değişince çizilir, arka plan tekrar etmez.",
+            "ko": "색과 그라데이션을 재활용하고, 바뀔 때만 다시 그리며, 백엔드도 같은 것을 다시 보내지 않아요.",
+            "ja": "色やグラデーションを使い回し、変わったときだけ描き直し、変わらないものは再送しません。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.6",
+      "items": [
+        {
+          "icon": "shield",
+          "title": {
+            "en": "Permissions come down from the notch",
+            "zh-Hans": "权限请求从刘海处降下",
+            "hi": "अनुमति नॉच से नीचे आती है",
+            "es": "Los permisos bajan del notch",
+            "ar": "طلبات الإذن تنزل من الشق",
+            "fr": "Les permissions descendent de l'encoche",
+            "bn": "অনুমতি নচ থেকে নেমে আসে",
+            "pt-BR": "Permissões descem do notch",
+            "ru": "Запросы спускаются из выреза",
+            "id": "Izin turun dari notch",
+            "de": "Berechtigungen kommen aus der Notch",
+            "tr": "İzinler çentikten iner",
+            "ko": "권한 요청이 노치에서 내려와요",
+            "ja": "許可がノッチから降りてきます"
+          },
+          "detail": {
+            "en": "An agent's permission or question drops down as a card with Allow, Deny or its answers, and waits for you.",
+            "zh-Hans": "智能体的权限请求或问题会以卡片形式降下，带有允许、拒绝或选项，并等你回应。",
+            "hi": "एजेंट की अनुमति या सवाल एक कार्ड बनकर आता है, अनुमति, अस्वीकार या जवाबों के साथ, और आपका इंतज़ार करता है।",
+            "es": "Un permiso o pregunta de un agente baja como tarjeta con Permitir, Denegar o respuestas, y te espera.",
+            "ar": "ينزل إذن الوكيل أو سؤاله كبطاقة فيها سماح أو رفض أو الإجابات، وينتظرك.",
+            "fr": "Permission ou question d'un agent : une carte avec Autoriser, Refuser ou ses réponses, qui vous attend.",
+            "bn": "এজেন্টের অনুমতি বা প্রশ্ন কার্ড হয়ে নামে, অনুমতি, প্রত্যাখ্যান বা উত্তরসহ, আর আপনার অপেক্ষায় থাকে।",
+            "pt-BR": "Uma permissão ou pergunta de um agente desce como cartão com Permitir, Negar ou respostas, e espera você.",
+            "ru": "Запрос или вопрос агента спускается карточкой с «Разрешить», «Отклонить» или ответами и ждёт вас.",
+            "id": "Izin atau pertanyaan agent turun jadi kartu dengan Izinkan, Tolak, atau pilihan jawaban, dan menunggu Anda.",
+            "de": "Berechtigung oder Frage eines Agenten kommt als Karte mit Erlauben, Ablehnen oder Antworten und wartet.",
+            "tr": "Bir ajanın izni ya da sorusu İzin ver, Reddet veya yanıtlarla kart olarak iner ve sizi bekler.",
+            "ko": "에이전트의 권한 요청이나 질문이 허용, 거부, 답변 버튼과 함께 카드로 내려와 기다려요.",
+            "ja": "エージェントの許可や質問が、許可・拒否・選択肢つきのカードで降りてきて待ちます。"
+          }
+        },
+        {
+          "icon": "heart",
+          "title": {
+            "en": "A pose for every page",
+            "zh-Hans": "每一页都有自己的姿势",
+            "hi": "हर पेज के लिए एक पोज़",
+            "es": "Una pose para cada página",
+            "ar": "وضعية لكل صفحة",
+            "fr": "Une pose pour chaque page",
+            "bn": "প্রতিটি পেজে আলাদা পোজ",
+            "pt-BR": "Uma pose para cada página",
+            "ru": "Своя поза на каждой странице",
+            "id": "Pose sendiri di tiap halaman",
+            "de": "Eine Pose für jede Seite",
+            "tr": "Her sayfaya bir poz",
+            "ko": "페이지마다 다른 포즈",
+            "ja": "ページごとのポーズ"
+          },
+          "detail": {
+            "en": "On PC she types, then thinks, then gets dizzy as the load climbs. Music, Focus and Agents have their own.",
+            "zh-Hans": "在 PC 页她会打字，负载升高时先思考再头晕。音乐、专注和智能体页也各有姿势。",
+            "hi": "PC पर वह टाइप करती है, लोड बढ़ने पर सोचती है, फिर चकरा जाती है। म्यूज़िक, फ़ोकस, एजेंट के अपने पोज़ हैं।",
+            "es": "En PC teclea, luego piensa y se marea al subir la carga. Música, Enfoque y Agentes tienen la suya.",
+            "ar": "في صفحة الحاسوب تكتب ثم تفكر ثم تدوخ مع ارتفاع الحمل. وللموسيقى والتركيز والوكلاء وضعياتها.",
+            "fr": "Sur PC elle tape, réfléchit, puis a le tournis quand la charge monte. Musique, Focus et Agents ont la leur.",
+            "bn": "PC-তে সে টাইপ করে, লোড বাড়লে ভাবে, তারপর মাথা ঘোরে। মিউজিক, ফোকাস, এজেন্টের নিজস্ব পোজ আছে।",
+            "pt-BR": "No PC ela digita, pensa e fica tonta quando a carga sobe. Música, Foco e Agentes têm a sua.",
+            "ru": "На странице ПК она печатает, думает, а при нагрузке кружится голова. У Музыки, Фокуса и Агентов свои позы.",
+            "id": "Di PC dia mengetik, lalu mikir, lalu pusing saat beban naik. Musik, Fokus, dan Agent punya pose sendiri.",
+            "de": "Am PC tippt sie, denkt nach und wird bei Last schwindlig. Musik, Fokus und Agenten haben eigene Posen.",
+            "tr": "PC'de yazar, yük artınca düşünür, sonra başı döner. Müzik, Odak ve Ajanların kendi pozları var.",
+            "ko": "PC에서는 타이핑하다가 부하가 오르면 생각하고 어지러워해요. 음악, 집중, 에이전트도 포즈가 있어요.",
+            "ja": "PCでは入力し、負荷が上がると考えこみ、やがて目が回ります。音楽・集中・エージェントにも専用ポーズ。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "What's new, from the notch",
+            "zh-Hans": "更新内容从刘海处降下",
+            "hi": "नया क्या है, नॉच से",
+            "es": "Novedades, desde el notch",
+            "ar": "الجديد، من الشق",
+            "fr": "Nouveautés, depuis l'encoche",
+            "bn": "নতুন কী, নচ থেকে",
+            "pt-BR": "Novidades, do notch",
+            "ru": "Что нового — из выреза",
+            "id": "Yang baru, dari notch",
+            "de": "Neuigkeiten aus der Notch",
+            "tr": "Yenilikler çentikten",
+            "ko": "새 소식이 노치에서",
+            "ja": "新機能はノッチから"
+          },
+          "detail": {
+            "en": "This card is a notice from the notch now, and the leftovers of the app Miku came from are gone.",
+            "zh-Hans": "这张卡片现在是从刘海处降下的通知，原应用遗留的内容也已移除。",
+            "hi": "यह कार्ड अब नॉच से आने वाली सूचना है, और मूल ऐप की बची चीज़ें हटा दी गईं।",
+            "es": "Esta tarjeta ahora es un aviso desde el notch, y se fueron los restos de la app original.",
+            "ar": "هذه البطاقة صارت إشعارًا من الشق، وأُزيلت بقايا التطبيق الأصلي.",
+            "fr": "Cette carte est désormais un avis de l'encoche, et les restes de l'app d'origine sont partis.",
+            "bn": "এই কার্ড এখন নচ থেকে আসা নোটিশ, আর মূল অ্যাপের অবশিষ্ট অংশ সরানো হয়েছে।",
+            "pt-BR": "Este cartão agora é um aviso do notch, e as sobras do app original se foram.",
+            "ru": "Эта карточка теперь уведомление из выреза, а остатки исходного приложения убраны.",
+            "id": "Kartu ini sekarang notif dari notch, dan sisa-sisa aplikasi asal Miku sudah dibuang.",
+            "de": "Diese Karte ist jetzt ein Hinweis aus der Notch, Reste der Ursprungs-App sind weg.",
+            "tr": "Bu kart artık çentikten gelen bir bildirim; asıl uygulamadan kalanlar kaldırıldı.",
+            "ko": "이 카드는 이제 노치에서 내려오는 알림이고, 원래 앱의 흔적은 정리됐어요.",
+            "ja": "このカードはノッチからの通知になり、元アプリの名残は取り除かれました。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.5",
+      "items": [
+        {
+          "icon": "mic",
+          "title": {
+            "en": "Word-by-word karaoke",
+            "zh-Hans": "逐字卡拉 OK",
+            "hi": "शब्द-दर-शब्द कराओके",
+            "es": "Karaoke palabra a palabra",
+            "ar": "كاريوكي كلمة بكلمة",
+            "fr": "Karaoké mot à mot",
+            "bn": "শব্দে শব্দে কারাওকে",
+            "pt-BR": "Karaokê palavra por palavra",
+            "ru": "Караоке по словам",
+            "id": "Karaoke kata per kata",
+            "de": "Karaoke Wort für Wort",
+            "tr": "Kelime kelime karaoke",
+            "ko": "단어별 노래방 가사",
+            "ja": "単語ごとのカラオケ"
+          },
+          "detail": {
+            "en": "Lyrics from NetEase light up each word as it is sung. LRCLIB stays the fallback.",
+            "zh-Hans": "来自网易云音乐的歌词逐字亮起。LRCLIB 仍作为后备。",
+            "hi": "NetEase के बोल हर शब्द को गाए जाते ही रोशन करते हैं। LRCLIB बैकअप रहता है।",
+            "es": "La letra de NetEase ilumina cada palabra al cantarla. LRCLIB sigue de respaldo.",
+            "ar": "كلمات NetEase تضيء كل كلمة لحظة غنائها. ويبقى LRCLIB احتياطيًا.",
+            "fr": "Les paroles de NetEase s'allument mot par mot. LRCLIB reste en secours.",
+            "bn": "NetEase-এর লিরিক প্রতিটি শব্দ গাওয়ার সময় জ্বলে ওঠে। LRCLIB ব্যাকআপ থাকে।",
+            "pt-BR": "A letra do NetEase acende cada palavra ao ser cantada. O LRCLIB fica de reserva.",
+            "ru": "Текст из NetEase подсвечивает каждое слово по мере пения. LRCLIB — запасной вариант.",
+            "id": "Lirik dari NetEase menyala per kata saat dinyanyikan. LRCLIB tetap jadi cadangan.",
+            "de": "Liedtexte von NetEase leuchten Wort für Wort auf. LRCLIB bleibt als Ersatz.",
+            "tr": "NetEase sözleri her kelimeyi söylendiği anda yakar. LRCLIB yedek olarak kalır.",
+            "ko": "NetEase 가사가 부르는 단어마다 빛나요. LRCLIB는 예비로 남아요.",
+            "ja": "NetEase の歌詞が歌われる単語ごとに光ります。LRCLIB は予備として残ります。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Lyrics rest through the music",
+            "zh-Hans": "间奏时歌词会停下",
+            "hi": "संगीत के दौरान बोल रुकते हैं",
+            "es": "La letra descansa en la música",
+            "ar": "الكلمات تستريح أثناء الموسيقى",
+            "fr": "Les paroles se taisent pendant la musique",
+            "bn": "সংগীতের সময় লিরিক থামে",
+            "pt-BR": "A letra pausa durante a música",
+            "ru": "Текст молчит во время музыки",
+            "id": "Lirik diam saat musik",
+            "de": "Liedtexte ruhen während der Musik",
+            "tr": "Sözler müzikte susar",
+            "ko": "간주 중엔 가사가 쉬어요",
+            "ja": "間奏では歌詞がひと休み"
+          },
+          "detail": {
+            "en": "A long break shows ♪ instead of a line. Kanji-heavy Japanese songs get their rōmaji back.",
+            "zh-Hans": "长间奏时显示 ♪ 而不是歌词。汉字多的日语歌也能显示罗马音。",
+            "hi": "लंबे ब्रेक में पंक्ति की जगह ♪ दिखता है। कांजी वाले जापानी गानों को रोमाजी फिर मिलता है।",
+            "es": "Una pausa larga muestra ♪ en vez de una línea. Las canciones con mucho kanji recuperan su rōmaji.",
+            "ar": "يظهر ♪ بدل السطر في الفواصل الطويلة. وتستعيد الأغاني اليابانية كثيرة الكانجي حروف الروماجي.",
+            "fr": "Une longue pause affiche ♪ au lieu d'une ligne. Les chansons riches en kanji retrouvent leur rōmaji.",
+            "bn": "লম্বা বিরতিতে লাইনের বদলে ♪ দেখায়। কাঞ্জি-ভরা জাপানি গান রোমাজি ফিরে পায়।",
+            "pt-BR": "Uma pausa longa mostra ♪ em vez de uma linha. Músicas com muito kanji voltam a ter rōmaji.",
+            "ru": "Долгий проигрыш показывает ♪ вместо строки. Японские песни с кандзи снова в ромадзи.",
+            "id": "Jeda panjang menampilkan ♪, bukan baris lirik. Lagu Jepang penuh kanji kembali dapat romaji.",
+            "de": "Eine lange Pause zeigt ♪ statt einer Zeile. Kanji-reiche Songs bekommen ihr Rōmaji zurück.",
+            "tr": "Uzun arada satır yerine ♪ görünür. Kanji dolu Japonca şarkılar rōmaji'ye kavuşur.",
+            "ko": "긴 간주에는 가사 대신 ♪가 떠요. 한자가 많은 일본 노래도 로마자가 다시 나와요.",
+            "ja": "長い間奏では行の代わりに ♪ を表示。漢字の多い曲もローマ字に戻ります。"
+          }
+        },
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Notices fold away when read",
+            "zh-Hans": "已读的通知会自动收起",
+            "hi": "पढ़ी गई सूचनाएँ अपने आप हटती हैं",
+            "es": "Los avisos leídos se recogen",
+            "ar": "تختفي الإشعارات عند قراءتها",
+            "fr": "Les avis lus se replient",
+            "bn": "পড়া নোটিশ নিজে সরে যায়",
+            "pt-BR": "Avisos lidos se recolhem",
+            "ru": "Прочитанное убирается само",
+            "id": "Notif yang dibaca hilang sendiri",
+            "de": "Gelesene Hinweise verschwinden",
+            "tr": "Okunan bildirimler kapanır",
+            "ko": "읽은 알림은 알아서 접혀요",
+            "ja": "読んだ通知は自動で消えます"
+          },
+          "detail": {
+            "en": "Open Discord, LINE, Claude or your terminal and its notice leaves the notch, no click needed.",
+            "zh-Hans": "打开 Discord、LINE、Claude 或终端，对应通知就会从刘海处消失，无需点击。",
+            "hi": "Discord, LINE, Claude या टर्मिनल खोलें, उसकी सूचना नॉच से हट जाती है, क्लिक की ज़रूरत नहीं।",
+            "es": "Abre Discord, LINE, Claude o tu terminal y su aviso se va del notch, sin hacer clic.",
+            "ar": "افتح Discord أو LINE أو Claude أو الطرفية فيختفي إشعاره من الشق دون نقرة.",
+            "fr": "Ouvrez Discord, LINE, Claude ou le terminal : son avis quitte l'encoche, sans clic.",
+            "bn": "Discord, LINE, Claude বা টার্মিনাল খুললেই তার নোটিশ নচ থেকে সরে যায়, ক্লিক লাগে না।",
+            "pt-BR": "Abra o Discord, LINE, Claude ou o terminal e o aviso sai do notch, sem clicar.",
+            "ru": "Откройте Discord, LINE, Claude или терминал — уведомление уйдёт из выреза без клика.",
+            "id": "Buka Discord, LINE, Claude, atau terminal, notifnya hilang dari notch tanpa perlu klik.",
+            "de": "Öffne Discord, LINE, Claude oder dein Terminal: der Hinweis verlässt die Notch ohne Klick.",
+            "tr": "Discord, LINE, Claude ya da terminali açın; bildirimi tıklamadan çentikten gider.",
+            "ko": "Discord, LINE, Claude나 터미널을 열면 알림이 클릭 없이 노치에서 사라져요.",
+            "ja": "Discord・LINE・Claude・ターミナルを開くと、クリックなしで通知がノッチから消えます。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.4",
+      "items": [
+        {
+          "icon": "mic",
+          "title": {
+            "en": "Karaoke lyrics",
+            "zh-Hans": "卡拉 OK 歌词",
+            "hi": "कराओके बोल",
+            "es": "Letras en modo karaoke",
+            "ar": "كلمات بنمط الكاريوكي",
+            "fr": "Paroles en karaoké",
+            "bn": "কারাওকে লিরিক",
+            "pt-BR": "Letras no modo karaokê",
+            "ru": "Текст в режиме караоке",
+            "id": "Lirik karaoke",
+            "de": "Karaoke-Liedtexte",
+            "tr": "Karaoke sözleri",
+            "ko": "노래방 가사",
+            "ja": "カラオケ歌詞"
+          },
+          "detail": {
+            "en": "The line being sung fills with teal as the song goes, and stops when you pause.",
+            "zh-Hans": "正在唱的那一行会随歌曲填上青绿色，暂停时也会停下。",
+            "hi": "गाई जा रही पंक्ति गाने के साथ टील रंग से भरती है, और रोकने पर रुक जाती है।",
+            "es": "La línea que suena se llena de turquesa al ritmo de la canción y se detiene al pausar.",
+            "ar": "يمتلئ السطر الذي يُغنّى باللون الفيروزي مع الأغنية، ويتوقف عند الإيقاف المؤقت.",
+            "fr": "La ligne chantée se remplit de turquoise au fil de la chanson et s'arrête à la pause.",
+            "bn": "যে লাইনটা গাওয়া হচ্ছে তা গানের সাথে টিল রঙে ভরে ওঠে, থামালে থেমে যায়।",
+            "pt-BR": "A linha cantada se enche de verde-água conforme a música e para quando você pausa.",
+            "ru": "Строка, которую поют, заполняется бирюзовым по ходу песни и замирает на паузе.",
+            "id": "Baris yang sedang dinyanyikan terisi warna teal mengikuti lagu, dan berhenti saat dijeda.",
+            "de": "Die gesungene Zeile füllt sich im Takt des Songs türkis und hält bei Pause an.",
+            "tr": "Söylenen satır şarkıyla birlikte turkuaza dolar, duraklatınca durur.",
+            "ko": "부르는 줄이 노래에 맞춰 청록색으로 채워지고, 일시정지하면 멈춰요.",
+            "ja": "歌っている行が曲に合わせてティールに染まり、一時停止すると止まります。"
+          }
+        },
+        {
+          "icon": "update",
+          "title": {
+            "en": "New versions come down from the notch",
+            "zh-Hans": "新版本从刘海处降下",
+            "hi": "नया संस्करण नॉच से नीचे आता है",
+            "es": "Las versiones nuevas bajan del notch",
+            "ar": "الإصدارات الجديدة تنزل من الشق",
+            "fr": "Les nouvelles versions descendent de l'encoche",
+            "bn": "নতুন সংস্করণ নচ থেকে নেমে আসে",
+            "pt-BR": "Versões novas descem do notch",
+            "ru": "Новые версии спускаются из выреза",
+            "id": "Versi baru turun dari notch",
+            "de": "Neue Versionen kommen aus der Notch",
+            "tr": "Yeni sürümler çentikten iner",
+            "ko": "새 버전이 노치에서 내려와요",
+            "ja": "新バージョンはノッチから降りてくる"
+          },
+          "detail": {
+            "en": "A notice card shows old → new and the download's progress; Miku hangs with the version until you look.",
+            "zh-Hans": "通知卡片显示旧版 → 新版、更新要点和下载进度；你查看之前 Miku 会挂着版本号。",
+            "hi": "सूचना कार्ड पुराना → नया, मुख्य बात और डाउनलोड प्रगति दिखाता है; देखने तक Miku संस्करण लेकर लटकी रहती है।",
+            "es": "Una tarjeta muestra versión vieja → nueva, el titular y el progreso; Miku cuelga con la versión hasta que la mires.",
+            "ar": "بطاقة إشعار تعرض القديم ← الجديد والعنوان وتقدّم التنزيل؛ وتتدلّى Miku برقم الإصدار حتى تنظر.",
+            "fr": "Une carte montre ancienne → nouvelle, le titre et la progression ; Miku pend avec la version jusqu'à ce que vous regardiez.",
+            "bn": "নোটিশ কার্ডে পুরনো → নতুন, মূল কথা ও ডাউনলোডের অগ্রগতি; আপনি না দেখা পর্যন্ত Miku সংস্করণ নিয়ে ঝুলে থাকে।",
+            "pt-BR": "Um cartão mostra antiga → nova, o destaque e o progresso; a Miku fica pendurada com a versão até você olhar.",
+            "ru": "Карточка показывает старую → новую версию, главное и ход загрузки; Miku висит с номером, пока вы не посмотрите.",
+            "id": "Card notice menampilkan versi lama → baru, ringkasan, dan progres unduhan; Miku bergantung membawa versinya sampai Anda lihat.",
+            "de": "Eine Karte zeigt alt → neu, die Schlagzeile und den Download; Miku hängt mit der Version, bis du hinsiehst.",
+            "tr": "Bildirim kartı eski → yeni sürümü, başlığı ve indirmeyi gösterir; bakana kadar Miku sürümle asılı kalır.",
+            "ko": "알림 카드에 이전 → 새 버전, 요약, 다운로드 진행이 보여요. 확인할 때까지 Miku가 버전을 들고 매달려 있어요.",
+            "ja": "通知カードに旧 → 新、見出し、ダウンロードの進み具合。見るまでMikuがバージョンを持ってぶら下がります。"
+          }
+        },
+        {
+          "icon": "eye",
+          "title": {
+            "en": "Cleaner notice cards",
+            "zh-Hans": "更干净的通知卡片",
+            "hi": "साफ़ सूचना कार्ड",
+            "es": "Tarjetas de aviso más limpias",
+            "ar": "بطاقات إشعار أنظف",
+            "fr": "Des cartes de notification plus nettes",
+            "bn": "আরও পরিষ্কার নোটিশ কার্ড",
+            "pt-BR": "Cartões de aviso mais limpos",
+            "ru": "Чище карточки уведомлений",
+            "id": "Card notice lebih bersih",
+            "de": "Klarere Hinweiskarten",
+            "tr": "Daha temiz bildirim kartları",
+            "ko": "더 깔끔한 알림 카드",
+            "ja": "すっきりした通知カード"
+          },
+          "detail": {
+            "en": "The black frame around a notice is gone: the card floats over your screen.",
+            "zh-Hans": "通知周围的黑框没有了：卡片直接浮在屏幕上。",
+            "hi": "सूचना के चारों ओर का काला फ़्रेम हट गया: कार्ड स्क्रीन पर तैरता है।",
+            "es": "Desaparece el marco negro alrededor del aviso: la tarjeta flota sobre tu pantalla.",
+            "ar": "اختفى الإطار الأسود حول الإشعار: البطاقة تطفو فوق شاشتك.",
+            "fr": "Le cadre noir autour d'une notification disparaît : la carte flotte sur l'écran.",
+            "bn": "নোটিশের চারপাশের কালো ফ্রেম নেই: কার্ড স্ক্রিনের ওপর ভাসে।",
+            "pt-BR": "A moldura preta em volta do aviso sumiu: o cartão flutua sobre a tela.",
+            "ru": "Чёрная рамка вокруг уведомления исчезла: карточка парит над экраном.",
+            "id": "Bingkai hitam di sekitar notice hilang: card-nya melayang di atas layar.",
+            "de": "Der schwarze Rahmen um Hinweise ist weg: die Karte schwebt über dem Bildschirm.",
+            "tr": "Bildirimin etrafındaki siyah çerçeve kalktı: kart ekranın üstünde süzülür.",
+            "ko": "알림 주변의 검은 테두리가 사라졌어요. 카드가 화면 위에 떠 있어요.",
+            "ja": "通知のまわりの黒い枠がなくなり、カードが画面の上に浮かびます。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.3",
+      "items": [
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Miku says who rang",
+            "zh-Hans": "Miku 会说是谁来消息",
+            "hi": "Miku बताती है किसका संदेश आया",
+            "es": "Miku dice quién te escribe",
+            "ar": "Miku تخبرك بمن راسلك",
+            "fr": "Miku dit qui vous écrit",
+            "bn": "Miku বলে কে বার্তা পাঠাল",
+            "pt-BR": "A Miku diz quem mandou mensagem",
+            "ru": "Miku говорит, кто написал",
+            "id": "Miku bilang siapa yang kirim pesan",
+            "de": "Miku sagt, wer schreibt",
+            "tr": "Miku kimin yazdığını söyler",
+            "ko": "Miku가 누가 보냈는지 알려줘요",
+            "ja": "Mikuが誰から来たか教えてくれる"
+          },
+          "detail": {
+            "en": "LINE, WhatsApp, Discord and the agents each get a sound, in her voice or your own file.",
+            "zh-Hans": "LINE、WhatsApp、Discord 和各个代理都有自己的声音：她的声音或你自己的文件。",
+            "hi": "LINE, WhatsApp, Discord और एजेंट, हर एक की अपनी आवाज़: उसकी या आपकी फ़ाइल।",
+            "es": "LINE, WhatsApp, Discord y los agentes tienen su propio sonido: su voz o un archivo tuyo.",
+            "ar": "لكل من LINE وWhatsApp وDiscord والوكلاء صوته: صوتها أو ملف منك.",
+            "fr": "LINE, WhatsApp, Discord et les agents ont chacun leur son : sa voix ou votre fichier.",
+            "bn": "LINE, WhatsApp, Discord ও এজেন্ট, প্রত্যেকের নিজস্ব শব্দ: তার কণ্ঠ বা আপনার ফাইল।",
+            "pt-BR": "LINE, WhatsApp, Discord e os agentes têm cada um seu som: a voz dela ou um arquivo seu.",
+            "ru": "У LINE, WhatsApp, Discord и агентов свой звук: её голос или ваш файл.",
+            "id": "LINE, WhatsApp, Discord, dan agen punya suara sendiri: suaranya atau file Anda.",
+            "de": "LINE, WhatsApp, Discord und die Agenten haben je einen Ton: ihre Stimme oder deine Datei.",
+            "tr": "LINE, WhatsApp, Discord ve ajanların her birinin sesi var: onun sesi ya da sizin dosyanız.",
+            "ko": "LINE, WhatsApp, Discord, 에이전트마다 소리가 있어요: 그녀의 목소리나 내 파일.",
+            "ja": "LINE・WhatsApp・Discord・エージェントごとに音を選べます。彼女の声か自分のファイル。"
+          }
+        },
+        {
+          "icon": "chat",
+          "title": {
+            "en": "Miku speaks more",
+            "zh-Hans": "Miku 说得更多了",
+            "hi": "Miku अब ज़्यादा बोलती है",
+            "es": "Miku habla más",
+            "ar": "Miku تتكلم أكثر",
+            "fr": "Miku parle davantage",
+            "bn": "Miku এখন বেশি কথা বলে",
+            "pt-BR": "A Miku fala mais",
+            "ru": "Miku говорит больше",
+            "id": "Miku lebih banyak bicara",
+            "de": "Miku spricht mehr",
+            "tr": "Miku daha çok konuşuyor",
+            "ko": "Miku가 말을 더 많이 해요",
+            "ja": "Mikuがもっとしゃべる"
+          },
+          "detail": {
+            "en": "New lines for permissions, breaks, pats, pokes, caught files and new versions.",
+            "zh-Hans": "新增台词：权限请求、休息、摸头、戳她、接住文件和新版本。",
+            "hi": "अनुमति, ब्रेक, थपकी, छेड़ने, पकड़ी फ़ाइलों और नए संस्करण पर नई पंक्तियाँ।",
+            "es": "Frases nuevas para permisos, pausas, caricias, toques, archivos atrapados y versiones.",
+            "ar": "عبارات جديدة للأذونات والاستراحات واللمسات والملفات الملتقطة والإصدارات الجديدة.",
+            "fr": "De nouvelles répliques : permissions, pauses, caresses, taquineries, fichiers attrapés, versions.",
+            "bn": "অনুমতি, বিরতি, আদর, খোঁচা, ধরা ফাইল ও নতুন সংস্করণে নতুন কথা।",
+            "pt-BR": "Falas novas para permissões, pausas, carinhos, cutucadas, arquivos pegos e versões.",
+            "ru": "Новые фразы: разрешения, перерывы, поглаживания, тычки, пойманные файлы, версии.",
+            "id": "Kalimat baru untuk izin, istirahat, dielus, dicolek, file ditangkap, dan versi baru.",
+            "de": "Neue Sätze für Erlaubnisse, Pausen, Streicheln, Anstupsen, gefangene Dateien und Versionen.",
+            "tr": "İzinler, molalar, okşama, dürtme, yakalanan dosyalar ve yeni sürümler için yeni sözler.",
+            "ko": "권한, 휴식, 쓰다듬기, 콕 찌르기, 받은 파일, 새 버전에 새 대사가 생겼어요.",
+            "ja": "許可、休憩、なでる、つつく、ファイルキャッチ、新バージョンで新しいセリフ。"
+          }
+        },
+        {
+          "icon": "paint",
+          "title": {
+            "en": "Every card stands on her stage",
+            "zh-Hans": "每张卡片都站上她的舞台",
+            "hi": "हर कार्ड अब उसके मंच पर",
+            "es": "Cada tarjeta sube a su escenario",
+            "ar": "كل بطاقة على مسرحها",
+            "fr": "Chaque carte monte sur sa scène",
+            "bn": "প্রতিটি কার্ড এখন তার মঞ্চে",
+            "pt-BR": "Todo cartão está no palco dela",
+            "ru": "Каждая карточка на её сцене",
+            "id": "Semua kartu di panggungnya",
+            "de": "Jede Karte steht auf ihrer Bühne",
+            "tr": "Her kart onun sahnesinde",
+            "ko": "모든 카드가 그녀의 무대 위에",
+            "ja": "どのカードも彼女のステージに"
+          },
+          "detail": {
+            "en": "Permissions, questions, errors, the weekly recap and the wardrobe glow teal, or pink when it went wrong.",
+            "zh-Hans": "权限、提问、错误、每周回顾和衣柜都亮起青色，出错时是粉色。",
+            "hi": "अनुमति, सवाल, त्रुटि, साप्ताहिक सार और वार्डरोब टील में चमकते हैं, गड़बड़ी पर गुलाबी।",
+            "es": "Permisos, preguntas, errores, el resumen semanal y el vestidor brillan en turquesa, o rosa si algo falla.",
+            "ar": "الأذونات والأسئلة والأخطاء والملخص الأسبوعي والخزانة تتوهج بالفيروزي، وبالوردي عند الخطأ.",
+            "fr": "Permissions, questions, erreurs, bilan hebdo et garde-robe brillent en turquoise, en rose si ça rate.",
+            "bn": "অনুমতি, প্রশ্ন, ত্রুটি, সাপ্তাহিক সারাংশ ও ওয়ার্ডরোব টিলে জ্বলে, ভুল হলে গোলাপি।",
+            "pt-BR": "Permissões, perguntas, erros, o resumo semanal e o guarda-roupa brilham em turquesa, ou rosa se falhar.",
+            "ru": "Разрешения, вопросы, ошибки, недельный итог и гардероб светятся бирюзовым, а при сбое розовым.",
+            "id": "Izin, pertanyaan, error, rekap mingguan, dan lemari baju bersinar teal, atau pink kalau ada masalah.",
+            "de": "Erlaubnisse, Fragen, Fehler, Wochenrückblick und Garderobe leuchten türkis, bei Fehlern pink.",
+            "tr": "İzinler, sorular, hatalar, haftalık özet ve gardırop turkuaz parlar, hata olunca pembe.",
+            "ko": "권한, 질문, 오류, 주간 요약, 옷장이 청록색으로 빛나요. 문제가 생기면 분홍색.",
+            "ja": "許可、質問、エラー、週間まとめ、衣装がティールに光り、失敗するとピンク。"
+          }
+        },
+        {
+          "icon": "download",
+          "title": {
+            "en": "New versions show on the island",
+            "zh-Hans": "新版本会显示在灵动岛上",
+            "hi": "नया संस्करण आइलैंड पर दिखता है",
+            "es": "Las versiones nuevas salen en la isla",
+            "ar": "الإصدارات الجديدة تظهر على الجزيرة",
+            "fr": "Les nouvelles versions s'affichent sur l'île",
+            "bn": "নতুন সংস্করণ আইল্যান্ডে দেখা যায়",
+            "pt-BR": "Versões novas aparecem na ilha",
+            "ru": "Новые версии видны на острове",
+            "id": "Versi baru muncul di pulau",
+            "de": "Neue Versionen erscheinen auf der Insel",
+            "tr": "Yeni sürümler adada görünür",
+            "ko": "새 버전이 아일랜드에 표시돼요",
+            "ja": "新バージョンがアイランドに表示"
+          },
+          "detail": {
+            "en": "A button on the deck and in the Miku window's menu installs it, and lyrics now open only for songs.",
+            "zh-Hans": "面板和 Miku 窗口菜单里的按钮可以安装它；歌词现在只在播放歌曲时打开。",
+            "hi": "डेक और Miku विंडो के मेनू में बटन से इंस्टॉल करें; बोल अब सिर्फ़ गानों के लिए खुलते हैं।",
+            "es": "Un botón en el panel y en el menú de Miku la instala; la letra ya solo se abre con canciones.",
+            "ar": "زر في اللوحة وفي قائمة نافذة Miku يثبّته، والكلمات تفتح الآن للأغاني فقط.",
+            "fr": "Un bouton sur le panneau et dans le menu de Miku l'installe ; les paroles ne s'ouvrent que pour les chansons.",
+            "bn": "ডেক ও Miku উইন্ডোর মেনুর বোতামে ইনস্টল করুন; গানের কথা এখন শুধু গানের জন্য খোলে।",
+            "pt-BR": "Um botão no painel e no menu da Miku instala; a letra agora só abre para músicas.",
+            "ru": "Кнопка на панели и в меню окна Miku ставит её; текст песен открывается только для песен.",
+            "id": "Tombol di deck dan menu jendela Miku memasangnya; lirik kini hanya muncul untuk lagu.",
+            "de": "Ein Knopf im Deck und im Menü des Miku-Fensters installiert sie; Songtexte nur noch bei Liedern.",
+            "tr": "Panelde ve Miku penceresinin menüsünde bir düğme kurar; şarkı sözleri artık yalnızca şarkılarda açılır.",
+            "ko": "덱과 Miku 창 메뉴의 버튼으로 설치해요. 가사는 이제 노래일 때만 열려요.",
+            "ja": "デッキとMikuウィンドウのメニューのボタンで更新。歌詞は曲のときだけ開きます。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.2",
+      "items": [
+        {
+          "icon": "paint",
+          "title": {
+            "en": "The main menu is a concert stage",
+            "zh-Hans": "主菜单变成了演唱会舞台",
+            "hi": "मुख्य मेनू अब कॉन्सर्ट मंच है",
+            "es": "El menú principal es un escenario",
+            "ar": "القائمة الرئيسية أصبحت مسرح حفل",
+            "fr": "Le menu principal devient une scène",
+            "bn": "প্রধান মেনু এখন কনসার্ট মঞ্চ",
+            "pt-BR": "O menu principal virou um palco",
+            "ru": "Главное меню стало сценой",
+            "id": "Menu utama jadi panggung konser",
+            "de": "Das Hauptmenü wird zur Konzertbühne",
+            "tr": "Ana menü artık bir konser sahnesi",
+            "ko": "메인 메뉴가 콘서트 무대가 됐어요",
+            "ja": "メインメニューがライブ会場に"
+          },
+          "detail": {
+            "en": "Spotlights and a glowing floor; each bubble is a Miku with the page's prop, and she keeps its pose.",
+            "zh-Hans": "聚光灯和发光地板；每个气泡都是拿着页面道具的 Miku，打开后她保持那个姿势。",
+            "hi": "स्पॉटलाइट और चमकता फ़र्श; हर बबल में पेज की चीज़ लिए Miku है, और वह वही पोज़ रखती है।",
+            "es": "Focos y suelo brillante; cada burbuja es una Miku con el objeto de su página, y ella mantiene la pose.",
+            "ar": "أضواء وأرضية متوهجة؛ كل فقاعة Miku تحمل أداة صفحتها، وتحتفظ بوضعيتها.",
+            "fr": "Projecteurs et sol lumineux ; chaque bulle est une Miku avec l'objet de sa page, et elle garde la pose.",
+            "bn": "স্পটলাইট ও উজ্জ্বল মেঝে; প্রতিটি বাবলে পাতার জিনিস হাতে Miku, আর সে সেই ভঙ্গি রাখে।",
+            "pt-BR": "Holofotes e piso brilhante; cada bolha é uma Miku com o objeto da página, e ela mantém a pose.",
+            "ru": "Прожекторы и светящийся пол; в каждом пузыре Miku с предметом страницы, и она держит позу.",
+            "id": "Lampu sorot dan lantai bercahaya; tiap bubble Miku dengan properti halamannya, dan dia ikut posenya.",
+            "de": "Scheinwerfer und leuchtender Boden; jede Blase ist eine Miku mit dem Requisit der Seite, sie hält die Pose.",
+            "tr": "Spot ışıkları ve parlayan zemin; her balon sayfanın eşyasını tutan bir Miku, o pozu korur.",
+            "ko": "스포트라이트와 빛나는 바닥; 버블마다 페이지 소품을 든 Miku가 있고, 그 포즈를 유지해요.",
+            "ja": "スポットライトと光る床。各バブルはページの小道具を持つMikuで、開くとそのポーズのまま。"
+          }
+        },
+        {
+          "icon": "download",
+          "title": {
+            "en": "Miku catches your files",
+            "zh-Hans": "Miku 接住你的文件",
+            "hi": "Miku आपकी फ़ाइलें पकड़ती है",
+            "es": "Miku atrapa tus archivos",
+            "ar": "Miku تلتقط ملفاتك",
+            "fr": "Miku attrape vos fichiers",
+            "bn": "Miku আপনার ফাইল ধরে",
+            "pt-BR": "A Miku pega seus arquivos",
+            "ru": "Miku ловит ваши файлы",
+            "id": "Miku menangkap file kamu",
+            "de": "Miku fängt deine Dateien",
+            "tr": "Miku dosyalarını yakalar",
+            "ko": "Miku가 파일을 받아요",
+            "ja": "Mikuがファイルをキャッチ"
+          },
+          "detail": {
+            "en": "Drop files on the island: she holds each one while it copies, then shelves it on the deck's Shelf page.",
+            "zh-Hans": "把文件拖到灵动岛上：复制时她一直拿着，然后放到 Shelf 页面上。",
+            "hi": "फ़ाइलें आइलैंड पर छोड़ें: कॉपी होते समय वह उन्हें थामे रहती है, फिर Shelf पेज पर रख देती है।",
+            "es": "Suelta archivos en la isla: los sostiene mientras se copian y luego los deja en la página Shelf.",
+            "ar": "أفلت الملفات على الجزيرة: تمسك كل ملف أثناء نسخه، ثم تضعه في صفحة Shelf.",
+            "fr": "Déposez des fichiers sur l'île : elle les tient pendant la copie, puis les range sur la page Shelf.",
+            "bn": "আইল্যান্ডে ফাইল ছাড়ুন: কপি হওয়ার সময় সে ধরে রাখে, তারপর Shelf পাতায় রাখে।",
+            "pt-BR": "Solte arquivos na ilha: ela segura cada um durante a cópia e depois guarda na página Shelf.",
+            "ru": "Бросьте файлы на остров: она держит каждый, пока он копируется, и кладёт на страницу Shelf.",
+            "id": "Jatuhkan file ke pulau: dia memegangnya selama disalin, lalu menaruhnya di halaman Shelf.",
+            "de": "Dateien auf die Insel ziehen: Sie hält jede beim Kopieren und legt sie dann auf die Shelf-Seite.",
+            "tr": "Dosyaları adaya bırak: kopyalanırken her birini tutar, sonra Shelf sayfasına koyar.",
+            "ko": "아일랜드에 파일을 놓으면 복사되는 동안 들고 있다가 Shelf 페이지에 올려 둬요.",
+            "ja": "アイランドにドロップすると、コピー中は抱えて、終わるとShelfページに並べます。"
+          }
+        },
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Messages ring her headset",
+            "zh-Hans": "消息会让她的耳机响起",
+            "hi": "संदेश उसके हेडसेट में बजते हैं",
+            "es": "Los mensajes suenan en sus auriculares",
+            "ar": "الرسائل ترنّ في سماعتها",
+            "fr": "Les messages sonnent dans son casque",
+            "bn": "বার্তা তার হেডসেটে বাজে",
+            "pt-BR": "Mensagens tocam no fone dela",
+            "ru": "Сообщения звонят в её гарнитуру",
+            "id": "Pesan berbunyi di headset-nya",
+            "de": "Nachrichten klingeln in ihrem Headset",
+            "tr": "Mesajlar kulaklığında çalar",
+            "ko": "메시지가 오면 헤드셋이 울려요",
+            "ja": "メッセージでヘッドセットが鳴る"
+          },
+          "detail": {
+            "en": "A new message drops into her hands, and each notice shows the chat app's own mark.",
+            "zh-Hans": "新消息会落到她手里，每条通知都显示聊天应用自己的标志。",
+            "hi": "नया संदेश उसके हाथों में आता है, और हर सूचना चैट ऐप का अपना निशान दिखाती है।",
+            "es": "Un mensaje nuevo cae en sus manos y cada aviso muestra el logo de la app de chat.",
+            "ar": "تسقط الرسالة الجديدة في يديها، ويعرض كل إشعار شعار تطبيق الدردشة.",
+            "fr": "Un nouveau message tombe dans ses mains, et chaque avis montre le logo de l'app de chat.",
+            "bn": "নতুন বার্তা তার হাতে আসে, আর প্রতিটি নোটিশে চ্যাট অ্যাপের নিজের চিহ্ন দেখায়।",
+            "pt-BR": "Uma nova mensagem cai nas mãos dela, e cada aviso mostra a marca do app de chat.",
+            "ru": "Новое сообщение падает ей в руки, а каждое уведомление показывает значок мессенджера.",
+            "id": "Pesan baru jatuh ke tangannya, dan tiap notifikasi menampilkan logo aplikasi chatnya.",
+            "de": "Eine neue Nachricht fällt ihr in die Hände, jede Meldung zeigt das Logo der Chat-App.",
+            "tr": "Yeni mesaj ellerine düşer ve her bildirim sohbet uygulamasının kendi simgesini gösterir.",
+            "ko": "새 메시지가 그녀 손에 떨어지고, 알림마다 채팅 앱 로고가 보여요.",
+            "ja": "新着メッセージが手元に落ちてきて、通知にはチャットアプリのマークが付きます。"
+          }
+        }
+      ]
+    },
+    {
+      "version": "0.0.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Miku 0.0.1 is here",
+            "zh-Hans": "Miku 0.0.1 来了",
+            "hi": "Miku 0.0.1 आ गया",
+            "es": "Llega Miku 0.0.1",
+            "ar": "وصل Miku 0.0.1",
+            "fr": "Miku 0.0.1 est là",
+            "bn": "Miku 0.0.1 এসেছে",
+            "pt-BR": "Chegou o Miku 0.0.1",
+            "ru": "Miku 0.0.1 здесь",
+            "id": "Miku 0.0.1 hadir",
+            "de": "Miku 0.0.1 ist da",
+            "tr": "Miku 0.0.1 burada",
+            "ko": "Miku 0.0.1이 왔어요",
+            "ja": "Miku 0.0.1が登場"
+          },
+          "detail": {
+            "en": "The first release: Mochi sits at the top of your screen. Click the island to open it.",
+            "zh-Hans": "第一个版本：Mochi 坐在屏幕顶部。点击灵动岛即可打开。",
+            "hi": "पहला रिलीज़: Mochi आपकी स्क्रीन के ऊपर बैठा है। आइलैंड पर क्लिक करके इसे खोलें।",
+            "es": "La primera versión: Mochi se sienta en la parte superior de tu pantalla. Haz clic en la isla para abrirla.",
+            "ar": "الإصدار الأول: يجلس Mochi أعلى شاشتك. انقر على الجزيرة لفتحها.",
+            "fr": "Première version : Mochi s'installe en haut de votre écran. Cliquez sur l'île pour l'ouvrir.",
+            "bn": "প্রথম রিলিজ: Mochi আপনার স্ক্রিনের উপরে বসে। খুলতে আইল্যান্ডে ক্লিক করুন।",
+            "pt-BR": "A primeira versão: o Mochi fica no topo da sua tela. Clique na ilha para abrir.",
+            "ru": "Первый выпуск: Mochi сидит вверху вашего экрана. Нажмите на остров, чтобы открыть.",
+            "id": "Rilis pertama: Mochi duduk di atas layar kamu. Klik pulau untuk membukanya.",
+            "de": "Die erste Version: Mochi sitzt oben auf deinem Bildschirm. Klicke die Insel an, um sie zu öffnen.",
+            "tr": "İlk sürüm: Mochi ekranının tepesinde oturuyor. Açmak için adaya tıkla.",
+            "ko": "첫 번째 릴리스: Mochi가 화면 위에 앉아 있어요. 아일랜드를 클릭해 열어 보세요.",
+            "ja": "初リリース：Mochiが画面の上部に座っています。アイランドをクリックして開いてください。"
+          }
+        }
+      ]
+    }
+  ]
+}

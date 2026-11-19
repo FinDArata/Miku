@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Miku chibi — pose sheet</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 12px;
+        background: #f3f4f6;
+        font: 13px system-ui, sans-serif;
+        color: #333;
+      }
+      #grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      figure {
+        margin: 0;
+        padding: 6px;
+        background: #fff;
+        border-radius: 12px;
+        text-align: center;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="grid"></div>
+    <script type="module" src="/src/render/chibi.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Copy mockup</title>
+    <style>
+      html, body { margin: 0; min-height: 100%; background: #1b1b1f; color: #cfd4dc; font: 13px "Segoe UI", system-ui, sans-serif; }
+      main { display: grid; gap: 14px; justify-items: center; padding: 28px 16px; }
+      h1 { color: #9fe6e6; font-size: 14px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
+      p { margin: 0; max-width: 640px; text-align: center; color: #8fa3b8; line-height: 1.5; }
+      canvas { display: block; width: 800px; max-width: 100%; height: auto; }
+      .bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+      button { font: inherit; color: #cfeff0; background: #262a33; border: 1px solid #343b49; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+      button[aria-pressed="true"] { border-color: #39c5bb; color: #9fe6e6; }
+      #phase { font: 600 13px ui-monospace, monospace; color: #8b93a3; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Shelf: Miku while files copy</h1>
+      <p>In the deck, as in the app. She catches what you drop; while the copies are still running she keeps hold of them, a little Miku runs the copy bar, and each file flies to its tile the moment its copy is done.</p>
+      <canvas id="stage" aria-label="Miku catching dropped files and waiting for their copies on the Shelf page"></canvas>
+      <div id="phase">–</div>
+      <div class="bar" role="group" aria-label="What is dropped">
+        <button data-s="fast" aria-pressed="true">1 small file (instant)</button>
+        <button data-s="mixed">3 files, one slow</button>
+        <button data-s="big">1 big file (1.4 GB)</button>
+        <button id="replay">Replay</button>
+      </div>
+    </main>
+    <script type="module">
+      import { CHIBI_H, CHIBI_W, drawChibi } from "/src/mochi/chibi";
+      import { colorOf, tagOf } from "/src/core/shelf";
+
+      // The deck, as views/deck.ts lays it out: 500 × 280, a 30 px bar, Miku's
+      // 120 px column on the left, the card on the right.
+      const W = 500, H = 280;
+      const LEFT = { x: 0, y: 30, w: 120, h: 250 };
+      const CARD = { x: 128, y: 34, w: 362, h: 236, r: 14 };
+      const TILE = { w: 80, h: 70, gap: 6, top: 104 };
+      const PINK = "#E12885", TEAL = "#39C5BB";
+      const HOLD = [15, -70, -15, 70], REACH = [130, 25, -130, -25];
+
+      // Copy time of each file, seconds after the drop.
+      const SCENES = {
+        fast: [{ name: "rapport-q3.pdf", size: "240 KB", copy: 0.05 }],
+        mixed: [
+          { name: "poster-final.png", size: "1.4 MB", copy: 0.3 },
+          { name: "demo-take3.mp3", size: "48 MB", copy: 3.6 },
+          { name: "island.ts", size: "12 KB", copy: 0.2 },
+        ],
+        big: [{ name: "konser-miku.mp4", size: "1.4 GB", copy: 6.5 }],
+      };
+      const FALL = 0.42, STAGGER = 0.24, PUT_GAP = 0.1, PUT_FLY = 0.45, T_DROP = 1.2;
+
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const eOut = (k) => 1 - Math.pow(1 - k, 3);
+      const eIn = (k) => k * k * k;
+      const eBack = (k) => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+
+      const canvas = document.getElementById("stage");
+      const dpr = Math.max(2, window.devicePixelRatio || 1) * 1.6;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      const x = canvas.getContext("2d");
+      const phaseEl = document.getElementById("phase");
+
+      const q = new URLSearchParams(location.search);
+      const AT = q.has("at") ? Number(q.get("at")) : null;
+      let scene = SCENES[q.get("s")] ? q.get("s") : "fast";
+      let start = performance.now();
+      for (const b of document.querySelectorAll("button[data-s]")) {
+        b.setAttribute("aria-pressed", String(b.dataset.s === scene));
+        b.addEventListener("click", () => {
+          scene = b.dataset.s;
+          for (const o of document.querySelectorAll("button[data-s]")) o.setAttribute("aria-pressed", String(o === b));
+          start = performance.now();
+        });
+      }
+      document.getElementById("replay").addEventListener("click", () => (start = performance.now()));
+
+      /** When everything happens, for these files (t = seconds after the drop). */
+      function timeline(files) {
+        const caught = (files.length - 1) * STAGGER + FALL;
+        const ready = caught + 0.3;
+        // A file flies once she is ready AND its copy is done.
+        const flyAt = files.map((f, i) => Math.max(ready + i * PUT_GAP, f.copy));
+        const landAt = flyAt.map((t) => t + PUT_FLY);
+        const done = Math.max(...landAt) + 0.6;
+        return { caught, ready, flyAt, landAt, done, waits: flyAt.some((t, i) => t > ready + i * PUT_GAP + 0.05) };
+      }
+
+      // ── Drawing helpers ────────────────────────────────────────────────────
+      function fileIcon(cx, cy, w, h, name, rot = 0, alpha = 1) {
+        x.save(); x.globalAlpha *= alpha; x.translate(cx, cy); x.rotate(rot);
+        const fold = w * 0.32;
+        x.beginPath();
+        x.moveTo(-w / 2, -h / 2); x.lineTo(w / 2 - fold, -h / 2); x.lineTo(w / 2, -h / 2 + fold); x.lineTo(w / 2, h / 2); x.lineTo(-w / 2, h / 2); x.closePath();
+        x.fillStyle = "#F4F6F9"; x.fill();
+        x.fillStyle = "#C9D0DA"; x.beginPath(); x.moveTo(w / 2 - fold, -h / 2); x.lineTo(w / 2 - fold, -h / 2 + fold); x.lineTo(w / 2, -h / 2 + fold); x.closePath(); x.fill();
+        x.fillStyle = "#D5DBE3"; for (let i = 0; i < 2; i++) x.fillRect(-w / 2 + w * 0.16, -h / 2 + h * (0.34 + i * 0.13), w * 0.6, Math.max(1, h * 0.05));
+        x.fillStyle = colorOf(name); x.beginPath(); x.roundRect(-w / 2 - w * 0.08, h / 2 - h * 0.34, w * 0.78, h * 0.24, 2); x.fill();
+        const tag = tagOf(name);
+        if (h >= 18 && tag) { x.fillStyle = "#fff"; x.font = `700 ${Math.round(h * 0.16)}px "Segoe UI"`; x.textBaseline = "middle"; x.fillText(tag, -w / 2 + w * 0.02, h / 2 - h * 0.22); }
+        x.restore();
+      }
+      function fit(text, maxW) {
+        if (x.measureText(text).width <= maxW) return text;
+        let s = text; while (s.length > 2 && x.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+        return s + "…";
+      }
+      const slot = (i) => ({ x: CARD.x + 14 + i * (TILE.w + TILE.gap), y: TILE.top });
+
+      function deckChrome() {
+        x.fillStyle = "#0b1020"; x.fillRect(0, 0, W, H);
+        // tabs bar
+        x.fillStyle = "#0a0f1a"; x.beginPath(); x.roundRect(10, 6, 330, 20, 10); x.fill();
+        x.font = '600 10.5px "Segoe UI"'; let tx = 22;
+        for (const [n, on] of [["PC"], ["Music"], ["Focus"], ["Weather"], ["Meeting"], ["Agents"], ["Notif"], ["Shelf", 1]]) {
+          const w = x.measureText(n).width + 10;
+          if (on) { x.fillStyle = TEAL; x.beginPath(); x.roundRect(tx - 5, 8, w, 16, 8); x.fill(); }
+          x.fillStyle = on ? "#062a28" : "#8fa3b8"; x.fillText(n, tx, 20); tx += w + 1;
+        }
+        // card
+        x.fillStyle = "#0d1322"; x.strokeStyle = "#26324c"; x.lineWidth = 1;
+        x.beginPath(); x.roundRect(CARD.x, CARD.y, CARD.w, CARD.h, CARD.r); x.fill(); x.stroke();
+        // Miku's floor
+        const g = x.createRadialGradient(60, 268, 2, 60, 268, 50); g.addColorStop(0, "rgba(57,197,187,0.4)"); g.addColorStop(1, "rgba(57,197,187,0)");
+        x.fillStyle = g; x.beginPath(); x.ellipse(60, 268, 50, 8, 0, 0, Math.PI * 2); x.fill();
+      }
+
+      /** Miku in her column; `prop` draws in her design units (hands at 260, 380). */
+      const K = Math.min(LEFT.w / CHIBI_W, LEFT.h / CHIBI_H);
+      const MX = LEFT.x + (LEFT.w - CHIBI_W * K) / 2, MY = LEFT.y + LEFT.h - CHIBI_H * K;
+      const HANDS = { x: MX + 260 * K, y: MY + 374 * K };
+      function miku(clock, pose, o, prop, squash = 1, hop = 0) {
+        x.save(); x.translate(MX, MY); x.scale(K, K);
+        x.translate(260, 480 - hop); x.scale(2 - squash, squash); x.translate(-260, -480);
+        drawChibi(x, pose, clock, "classic", { noShadow: true, ...o });
+        prop?.(); x.restore();
+      }
+      function pile(names, sway, alpha = 1) {
+        names.forEach((n, i) => fileIcon(260 + ((i % 3) - 1) * 14 + sway * i * 0.4, 440 - 70 - i * 8, 115, 140, n, [0, -0.16, 0.14][i % 3] + sway * 0.01 * i, alpha));
+      }
+
+      // ── One frame ─────────────────────────────────────────────────────────
+      function frame(now) {
+        const clock = now / 1000;
+        const files = SCENES[scene];
+        const tl = timeline(files);
+        const cycle = T_DROP + tl.done + 1.5;
+        const T = AT ?? ((now - start) / 1000) % cycle;
+        const t = T - T_DROP; // seconds after the drop (negative while hovering)
+        x.setTransform(dpr, 0, 0, dpr, 0, 0);
+        deckChrome();
+        let phase;
+
+        // Header: the Shelf, and while copies run, how far along.
+        const copying = t >= 0 && files.some((f) => t < f.copy);
+        const landed = files.filter((f, i) => t >= tl.landAt[i]);
+        x.fillStyle = "#F2FBFA"; x.font = '700 14px "Segoe UI"'; x.fillText("Shelf", CARD.x + 14, CARD.y + 24);
+        x.font = '500 11.5px "Segoe UI"'; x.fillStyle = "#8fa3b8";
+        const meta = t < 0 ? "" : copying ? `Copying · ${files.filter((f) => t >= f.copy).length}/${files.length} done` : landed.length ? `${landed.length} file${landed.length > 1 ? "s" : ""}` : "";
+        x.fillText(meta, CARD.x + 58, CARD.y + 24);
+
+        if (t < 0) {
+          // Hovering: the card lights up and says where they go.
+          x.strokeStyle = "rgba(57,197,187,0.85)"; x.beginPath(); x.roundRect(CARD.x, CARD.y, CARD.w, CARD.h, CARD.r); x.stroke();
+          x.setLineDash([5, 4]); x.strokeStyle = "rgba(57,197,187,0.6)"; x.beginPath(); x.roundRect(CARD.x + 14, CARD.y + 40, CARD.w - 28, 46, 10); x.stroke(); x.setLineDash([]);
+          x.fillStyle = "#F2FBFA"; x.font = '700 14px "Segoe UI"'; x.fillText(files.length > 1 ? "Drop them here" : "Drop it here", CARD.x + 26, CARD.y + 60);
+          x.fillStyle = "rgba(159,230,230,0.75)"; x.font = '500 11.5px "Segoe UI"'; x.fillText(files.length > 1 ? "Miku will catch every one of them." : "Miku will catch it for you.", CARD.x + 26, CARD.y + 76);
+          miku(clock, "surprised", { arms: REACH, look: [10, -12], pitch: -0.45 });
+          phase = "hover — she reaches up";
+        } else {
+          // The copy bar, with a little Miku running it.
+          if (copying || (t < tl.done && tl.waits)) {
+            const total = files.reduce((s, f) => s + clamp(t / f.copy), 0) / files.length;
+            const bx = CARD.x + 14, bw = CARD.w - 28, by = CARD.y + 40;
+            // 100 %: everything copied — its own moment, not just a full bar.
+            const allAt = Math.max(...files.map((f) => f.copy));
+            const dk = t >= allAt ? clamp((t - allAt) / 0.9) : -1;
+            x.fillStyle = "#1a2236"; x.beginPath(); x.roundRect(bx, by, bw, 5, 2.5); x.fill();
+            const g = x.createLinearGradient(bx, 0, bx + bw, 0); g.addColorStop(0, TEAL); g.addColorStop(1, PINK);
+            x.save();
+            if (dk >= 0) { x.shadowColor = PINK; x.shadowBlur = 10 * (1 - dk) + 4; }
+            x.fillStyle = g; x.beginPath(); x.roundRect(bx, by, Math.max(5, bw * total), 5, 2.5); x.fill();
+            x.restore();
+            if (dk >= 0 && dk < 1) {
+              // a white shine sweeps the bar once
+              const sx = bx + bw * eOut(dk);
+              const sh = x.createLinearGradient(sx - 30, 0, sx + 6, 0);
+              sh.addColorStop(0, "rgba(255,255,255,0)"); sh.addColorStop(1, "rgba(255,255,255,0.9)");
+              x.save(); x.beginPath(); x.roundRect(bx, by, bw, 5, 2.5); x.clip(); x.fillStyle = sh; x.fillRect(sx - 30, by, 36, 5); x.restore();
+              burst(bx + bw, by + 2, dk);
+            }
+            // runner: a tiny Miku bobbing along the fill, a file in her arms; at 100 % she jumps for joy
+            const rk = 0.06, rx = bx + bw * total;
+            const jump = dk >= 0 ? Math.abs(Math.sin(clamp(dk * 2) * Math.PI)) * 10 : Math.abs(Math.sin(clock * 12)) * 2;
+            const ry = by - 1 - jump;
+            x.save(); x.translate(rx - 260 * rk, ry - 480 * rk); x.scale(rk, rk);
+            if (dk >= 0) {
+              drawChibi(x, "finished", clock, "classic", { noShadow: true });
+              fileIcon(260, 120, 150, 180, files[files.length - 1].name, Math.sin(clock * 8) * 0.15);
+            } else {
+              drawChibi(x, "happy", clock, "classic", { noShadow: true, arms: HOLD });
+              fileIcon(260, 370, 150, 180, files.find((f) => t < f.copy)?.name ?? files[0].name);
+            }
+            x.restore();
+            x.textAlign = "right";
+            if (dk >= 0) {
+              const pop = clamp(eBack(clamp(dk / 0.35)), 0, 1.2);
+              x.save(); x.translate(bx + bw, by + 18); x.scale(pop, pop);
+              x.fillStyle = TEAL; x.font = '800 11px "Segoe UI"'; x.fillText("✓ Done!", 0, 0); x.restore();
+            } else {
+              x.fillStyle = "#8fa3b8"; x.font = '600 10px ui-monospace, monospace'; x.fillText(`${Math.round(total * 100)}%`, bx + bw, by + 18);
+            }
+            x.textAlign = "left";
+          }
+
+          // Tiles: a ghost while its copy runs, the real tile once its file lands.
+          files.forEach((f, i) => {
+            const s = slot(i);
+            const land = tl.landAt[i];
+            if (t >= land) {
+              const k = clamp(eBack(clamp((t - land) / 0.25)), 0, 1.2);
+              x.save(); x.translate(s.x + TILE.w / 2, s.y + TILE.h / 2); x.scale(k, k); x.translate(-TILE.w / 2, -TILE.h / 2);
+              x.fillStyle = "rgba(57,197,187,0.06)"; x.strokeStyle = "rgba(57,197,187,0.2)";
+              x.beginPath(); x.roundRect(0, 0, TILE.w, TILE.h, 10); x.fill(); x.stroke();
+              fileIcon(TILE.w / 2, 22, 22, 28, f.name);
+              x.fillStyle = "#F2FBFA"; x.font = '500 10px "Segoe UI"'; x.textAlign = "center"; x.fillText(fit(f.name, TILE.w - 8), TILE.w / 2, 50);
+              x.fillStyle = "#8fa3b8"; x.font = '500 9px ui-monospace, monospace'; x.fillText(`${f.size} · 1m`, TILE.w / 2, 62); x.textAlign = "left";
+              x.restore();
+            } else if (t >= tl.ready && t < tl.flyAt[i]) {
+              // the ghost: dashed, the icon faded, its own copy bar
+              const p = clamp(t / f.copy);
+              x.save(); x.setLineDash([4, 3]); x.strokeStyle = `rgba(57,197,187,${0.35 + 0.25 * Math.sin(clock * 4)})`;
+              x.beginPath(); x.roundRect(s.x, s.y, TILE.w, TILE.h, 10); x.stroke(); x.setLineDash([]);
+              fileIcon(s.x + TILE.w / 2, s.y + 22, 22, 28, f.name, 0, 0.35);
+              x.fillStyle = "#8fa3b8"; x.font = '500 10px "Segoe UI"'; x.textAlign = "center"; x.fillText(fit(f.name, TILE.w - 8), s.x + TILE.w / 2, s.y + 50);
+              if (p >= 1) {
+                // copied, about to fly: the tile lights up with a check
+                x.strokeStyle = TEAL; x.lineWidth = 1.5; x.beginPath(); x.roundRect(s.x, s.y, TILE.w, TILE.h, 10); x.stroke();
+                x.fillStyle = "rgba(57,197,187,0.12)"; x.fill();
+                x.fillStyle = TEAL; x.beginPath(); x.arc(s.x + TILE.w / 2, s.y + 62, 6, 0, Math.PI * 2); x.fill();
+                x.strokeStyle = "#06302d"; x.lineWidth = 1.8; x.lineCap = "round"; x.beginPath();
+                x.moveTo(s.x + TILE.w / 2 - 3, s.y + 62); x.lineTo(s.x + TILE.w / 2 - 0.5, s.y + 64.5); x.lineTo(s.x + TILE.w / 2 + 3.5, s.y + 59.5); x.stroke();
+              } else {
+                x.fillStyle = "#1a2236"; x.beginPath(); x.roundRect(s.x + 10, s.y + 57, TILE.w - 20, 4, 2); x.fill();
+                x.fillStyle = TEAL; x.beginPath(); x.roundRect(s.x + 10, s.y + 57, Math.max(4, (TILE.w - 20) * p), 4, 2); x.fill();
+                x.fillStyle = "#9fe6e6"; x.font = '600 9px ui-monospace, monospace'; x.fillText(`${Math.round(p * 100)}%`, s.x + TILE.w / 2, s.y + 68);
+              }
+              x.textAlign = "left"; x.restore();
+            }
+          });
+
+          // Miku: catching, then holding what is still copying, then done.
+          let caught = 0, squash = 1, lastLand = -1;
+          files.forEach((f, i) => {
+            const land = i * STAGGER + FALL;
+            if (t < land) return;
+            caught++; lastLand = land;
+            squash -= Math.sin(clamp((t - land) / 0.22) * Math.PI) * 0.06;
+          });
+          const held = files.filter((f, i) => i < caught && t < tl.flyAt[i]).map((f) => f.name);
+          const heavy = files.some((f) => f.copy > 3 && t < f.copy);
+          if (t < tl.caught) {
+            const hop = t < FALL ? Math.sin(clamp((t - (FALL - 0.3)) / 0.3) * Math.PI) * 30 : 0;
+            miku(clock, "surprised", { arms: caught ? HOLD : REACH, eyes: caught && t - lastLand < 0.28 ? "happy" : undefined, look: [0, caught ? -6 : -14], pitch: caught ? -0.2 : -0.5, skipFx: new Set(["lines"]) }, caught ? () => pile(held, 0) : null, squash, hop);
+            phase = `catching ${caught}/${files.length}`;
+          } else if (held.length) {
+            // Holding on while the copies run: busy, a little spinner over her head.
+            const sway = heavy ? Math.sin(clock * 5) * 3 : Math.sin(clock * 2) * 1.2;
+            miku(clock, heavy ? "error" : "idle", { arms: HOLD, eyes: heavy ? "wide" : "open", look: [12, -16], pitch: -0.25, skipFx: heavy ? undefined : new Set() }, () => pile(held, sway));
+            spinner(HANDS.x, MY + 30, clock);
+            phase = heavy ? "copying — a big one, she holds on" : "copying — holding on";
+          } else {
+            miku(clock, "love", { arms: t < tl.done - 0.6 ? HOLD : undefined, eyes: "happy", skipFx: new Set(["hearts"]) });
+            phase = "on the shelf";
+          }
+
+          // In the air: falling into her hands, and flying to the tiles.
+          files.forEach((f, i) => {
+            const s0 = i * STAGGER;
+            if (t >= s0 && t < s0 + FALL) {
+              const e = eIn((t - s0) / FALL);
+              fileIcon(lerp(CARD.x + CARD.w / 2, HANDS.x, e), lerp(CARD.y, HANDS.y, e), 24, 30, f.name, lerp(-0.1, 0.5, e));
+            }
+            const e = (t - tl.flyAt[i]) / PUT_FLY;
+            if (e >= 0 && e < 1) {
+              const k = eOut(e), s = slot(i);
+              fileIcon(lerp(HANDS.x, s.x + TILE.w / 2, k), lerp(HANDS.y, s.y + 22, k) - Math.sin(e * Math.PI) * 40, lerp(24, 22, k), lerp(30, 28, k), f.name, (1 - k) * 0.6);
+            }
+            const kk = (t - (i * STAGGER + FALL)) / 0.6;
+            if (kk >= 0 && kk < 1) plusOne(HANDS.x + 20, HANDS.y - 26 - kk * 18, kk);
+          });
+        }
+        phaseEl.textContent = `t = ${T.toFixed(2)} s · ${phase}`;
+        requestAnimationFrame(frame);
+      }
+
+      /** Sparks bursting out where the bar ends, at 100 %. */
+      function burst(cx, cy, k) {
+        x.save(); x.globalAlpha = 1 - k; x.lineCap = "round"; x.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2, r0 = 3 + k * 8, r1 = 7 + k * 16;
+          x.strokeStyle = i % 2 ? PINK : "#F5C542";
+          x.beginPath(); x.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); x.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); x.stroke();
+        }
+        x.restore();
+      }
+
+      function spinner(cx, cy, clock) {
+        for (let i = 0; i < 3; i++) {
+          const a = clock * 5 + (i * Math.PI * 2) / 3;
+          x.fillStyle = i ? TEAL : PINK; x.globalAlpha = 0.9;
+          x.beginPath(); x.arc(cx + Math.cos(a) * 7, cy + Math.sin(a) * 3, 2.2, 0, Math.PI * 2); x.fill();
+        }
+        x.globalAlpha = 1;
+      }
+      function plusOne(px, py, k) {
+        x.save(); x.globalAlpha = k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
+        x.font = '800 12px "Segoe UI"'; x.textAlign = "center"; x.lineWidth = 3; x.strokeStyle = "#0A0F11"; x.strokeText("+1", px, py); x.fillStyle = PINK; x.fillText("+1", px, py); x.restore();
+      }
+
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

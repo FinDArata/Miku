@@ -1,0 +1,664 @@
+// Thin wrapper over the Tauri commands/events. Every call is a no-op when the
+// page is opened in a plain browser, so the island can be iterated on with
+// `npm run dev` alone.
+
+import { invoke } from "@tauri-apps/api/core";
+import { emitTo, listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import type { Settings } from "./state";
+import type { RecapHistory, RecapPrefs } from "../recap/summary";
+import type { SpotifyState } from "./spotify";
+import type { UpdateStatus } from "./update";
+import type { WaIslandView, WaSettingsView, WaTestResult } from "./whatsapp";
+
+export const IS_TAURI =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
+  if (!IS_TAURI) return null;
+  try {
+    return await invoke<T>(cmd, args);
+  } catch (err) {
+    console.error(`[miku] ${cmd} failed`, err);
+    return null;
+  }
+}
+
+export interface BootInfo {
+  settings: Settings;
+  /** Logical screen rect of the monitor the island lives on. */
+  screen: { x: number; y: number; width: number; height: number; scale: number };
+  version: string;
+  hookPath: string;
+  /** False where the OS has no global cursor (Wayland): see Island.followPageCursor. */
+  cursorPoll: boolean;
+}
+
+export const Bridge = {
+  boot: () => call<BootInfo>("boot"),
+  /** The system's languages as the webview sees them, for Rust's own texts (i18n.rs). */
+  setSystemLanguages: (languages: string[]) => call<void>("set_system_languages", { languages }),
+
+  saveSettings: (settings: Settings) => call<void>("save_settings", { settings }),
+
+  /** Shrink the window down to the invisible wake strip (hidden) or back to full. */
+  /** Folds the window to `width`×`height` (the closed island) or grows it back to the panel. */
+  setCollapsed: (collapsed: boolean, width?: number, height?: number) =>
+    call<void>("set_collapsed", { collapsed, width: width ?? null, height: height ?? null }),
+
+  /**
+   * Pushes the island shape in window coordinates. Rust flips click-through from
+   * its own cursor poll, so the flag is never a frame behind a click.
+   */
+  setIslandRect: (x: number, y: number, width: number, height: number) =>
+    call<void>("set_island_rect", { x, y, width, height }),
+
+  /** Give the window keyboard focus (chat field) and take it away again. */
+  focusWindow: (focused: boolean) => call<void>("focus_window", { focused }),
+
+  reposition: () => call<void>("reposition"),
+  fitZoom: (dpr: number) => call<boolean>("fit_zoom", { dpr }),
+
+  /** Displays the island can be pinned to: `key` is what `settings.screen` stores. */
+  listMonitors: () => call<{ key: string; label: string }[]>("list_monitors"),
+
+  openUrl: (url: string) => call<void>("open_url", { url }),
+  /** LINE or Discord, from the island's message cards (lib.rs open_chat_app);
+   *  `target` is where the app itself said the toast leads, when it said. */
+  openChatApp: (app: "line" | "discord", target?: string | null) => call<void>("open_chat_app", { app, target }),
+  /** Opens a GitLab link only when it belongs to the configured instance. */
+  openGitLabUrl: (url: string) => call<void>("open_gitlab_url", { url }),
+  /** Opens the configured Gitea instance without exposing its URL to the page. */
+  openGitea: () => call<void>("open_gitea"),
+  /** Opens a Gitea link only if it belongs to the configured instance. */
+  openGiteaUrl: (url: string) => call<void>("open_gitea_url", { url }),
+
+  /** Which of these sounds have a file of the user's own in the sounds folder. */
+  customSounds: (names: readonly string[]) => call<string[]>("custom_sounds", { names }),
+  /** The user's file for one sound, as raw bytes. */
+  customSound: (name: string) => call<ArrayBuffer>("custom_sound", { name }),
+  revealSoundsFolder: () => call<void>("reveal_sounds_folder"),
+  /** Keeps a file the user picked as `<name>.<ext>` in the sounds folder; the error, if any. */
+  saveCustomSound: async (name: string, ext: string, bytes: ArrayBuffer): Promise<string | null> => {
+    if (!IS_TAURI) return null;
+    try {
+      // The bytes go as the raw body: an 8 MB file as a JSON array would be ~30 MB.
+      await invoke("save_custom_sound", bytes, { headers: { name, ext } });
+      return null;
+    } catch (err) {
+      return String(err);
+    }
+  },
+  /** Tells the island to read the sounds folder again ("sounds-changed"). */
+  reloadSounds: () => call<void>("reload_sounds"),
+
+  /** "Open terminal" → opens the folder in VS Code when `code` is on PATH. */
+  openInVSCode: (path: string | null) => call<boolean>("open_in_vscode", { path }),
+
+  /**
+   * "Open terminal": the window the session runs in when Rust found it
+   * (Windows; Linux on X11 and KDE Plasma), else the folder in VS Code.
+   */
+  openSession: (sessionId: string | null, path: string | null) =>
+    call<boolean>("open_session", { sessionId, path }),
+
+  /** The Claude desktop app, for the Claude Desktop pill (Windows only). */
+  openClaudeDesktop: () => call<boolean>("open_claude_desktop"),
+
+  /** The diff card's ↗: an existing file, in VS Code; never launched by its type. */
+  openFileInVSCode: (path: string) => call<boolean>("open_file_in_vscode", { path }),
+
+  quit: () => call<void>("quit_app"),
+
+  openSettingsWindow: () => call<void>("open_settings_window"),
+
+  /** The hub window, opened on a page — the wardrobe lives there (hub/pages/wardrobe.ts). */
+  openSettingsOn: (page: string) => call<void>("open_settings_window", { page }),
+
+  /** Says this page is alive (the content watch, island.rs): a page gone silent is rebuilt. */
+  islandHeartbeat: () => call<void>("island_heartbeat"),
+  /** The same, for the hub's page. */
+  hubHeartbeat: () => call<void>("hub_heartbeat"),
+
+  /**
+   * A skin being tried on in the wardrobe: every window repaints with it until
+   * a click keeps it (or `null` puts the saved one back). Nothing is written.
+   */
+  emitSkinPreview: (variant: string | null) => call<void>("emit_skin_preview", { variant }),
+
+  // ── Miku window's character stage (src-tauri/src/stage.rs) ────────────────
+  /** What the agents are up to, as the stage's four states name them. */
+  hubStageState: () => call<string>("hub_stage_state"),
+
+  /** Writes to %LOCALAPPDATA%\Miku\miku.log, next to the Rust lines. */
+  log: (message: string) => call<void>("log_line", { message }),
+
+  // ── Claude Code hooks ─────────────────────────────────────────────────────
+  hooksStatus: () => call<HookStatus>("hooks_status"),
+  /** Pill ID → whether that agent's hooks reach Miku (read-only, Mac #183). */
+  agentHooksStatus: () => call<Record<string, boolean>>("agent_hooks_status"),
+  /** Diff to show before anything is written. `install: false` previews removal. */
+  hooksPreview: (install: boolean) => callOrThrow<HookPreview>("hooks_preview", { install }),
+  /**
+   * Writes ~/.claude/settings.json — only ever after an explicit click, and only
+   * when the file still matches the preview the user looked at.
+   */
+  hooksApply: (install: boolean, fingerprint: string) =>
+    callOrThrow<string>("hooks_apply", { install, fingerprint }),
+
+  // ── Other agents (Gemini CLI, Codex, Cursor…) ─────────────────────────────
+  agentHooksList: () => call<AgentHookStatus[]>("agent_hooks_list"),
+  /** Diff to show before anything is written. `install: false` previews removal. */
+  agentHooksPreview: (agent: string, install: boolean) =>
+    callOrThrow<AgentHookPlan>("agent_hooks_preview", { agent, install }),
+  /**
+   * Writes the agent's config — only ever after an explicit click, and only when
+   * it still matches the preview the user looked at. Returns the backups taken.
+   */
+  agentHooksApply: (agent: string, install: boolean, fingerprint: string) =>
+    callOrThrow<string>("agent_hooks_apply", { agent, install, fingerprint }),
+  // ── Plan usage: the status line relay, installed apart from the hooks ──────
+  /** Diff of the status line change. `install: false` previews taking the relay out. */
+  statusLinePreview: (install: boolean) => callOrThrow<HookPreview>("status_line_preview", { install }),
+  /** Same rules as hooksApply: an explicit click, and only for the diff that was shown. */
+  statusLineApply: (install: boolean, fingerprint: string) =>
+    callOrThrow<string>("status_line_apply", { install, fingerprint }),
+  /**
+   * Asks the Codex CLI (`codex app-server`) for its plan limits, as Codex's
+   * /status does. The raw `account/rateLimits/read` result, or null when Codex
+   * is missing, not signed in or slow (15 s).
+   */
+  codexPlanUsage: () => call<unknown>("codex_plan_usage"),
+
+  approvalDecision: (requestId: string, decision: "allow" | "deny") =>
+    call<void>("approval_decision", { requestId, decision }),
+  /** "The card is up" — until this lands the relay only waits a moment. */
+  approvalAck: (requestId: string) => call<void>("approval_ack", { requestId }),
+  /** Answers a question Claude Code asked: question text → chosen label. */
+  approvalAnswer: (requestId: string, answers: Record<string, string | string[]>) =>
+    call<void>("approval_answer", { requestId, answers }),
+
+  /** "Nobody can act on this" — Claude Code asks in the terminal right away. */
+  approvalDecline: (requestId: string) => call<void>("approval_decline", { requestId }),
+
+  // ── Chat, files, secrets ──────────────────────────────────────────────────
+  /** One chat turn. The API key and any file bytes never leave Rust. */
+  chatSend: (query: string, context: ChatContext | null, mail = false) =>
+    callOrThrow<{ text: string }>("chat_send", { query, context, mail }),
+  chatReset: () => call<void>("chat_reset"),
+  /**
+   * The models a provider offers, for the picker in the chat view. Rust asks
+   * the provider only when it has a key (or a server address).
+   */
+  chatModels: (provider: string) => callOrThrow<ModelInfo[]>("chat_models", { provider }),
+  claudeApiModels: () => callOrThrow<ModelInfo[]>("claude_api_models"),
+  /** Settings → Local models → Connect: does the server answer, and with which models? */
+  /** The custom server's key, bound to the address it is entered for. */
+  localSetKey: (url: string, key: string) => call<void>("local_set_key", { url, key }),
+
+  localConnect: (provider: "ollama" | "lmstudio" | "custom", url: string) =>
+    callOrThrow<LocalServer>("local_connect", { provider, url }),
+  /** Copies a dropped file into the inbox. */
+  ingestFile: (path: string) => callOrThrow<DroppedFile>("ingest_file", { path }),
+  /** The shelf (files.rs): what Miku caught, by name only — never a path from the page. */
+  shelfList: () => call<ShelfFile[]>("shelf_list"),
+  shelfRemove: (name: string) => call<void>("shelf_remove", { name }),
+  shelfClear: () => call<void>("shelf_clear"),
+  shelfOpen: (name: string) => call<void>("shelf_open", { name }),
+  /** One file selected in its folder, or (no name) the shelf's folder. */
+  shelfReveal: (name?: string) => call<void>("shelf_reveal", { name: name ?? null }),
+  /** Drags files out of the island; false where the platform cannot (Linux, for now). */
+  shelfDrag: (names: string[]) => call<boolean>("shelf_drag", { names }),
+  /** Only ever tells you whether a key exists — never its value. */
+  secretPresent: (key: string) => call<boolean>("secret_present", { key }),
+  /** Whether Claude can answer: the API key, or else the user's own Claude Code. */
+  claudeReady: () => call<boolean>("claude_ready"),
+  /** Settings → Chat → Your AI subscriptions: each switch and whether its tool is installed. */
+  subscriptionStatus: () => call<SubscriptionStatus[]>("subscription_status"),
+  /** Moves a switch; returns the rows as they are now. */
+  subscriptionSet: (provider: string, on: boolean) =>
+    call<SubscriptionStatus[]>("subscription_set", { provider, on }),
+  /** Whether a provider can answer with this key: Claude Code stands in for a missing Anthropic one. */
+  keyReady: (key: string) =>
+    key === "anthropic-api-key" ? call<boolean>("claude_ready") : call<boolean>("secret_present", { key }),
+  secretSet: (key: string, value: string) => callOrThrow<void>("secret_set", { key, value }),
+  secretClear: (key: string) => callOrThrow<void>("secret_clear", { key }),
+
+  // ── Integrations ──────────────────────────────────────────────────────────
+  refreshIntegration: (id: string) => call<void>("refresh_integration", { id }),
+  /** The GitHub card is on screen: refetch that part if it is stale. */
+  githubRefresh: (section: "pulse" | "activity") => call<void>("github_refresh", { section }),
+  /** Opens the configured n8n instance in the browser. */
+  openN8n: () => call<void>("open_n8n"),
+
+  /** Tray → Pause. Stops the integration pollers, not just the island. */
+  setPaused: (paused: boolean) => call<void>("set_paused", { paused }),
+
+  // ── Global shortcuts ──────────────────────────────────────────────────────
+  /** How each global shortcut went when Rust last registered them. */
+  shortcutsStatus: () => call<ShortcutsReport>("shortcuts_status"),
+  /** Lets go of every global shortcut while Settings records a new one. */
+  shortcutsSuspend: (suspended: boolean) => call<void>("shortcuts_suspend", { suspended }),
+
+  // ── Weekly recap ──────────────────────────────────────────────────────────
+  /** Turns and decisions from `since` (Unix seconds) on, plus the recap prefs. */
+  recapHistory: (since: number) => call<RecapHistory>("recap_history", { since: Math.floor(since) }),
+  recapPrefs: () => call<RecapPrefs>("recap_prefs"),
+  recapSetEnabled: (enabled: boolean) => call<void>("recap_set_enabled", { enabled }),
+  recapSetHideProjects: (hide: boolean) => call<void>("recap_set_hide_projects", { hide }),
+  /** `week` is the Monday (YYYY-MM-DD) the recap opened on its own for. */
+  recapMarkShown: (week: string) => call<void>("recap_mark_shown", { week }),
+  recapClear: () => call<void>("recap_clear"),
+  /** Writes the PNG (a data URL) into Pictures or Downloads; returns its path. */
+  recapSavePng: (data: string, week: string) => callOrThrow<string>("recap_save_png", { data, week }),
+  /** Opens the folder of the image saved last. */
+  recapRevealSaved: () => call<void>("recap_reveal_saved"),
+
+  // ── Mochi on the desktop (src-tauri/src/desktop.rs) ───────────────────────
+  desktopInfo: () => call<DesktopInfo>("desktop_mochi_info"),
+  /** Dragged out of the island: (x, y) is the pointer in island-window coordinates. */
+  desktopPickUp: (x: number, y: number) => call<boolean>("desktop_mochi_pick_up", { x, y }),
+  /** Linux: the pointer moved during that drag (Windows carries him from Rust). */
+  desktopCarry: (x: number, y: number) => call<void>("desktop_mochi_carry", { x, y }),
+  desktopCarryEnd: (x: number, y: number) => call<void>("desktop_mochi_carry_end", { x, y }),
+  /** A drag started on the desktop Mochi; resolves to his top-left corner. */
+  desktopDragBegin: () => call<[number, number] | null>("desktop_mochi_drag_begin"),
+  /** X11: top-left corner, physical pixels. */
+  desktopDragMove: (x: number, y: number) => call<void>("desktop_mochi_drag_move", { x, y }),
+  desktopDragEnd: (x: number, y: number) => call<void>("desktop_mochi_drag_end", { x, y }),
+  /** From the island to his spot. False: no spot on any connected display.
+   *  `anywhere`: the first-visit corner then, rather than staying home. */
+  desktopFlyOut: (anywhere = false) => call<boolean>("desktop_mochi_fly_out", { anywhere }),
+  /** To the island, then hidden. `forget`: he lives in the island again. */
+  desktopFlyHome: (forget: boolean) => call<boolean>("desktop_mochi_fly_home", { forget }),
+  /** Asleep, the cursor poll stops. */
+  desktopSetAsleep: (asleep: boolean) => call<void>("desktop_mochi_set_asleep", { asleep }),
+
+  // ── Spotify (src-tauri/src/spotify.rs) ────────────────────────────────────
+  /** Reads the player again (the card came on screen) and reports it. */
+  spotifyRefresh: () => call<SpotifyState | null>("spotify_refresh"),
+  /** True when Spotify took it. `value`: seconds for seek, 0/1 for shuffle and repeat, 0…100 for volume. */
+  spotifyControl: (action: SpotifyAction, value?: number) =>
+    call<boolean>("spotify_control", { action, value: value ?? null }),
+  /** Brings Spotify forward or starts it; without it, its download page. */
+  spotifyOpen: () => call<boolean>("spotify_open"),
+  /** Whether there is a Spotify to launch (Settings). */
+  spotifyInstalled: () => call<boolean>("spotify_installed"),
+  /** The system-audio watch: on while a dance is welcome and music plays
+   * (src-tauri/src/music.rs) — `music-bands` events follow until it is off. */
+  setMusicWatch: (on: boolean) => call<void>("music_watch", { on }),
+  /** The tray wears the agents' state (tray.rs): at work teal, an ask amber,
+   * trouble red, idle herself. Null = idle. */
+  trayState: (state: string | null) => call<void>("tray_state_hint", { state }),
+  /** The per-tool approval choices moved (Settings → Agents → Approvals, or
+   * the card's Always button): saved, both windows told. */
+  approvalModesSet: (modes: Record<string, "ask" | "always">) =>
+    call<void>("approval_modes_set", { modes }),
+
+  // ── Floating lyrics (src-tauri/src/lyrics.rs) ─────────────────────────────
+  /** Settings' switch: shows or hides the overlay, and remembers the choice. */
+  lyricsSetVisible: (visible: boolean) => call<void>("lyrics_set_visible", { visible }),
+  lyricsSetPlacement: (placement: "island" | "floating") => call<void>("lyrics_set_placement", { placement }),
+  /** Shows the card for a song starting — leaves the switch in Settings alone. */
+  lyricsAutoShow: () => call<void>("lyrics_auto_show"),
+  /** Hides the card because the music stopped — leaves the switch alone. */
+  lyricsAutoHide: () => call<void>("lyrics_auto_hide"),
+  /** Resizes the overlay's window, keeping its top-left corner. */
+  lyricsResize: (width: number, height: number) => call<void>("lyrics_resize", { width, height }),
+  /** Resizes the window for a moment (the right-click menu), saving nothing. */
+  lyricsWindowSize: (width: number, height: number) => call<void>("lyrics_window_size", { width, height }),
+  /** Changes only the card's look, from its own right-click menu. Anything left
+   *  null keeps its value. */
+  lyricsSetLook: (look: {
+    opacity?: number;
+    fontSize?: number;
+    textColor?: string;
+    background?: string;
+    width?: number;
+    height?: number;
+    locked?: boolean;
+    clickThrough?: boolean;
+    romanize?: boolean;
+    showMiku?: boolean;
+    showCover?: boolean;
+    transparent?: boolean;
+  }) => call<void>("lyrics_set_look", { ...look }),
+  /** Whether the overlay is on, for the page's first frame. */
+  lyricsVisible: () => call<boolean>("lyrics_visible"),
+  /** The overlay's two preferences, for a window that has just opened. */
+  lyricsPrefs: () => call<LyricsPrefs>("lyrics_prefs"),
+  /** A track's words from LRCLIB. `null`: none of it, or nobody answered. */
+  // ── The widget deck (src-tauri/src/widgets.rs) ──────────────────────────────
+  /** The machine now, for the deck's PC page. */
+  widgetSystem: () => call<SystemSnapshot>("widget_system"),
+  /** The weather for a city the user typed (also remembered as theirs); null when not found. */
+  widgetWeather: (city: string) => call<WeatherNow | null>("widget_weather", { city }),
+  lyricsFetch: (artist: string, title: string, album: string, duration: number) =>
+    call<LyricsAnswer | null>("lyrics_fetch", { artist, title, album, duration }),
+
+  // ── WhatsApp (src-tauri/src/whatsapp) ─────────────────────────────────────
+  /** The island's copy, asked once at start (then the "whatsapp" event). Island only. */
+  whatsappIsland: () => call<WaIslandView>("whatsapp_island"),
+  /** A conversation opened in the card: its latest messages, the receipt if Settings says so. */
+  whatsappOpen: (chat: string) => call<void>("whatsapp_open", { chat }),
+  whatsappClose: (chat: string) => call<void>("whatsapp_close", { chat }),
+  /** Enter or the send button only. True once the gateway took it. */
+  whatsappSend: (chat: string, text: string) => call<boolean>("whatsapp_send", { chat, text }),
+  /** A chat id, or (Settings) a phone number. */
+  whatsappIgnore: (chat: string) => call<void>("whatsapp_ignore", { chat }),
+  whatsappUnignore: (chat: string) => call<void>("whatsapp_unignore", { chat }),
+  /** Settings only, from here down. */
+  whatsappSettings: () => call<WaSettingsView>("whatsapp_settings"),
+  whatsappSetOptions: (enabled: boolean, muteGroups: boolean, markReadOnOpen: boolean) =>
+    callOrThrow<void>("whatsapp_set_options", { enabled, muteGroups, markReadOnOpen }),
+  /** `credential`: null keeps the stored one, "" removes it. */
+  whatsappSaveGateway: (g: {
+    gateway: "gowa" | "openwa"; url: string; credential: string | null; port: number; autoStart: boolean; gowaPath: string;
+  }) => callOrThrow<void>("whatsapp_save_gateway", g),
+  whatsappTest: () => call<WaTestResult>("whatsapp_test"),
+  /** "Install WhatsApp" / "Update": GOWA from its GitHub releases, on this click only. */
+  whatsappInstall: () => call<void>("whatsapp_install"),
+
+  // ── New versions (src-tauri/src/update.rs) ────────────────────────────────
+  updateStatus: () => call<UpdateStatus>("update_status"),
+  /** The island's question or Settings' toggle: may Miku look at GitHub on its own? */
+  updateSetConsent: (allowed: boolean) => call<void>("update_set_consent", { allowed }),
+  /** "Check now": one look at GitHub, the toggle on or off. */
+  updateCheck: () => call<UpdateStatus>("update_check"),
+  /** The island opened the card Rust offered ("ask" or "announce"). */
+  updateShown: (kind: "ask" | "announce") => call<void>("update_shown", { kind }),
+  /** Settings → Install X: opens the island's update card. */
+  updateShow: () => call<void>("update_show"),
+  updateLater: () => call<void>("update_later"),
+  /** Blue Mochi in the tray while a new version waits (tray.rs). */
+  trayUpdateHint: (on: boolean) => call<void>("tray_update_hint", { on }),
+  updateDismiss: () => call<void>("update_dismiss"),
+  /** "Update now" (Windows): download, check the SHA-256, run the installer, quit. */
+  updateInstall: () => call<void>("update_install"),
+  /** The release's page on github.com. */
+  updateOpenPage: () => call<void>("update_open_page"),
+};
+
+export type SpotifyAction = "playPause" | "next" | "previous" | "seek" | "shuffle" | "repeat" | "volume";
+
+export type ShortcutStatus =
+  | "active" | "off" | "inUse" | "duplicate" | "invalid"
+  | "typesCharacter" | "unsupported" | "notPorted"
+  /** Wayland: handed to the desktop's portal, no answer yet / left out by it. */
+  | "pending" | "refused";
+
+export interface ShortcutsReport {
+  /** `trigger`: on Wayland, the keys the desktop says run it, in its words. */
+  actions: { id: string; status: ShortcutStatus; typed?: string; trigger?: string }[];
+  /** "wayland" or "no-display" when no key grab can be made. */
+  blocked: string | null;
+  /** `<executable> --shortcut`: append an action id for a desktop shortcut. */
+  command: string;
+  /** Wayland: the shortcuts went to the desktop's GlobalShortcuts portal. */
+  portal?: "pending" | "active" | null;
+}
+
+/** How the desktop Mochi's window works here (platform::DesktopMode). */
+export type DesktopMode = "poll" | "window" | "layer" | "off";
+
+export interface DesktopInfo {
+  mode: DesktopMode;
+  /** He was on the desktop when the app last quit. */
+  onDesktop: boolean;
+}
+
+/** An event for one window only (island ⇄ desktop Mochi). Never throws. */
+export async function emitToWindow(label: string, event: string, payload?: unknown) {
+  if (!IS_TAURI) return;
+  try {
+    await emitTo(label, event, payload);
+  } catch (err) {
+    console.error(`[miku] emit ${event} failed`, err);
+  }
+}
+
+export interface IntegrationUpdate {
+  id: string;
+  data: Record<string, unknown>;
+  error: string | null;
+  event: { success: boolean; label: string; detail: string | null } | null;
+}
+
+export type ChatContext =
+  | { kind: "file"; name: string; path: string }
+  | { kind: "window"; appName: string; title: string; url?: string };
+
+export interface ModelInfo {
+  id: string;
+  label: string;
+}
+
+/** One row of Settings → Chat → Your AI subscriptions (cli_relay.rs `Status`). */
+export interface SubscriptionStatus {
+  provider: string;
+  /** The terminal tool that answers, or would once installed. */
+  tool: string;
+  installed: boolean;
+  on: boolean;
+  /** What to type once in a terminal to sign in. */
+  signIn: string;
+  installUrl: string;
+  subscriptionOnly: boolean;
+}
+
+export interface LocalServer {
+  /** The address as it is stored. */
+  url: string;
+  models: string[];
+  /** The address is this machine. */
+  loopback: boolean;
+}
+
+export interface ShelfFile {
+  name: string;
+  path: string;
+  size: number;
+  /** When it landed on the shelf, ms since the epoch. */
+  added: number;
+}
+
+export interface DroppedFile {
+  name: string;
+  path: string;
+  size: number;
+}
+
+/** What LRCLIB has for a track (src-tauri/src/lyrics.rs). */
+export interface LyricsAnswer {
+  /** The LRC text, timestamps and all. */
+  synced: string | null;
+  /** NetEase's word-timed lines (yrc), when it was asked and had them. */
+  words?: string | null;
+  /** The words without timing. */
+  plain: string | null;
+  /** LRCLIB matched the track exactly; false for a search's best guess. */
+  exact: boolean;
+  /** The service could not answer (busy, offline): not the same as no words. */
+  busy?: boolean;
+}
+
+/** widgets.rs: one reading of the machine. */
+export interface SystemSnapshot {
+  cpuPct: number;
+  ramPct: number;
+  ramUsed: number;
+  ramTotal: number;
+  battery: { pct: number; charging: boolean } | null;
+  uptime: number;
+  cores: number;
+  top: { name: string; cpuPct: number } | null;
+  diskUsed: number;
+  diskTotal: number;
+  /** Bytes a second. */
+  netDown: number;
+  netUp: number;
+}
+
+/** widgets.rs: the weather where the user said they are. */
+export interface WeatherNow {
+  place: string;
+  temp: number;
+  humidity: number;
+  wind: number;
+  code: number;
+  hours: { time: string; temp: number; code: number }[];
+}
+
+/** The floating overlay's two preferences (Settings → General). */
+export interface LyricsPrefs {
+  romanize: boolean;
+  placement?: "island" | "floating";
+  /** Ordinary browser videos count as songs (Settings → General). */
+  videos?: boolean;
+  showOriginal: boolean;
+  /** The card's see-through amount, 0…1. */
+  opacity: number;
+  /** The sung line's size in px; the ones around it scale with it. */
+  fontSize: number;
+  /** `#rrggbb` for the words, and for the card behind them. */
+  textColor: string;
+  background: string;
+  /** The card stays put / lets clicks through (its right-click menu, Settings). */
+  locked?: boolean;
+  clickThrough?: boolean;
+  showMiku?: boolean;
+  showCover?: boolean;
+  transparent?: boolean;
+  romajiLangs?: string[];
+}
+
+export interface HookStatus {
+  installed: boolean;
+  /** Miku's status line relay (plan usage) is the status line in settings.json. */
+  planRelayInstalled: boolean;
+  settingsPath: string;
+  hookPath: string;
+  hookReady: boolean;
+}
+
+/** One agent other than Claude Code, as agents.rs reports it. */
+export interface AgentHookStatus {
+  /** The `--agent` name; its pill is `agent_<id>`. */
+  id: string;
+  name: string;
+  installed: boolean;
+  /** The file (or files, one per line) Miku writes. */
+  path: string;
+  hookReady: boolean;
+  /** The island can allow or deny this agent's permission requests. */
+  approvals: boolean;
+  /** What to do once it is written. */
+  note: string;
+}
+
+export interface AgentHookPlan {
+  diff: string;
+  /** Where each existing file is copied first, one per line; "" when none. */
+  backup: string;
+  path: string;
+  fingerprint: string;
+}
+
+export interface HookPreview {
+  diff: string;
+  backup: string;
+  settingsPath: string;
+  /** Hand back to hooksApply so only the reviewed diff is ever written. */
+  fingerprint: string;
+}
+
+/** Same as `call`, but surfaces the error so the UI can show what went wrong. */
+async function callOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (!IS_TAURI) throw new Error("not running inside Miku");
+  return invoke<T>(cmd, args);
+}
+
+export type BridgeEvent =
+  | { name: "cursor"; payload: { x: number; y: number } }
+  | { name: "tray"; payload: string }
+  | { name: "hook"; payload: Record<string, unknown> }
+  | { name: "screen-changed"; payload: null };
+
+export interface DragDropPayload {
+  type: "enter" | "over" | "drop" | "leave";
+  paths?: string[];
+  /** How many items the drag carries, where the paths are not known yet (WebView2's enter). */
+  count?: number;
+}
+
+interface WebView2Bridge {
+  postMessageWithAdditionalObjects(message: unknown, objects: ArrayLike<unknown>): void;
+}
+
+/**
+ * Files dragged onto the island. Only reaches us when the window takes the mouse.
+ *
+ * On Windows WebView2 takes the drop itself, as in Edge — Tauri's drop handling
+ * never sees drags from the classic Explorer folder view (see
+ * src-tauri/src/webview_drop.rs). Enter/over/leave come straight from the page;
+ * the drop hands the File objects to Rust, which answers with their real paths
+ * as a `file-drag` event. Elsewhere (Linux) Tauri's own drag events still do it.
+ */
+export async function onDragDrop(handler: (e: DragDropPayload) => void) {
+  if (!IS_TAURI) return () => {};
+  const webview = (window as unknown as { chrome?: { webview?: WebView2Bridge } }).chrome?.webview;
+  if (!webview) {
+    return getCurrentWebview().onDragDropEvent((event) => {
+      handler(event.payload as DragDropPayload);
+    });
+  }
+  const hasFiles = (e: DragEvent) => e.dataTransfer?.types.includes("Files") ?? false;
+  // dragenter/dragleave fire for every element crossed; only the outermost pair counts.
+  let depth = 0;
+
+  const onEnter = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    if (depth++ === 0) handler({ type: "enter", count: e.dataTransfer?.items.length });
+  };
+  const onOver = (e: DragEvent) => {
+    if (!hasFiles(e)) return;
+    // Without this WebView2 refuses the drop — or navigates to the file.
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    handler({ type: "over" });
+  };
+  const onLeave = (e: DragEvent) => {
+    if (!hasFiles(e) || depth === 0) return;
+    if (--depth === 0) handler({ type: "leave" });
+  };
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    depth = 0;
+    void Bridge.log(`[drop-dbg ${Math.round(performance.now())}] html drop, ${e.dataTransfer?.files.length ?? 0} file(s)`);
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) {
+      handler({ type: "drop", paths: [] });
+      return;
+    }
+    webview.postMessageWithAdditionalObjects("miku-file-drop", files);
+  };
+
+  window.addEventListener("dragenter", onEnter);
+  window.addEventListener("dragover", onOver);
+  window.addEventListener("dragleave", onLeave);
+  window.addEventListener("drop", onDrop);
+  const unlisten = await listen<DragDropPayload>("file-drag", (e) => handler(e.payload));
+  return () => {
+    window.removeEventListener("dragenter", onEnter);
+    window.removeEventListener("dragover", onOver);
+    window.removeEventListener("dragleave", onLeave);
+    window.removeEventListener("drop", onDrop);
+    unlisten();
+  };
+}
+
+export async function onEvent<T>(name: string, handler: (payload: T) => void) {
+  if (!IS_TAURI) return () => {};
+  return listen<T>(name, (e) => handler(e.payload));
+}

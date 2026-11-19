@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Miku icon</title>
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+// Draws the classic Miku through the real engine, in the square the icon needs,
+// then hands the pixels back. scripts/gen-icons.mjs drives this page in a
+// headless browser, so the icon is the mascot itself and cannot drift from it.
+const { BotEngine } = await import("/src/mochi/engine.ts");
+
+/**
+ * The icon's crop, in engine pixels: the head and the shoulders. The engine
+ * draws the figure at 30 % of the canvas, so drawing into a canvas `size` wide
+ * and cropping this box gives a bust that fills an icon.
+ */
+function renderAt(size) {
+  // Draw large, then let the browser scale down: the engine's own canvas has no
+  // antialiasing control, and the extra samples are what keep the 16 px entry
+  // readable.
+  const SS = 4;
+  const W = size * SS;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = W;
+  const x = c.getContext("2d");
+  const engine = new BotEngine();
+  engine.setVariant("classic");
+  engine.setState("idle", true);
+  engine.update(1 / 60);
+  engine.draw(x, W, W);
+
+  // The bust: the head, the hair bands, the shoulders and the top of the tails,
+  // centred. The engine draws the chibi (src/mochi/chibi.ts) 440 design units
+  // wide across 62 % of the canvas, its point (260, 273) on the centre.
+  const R = W * 0.3;
+  const u = (W * 0.62) / 440;
+  const cx = W / 2;
+  const cy = W / 2 + R * 0.06;
+  // Design box to keep: x 60..460, y 36..436 — a square from above the hair
+  // bands down to the skirt, the tails cut where they leave it.
+  const box = { x: 60, y: 36, w: 400, h: 400 };
+  const sx = cx + (box.x - 260) * u;
+  const sy = cy + (box.y - 273) * u;
+  const sw = box.w * u;
+  const sh = box.h * u;
+
+  const out = document.createElement("canvas");
+  out.width = size;
+  out.height = size;
+  const o = out.getContext("2d");
+  // Keep it square: the box is taller than wide, so letterbox on the width.
+  const scale = Math.min(size / sw, size / sh);
+  const dw = sw * scale;
+  const dh = sh * scale;
+  o.drawImage(c, sx, sy, sw, sh, (size - dw) / 2, (size - dh) / 2, dw, dh);
+  return out.toDataURL("image/png");
+}
+
+const sizes = JSON.parse(decodeURIComponent(new URLSearchParams(location.search).get("sizes") || "[]"));
+const found = {};
+for (const size of sizes) found[size] = renderAt(size);
+
+// Hand the PNGs to the driver as text, one per line: "size<TAB>dataURL".
+document.getElementById("result").textContent = sizes
+  .map((s) => `${s}\t${found[s]}`)
+  .join("\n");
+document.title = "ready";
+</script>
+<pre id="result" style="display:none"></pre>
+</body>
+</html>

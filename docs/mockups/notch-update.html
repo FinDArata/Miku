@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notch: update tersedia</title>
+<style>
+  :root { --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 34px 40px; background: #0b0f17; color: #e6edf3; font-family: var(--font); }
+  h1 { margin: 0 0 6px; font-size: 28px; font-weight: 800; }
+  h1 em { font-style: normal; color: #39c5bb; }
+  .lead { margin: 0 0 22px; color: #8fa3b8; font-size: 14px; max-width: 900px; line-height: 1.45; }
+  .grid { display: grid; grid-template-columns: repeat(2, 600px); gap: 22px 26px; }
+  figure { margin: 0; }
+  figcaption { margin-top: 10px; font-size: 13.5px; color: #8fa3b8; line-height: 1.4; }
+  figcaption b { color: #e6edf3; }
+
+  /* A slice of the desktop with the notch at its top. */
+  .desk { position: relative; height: 250px; border-radius: 12px; overflow: hidden; border: 1px solid #1d2633;
+    background: radial-gradient(120% 90% at 70% 120%, #2a3b63 0%, #151d30 45%, #0e131d 100%); }
+
+  /* ── The notice card, as in windows/src/style.css (.nt-*) ── */
+  .nt-card { --nt: #e8457c; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 470px; height: 148px;
+    display: flex; padding: 8px 10px 10px 0; color: #f2fbfa; }
+  .nt-floor { position: relative; flex: none; width: 104px; }
+  .nt-floor::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 110px; height: 20px; transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(57, 197, 187, 0.3), transparent 70%); }
+  .nt-floor canvas { position: relative; z-index: 1; display: block; width: 104px; height: 100%; }
+  .nt-body { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 9px 14px; border-radius: 18px;
+    background:
+      repeating-linear-gradient(transparent 0 10px, rgba(57, 197, 187, 0.05) 10px 11px) 0 22px / 100% 55px no-repeat,
+      radial-gradient(circle at 0% 80%, rgba(57, 197, 187, 0.16), transparent 260px),
+      linear-gradient(#0f1a1c, #0a0f11); }
+  .nt-body::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.25px;
+    background: linear-gradient(90deg, rgba(57, 197, 187, 0.7), rgba(57, 197, 187, 0.22) 65%, rgba(225, 40, 133, 0.6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+  .nt-body > * { flex-shrink: 0; }
+  .nt-src { display: flex; align-items: center; gap: 6px; font: 700 10px var(--font); letter-spacing: 0.12em; text-transform: uppercase; color: #f7a8cf; }
+  .nt-src .ic { width: 12px; height: 12px; }
+  .nt-time { margin-left: auto; font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; letter-spacing: 0; text-transform: none; }
+  .nt-who { display: flex; align-items: center; gap: 8px; margin-top: 5px; min-width: 0; }
+  .nt-name { font: 700 13.5px var(--font); color: #f2fbfa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ver { font: 600 10.5px ui-monospace, Consolas, monospace; padding: 2px 7px; border-radius: 999px; color: #9fe6e6; background: rgba(57, 197, 187, 0.12); box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.35); }
+  .ver.new { color: #ffd0e4; background: rgba(232, 69, 124, 0.16); box-shadow: inset 0 0 0 1px rgba(232, 69, 124, 0.5); }
+  .arrow { color: #8fa3b8; font-size: 11px; }
+  .nt-msg { font: 500 12.5px var(--font); color: #c9d3d8; margin-top: 3px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .nt-dim { color: #8fa3b8; font-size: 11.5px; }
+  .nt-acts { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
+  .nt-btn { font: 600 11.5px var(--font); padding: 5px 13px; border-radius: 999px; border: 0; white-space: nowrap; }
+  .nt-btn.p { background: #39c5bb; color: #06302d; }
+  .nt-btn.s { background: transparent; color: #9fe6e6; box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.45); }
+  .nt-btn.g { background: transparent; color: #8fa3b8; padding: 5px 8px; }
+  .nt-link { margin-left: auto; font: 600 11px var(--font); color: #8fa3b8; }
+
+  /* Progress: a teal → pink bar, a track of the same staff lines. */
+  .bar { position: relative; height: 6px; margin-top: 8px; border-radius: 999px; background: rgba(57, 197, 187, 0.12); overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #39c5bb, #e8457c); box-shadow: 0 0 10px rgba(57, 197, 187, 0.5); }
+  .bar.indet i { width: 35%; animation: indet 1.4s ease-in-out infinite; }
+  @keyframes indet { from { left: -35%; } to { left: 100%; } }
+  .bar-row { display: flex; justify-content: space-between; margin-top: 5px; font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; }
+
+  /* Closed: the capsule with a breathing pink dot, Miku hanging under it with a sign. */
+  .capsule { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 200px; height: 32px; border-radius: 0 0 14px 14px; background: #000;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font: 600 12px var(--font); color: #c9d3d8; }
+  .capsule .clock { font-variant-numeric: tabular-nums; }
+  .pip { display: flex; align-items: center; gap: 6px; font: 700 10.5px ui-monospace, Consolas, monospace; color: #ffd0e4; }
+  .pip i { width: 7px; height: 7px; border-radius: 50%; background: #e8457c; box-shadow: 0 0 8px rgba(232, 69, 124, 0.9); animation: breathe 2.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { box-shadow: 0 0 2px rgba(232, 69, 124, 0.4); opacity: 0.7; } }
+  .hang { position: absolute; top: 26px; left: calc(50% + 40px); width: 70px; display: flex; flex-direction: column; align-items: center; }
+  .hang .rope { width: 1.5px; height: 14px; background: rgba(159, 230, 230, 0.5); }
+  .hang .sign { font: 700 10px var(--font); color: #06302d; background: #9fe6e6; padding: 3px 7px; border-radius: 6px; transform: rotate(-4deg); white-space: nowrap; box-shadow: 0 0 0 1.5px #0a0f11; }
+  .hang canvas { width: 70px; height: 68px; margin-top: -4px; }
+  .tip { position: absolute; bottom: 14px; left: 18px; right: 18px; font-size: 12px; color: #8fa3b8; }
+  .tip kbd { font: 600 11px var(--font); color: #e6edf3; background: #1d2633; padding: 1px 6px; border-radius: 5px; }
+
+  @media (prefers-reduced-motion: reduce) { .bar.indet i, .pip i { animation: none; } }
+</style>
+</head>
+<body>
+<h1>Update tersedia: <em>Miku bawa versi baru</em></h1>
+<p class="lead">Versi baru turun dari notch sebagai notice (gayanya sama kayak notif lain, ± 8 detik, hover = nggak hilang). Tombol "Update sekarang" ngunduh + masang di card yang sama. Kalau dicuekin, capsule kasih titik pink + Miku gantung bawa papan versi sampai dibuka. Aksen pink = tanda update, sama kayak tombol update yang udah ada di deck.</p>
+
+<div class="grid">
+  <figure>
+    <div class="desk">
+      <div class="nt-card">
+        <div class="nt-floor"><canvas data-pose="surprised"></canvas></div>
+        <div class="nt-body">
+          <div class="nt-src"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>Update · Miku<span class="nt-time">baru saja</span></div>
+          <div class="nt-who"><span class="nt-name">Versi baru udah keluar</span><span class="ver">0.0.3</span><span class="arrow">→</span><span class="ver new">0.0.4</span></div>
+          <div class="nt-msg">Karaoke lirik, card notif tanpa bingkai, Miku bisa sapa pas update.</div>
+          <div class="nt-acts"><button class="nt-btn p">Update sekarang</button><button class="nt-btn s">Lihat isinya</button><button class="nt-btn g">Nanti</button></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Ada versi baru</b>: headline dari release GitHub, versi lama → baru. "Nanti" = muncul lagi besok (snooze yang udah ada di Rust).</figcaption>
+  </figure>
+
+  <figure>
+    <div class="desk">
+      <div class="nt-card">
+        <div class="nt-floor"><canvas data-pose="working"></canvas></div>
+        <div class="nt-body">
+          <div class="nt-src"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>Update · Miku<span class="nt-time">0.0.4</span></div>
+          <div class="nt-who"><span class="nt-name">Lagi ngunduh…</span></div>
+          <div class="bar"><i style="width:62%"></i></div>
+          <div class="bar-row"><span>15,6 / 25,2 MB</span><span>62%</span></div>
+          <div class="nt-acts"><button class="nt-btn s">Sembunyiin</button><span class="nt-link">Batal</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Ngunduh</b>: progress dari <code>phase.downloading.fraction</code>. "Sembunyiin" nutup card, unduhan tetap jalan; titik pink di capsule jadi progress kecil.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="desk">
+      <div class="nt-card">
+        <div class="nt-floor"><canvas data-pose="finished"></canvas></div>
+        <div class="nt-body">
+          <div class="nt-src"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>Update · Miku<span class="nt-time">0.0.4</span></div>
+          <div class="nt-who"><span class="nt-name">Siap dipasang</span></div>
+          <div class="nt-msg">Miku nutup sebentar terus balik lagi. Agent yang lagi jalan nggak keganggu.</div>
+          <div class="nt-acts"><button class="nt-btn p">Restart sekarang</button><button class="nt-btn s">Pas aku tutup</button></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Udah diverifikasi</b>: tinggal restart. "Pas aku tutup" = pasang waktu Miku di-quit. Saat <code>installing</code>, bar-nya jadi indeterminate.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="desk">
+      <div class="capsule"><span class="clock">16.52</span><span class="pip"><i></i>0.0.4</span></div>
+      <div class="hang"><span class="rope"></span><span class="sign">v0.0.4 ✨</span><canvas data-pose="wave" data-small></canvas></div>
+      <div class="tip">Klik capsule atau Miku → card update kebuka lagi. Titik pink hilang setelah "Nanti" (balik besok).</div>
+    </div>
+    <figcaption><b>Belum dilihat</b>: capsule kasih titik pink + nomor versi, Miku gantung bawa papan (pola "hang" yang udah dipakai notif lain).</figcaption>
+  </figure>
+</div>
+
+<script>(()=>{var e0=["classic","snow","sakura"],W="classic",v=[1,.914,.863],D=[.98,.98,.99],t0={id:"classic",label:"Miku",hair:[.224,.773,.733],hairDark:[.141,.588,.565],hairHi:"rgba(126,232,224,0.62)",eye1:[.337,.851,.812],eye2:[.043,.463,.459],eyeInk:"rgb(20,44,46)",skin:v,tie:[.224,.773,.733],shirt:D,skirt:[.376,.408,.451],skirtShade:[.286,.318,.361],trim:[.878,.898,.925],gloves:[.169,.184,.212],headset:[.243,.259,.29],armband:[.169,.184,.212]},n0={id:"snow",label:"Snow Miku",hair:[.894,.933,.976],hairDark:[.678,.769,.886],hairHi:"rgba(255,255,255,0.78)",eye1:[.478,.796,.949],eye2:[.129,.408,.643],eyeInk:"rgb(26,46,70)",skin:v,tie:[.404,.678,.886],shirt:D,skirt:[.541,.698,.851],skirtShade:[.427,.588,.749],trim:[.945,.969,.992],gloves:[.847,.902,.961],headset:[.867,.914,.969],armband:[.404,.678,.886],furCollar:!0,extra:{behind:(e,t,n)=>{for(let r=0;r<7;r++){let o=r/7*Math.PI*2+n*.25;H(e,150+Math.cos(o)*108,56+Math.sin(o)*100,7,"rgba(255,255,255,0.4)")}},front:(e,t,n)=>{H(e,104,34,9,"rgba(255,255,255,0.92)",n*.6),H(e,196,30,7,"rgba(255,255,255,0.85)",-n*.5)}}},r0={id:"sakura",label:"Sakura Miku",hair:[.961,.659,.78],hairDark:[.886,.498,.647],hairHi:"rgba(255,214,232,0.75)",eye1:[.969,.616,.737],eye2:[.678,.239,.404],eyeInk:"rgb(58,24,38)",skin:v,tie:[.937,.478,.655],shirt:D,skirt:[.945,.804,.851],skirtShade:[.886,.686,.757],trim:[1,1,1],gloves:[1,.949,.965],headset:[1,.925,.949],armband:[.937,.478,.655],extra:{front:(e,t,n)=>{O(e,100,40,11,n*.4),O(e,202,36,9,-n*.35);for(let r=0;r<4;r++){let o=(n*.16+r*.25)%1,s=84+r*44+Math.sin(n*1.1+r)*6,a=150+o*130;e.save(),e.globalAlpha=.55*(1-o),e.translate(s,a),e.rotate(n*.9+r),o0(e,5.5),e.restore()}}}},K={classic:t0,snow:n0,sakura:r0};function H(e,t,n,r,o,s=0){e.save(),e.translate(t,n),e.rotate(s),e.strokeStyle=o,e.lineWidth=Math.max(1,r*.2),e.lineCap="round";for(let a=0;a<6;a++){let i=a/6*Math.PI*2,u=Math.cos(i),m=Math.sin(i);e.beginPath(),e.moveTo(0,0),e.lineTo(u*r,m*r),e.moveTo(u*r*.6,m*r*.6),e.lineTo(u*r*.6+m*r*.34,m*r*.6-u*r*.34),e.moveTo(u*r*.6,m*r*.6),e.lineTo(u*r*.6-m*r*.34,m*r*.6+u*r*.34),e.stroke()}e.restore()}function O(e,t,n,r,o=0){e.save(),e.translate(t,n),e.rotate(o);for(let s=0;s<5;s++){let a=s/5*Math.PI*2;e.save(),e.rotate(a),e.fillStyle=s%2?"rgba(255,214,232,0.96)":"rgba(249,183,208,0.96)",e.beginPath(),e.ellipse(0,-r*.62,r*.42,r*.62,0,0,Math.PI*2),e.fill(),e.restore()}e.fillStyle="rgba(255,238,168,0.98)",e.beginPath(),e.arc(0,0,r*.2,0,Math.PI*2),e.fill(),e.restore()}function o0(e,t){e.fillStyle="rgba(249,183,208,0.9)",e.beginPath(),e.moveTo(0,-t),e.quadraticCurveTo(t*.9,-t*.2,0,t),e.quadraticCurveTo(-t*.9,-t*.2,0,-t),e.fill()}var K0=new Set(e0);var _=520,J=510,a0={idle:{L:[20,10],R:[-20,-10]},working:{L:[28,-40,2,9,.2],R:[-28,40,2,9,.26],look:[0,6],scan:!0,laptop:!0,fx:"ticks"},thinking:{L:[15,-60],R:[-20,175,2,4,2.2],look:[4,-5],mouth:"flat",tilt:-6,fx:"dots"},searching:{L:[25,10],R:[-60,-60,6,8,1.4],hold:"glass",look:[6,0],mouth:"o",body:"sway"},approval:{L:[40,-80],R:[-100,-30,6,10,.5],mouth:"o",brows:"up",fx:"bang"},question:{L:[60,70],R:[-60,-70],tilt:8,mouth:"o",brows:"up",fx:"question"},error:{L:[10,5],R:[-10,-5],body:"shake",brows:"worry",mouth:"wavy",fx:"sweat"},finished:{L:[110,20,6,8,.45],R:[-110,-20,6,8,.45],body:"bounce",eyes:"happy",mouth:"open",fx:"stars"},ratelimit:{L:[15,5],R:[-15,-5],eyes:"flat",brows:"worry",mouth:"wavy",fx:"sweat"},sleeping:{L:[12,5,1,1,3],R:[-12,-5,1,1,3],eyes:"closed",mouth:"o",tilt:10,fx:"zzz"},dizzy:{L:[40,10,8,8,.5],R:[-40,-10,8,8,.5],eyes:"spiral",mouth:"wavy",body:"sway",fx:"stars"},love:{L:[15,-70],R:[-15,70],eyes:"heart",mouth:"open",fx:"hearts"},surprised:{L:[70,0,3,3,.12],R:[-70,0,3,3,.12],eyes:"wide",mouth:"big",brows:"up",fx:"lines"},proud:{L:[55,-110],R:[-55,110],eyes:"happy",mouth:"cat",fx:"star"},wink:{L:[20,10],R:[-100,-30,6,10,.6],hold:"peace",eyes:["open","happy"],mouth:"open",tilt:6,fx:"winkStar"},yawn:{L:[15,5],R:[-20,175,2,3,2.4],eyes:"closed",mouth:"big",fx:"tear"},happy:{L:[50,10,10,8,.5],R:[-50,-10,10,8,.5],eyes:"happy",mouth:"open",body:"sway"},annoyed:{L:[15,-75],R:[-15,75],eyes:"flat",brows:"angry",mouth:"pout",fx:"vein"},wave:{L:[20,10],R:[-100,-30,6,14,.35],eyes:"happy",mouth:"open"},singing:{L:[75,20,10,12,.8],R:[-35,155,2,3,.8],hold:"mic",eyes:"happy",mouth:"sing",body:"sway",fx:"notes"},leek:{L:[20,10],R:[-100,-30,8,22,.45],hold:"leek",mouth:"open"},dance:{L:[100,30,14,16,.5],R:[-30,-20,14,16,.5],eyes:"happy",mouth:"open",body:"sway",fx:"notes"}};var A=[1,1,1],g=[0,0,0],b=(e,t,n)=>[e[0]+(t[0]-e[0])*n,e[1]+(t[1]-e[1])*n,e[2]+(t[2]-e[2])*n],h=(e,t=1)=>`rgba(${Math.round(e[0]*255)},${Math.round(e[1]*255)},${Math.round(e[2]*255)},${t})`,s0={classic:{hair:[.24,.71,.74],hairDark:[.11,.52,.56],tie:[.184,.663,.69],skirt:[.227,.259,.322],skirtShade:[.118,.133,.169],gloves:[.17,.19,.24],headset:[.17,.19,.24]}};function i0(e){return{hairTop:h(b(e.hair,A,.12)),hairBot:h(b(e.hair,e.hairDark,.55)),tailTop:h(e.hair),tailBot:h(b(e.hairDark,g,.08)),hairBack:h(e.hairDark),hairDeep:h(b(e.hairDark,g,.2)),hairHi:h(b(e.hair,A,.5)),skin:h(b(e.skin,[.98,.84,.76],.5)),skinHi:h(b(e.skin,A,.3)),skinLo:h(b(e.skin,[.96,.8,.7],.6)),neck:h(b(e.skin,[.84,.62,.52],.5)),eyeTop:h(b(e.eye2,g,.25)),eyeMid:h(b(e.eye1,e.eye2,.35)),eyeBot:h(b(e.eye1,A,.5)),eyeRim:h(b(e.eye2,g,.4)),pupil:h(b(e.eye2,g,.65),.9),ink:e.eyeInk,trim:h(e.tie),tie:h(b(e.tie,A,.12)),knot:h(b(e.tie,g,.18)),shirtHi:h(e.shirt),shirtLo:h(b(e.shirt,[.6,.64,.7],.85)),skirtTop:h(e.skirt),skirtBot:h(e.skirtShade),sleeveTop:h(b(e.gloves,A,.08)),sleeveBot:h(b(e.gloves,g,.3)),gear:h(e.headset),gearLo:h(b(e.headset,g,.4)),accent:e.id==="classic"?"#F0468A":h(e.tie)}}var I="#F5C542",F="#F0468A",V="#C9687E",Q="#B3475F",E="#1E222B",u0="M166 96 C96 80 40 150 44 250 C46 320 70 380 60 440 C56 458 50 466 44 474 C96 462 140 410 150 330 C156 280 150 220 166 170 C172 150 178 130 180 112 Z",l0="M150 150 C124 210 120 300 124 372 C142 330 144 270 144 226 C144 196 146 172 150 150 Z",h0="M112 120 C72 170 64 250 76 330",c0="M-9 -30 H9 A4 4 0 0 1 13 -26 V26 A4 4 0 0 1 9 30 H-9 A4 4 0 0 1 -13 26 V-26 A4 4 0 0 1 -9 -30 Z",b0="M146 176 C136 62 384 62 374 176 C374 240 340 298 260 298 C180 298 146 240 146 176 Z",m0="M226 410 L258 410 L256 462 C257 474 250 480 242 480 L228 480 C219 480 219 470 226 466 Z",C0="M214 356 L306 356 L334 404 C300 418 220 418 186 404 Z",p0="M190 396 C224 410 296 410 330 396 L334 404 C300 418 220 418 186 404 Z",k0="M160 190 C160 130 360 130 360 190 C360 222 356 244 336 262 C314 280 284 288 260 288 C236 288 206 280 184 262 C164 244 160 222 160 190 Z",d0="M262 60 C190 56 138 100 138 180 C138 226 146 262 160 300 C167 270 170 244 172 222 C174 208 176 198 180 188 L190 214 C194 198 198 188 204 180 L222 198 C226 184 230 176 236 172 C246 200 262 232 280 252 C277 226 279 196 290 170 L306 198 C312 186 320 178 326 172 L342 212 C344 198 345 192 346 186 C348 198 349 210 350 222 C352 244 354 270 362 300 C376 262 382 226 382 180 C382 100 334 56 262 60 Z",y0="M262 62 C250 100 240 138 236 172 M262 62 C278 100 288 136 290 170 M262 62 C226 92 208 134 204 180 M262 62 C300 92 322 132 326 172",f0="M176 118 C204 84 236 72 258 70 C230 82 200 100 176 118 Z",M0="M146 232 C150 264 168 286 192 290",L0="M234 294 C244 289 276 289 286 294 C290 296 292 300 292 306 L300 362 C276 370 244 370 220 362 L228 306 C228 300 230 296 234 294 Z",g0="M221 355 C244 363 276 363 299 355 L300 362 C276 370 244 370 220 362 Z",R0="M240 292 L259 301 L250 314 L236 300 Z M280 292 L261 301 L270 314 L284 300 Z",I0="M255 309 L265 309 L268 344 L260 354 L252 344 Z",S0="M254 301 L266 301 L264 310 L256 310 Z",w0="M253.5 334 L266.5 334 M253 339 L267 339",B0="M-9 2 L9 2 L26 44 C10 54 -10 54 -26 44 Z",T0="M-24 37 C-10 46 10 46 24 37 L26 44 C10 54 -10 54 -26 44 Z",A0="M-23 -2 C-23 -26 23 -26 23 -2 L21 12 C18 27 -18 27 -21 12 Z",F0="M-27 -6 C-22 -30 20 -32 25 -8 C16 -22 -14 -22 -22 -8 Z M-26 -6 L-34 -13 L-23 -13 Z",E0="M206 362 C206 356 210 352 216 352 L304 352 C310 352 314 356 314 362 L318 404 L202 404 Z",P0="M0 -14 L4 -4 L14 0 L4 4 L0 14 L-4 4 L-14 0 L-4 -4 Z",j="M0 8 C-16 -6 -7 -18 0 -9 C7 -18 16 -6 0 8 Z",H0="M5 -14 Q18 -12 17 -2 Q12 -8 8 -8 Z",z="M0 -20 C-8 -4 -12 4 -12 10 C-12 18 -6 24 0 24 C6 24 12 18 12 10 C12 4 8 -4 0 -20 Z",v0={rest:"M192 194 C202 188 216 187 226 190 M294 190 C304 187 318 188 328 194",worry:"M192 197 L226 187 M294 187 L328 197",angry:"M192 186 L226 196 M294 196 L328 186",up:"M192 188 C202 181 216 180 226 184 M294 184 C304 180 318 181 328 188"},q=new Map;function X(e){let t=q.get(e);return t||q.set(e,t=new Path2D(e)),t}var N=e=>e*Math.PI/180,B=(e,t,n=0)=>-Math.cos(Math.PI*(e-n)/t),T=(e,t,n=0)=>(B(e,t,n)+1)/2;function c(e,t,n,r=1){e.globalAlpha=r,e.fillStyle=n,e.fill(X(t)),e.globalAlpha=1}function y(e,t,n,r,o=1){e.globalAlpha=o,e.strokeStyle=n,e.lineWidth=r,e.lineCap="round",e.lineJoin="round",e.stroke(X(t)),e.globalAlpha=1}function d(e,t,n,r,o,s,a){e.strokeStyle=s,e.lineWidth=a,e.lineCap="round",e.beginPath(),e.moveTo(t,n),e.lineTo(r,o),e.stroke()}function C(e,t,n,r,o,s){e.fillStyle=s,e.beginPath(),e.ellipse(t,n,r,o,0,0,Math.PI*2),e.fill()}function M(e,t,n,r,o,s){e.fillStyle=s,e.fillRect(t,n,r,o)}function R(e,t,n,...r){let o=e.createLinearGradient(0,t,0,n);return r.forEach((s,a)=>o.addColorStop(a/(r.length-1),s)),o}function p(e,t,n,r,o=0,s=1,a=s,i=1){e.save(),e.translate(t,n),o&&e.rotate(N(o)),(s!==1||a!==1)&&e.scale(s,a);let u=e.globalAlpha;e.globalAlpha=u*i,r(),e.globalAlpha=u,e.restore()}function Z(e,t,n,r,o){e.save(),e.translate(t,n),e.rotate(N(r)),e.translate(-t,-n),o(),e.restore()}function Y(e,t){e.save(),e.translate(_,0),e.scale(-1,1),t(),e.restore()}function U(e,t,n,r){Z(e,170,100,1+3*B(n,2,r),()=>{c(e,u0,R(e,96,474,t.tailTop,t.tailBot)),c(e,l0,t.hairDeep,.5),y(e,h0,t.hairHi,7,.55)})}function D0(e,t,n){U(e,t,n,0),Y(e,()=>U(e,t,n,.7));for(let[r,o]of[[172,-20],[348,20]])p(e,r,84,()=>{c(e,c0,R(e,-30,30,t.gear,t.gearLo)),M(e,-9,-30,6,60,t.accent)},o);c(e,b0,t.hairBack)}function V0(e,t){let n=()=>p(e,-4,0,()=>{M(e,228,396,28,20,t.skinLo),c(e,m0,R(e,410,480,t.sleeveTop,t.sleeveBot)),M(e,226,410,32,7,t.trim)});n(),Y(e,n),M(e,250,278,20,20,t.neck),c(e,C0,R(e,356,412,t.skirtTop,t.skirtBot)),c(e,p0,t.trim)}function $(e,t,n,r,o,s,a,i){if(r==="happy"||r==="closed"){let f=r==="happy";e.strokeStyle=a.ink,e.lineWidth=5.5,e.lineCap="round",e.beginPath(),e.moveTo(t-21,f?236:230),e.quadraticCurveTo(t,f?208:242,t+21,f?236:230),e.stroke();return}if(r==="heart"){p(e,t,232,()=>c(e,j,F),0,1.6+.7*T(s,.5));return}if(r==="spiral"){p(e,t,230,()=>{e.strokeStyle=a.ink,e.lineWidth=4,e.lineCap="round",e.beginPath();for(let f=0;f<=Math.PI*5;f+=.3)e.lineTo(Math.cos(f)*f*1.3,Math.sin(f)*f*1.3);e.stroke()},s*280*n);return}let u=s%4/4,m=i!==void 0?Math.max(.08,Math.min(1,i)):u>.92?Math.max(.08,1-Math.sin(Math.PI*(u-.92)/.08)):1,l=r==="wide"?.7:1,k=(o.look?.[0]??0)+(o.scan?5*B(s,1.6):0),L=o.look?.[1]??0;e.save(),e.translate(0,232),e.scale(1,m),e.translate(0,-232),p(e,t,228,()=>c(e,A0,"#FFFFFF"),0,n,1),p(e,t+k,228+L,()=>{C(e,1,3,17,20,R(e,-17,23,a.eyeTop,a.eyeMid,a.eyeBot)),e.strokeStyle=a.eyeRim,e.lineWidth=2,e.stroke(),C(e,1,5,8,11,a.pupil)},0,n*l,l),C(e,t-7+k,219+L,6.5*l,6.5*l,"#FFFFFF"),C(e,t+8+k,241+L,3*l,3*l,"#FFFFFF"),p(e,t,228,()=>c(e,F0,a.ink),0,n,1),r==="flat"&&(M(e,t-30,196,60,30,a.skinHi),d(e,t-24,226,t+24,226,a.ink,5.5)),e.restore()}function G0(e,t,n){let r=o=>y(e,o,V,2.5);switch(t){case"smile":return r("M251 265 Q260 272 269 265");case"open":return c(e,"M250 262 C253 277 267 277 270 262 Z",V);case"o":return C(e,260,267,4.5,4.5,V);case"big":return C(e,260,268,8,10,Q);case"flat":return r("M254 267 L266 267");case"wavy":return r("M250 268 Q255 262 260 268 Q265 274 270 268");case"cat":return r("M250 264 Q255 272 260 264 Q265 272 270 264");case"pout":return r("M252 270 Q260 263 268 270");case"sing":return C(e,260,267,7,9*(.45+.65*T(n,.3)),Q)}}function Z0(e,t,n,r,o,s=0){let a=e.createRadialGradient(260,209,0,260,209,124);a.addColorStop(0,r.skinHi),a.addColorStop(1,r.skinLo),c(e,k0,a),e.save(),e.translate(0,s);for(let l of[186,334]){let k=e.createRadialGradient(l,258,0,l,258,20);k.addColorStop(0,"rgba(255,157,174,0.45)"),k.addColorStop(1,"rgba(255,157,174,0)"),C(e,l,258,20,20,k)}let i=t.eyes??"open",[u,m]=typeof i=="string"?[i,i]:i;$(e,212,1,u,t,n,r,o),$(e,308,-1,m,t,n,r,o),G0(e,t.mouth??"smile",n),e.restore(),c(e,d0,R(e,60,300,r.hairTop,r.hairBot)),y(e,y0,r.hairBack,2.5,.5),c(e,f0,"#FFFFFF",.4),y(e,v0[t.brows??"rest"],r.hairDeep,2.5);for(let l of[144,376])d(e,l,204,l,224,r.gear,16),d(e,l+(l<260?-4:4),210,l+(l<260?-4:4),218,r.accent,4);y(e,M0,r.gearLo,3),d(e,193,289,199,289,r.gearLo,10)}function _0(e,t){let n=e.createLinearGradient(220,290,300,370);n.addColorStop(0,t.shirtLo),n.addColorStop(.45,t.shirtHi),n.addColorStop(1,t.shirtLo),c(e,L0,n),c(e,g0,t.trim),c(e,R0,t.trim),c(e,I0,t.tie),c(e,S0,t.knot),y(e,w0,t.sleeveBot,2.2),M(e,273,320,14,6,"#D8D24A")}function N0(e,t,n){switch(t){case"mic":M(e,-4,48,8,14,E),C(e,0,67,8,8,"#C9CFD8"),M(e,-8,60,16,3,E);return;case"leek":d(e,0,46,0,108,"#F4F7E8",9);for(let r of[-11,0,12])d(e,0,104,r,r?150:158,"#6BBF4A",8);return;case"peace":d(e,-3,58,-9,76,n.skin,6),d(e,3,58,9,76,n.skin,6);return;case"glass":d(e,0,54,0,72,E,6),C(e,0,92,20,20,"rgba(223,246,250,0.7)"),e.strokeStyle=E,e.lineWidth=5,e.stroke();return}}function P(e,t,n,r,o,s,a){let[i,u,m=3,l=4,k=1.8]=n,L=B(r,k);p(e,t<0?233:287,305,()=>{if(s==="upper")return d(e,0,0,0,22,o.skin,16);p(e,0,22,()=>{a&&N0(e,a,o),C(e,0,0,8,8,o.skin),C(e,0,54,9,8,o.skin),c(e,B0,R(e,2,54,o.sleeveTop,o.sleeveBot)),M(e,-9,1,18,5,o.trim),c(e,T0,o.trim)},u+l*L)},i+m*L)}function O0(e){c(e,E0,R(e,352,404,"#E3E7EC","#B4BCC7")),C(e,260,378,10,10,"#2FA9B0"),y(e,"M255 378 L259 382 L266 374","#FFFFFF",2.5),d(e,197,407,323,407,"#8E97A3",10)}function S(e,t,n,r,o,s,a=2){let i=((r-o)/a%1+1)%1;p(e,t,n+12-56*i,s,0,1,1,i<.2?i/.2:1-(i-.2)/.8)}function w(e,t,n,r,o,s,a=.6,i=1){let u=T(r,a,o);p(e,t,n,s,0,i*(.5+.6*u),i*(.5+.6*u),.2+.8*u)}var G=e=>.8+.35*T(e,.5);function W0(e,t,n){let r=()=>c(e,P0,I),o=()=>c(e,j,F),s=()=>{C(e,0,10,7,5,F),M(e,5,-14,3,24,F),c(e,H0,F)},a=(i,u,m,l)=>{let k=n/m%1;p(e,i,u+28*k,l,0,1,1,1-k)};switch(t){case"dots":for(let i=0;i<3;i++)w(e,404+i*27,70-i*20,n,i*.3,()=>C(e,0,0,7+i*3.5,7+i*3.5,"#9FE6E6"),.9);return;case"question":p(e,436,62-5*T(n,1.6),()=>{y(e,"M-17 -18 C-17 -40 17 -40 17 -16 C17 0 0 0 0 16",I,9),C(e,0,36,6,6,I)});return;case"bang":p(e,440,70,()=>{d(e,0,-34,0,0,I,12),C(e,0,24,7,7,I)},0,G(n));return;case"sweat":a(352,150,1.2,()=>{c(e,z,"#E4F7FF"),y(e,z,"#7CC4E8",2)});return;case"stars":w(e,96,60,n,0,r),w(e,430,48,n,.2,r,.6,1.3),w(e,260,30,n,.4,r,.6,.8);return;case"hearts":S(e,110,90,n,0,o),S(e,410,80,n,.7,o),S(e,260,50,n,1.3,o);return;case"lines":p(e,430,80,()=>y(e,"M0 -34 L0 -12 M26 -22 L12 -6 M34 6 L14 6",I,7),0,G(n));return;case"star":w(e,420,70,n,0,r,.6,1.4);return;case"winkStar":w(e,366,208,n,0,r,.6,.9);return;case"tear":a(336,244,2.4,()=>{C(e,0,0,5,5,"#E4F7FF"),e.strokeStyle="#7CC4E8",e.lineWidth=1.5,e.stroke()});return;case"vein":p(e,352,124,()=>y(e,"M-10 -4 Q-4 -4 -4 -10 M4 -10 Q4 -4 10 -4 M10 4 Q4 4 4 10 M-4 10 Q-4 4 -10 4","#E0354F",4),0,G(n));return;case"notes":S(e,100,90,n,0,s),S(e,424,84,n,.6,s),S(e,64,180,n,1.2,s);return;case"ticks":{let i=(u,m,l,k,L)=>w(e,u,m,n,L,()=>d(e,0,0,l,k,I,6),.25);i(186,350,-12,-10,0),i(176,372,-14,0,.12),i(334,350,12,-10,.06),i(344,372,14,0,.18);return}case"zzz":for(let i=0;i<3;i++)S(e,400+i*22,110-i*26,n,i*.9,()=>y(e,"M-8 -8 H8 L-8 8 H8","#9FE6E6",4),2.7);return}}function x(e,t,n,r=W,o={}){let s=a0[t],a={...s,eyes:o.eyes??s.eyes,look:o.look?[(s.look?.[0]??0)+o.look[0],(s.look?.[1]??0)+o.look[1]]:s.look,L:o.arms?[o.arms[0],o.arms[1],s.L[2],s.L[3],s.L[4]]:s.L,R:o.arms?[o.arms[2],o.arms[3],s.R[2],s.R[3],s.R[4]]:s.R},i={...K[r],...s0[r]};o.tint&&(i.hair=b(i.hair,o.tint,.62),i.hairDark=b(i.hairDark,o.tint,.62));let u=i0(i);switch(o.noShadow||C(e,260,484,92,8,"rgba(0,0,0,0.14)"),e.save(),a.body??"bob"){case"bob":e.translate(0,-5*T(n,1.6));break;case"bounce":e.translate(0,-18*T(n,.4));break;case"shake":e.translate(4*B(n,.1),0);break;case"sway":e.translate(260,480),e.rotate(N(4*B(n,1))),e.translate(-260,-480);break}let m=(a.tilt??0)+2*B(n,2.6),l=Math.max(-1,Math.min(1,-(o.pitch??0)));Z(e,260,288+3*l,m,()=>{e.translate(0,-3*l),D0(e,u,n)}),V0(e,u),Z(e,260,288+3*l,m,()=>{e.translate(0,-3*l),Z0(e,a,n,u,o.lid,-7*l)}),P(e,-1,a.L,n,u,"upper"),P(e,1,a.R,n,u,"upper"),_0(e,u),P(e,-1,a.L,n,u,"fore"),P(e,1,a.R,n,u,"fore",a.hold),a.laptop&&O0(e),a.fx&&!o.skipFx?.has(a.fx)&&W0(e,a.fx,n),e.restore()}window.MikuChibi={drawChibi:x,CHIBI_W:_,CHIBI_H:J};})();</script>
+<script>
+  const { drawChibi, CHIBI_W, CHIBI_H } = window.MikuChibi;
+  const items = [...document.querySelectorAll("canvas[data-pose]")].map((c) => {
+    const dpr = window.devicePixelRatio || 1;
+    const r = c.getBoundingClientRect();
+    c.width = r.width * dpr; c.height = r.height * dpr;
+    return { c, x: c.getContext("2d"), pose: c.dataset.pose };
+  });
+  const t0 = performance.now();
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now) {
+    for (const { c, x, pose } of items) {
+      x.setTransform(1, 0, 0, 1, 0, 0);
+      x.clearRect(0, 0, c.width, c.height);
+      const s = Math.min(c.width / CHIBI_W, c.height / CHIBI_H);
+      x.translate((c.width - CHIBI_W * s) / 2, c.height - CHIBI_H * s);
+      x.scale(s, s);
+      drawChibi(x, pose, still ? 0 : (now - t0) / 1000, "classic", { noShadow: true });
+    }
+    if (!still) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

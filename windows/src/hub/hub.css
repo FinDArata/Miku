@@ -1,0 +1,2880 @@
+/* The Kanon window: an OLED-black sidebar, a dark panel holding the pages,
+   and on top of each page a coloured band where little Mochis walk. Same
+   look as the Mac's Kanon window (FlowHub.swift). */
+
+:root {
+  /* Miku's teal on a near-black that leans the same way, so the window reads
+     as hers and not as a generic dark settings app.
+     The values come from the skin in force (src/theme/skins.ts); the literals
+     after each `var()` are the classic Miku, used before that script runs. */
+  --hub-panel: var(--skin-panel, #0b0f11);
+  --hub-card: var(--skin-card, #141a1b);
+  --hub-field: var(--skin-field, #1b2223);
+  --hub-line: var(--skin-line, rgba(150, 224, 218, 0.09));
+  --hub-text: var(--skin-text, #f3fbfa);
+  --hub-body: var(--skin-body, #dcebe9);
+  --hub-secondary: var(--skin-secondary, #92a6a4);
+  --hub-muted: var(--skin-muted, #667d7b);
+  --hub-accent: var(--skin-accent, #39c5bb);
+  --hub-accent-bright: var(--skin-accent-bright, #6fede3);
+  --hub-accent-deep: var(--skin-accent-deep, #1f8c86);
+  --hub-on-accent: var(--skin-on-accent, #04211f);
+  --hub-accent-soft: var(--skin-accent-soft, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.12));
+  --hub-accent-line: var(--skin-accent-line, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.34));
+  --hub-green: #34d399;
+  --hub-amber: #ffb84d;
+  --hub-red: #ff453a;
+}
+
+/* The skin change is a fade: the surfaces that carry colour ease from the old
+   skin to the new one instead of snapping. */
+body.hub-window,
+.hub-side,
+.hub-panel,
+.hub-status,
+.hub-home-card {
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+body.hub-window {
+  background: var(--skin-panel, #0e1116);
+  color: var(--hub-text);
+  font: 400 13px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#hub {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+
+.hub-side {
+  width: 236px;
+  flex: 0 0 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 18px 12px 12px;
+  background: #101318;
+  border-right: 1px solid #1f242e;
+  overflow-y: auto;
+}
+
+.hub-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 14px;
+}
+
+.hub-brand canvas {
+  width: 28px;
+  height: 28px;
+}
+
+.hub-brand-name b {
+  display: block;
+  font: 800 15.5px var(--font);
+  letter-spacing: -0.01em;
+  /* The skins' gradient name, on the Mochi Stage brand block. */
+  background: linear-gradient(110deg, #f6fffe 15%, var(--hub-accent-bright) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hub-brand-name small {
+  display: block;
+  font: 800 10.5px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
+}
+
+/* ── Settings search field & results ── */
+.hub-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  margin: 0 4px 10px;
+  background: var(--hub-card);
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-sizing: border-box;
+}
+
+.hub-search:focus-within {
+  border-color: var(--hub-accent-line);
+  box-shadow: 0 0 0 3px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1);
+}
+
+.hub-search svg.hub-search-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  fill: none;
+  stroke: var(--hub-muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--hub-text);
+  font: 400 13px var(--font);
+  outline: none;
+  padding: 0;
+}
+
+/* The window's text fields (settings.css, input[type="text"]) weigh more than
+   one class and drew a second box inside this one: the field is the box. */
+.hub-search .hub-search-input,
+.hub-search .hub-search-input:focus {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+}
+
+.hub-search-input::placeholder {
+  color: var(--hub-muted);
+}
+
+.hub-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--hub-muted);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.hub-search-clear:hover {
+  color: var(--hub-text);
+}
+
+.hub-search-clear svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.hub-search-empty {
+  font-size: 12.5px;
+  color: var(--hub-muted);
+  padding: 8px 10px;
+}
+
+.hub-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hub-search-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  color: #b7bbc2;
+  text-align: start;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 0.12s ease;
+}
+
+.hub-search-row:hover {
+  background: var(--hub-accent-soft);
+}
+
+.hub-search-row.on {
+  background: linear-gradient(90deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.2), rgba(var(--skin-accent-rgb, 57, 197, 187), 0.07));
+  color: var(--hub-text);
+}
+
+.hub-search-row svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+
+.hub-search-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hub-search-row-title {
+  font: 500 13px var(--font);
+  color: var(--hub-text);
+  line-height: 1.3;
+}
+
+.hub-search-row-subtitle {
+  font: 400 11px var(--font);
+  color: var(--hub-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card anchor glow */
+@keyframes hub-card-glow {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  30% {
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
+  }
+  75% {
+    box-shadow: 0 0 0 2px var(--hub-accent, #39c5bb), 0 0 16px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.hub-card-glowing {
+  animation: hub-card-glow 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.hub-group {
+  font: 700 10.5px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(var(--skin-accent-bright-rgb, 111, 237, 227), 0.5);
+  padding: 12px 10px 6px;
+}
+
+.hub-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 9px;
+  background: transparent;
+  color: #c3d6d4;
+  font: 500 13.5px var(--font);
+  text-align: start;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+/* Home sits above the groups, with a hairline under it. */
+.hub-item-home {
+  margin-bottom: 5px;
+  border-bottom: 1px solid transparent;
+}
+
+.hub-item-home::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -3px;
+  height: 1px;
+  background: var(--hub-line);
+}
+
+.hub-item svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Off: the icon reads in greys; on: it takes the accent (color on active). */
+  color: var(--hub-muted);
+  transition: color 0.15s ease;
+}
+
+.hub-item:hover:not(:disabled) {
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.08);
+  color: var(--hub-text);
+  transform: none;
+}
+
+.hub-item:hover:not(:disabled) svg {
+  color: #9aa3b2;
+}
+
+.hub-item:active:not(:disabled) {
+  transform: none;
+}
+
+.hub-item.on {
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--hub-accent-line);
+}
+
+.hub-item.on svg {
+  color: var(--hub-accent);
+}
+
+/* The teal bar on the left of the page you are on. */
+.hub-item.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(to bottom, var(--hub-accent-bright), var(--hub-accent));
+  box-shadow: 0 0 10px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55);
+}
+
+.hub-item.on svg {
+  color: var(--hub-accent-bright);
+  opacity: 1;
+}
+
+.hub-side .spacer {
+  flex: 1 1 auto;
+  min-height: 12px;
+}
+
+.hub-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hub-status .dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+}
+
+/* A ripple while the model downloads: the chip is doing something. */
+.hub-status .dot.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: hub-dot-pulse 1.6s ease-out infinite;
+}
+
+@keyframes hub-dot-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+.hub-version {
+  color: var(--hub-muted);
+  font-size: 11px;
+  padding: 8px 12px 0;
+}
+
+/* ── Panel ────────────────────────────────────────────────────────────────── */
+
+.hub-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 12px 12px 12px 0;
+  border-radius: 22px;
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 24px 28px 28px;
+}
+
+.hub-page {
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: hub-page-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── The tabs inside a page ────────────────────────────────────────────────── */
+
+/* Under the band, a row of tabs: the sections of one page that used to be five
+   sidebar rows (the island's settings, the mail rules). A line, not a pill
+   group: the page band is the loud thing, this is a shelf under it. */
+.hub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: -6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--hub-line, rgba(150, 224, 218, 0.09));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hub-tab {
+  flex: 0 0 auto;
+  padding: 8px 13px 9px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--hub-secondary);
+  font: 500 12.5px var(--font);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.hub-tab:hover {
+  color: var(--hub-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hub-tab.on {
+  color: var(--hub-accent-bright);
+}
+
+/* The tab that is showing, drawn on the line itself. */
+.hub-tab.on::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hub-accent-bright);
+}
+
+.hub-tab:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -2px;
+}
+
+/* A block inside a page (the statistics under the Notetaker's notes): its own
+   heading, quieter than a band, because the page's band already said what page
+   this is. */
+.hub-block-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hub-line, rgba(150, 224, 218, 0.09));
+}
+
+.hub-block-head b {
+  font: 650 14px var(--font);
+  color: var(--hub-text);
+}
+
+.hub-block-head .hub-note {
+  flex: 1 1 auto;
+}
+
+.hub-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* A new page arrives from a hair below, instead of jumping in. */
+@keyframes hub-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The notch's pages keep their sections as they ship, at the panel's width. */
+.hub-page #settings-root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Hero band: the Mochi Stage ───────────────────────────────────────────── */
+
+/* A band and its chips row flow as two children of the page (see hero.ts). */
+.hub-hero-block {
+  display: contents;
+}
+
+/* The cards in a colour keep the band's black and their canvas particles. */
+.hub-glow {
+  background:
+    radial-gradient(ellipse 60% 90% at 92% -15%, var(--hero-glow, transparent), transparent 70%),
+    linear-gradient(to bottom left, var(--hero-tint, transparent), transparent 65%),
+    linear-gradient(135deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.07), transparent 42%),
+    #020203;
+}
+
+/* The stage: the mockup's teal gradient, with the page's colour as a tint. */
+.hub-hero {
+  position: relative;
+  height: 190px;
+  border-radius: 22px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid rgba(125, 227, 220, 0.16);
+  box-shadow: 0 24px 60px rgba(15, 174, 157, 0.14);
+  background:
+    radial-gradient(300px 220px at 72% 45%, rgba(125, 227, 220, 0.2), transparent 62%),
+    radial-gradient(260px 200px at 50% 80%, rgba(4, 33, 30, 0.4), transparent 70%),
+    linear-gradient(to bottom left, var(--hero-tint, transparent), transparent 65%),
+    linear-gradient(118deg, #052e2c 0%, #0c5b54 45%, #128f85 100%);
+}
+
+.hub-hero.compact {
+  height: 116px;
+}
+
+.hub-hero .copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 26px 36px;
+  max-width: calc(100% - 250px);
+  height: 100%;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.hub-hero.compact .copy {
+  padding: 20px;
+  max-width: calc(100% - 140px);
+}
+
+.hub-hero .copy > * {
+  pointer-events: auto;
+}
+
+.hub-hero h1 {
+  font: 800 30px var(--font);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.hub-hero.compact h1 {
+  font-size: 24px;
+}
+
+.hub-hero p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c4f2ea;
+  max-width: 460px;
+}
+
+.hub-hero .actions {
+  margin-top: auto;
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+
+/* The band's buttons take the mockup's CTAs: the main one dark with teal
+   letters, the others white glass over the gradient. */
+.hub-hero .actions button.hub-btn.primary {
+  background: #04211e;
+  color: var(--hub-accent-bright);
+  box-shadow: 0 10px 26px rgba(4, 33, 30, 0.33);
+}
+
+.hub-hero .actions button.hub-btn.primary:hover:not(:disabled) {
+  background: #06332f;
+}
+
+.hub-hero .actions button.hub-btn:not(.primary):not(.danger) {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.hub-hero .actions button.hub-btn:not(.primary):not(.danger):hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* ── The character stage (hub/character.ts) ───────────────────────────────── */
+
+.mochi-stage {
+  position: absolute;
+  right: 52px;
+  top: 0;
+  bottom: 0;
+  width: 240px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mochi-disc {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, rgba(255, 255, 255, 0.17), rgba(4, 33, 30, 0.2) 70%);
+  box-shadow:
+    0 0 0 2px rgba(125, 227, 220, 0.27),
+    0 0 60px rgba(125, 227, 220, 0.19),
+    inset 0 -18px 40px rgba(4, 33, 30, 0.27);
+}
+
+.mochi-ring {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  margin: -125px 0 0;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 2px dashed rgba(125, 227, 220, 0.27);
+  animation: hub-spin 24s linear infinite;
+}
+
+/* The second ring: an arc that turns the other way, so the stage reads as a
+   pair of orbits rather than one dashed circle. */
+.mochi-ring.inner {
+  right: 4px;
+  margin-top: -115px;
+  width: 230px;
+  height: 230px;
+  border: 0;
+  border-top: 2px solid rgba(125, 227, 220, 0.22);
+  border-left: 2px solid rgba(125, 227, 220, 0.1);
+  animation: hub-spin-back 17s linear infinite;
+}
+
+@keyframes hub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hub-spin-back {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Two motes riding the rings: a small dot each, kept on the orbit by the
+   parent's rotation. They carry the stage's colour. */
+.mochi-orbit {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  margin-top: -125px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  animation: hub-spin 24s linear infinite;
+}
+
+.mochi-orbit.o2 {
+  margin-top: -115px;
+  right: 4px;
+  width: 230px;
+  height: 230px;
+  animation: hub-spin-back 17s linear infinite;
+}
+
+.mochi-orbit::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #aef7ec;
+  box-shadow: 0 0 10px rgba(174, 247, 236, 0.9);
+}
+
+.mochi-orbit.o2::before {
+  background: rgba(125, 227, 220, 0.8);
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  top: -2px;
+}
+
+/* The seasonal confetti (hero.ts `stageWeather`): behind her, above the disc. */
+.mochi-weather {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 250px;
+  height: 250px;
+  margin-top: -125px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Her breath: the shadow on the ground, in step with the bob. It is a sibling
+   of `.mochi-char`, not a child: a child would ride the bob's transform and
+   hang in the air with her instead of staying on the floor. */
+.mochi-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 19px;
+  width: 74px;
+  height: 12px;
+  margin-left: -37px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(4, 33, 30, 0.55), transparent 70%);
+  animation: hub-breathe 3s ease-in-out infinite;
+}
+
+@keyframes hub-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(0.86);
+    opacity: 0.55;
+  }
+}
+
+.mochi-char {
+  position: absolute;
+  /* Centred on the disc: its centre sits 6px + 190px/2 = 101px from the
+     stage's right edge, so the 170px canvas starts at 101 - 85 = 16px. */
+  right: 16px;
+  /* The engine draws her with headroom (room for tall hats above), so her
+     body sits high inside the canvas: the box is dropped 32px to put her
+     body, not her canvas, on the disc's centre. */
+  top: calc(50% + 32px);
+  font-size: 96px;
+  line-height: 1;
+  filter: drop-shadow(0 16px 28px rgba(4, 33, 30, 0.53));
+  animation: hub-bob 3s ease-in-out infinite;
+}
+
+@keyframes hub-bob {
+  0%,
+  100% {
+    transform: translateY(-58%);
+  }
+  50% {
+    transform: translateY(-63%);
+  }
+}
+
+/* The full stage sits its Miku a few pixels lower than the compact one: the
+   bubble lives in the space above her crown, and at the top edge of a 190px
+   band there is only just room for it. She still stands on the disc. */
+.mochi-stage:not(.peek) .mochi-char {
+  top: calc(50% + 7px);
+}
+
+/* Typing (agent running): a small restless hop. */
+.mochi-char .mochi-char-canvas {
+  width: 170px;
+  height: 170px;
+  display: block;
+  /* The stage is pointer-events: none so it never steals a click from the
+     band; the character herself opts back in — a click is hers. */
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Dancing along with music (character.ts): the engine moves the body, so the
+   canvas keeps the plain bob and the CSS adds a small sway of its own. */
+.mochi-stage.dancing .mochi-char {
+  animation: hub-sway 1.07s ease-in-out infinite;
+}
+
+@keyframes hub-sway {
+  0%,
+  100% {
+    transform: translateY(-58%) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-60%) rotate(2deg);
+  }
+}
+
+.st-running .mochi-char {
+  animation: hub-type 1s steps(2) infinite;
+}
+
+@keyframes hub-type {
+  50% {
+    transform: translateY(-60%);
+  }
+}
+
+/* Dancing (session clear): a happy swing. */
+.st-clear .mochi-char {
+  transform-origin: 50% 90%;
+  animation: hub-dance 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes hub-dance {
+  from {
+    transform: translateY(-58%) rotate(-7deg) scale(1.02);
+  }
+  to {
+    transform: translateY(-58%) rotate(7deg);
+  }
+}
+
+/* Idle: the slow bob. */
+.st-idle .mochi-char {
+  animation-duration: 5s;
+}
+
+/* Each state tints its ring and disc. */
+.st-waiting-permission .mochi-ring {
+  border-color: rgba(255, 184, 77, 0.4);
+  animation-duration: 16s;
+}
+
+.st-waiting-permission .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(255, 184, 77, 0.3);
+  border-left-color: rgba(255, 184, 77, 0.12);
+}
+
+.st-waiting-permission .mochi-orbit::before {
+  background: #ffd08a;
+  box-shadow: 0 0 10px rgba(255, 184, 77, 0.9);
+}
+
+.st-waiting-permission .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(255, 184, 77, 0.35),
+    0 0 60px rgba(255, 184, 77, 0.2),
+    inset 0 -18px 40px rgba(4, 33, 30, 0.27);
+}
+
+.st-running .mochi-ring {
+  border-color: rgba(57, 197, 187, 0.3);
+}
+
+.st-running .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(57, 197, 187, 0.3),
+    0 0 50px rgba(57, 197, 187, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+.st-clear .mochi-ring {
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.st-clear .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(74, 222, 128, 0.34);
+  border-left-color: rgba(74, 222, 128, 0.12);
+}
+
+.st-clear .mochi-orbit::before {
+  background: #9ff0b4;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.9);
+}
+
+.st-clear .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.3),
+    0 0 60px rgba(74, 222, 128, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+.st-idle .mochi-ring {
+  border-color: rgba(138, 148, 162, 0.27);
+  animation-duration: 40s;
+}
+
+.st-idle .mochi-ring.inner {
+  border-color: transparent;
+  border-top-color: rgba(138, 148, 162, 0.2);
+  border-left-color: transparent;
+  animation-duration: 30s;
+}
+
+.st-idle .mochi-disc {
+  box-shadow:
+    0 0 0 2px rgba(138, 148, 162, 0.2),
+    inset 0 -14px 30px rgba(4, 33, 30, 0.27);
+}
+
+/* Sparkles ✦ that twinkle around the stage. */
+.mochi-sparkle {
+  position: absolute;
+  color: #aef7ec;
+  opacity: 0.7;
+  font-size: 13px;
+  animation: hub-twinkle 2.6s infinite;
+}
+
+.mochi-sparkle.s1 {
+  left: 46%;
+  top: 18%;
+}
+
+.mochi-sparkle.s2 {
+  left: 62%;
+  top: 72%;
+  animation-delay: 0.9s;
+}
+
+.mochi-sparkle.s3 {
+  left: 90%;
+  top: 24%;
+  animation-delay: 1.4s;
+}
+
+.mochi-sparkle.s4 {
+  left: 70%;
+  top: 12%;
+  animation-delay: 0.4s;
+}
+
+@keyframes hub-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+/* The speech bubble near the character.
+   Frosted glass, not a white card: it sits over her head and her hats, so it
+   has to let them show through. Narrow and wrapped rather than one long line,
+   and pushed up and left of her crown, so it covers as little of her as the
+   band's height allows. */
+.mochi-bubble {
+  position: absolute;
+  left: -66px;
+  top: 0;
+  /* Narrow enough that its right edge stops short of her head (which starts
+     about 135px into the stage), so the hats and hair ornaments stay clear. */
+  max-width: 112px;
+  /* The glass is the blur, not the ink: whatever passes behind her head reads
+     through softened, which a plain translucent fill only smears. */
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px) saturate(1.25);
+  color: #0f2b28;
+  border-radius: 15px;
+  border-bottom-left-radius: 5px;
+  padding: 7px 12px;
+  font: 800 11.5px/1.35 var(--font);
+  white-space: normal;
+  text-wrap: balance;
+  box-shadow:
+    0 10px 26px rgba(4, 33, 30, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+/* No tail: a translucent one doubles up where it overlaps the bubble and reads
+   as a smudge. The tight bottom-left corner points at her instead. */
+.mochi-bubble::after {
+  content: none;
+}
+
+/* Every new line pops again (character.ts `pop`). */
+.mochi-bubble.pop {
+  animation: hub-pop 0.4s ease;
+}
+
+@keyframes hub-pop {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* The compact band's corner stage: smaller, no bubble, tucked right. */
+.mochi-stage.peek {
+  right: 18px;
+  width: 130px;
+}
+
+.mochi-stage.peek .mochi-disc {
+  width: 108px;
+  height: 108px;
+  right: 0;
+}
+
+.mochi-stage.peek .mochi-ring {
+  width: 132px;
+  height: 132px;
+  margin-top: -66px;
+  right: -12px;
+}
+
+.mochi-stage.peek .mochi-ring.inner,
+.mochi-stage.peek .mochi-orbit {
+  width: 120px;
+  height: 120px;
+  margin-top: -60px;
+  right: -6px;
+}
+
+.mochi-stage.peek .mochi-orbit::before {
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+}
+
+.mochi-stage.peek .mochi-weather {
+  width: 132px;
+  height: 132px;
+  margin-top: -66px;
+  right: -12px;
+}
+
+.mochi-stage.peek .mochi-char {
+  font-size: 54px;
+  /* Centred on the peek disc: its centre sits 108px/2 = 54px from the stage's
+     right edge, so the 92px canvas starts at 54 - 46 = 8px. */
+  right: 8px;
+}
+
+.mochi-stage.peek .mochi-char .mochi-char-canvas {
+  width: 92px;
+  height: 92px;
+  margin-right: 0;
+}
+
+.mochi-stage.peek .mochi-shadow {
+  width: 40px;
+  height: 7px;
+  margin-left: -20px;
+  bottom: 20px;
+}
+
+.mochi-stage.peek .mochi-sparkle {
+  font-size: 10px;
+}
+
+/* ── The character-state chips row (hub/character.ts) ─────────────────────── */
+
+.hub-states {
+  display: flex;
+  gap: 10px;
+  margin-top: -8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hub-states-label {
+  font: 800 11px var(--font);
+  letter-spacing: 0.16em;
+  color: var(--hub-muted);
+  margin-right: 4px;
+}
+
+.hub-state-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--hub-line);
+  color: var(--hub-secondary);
+}
+
+.hub-state-chip.on {
+  background: #17262c;
+  color: var(--hub-accent-bright);
+  border-color: #1d4a43;
+}
+
+.hub-state-chip .d {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 8px;
+}
+
+/* ── Cards, rows and controls of the Flow pages ───────────────────────────── */
+
+.hub-label {
+  font: 700 11px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
+  padding: 4px 2px 0;
+}
+
+.hub-card {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 15px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hub-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 30px;
+}
+
+.hub-row .text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hub-row .title {
+  font: 600 13.5px var(--font);
+}
+
+.hub-row .detail,
+.hub-note {
+  font-size: 12px;
+  color: var(--hub-secondary);
+}
+
+.hub-divider {
+  height: 1px;
+  background: var(--hub-line);
+  margin: 0 -2px;
+}
+
+.hub-keycap {
+  font: 600 12.5px var(--font);
+  padding: 0 10px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+button.hub-btn {
+  border-radius: 10px;
+  padding: 8px 14px;
+  font: 600 12.5px var(--font);
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--hub-text);
+}
+
+button.hub-btn.primary {
+  background: var(--hub-accent);
+  color: var(--hub-on-accent);
+}
+
+button.hub-btn.primary:hover:not(:disabled) {
+  background: var(--hub-accent-bright);
+}
+
+button.hub-btn.danger {
+  background: rgba(255, 69, 58, 0.14);
+  color: #ff8a80;
+}
+
+button.hub-btn.small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+button.hub-icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c7cad0;
+}
+
+button.hub-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-input,
+.hub-select,
+.hub-textarea {
+  font: 400 13px var(--font);
+  color: var(--hub-text);
+  background: var(--hub-field);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.hub-input:focus,
+.hub-textarea:focus,
+.hub-select:focus {
+  border-color: var(--hub-accent-line);
+  box-shadow: 0 0 0 3px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.08);
+}
+
+.hub-textarea {
+  resize: vertical;
+  min-height: 80px;
+  width: 100%;
+}
+
+.hub-segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  gap: 2px;
+}
+
+.hub-segmented button {
+  border-radius: 7px;
+  padding: 5px 14px;
+  background: transparent;
+  color: #c7cad0;
+  font: 500 12.5px var(--font);
+}
+
+.hub-segmented button.on {
+  background: rgba(57, 197, 187, 0.18);
+  color: var(--hub-accent-bright);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.32);
+}
+
+.hub-radio {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border-radius: 50%;
+  border: 1.5px solid #5a5f68;
+}
+
+.hub-radio.on {
+  border: 5px solid var(--hub-accent);
+}
+
+.hub-progress {
+  width: 120px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.hub-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--hub-accent);
+  border-radius: 3px;
+}
+
+.hub-ok {
+  color: var(--hub-green);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hub-warn {
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(247, 179, 43, 0.1);
+  border: 1px solid rgba(247, 179, 43, 0.22);
+  color: #f5d28a;
+  font-size: 12.5px;
+}
+
+/* ── Dictation page ───────────────────────────────────────────────────────── */
+
+.hub-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 20px;
+  align-items: start;
+}
+
+.hub-history-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hub-history-head .hub-input {
+  margin-inline-start: auto;
+  width: 210px;
+}
+
+.hub-day {
+  font: 600 12.5px var(--font);
+  color: var(--hub-secondary);
+  padding: 6px 2px 0;
+}
+
+.hub-entries {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hub-entry {
+  display: flex;
+  gap: 18px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-entry:first-child {
+  border-top: 0;
+}
+
+.hub-entry .when {
+  width: 70px;
+  flex: 0 0 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--hub-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.hub-entry .words {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--hub-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.hub-entry .tools {
+  display: flex;
+  gap: 6px;
+  align-self: flex-start;
+  opacity: 0.55;
+}
+
+.hub-entry:hover .tools {
+  opacity: 1;
+}
+
+.hub-big-number {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.hub-big-number b {
+  font: 700 32px var(--font);
+  letter-spacing: -0.02em;
+}
+
+.hub-big-number span {
+  color: var(--hub-secondary);
+  font-size: 13px;
+}
+
+/* A card in a colour: the band's black and particles. */
+.hub-glow {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--glow-line, rgba(255, 255, 255, 0.1));
+}
+
+.hub-glow canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hub-glow .inner {
+  position: relative;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hub-link {
+  background: none;
+  padding: 0;
+  color: var(--hub-accent);
+  font: 600 13px var(--font);
+  align-self: flex-start;
+}
+
+.hub-link:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+
+.hub-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 20px;
+  color: var(--hub-secondary);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.hub-empty canvas {
+  width: 64px;
+  height: 64px;
+}
+
+/* ── Wardrobe ─────────────────────────────────────────────────────────────── */
+
+.hub-wardrobe {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* Miku herself, on the skin's own colour. */
+.hub-skin-preview-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 18px 18px;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, var(--card-tint, var(--hub-accent-soft)), transparent 70%),
+    var(--hub-card);
+  border: 1px solid var(--card-line, var(--hub-line));
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.hub-skin-preview {
+  width: 150px;
+  height: 186px;
+  flex: 0 0 186px;
+}
+
+.hub-skin-preview-card .meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.hub-skin-name {
+  font: 700 16px var(--font);
+  color: var(--card-color, var(--hub-text));
+}
+
+.hub-wardrobe-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hub-skin-card {
+  gap: 10px;
+}
+
+.hub-skin-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hub-skin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--hub-line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--hub-body);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.hub-skin:hover {
+  border-color: var(--hub-accent-line);
+  background: var(--hub-accent-soft);
+  transform: translateY(-1px);
+}
+
+.hub-skin.on {
+  border-color: var(--hub-accent);
+  background: linear-gradient(160deg, var(--hub-accent-soft), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 0 0 1px var(--hub-accent-line) inset;
+}
+
+.hub-skin .label {
+  font: 600 12.5px var(--font);
+  color: var(--hub-text);
+}
+
+.hub-skin .sub {
+  font: 400 10.5px var(--mono);
+  color: var(--hub-muted);
+  letter-spacing: 0.02em;
+}
+
+.hub-skin-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.hub-skin-swatch .auto {
+  font: 700 8px var(--font);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.72);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.hub-outfit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-outfit {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hub-line);
+  background: transparent;
+  color: var(--hub-secondary);
+  font: 500 12px var(--font);
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.hub-outfit:hover {
+  border-color: var(--hub-accent-line);
+  color: var(--hub-text);
+}
+
+.hub-outfit.on {
+  border-color: var(--hub-accent);
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .hub-wardrobe {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-skin-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Home ─────────────────────────────────────────────────────────────────── */
+
+/* The cards of the Home page: the band's colour, borrowed small. */
+.hub-home {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 14px;
+}
+
+.hub-home-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  min-height: 148px;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 90% 120% at 100% -25%, var(--card-tint, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1)), transparent 68%),
+    var(--hub-card);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-text);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.hub-home-card:hover {
+  border-color: var(--card-line, var(--hub-accent-line));
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1);
+}
+
+.hub-home-card:active {
+  transform: translateY(0);
+}
+
+.hub-home-card .top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-home-card .tile {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-tint, var(--hub-accent-soft));
+  color: var(--card-color, var(--hub-accent-bright));
+}
+
+.hub-home-card .tile svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-home-card .name {
+  font: 600 13.5px var(--font);
+  color: var(--hub-body);
+}
+
+.hub-home-card .state {
+  font: 700 21px/1.15 var(--font);
+  letter-spacing: -0.015em;
+}
+
+.hub-home-card .hint {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.hub-home-card .go {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--card-color, var(--hub-accent));
+  font: 600 12.5px var(--font);
+}
+
+.hub-home-card .go::after {
+  content: "→";
+  transition: transform 0.16s ease;
+}
+
+.hub-home-card:hover .go::after {
+  transform: translateX(3px);
+}
+
+.hub-home-card .swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.hub-home-card .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.hub-home-card .swatches .more {
+  color: var(--hub-muted);
+  font-size: 11.5px;
+}
+
+/* The strip under the band: the key and what it does. */
+.hub-home-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.hub-home-quick .hub-keycap {
+  background: var(--hub-accent-soft);
+  color: var(--hub-accent-bright);
+  box-shadow: inset 0 0 0 1px var(--hub-accent-line);
+}
+
+/* ── Statistics ───────────────────────────────────────────────────────────── */
+
+.hub-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hub-stat {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-stat .label {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+}
+
+.hub-stat b {
+  font: 700 28px var(--font);
+  letter-spacing: -0.02em;
+}
+
+.hub-stat .sub {
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-chart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.hub-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  border-bottom: 1px dashed rgba(var(--skin-accent-rgb, 57, 197, 187), 0.25);
+}
+
+.hub-bars i {
+  flex: 1 1 0;
+  border-radius: 4px 4px 1px 1px;
+  background: var(--hub-accent);
+  min-height: 0;
+}
+
+.hub-bars i.zero {
+  background: transparent;
+}
+
+.hub-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--hub-muted);
+  font-size: 11px;
+}
+
+.hub-app-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hub-app-bar .top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.hub-app-bar .top span {
+  color: var(--hub-secondary);
+}
+
+.hub-app-bar .track {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.hub-app-bar .track i {
+  display: block;
+  height: 100%;
+  background: var(--hub-accent);
+  border-radius: 3px;
+}
+
+/* ── Dictionary, snippets and styles ──────────────────────────────────────── */
+
+.hub-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 13px;
+}
+
+.hub-chip button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--hub-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-chip button svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.hub-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.hub-pair .arrow {
+  color: var(--hub-muted);
+  text-align: center;
+}
+
+.hub-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-list-row:first-child {
+  border-top: 0;
+}
+
+.hub-list-row .grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hub-snippet-text {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dimmed {
+  opacity: 0.5;
+}
+
+/* ── Notetaker ────────────────────────────────────────────────────────────── */
+
+.hub-notes {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--hub-line);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.hub-notes-list {
+  border-inline-end: 1px solid var(--hub-line);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-note-item {
+  text-align: start;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--hub-text);
+}
+
+.hub-note-item.on {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hub-note-item .t {
+  font: 600 13.5px var(--font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-note-item .m {
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-note-detail {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hub-note-detail h2 {
+  font: 700 22px var(--font);
+  letter-spacing: -0.01em;
+}
+
+.hub-speakers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-speaker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  color: var(--hub-text);
+}
+
+.hub-speaker .av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 11px var(--font);
+  color: #0b0c0e;
+}
+
+.hub-line {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.hub-line .ts {
+  color: var(--hub-muted);
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.hub-line .who {
+  font: 600 12.5px var(--font);
+}
+
+.hub-line .said {
+  font-size: 14px;
+  color: var(--hub-body);
+  line-height: 1.5;
+}
+
+.hub-todo {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+}
+
+.hub-todo input {
+  margin-top: 3px;
+  accent-color: var(--hub-accent);
+}
+
+.hub-todo .who {
+  color: var(--hub-secondary);
+  font-size: 12px;
+}
+
+.hub-rec {
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hub-red);
+  box-shadow: 0 0 6px rgba(255, 69, 58, 0.7);
+}
+
+@media (max-width: 1000px) {
+  .hub-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hub-chart-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-hero .copy {
+    max-width: 100%;
+  }
+}
+
+.hub-note-detail > button {
+  align-self: flex-start;
+}
+
+/* ── Mail (classic Outlook) — MailHubPages.swift ──────────────────────────── */
+.mail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mail-stat {
+  font: 700 28px var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.mail-journal {
+  gap: 12px;
+  align-items: center;
+}
+
+.mail-journal b {
+  font-weight: 600;
+}
+
+.mail-dim {
+  color: #8e939c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-dim.small {
+  font-size: 11.5px;
+  color: #6b7079;
+}
+
+.mail-rule-line {
+  gap: 8px;
+}
+
+.mail-if {
+  width: 44px;
+  flex: 0 0 auto;
+}
+
+/* Reduced motion: the stage holds still — no spin, no bob, no twinkle, no
+   pulse, no orbiting motes, no breathing shadow, no sway. The layout, the
+   colours and the bubble stay as they are, and the seasonal canvas is left
+   empty by the script itself (hero.ts asks this query). */
+@media (prefers-reduced-motion: reduce) {
+  .mochi-ring,
+  .mochi-char,
+  .mochi-shadow,
+  .mochi-sparkle,
+  .mochi-orbit,
+  .mochi-bubble,
+  .mochi-stage.dancing .mochi-char,
+  .hub-card-glowing,
+  .hub-status .dot {
+    animation: none !important;
+  }
+}
+
+/* Scrollbars as on the Mac: a thin rounded thumb that floats on the page, no
+   arrows and no track. (Chromium ignores these once scrollbar-width or
+   scrollbar-color is set on the element, so those stay unset.) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  min-height: 36px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Main menu ────────────────────────────────────────────────────────────────
+   Menu mode: Miku big in the middle over the bands' particles and her
+   weather, the sections as bubbles over her head, the pages hidden.
+   `body.hub-open`: she moves to the left column, posing, and the page comes in
+   on the right under a top bar (back + every section as a chip). */
+
+body.hub-window {
+  --col: clamp(300px, 36vw, 440px);
+}
+
+#hub {
+  position: relative;
+}
+
+.hub-side,
+.hub-panel {
+  position: relative;
+  z-index: 1;
+}
+
+/* A concert stage at night: two spotlights from the rig (her colour and
+   pink), a faint five-line staff across the hall, a glowing floor grid going
+   away under her feet. */
+.hub-menu-backdrop {
+  --stage: var(--skin-accent-rgb, 57, 197, 187);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    conic-gradient(from 162deg at 18% -6%, transparent 0deg, rgba(var(--stage), 0.13) 9deg, rgba(var(--stage), 0.05) 22deg, transparent 30deg),
+    conic-gradient(from 168deg at 82% -6%, transparent 0deg, rgba(225, 40, 133, 0.05) 8deg, rgba(225, 40, 133, 0.12) 21deg, transparent 30deg),
+    radial-gradient(ellipse 55% 32% at 50% 100%, rgba(var(--stage), 0.32), transparent 72%),
+    radial-gradient(ellipse 70% 40% at 50% -10%, rgba(var(--stage), 0.07), transparent 70%),
+    linear-gradient(180deg, #04070a 0%, #071318 48%, #0a2226 78%, #0d2f31 100%);
+}
+
+/* The staff: five hairlines across the hall, fading out at the walls. */
+.hub-menu-backdrop::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  height: 49px;
+  background: repeating-linear-gradient(180deg, rgba(var(--stage), 0.09) 0 1px, transparent 1px 12px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+}
+
+/* The floor: a grid in perspective, lit near the front, gone at the horizon. */
+.hub-menu-backdrop::after {
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -2px;
+  height: 38%;
+  background-image:
+    linear-gradient(rgba(var(--stage), 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--stage), 0.16) 1px, transparent 1px);
+  background-size: 64px 36px;
+  transform: perspective(420px) rotateX(64deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 85%);
+  animation: hub-floor-run 6s linear infinite;
+}
+
+@keyframes hub-floor-run {
+  to {
+    background-position: 0 36px, 0 0;
+  }
+}
+
+/* `screen`: the canvases' own black drops out, their light and particles stay. */
+.hub-menu-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: screen;
+}
+
+.hub-menu {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hub-menu-stage {
+  position: absolute;
+  --size: min(66vh, 560px);
+  width: var(--size);
+  height: var(--size);
+  left: calc(50% - var(--size) / 2);
+  top: calc(100% - var(--size) - 3vh);
+  transition:
+    left 0.7s cubic-bezier(0.65, 0, 0.35, 1),
+    top 0.7s cubic-bezier(0.65, 0, 0.35, 1),
+    width 0.7s cubic-bezier(0.65, 0, 0.35, 1),
+    height 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Her floor: a soft disc under her feet. */
+.hub-menu-stage::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 8%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.4), transparent 70%);
+}
+
+.hub-menu-miku {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.hub-bubble {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.2), rgba(8, 18, 22, 0.78) 62%) padding-box,
+    linear-gradient(150deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.6), rgba(255, 255, 255, 0.05) 45%, rgba(225, 40, 133, 0.45)) border-box;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--hub-text);
+  font: 600 11.5px/1.15 var(--font);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 8px;
+  text-align: center;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: hub-bubble-bob 4s ease-in-out infinite;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.35s ease,
+    visibility 0s linear 0s;
+}
+
+/* She fills the disc; the disc's round edge crops her at the waist. */
+.hub-bubble-miku {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* The page's name, a pill hanging under the disc. */
+.hub-bubble span {
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  translate: -50% 0;
+  white-space: nowrap;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(6, 14, 17, 0.92);
+  box-shadow: inset 0 0 0 1px var(--hub-accent-line);
+  font-size: 11px;
+}
+
+.hub-bubble:hover span,
+.hub-bubble:focus-visible span {
+  color: var(--hub-on-accent);
+  background: linear-gradient(135deg, var(--hub-accent-bright), var(--hub-accent));
+  box-shadow: none;
+}
+
+.hub-bubble:hover,
+.hub-bubble:focus-visible {
+  outline: none;
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 2px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55),
+    0 0 28px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.4),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes hub-bubble-bob {
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+/* Menu mode hides the pages. */
+body.hub-window:not(.hub-open) .hub-side,
+body.hub-window:not(.hub-open) .hub-panel {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hub-side,
+.hub-panel {
+  transition: opacity 0.45s ease 0.25s, visibility 0s;
+}
+
+/* Open: she stands at the top of the left column, posing. */
+body.hub-open .hub-menu-stage {
+  --size: var(--col);
+  left: 0;
+  top: calc(50% - var(--col) * 0.6);
+}
+
+body.hub-open .hub-bubble {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+/* The left column: transparent over the backdrop, her above the search. */
+body.hub-open .hub-side {
+  width: var(--col);
+  flex-basis: var(--col);
+  padding-top: calc(var(--col) + 8px);
+  background: transparent;
+  border-right: 0;
+}
+
+body.hub-open .hub-brand {
+  display: none;
+}
+
+/* Under her feet: the dictation status as a pill, the version at the bottom. */
+body.hub-open .hub-side {
+  align-items: center;
+  padding-top: calc(50vh + var(--col) * 0.3);
+}
+
+body.hub-open .hub-status {
+  order: 1;
+  width: auto;
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+body.hub-open .hub-side .spacer {
+  order: 2;
+}
+
+body.hub-open .hub-version {
+  order: 3;
+}
+
+/* The settings search, at the end of the top bar; its hits drop down under it. */
+/* First line: Back on the left, the search on the right; the chips below. */
+.hub-topbar::after {
+  content: "";
+  order: 1;
+  flex-basis: 100%;
+}
+
+.hub-topbar .hub-item {
+  order: 2;
+}
+
+.hub-topbar-search {
+  position: relative;
+  margin-left: auto;
+  width: 240px;
+}
+
+.hub-topbar-search .hub-search {
+  margin: 0;
+  border-radius: 999px;
+}
+
+.hub-topbar-search .hub-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--hub-line);
+  background: var(--hub-card);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  z-index: 5;
+}
+
+/* The right panel, as the mockup: glassy, a top bar, a plain title. */
+body.hub-open .hub-panel {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(11, 22, 27, 0.86), rgba(5, 10, 13, 0.92)) padding-box,
+    linear-gradient(160deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.55), rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.03) 70%, rgba(225, 40, 133, 0.4)) border-box;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  margin: 16px 16px 16px 0;
+  border-radius: 26px;
+}
+
+/* A spotlight on the panel's top edge, falling on the title. */
+body.hub-open .hub-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 180px;
+  background: radial-gradient(ellipse 60% 100% at 30% 0%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.hub-topbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 24px 14px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--hub-line);
+}
+
+.hub-menu-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hub-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hub-text);
+  font: 500 13px var(--font);
+  cursor: pointer;
+}
+
+.hub-menu-back svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-menu-back:hover,
+.hub-menu-back:focus-visible {
+  border-color: var(--hub-accent);
+  outline: none;
+}
+
+/* Every section as a chip, on one track under the way back. */
+.hub-topbar .hub-groups {
+  order: 2;
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 1px var(--hub-line);
+}
+
+.hub-topbar .hub-group {
+  display: none;
+}
+
+.hub-topbar .hub-item {
+  width: auto;
+  height: 30px;
+  border-radius: 12px;
+  padding: 0 12px;
+  gap: 8px;
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.hub-topbar .hub-item svg {
+  width: 15px;
+  height: 15px;
+  flex-basis: 15px;
+}
+
+.hub-topbar .hub-item.on {
+  color: var(--hub-on-accent);
+  background: linear-gradient(135deg, var(--hub-accent-bright), var(--hub-accent));
+  box-shadow: 0 4px 16px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.35);
+}
+
+.hub-topbar .hub-item.on svg {
+  color: var(--hub-on-accent);
+}
+
+.hub-topbar .hub-item.on::before {
+  display: none;
+}
+
+.hub-topbar .hub-item-home::after {
+  display: none;
+}
+
+/* The band becomes a plain title and line: she is already on the left. */
+body.hub-open .hub-hero {
+  height: auto;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+body.hub-open .hub-hero .copy {
+  max-width: none;
+  padding: 6px 0 4px;
+}
+
+body.hub-open .hub-hero p {
+  color: var(--hub-secondary);
+}
+
+body.hub-open .hub-hero h1 {
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+body.hub-open .hub-hero h1::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 3px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--hub-accent-bright), #e12885);
+}
+
+body.hub-open .hub-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012) 60%),
+    var(--hub-card);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.22);
+  transition: border-color 0.2s ease;
+}
+
+body.hub-open .hub-card:hover {
+  border-color: var(--hub-accent-line);
+}
+
+body.hub-open .hub-hero .mochi-stage,
+body.hub-open .hub-hero-block > :not(.hub-hero) {
+  display: none;
+}
+
+/* The update pill (update-pill.ts): top right on the menu, under her on the
+   left column once a page is open. Quiet until a new version is out. */
+.hub-update {
+  position: absolute;
+  z-index: 3;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 5px 5px 5px 14px;
+  border-radius: 999px;
+  background: rgba(6, 14, 17, 0.72);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px var(--hub-line);
+  color: var(--hub-secondary);
+  font: 500 12px var(--font);
+  transition: top 0.7s cubic-bezier(0.65, 0, 0.35, 1), right 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.hub-update-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-update-btn {
+  flex: none;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--hub-text);
+  font: 600 12px var(--font);
+  cursor: pointer;
+}
+
+.hub-update-btn[hidden] {
+  display: none;
+}
+
+.hub-update-btn:hover:not(:disabled),
+.hub-update-btn:focus-visible {
+  background: var(--hub-accent-soft);
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--hub-accent);
+}
+
+/* A new version: pink-lit, breathing, the button filled. */
+.hub-update.has {
+  color: var(--hub-text);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(225, 40, 133, 0.6), 0 0 22px rgba(225, 40, 133, 0.35);
+  animation: hub-update-breathe 2.6s ease-in-out infinite;
+}
+
+.hub-update.has .hub-update-btn {
+  background: linear-gradient(135deg, #f0569a, #e12885);
+  color: #fff;
+}
+
+@keyframes hub-update-breathe {
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(225, 40, 133, 0.6), 0 0 8px rgba(225, 40, 133, 0.15);
+  }
+}
+
+/* A page open: under her feet, in the left column, above the version line. */
+body.hub-open .hub-update {
+  top: auto;
+  right: auto;
+  bottom: 44px;
+  left: calc(var(--col) / 2);
+  translate: -50% 0;
+  max-width: calc(var(--col) - 24px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-update.has {
+    animation: none;
+  }
+
+  .hub-menu-stage,
+  .hub-menu-backdrop::after,
+  .hub-bubble,
+  .hub-side,
+  .hub-panel {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* The window's X: "to the tray or quit?" (shell.ts, askClose). */
+.hub-close-ask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.hub-close-box {
+  width: min(420px, 100%);
+  padding: 22px 22px 18px;
+  border-radius: 16px;
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-body);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+.hub-close-box h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--hub-text);
+}
+.hub-close-box p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hub-secondary);
+}
+.hub-close-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.hub-close-actions button {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--hub-line);
+  background: var(--hub-field);
+  color: var(--hub-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hub-close-actions button:hover {
+  border-color: var(--hub-accent-line);
+}
+.hub-close-actions button:focus-visible {
+  outline: 2px solid var(--hub-accent-bright);
+  outline-offset: 2px;
+}
+.hub-close-actions .hub-close-quit {
+  color: var(--hub-red);
+}
+.hub-close-actions .hub-close-tray {
+  background: var(--hub-accent);
+  border-color: var(--hub-accent);
+  color: var(--hub-on-accent);
+  font-weight: 600;
+}

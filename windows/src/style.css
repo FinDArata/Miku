@@ -1,0 +1,5057 @@
+/* Kanon for Windows — same palette, sizes and type scale as the macOS island.
+   Every colour below is copied from the Swift views. */
+
+:root {
+  color-scheme: dark;
+
+  /* After the Latin fonts: the scripts of the other interface languages —
+     Devanagari and Bengali (Nirmala UI), Simplified Chinese (Microsoft YaHei)
+     on Windows, the Noto families on Linux. Arabic and Cyrillic are in Segoe UI. */
+  --font: system-ui, "Segoe UI Variable Text", "Segoe UI", "Segoe UI Emoji", "Nirmala UI",
+    "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali",
+    "Noto Sans Arabic", "Noto Sans CJK SC", "Noto Sans SC", "Droid Sans Fallback", sans-serif;
+  --mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+
+  --ink: #f5f6f8;        /* primary text */
+  --ink-2: #f1f2f4;
+  --dim: #9398a1;
+  --dim-2: #8e939c;
+  --dim-3: #6b7079;
+  --dim-4: #5f646d;
+  --dim-5: #4b5563;
+  --card: #141518;
+  --card-flat: #0e0f11;
+  --tab-on: #1d1f23;
+  --hairline: rgba(255, 255, 255, 0.035);
+  --red: #f4505e;
+  --red-text: #ff8d97;
+  --green: #22c55e;
+  --green-2: #34d399;
+  --amber: #f5a524;
+  --cyan: #22d3ee;
+  --indigo: #6366f1;
+  --pink: #f472b6;
+
+  /* Miku's own teal — Hatsune Miku's #39C5BB — the accent the hub and the pill
+     wear. Shared by hub.css and pill.css; the island keeps its own palette,
+     taking only the skin's accent for its small dots and glows.
+     The values come from the skin in force (src/theme/skins.ts); the literals
+     after each `var()` are the classic Miku, used before that script runs. */
+  --miku: var(--skin-accent, #39c5bb);
+  --miku-bright: var(--skin-accent-bright, #6fede3);
+  --miku-deep: var(--skin-accent-deep, #1f8c86);
+  --miku-glow: var(--skin-accent-soft, rgba(57, 197, 187, 0.35));
+  --miku-tint: var(--skin-accent-soft, rgba(57, 197, 187, 0.12));
+  --miku-line: var(--skin-accent-line, rgba(57, 197, 187, 0.28));
+  --on-miku: var(--skin-on-accent, #04211f);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+}
+
+/* Invisible strip that wakes the island when it is hidden. */
+#wake-strip {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 6px;
+  background: transparent;
+}
+
+/* ── Island ─────────────────────────────────────────────────────────────── */
+
+/* The song's stage (docs/mockups/notch-music.png): header, Miku under the
+   spotlights on an LED floor, the words, the clock and the buttons. */
+#lyrics-pill {
+  --ms-teal: #39c5bb;
+  --ms-pink: #e8457c;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0 0 26px 26px;
+  background: linear-gradient(#0d1322, #18213a);
+  border: 1px solid #2b3858;
+  border-top: none;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: default;
+  color: #e9f6f5;
+}
+#lyrics-pill[hidden] { display: none; }
+
+#lyrics-pill .ms-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #0a0f1a;
+  border-bottom: 1px solid #1d2742;
+}
+#lyrics-pill .ms-art {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2b1a4d, #1a3b5c);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+}
+#lyrics-pill .ms-art::before { content: "♪"; color: rgba(255, 255, 255, 0.8); font-size: 20px; }
+#lyrics-pill .ms-art.has-art::before { content: none; }
+#lyrics-pill .ms-art img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#lyrics-pill .ms-art.has-art img { display: block; }
+#lyrics-pill .ms-text { min-width: 0; flex: 1; }
+#lyrics-pill .ms-title,
+#lyrics-pill .ms-artist,
+#lyrics-pill .ms-album { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#lyrics-pill .ms-title { font-size: 14px; font-weight: 700; }
+#lyrics-pill .ms-artist { font-size: 12px; color: #8fa3b8; margin-top: 1px; }
+#lyrics-pill .ms-album { font-size: 11px; color: #5d6d86; margin-top: 1px; }
+#lyrics-pill .ms-album:empty { display: none; }
+#lyrics-pill .ms-src {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #39c5bb;
+  border: 1px solid rgba(57, 197, 187, 0.4);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+#lyrics-pill .ms-src.spotify { color: #5fd37a; border-color: rgba(95, 211, 122, 0.4); }
+
+/* The stage takes what the words leave: a long line wraps, Miku gets smaller. */
+#lyrics-pill .ms-stage { position: relative; flex: 1 1 104px; min-height: 64px; overflow: hidden; }
+#lyrics-pill .ms-beam {
+  position: absolute;
+  top: -10px;
+  width: 120px;
+  height: 260px;
+  background: linear-gradient(rgba(57, 197, 187, 0.38), rgba(57, 197, 187, 0));
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+#lyrics-pill .ms-beam.left { left: 20px; transform: rotate(-12deg); }
+#lyrics-pill .ms-beam.right { right: 20px; transform: rotate(12deg); }
+#lyrics-pill .ms-beam.mid { left: calc(50% - 60px); }
+#lyrics-pill .ms-miku {
+  position: absolute;
+  left: calc(50% - 55px);
+  top: 4px;
+  width: 110px;
+  height: calc(100% - 4px);
+}
+#lyrics-pill .ms-floor {
+  flex: none;
+  height: 10px;
+  background: repeating-linear-gradient(90deg, var(--ms-teal) 0 18px, #1b6c6a 18px 20px, var(--ms-pink) 20px 38px, #7a2547 38px 40px);
+  opacity: 0.9;
+  box-shadow: 0 0 20px rgba(57, 197, 187, 0.6);
+}
+
+/* Registered so the wipe has a start value (an unset one would hide the words) and eases between ticks. */
+@property --sung {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+#lyrics-pill { --lyrics-ink: #ffffff; }
+#lyrics-pill .ms-lyr {
+  flex: none;
+  padding: 7px 16px 6px;
+  background: linear-gradient(#0d1322, #0a0f1a);
+  text-align: center;
+  border-top: 1px solid #222c45;
+}
+#lyrics-pill .ms-line {
+  line-height: 1.25;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+#lyrics-pill .ms-line.past,
+#lyrics-pill .ms-line.next { font-size: 12.5px; color: color-mix(in srgb, var(--lyrics-ink) 38%, transparent); min-height: 1.25em; }
+#lyrics-pill .ms-line.current {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 2px 0;
+}
+/* Karaoke, as on the floating card (lyrics.css): teal fills the line in the
+   user's text colour; inline + slice so a wrapped line fills row by row. */
+#lyrics-pill .ms-ink {
+  background: linear-gradient(90deg, var(--ms-teal) var(--sung), var(--lyrics-ink) var(--sung));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  box-decoration-break: slice;
+  -webkit-box-decoration-break: slice;
+  filter: drop-shadow(0 0 6px rgba(57, 197, 187, 0.45));
+  transition: --sung 200ms linear;
+}
+
+#lyrics-pill .ms-prog {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: Consolas, ui-monospace, monospace;
+  font-size: 11px;
+  color: #8fa3b8;
+  padding: 2px 16px 4px;
+  background: #0a0f1a;
+}
+#lyrics-pill .ms-bar { flex: 1; height: 4px; border-radius: 2px; background: #1f2840; overflow: hidden; }
+#lyrics-pill .ms-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ms-teal), var(--ms-pink));
+}
+
+#lyrics-pill .ms-ctl {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 0 0 6px;
+  background: #0a0f1a;
+  flex: none;
+  height: 40px;
+}
+#lyrics-pill .ms-ctl button { border: none; background: transparent; color: #8fa3b8; cursor: pointer; display: grid; place-items: center; }
+#lyrics-pill .ms-ctl .ms-skip:hover { color: #e9f6f5; }
+#lyrics-pill .ms-ctl .ms-play {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ms-teal);
+  color: #062a28;
+}
+#lyrics-pill .ms-ctl .ms-detach {
+  position: absolute;
+  right: 14px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #2d3858;
+  border-radius: 8px;
+}
+#lyrics-pill .ms-ctl .ms-detach:hover { border-color: var(--ms-teal); color: var(--ms-teal); }
+
+#island {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  background: #000;
+  border-radius: 0 0 14px 14px;
+  overflow: visible;
+  transform: translateX(-50%);
+  will-change: width, height;
+}
+
+/* Laid out at the island's final size; the shell resizes around it
+   (island.ts applyGeometry), so nothing inside is ever stretched. */
+#island-body {
+  position: absolute;
+  top: 0;
+  border-radius: inherit;
+}
+
+#island-clip {
+  position: absolute;
+  inset: 0;
+  /* clip, not hidden: a hidden box can still be scrolled (scrollIntoView on a
+     view's row shifts it), and a scroll left behind by a width change slides
+     the whole deck sideways inside the island — dead space at the card's side. */
+  overflow: clip;
+  border-radius: inherit;
+}
+
+/* ── Stage ───────────────────────────────────────────────────────────────
+   Open, the island is the greeting's stage: lit from above in the skin's
+   colour, with a row of footlights along its front edge. Closed, it stays
+   the plain black of the notch. */
+
+#island[data-mode="expanded"] {
+  background:
+    radial-gradient(90% 120% at 50% -30%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.13), transparent 62%),
+    linear-gradient(180deg, #040506 0%, #0a0c0f 100%);
+  box-shadow: inset 0 -1px 0 rgba(var(--skin-accent-rgb, 57, 197, 187), 0.32);
+}
+
+#island[data-mode="expanded"] #island-clip::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 2px;
+  height: 6px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.95) 0 1px, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.22) 1.5px, transparent 3px)
+    center / 24px 6px repeat-x;
+  opacity: 0.55;
+  animation: footlights 4s ease-in-out infinite;
+}
+
+@keyframes footlights {
+  50% { opacity: 0.8; }
+}
+
+/* The weather (Snow/Sakura): behind everything the island shows, above the
+   black. Cross-faded, so a wardrobe pick swaps the sky without a blink. */
+#ambient-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+#ambient-canvas.on {
+  opacity: 1;
+}
+
+#bot-canvas,
+#greeting-canvas {
+  position: absolute;
+  pointer-events: none;
+}
+
+#bot-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(6px);
+  transition: opacity 0.4s ease-in-out, background 0.4s ease-in-out;
+}
+
+#countdown {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+  width: 0;
+}
+
+/* Compact Claude plan gauge in the compact island. */
+#compact-plan {
+  --plan: #6b7079;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--plan) 14%, transparent);
+  border-radius: 999px;
+  background: #0e0f11;
+  color: var(--dim-3);
+  font: 600 10px var(--font);
+  font-variant-numeric: tabular-nums;
+  line-height: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.25s ease-in-out, right 0.2s ease, background 0.18s, border-color 0.18s, color 0.18s;
+  user-select: none;
+  z-index: 2;
+}
+
+#compact-plan:hover {
+  background: color-mix(in srgb, var(--plan) 18%, transparent);
+  border-color: color-mix(in srgb, var(--plan) 55%, transparent);
+  color: color-mix(in srgb, var(--plan) 70%, white);
+}
+
+#compact-plan .compact-plan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--plan);
+  flex-shrink: 0;
+}
+
+/* Music chrome: while she dances, the island's small dots and the clock
+   breathe with the beat — `--beat` (0…1) is written by the frame loop, and
+   only the glow moves, nothing else. */
+#compact-plan .compact-plan-dot,
+#island-closed .dot {
+  box-shadow: 0 0 calc(2px + var(--beat, 0) * 7px) rgba(var(--skin-accent-rgb, 57, 197, 187), calc(0.12 + var(--beat, 0) * 0.5));
+}
+
+#island-clock {
+  text-shadow: 0 0 calc(2px + var(--beat, 0) * 9px) rgba(var(--skin-accent-rgb, 57, 197, 187), calc(var(--beat, 0) * 0.4));
+}
+
+/* Date and time in the middle of the compact island, between Mochi and the grid. */
+#island-clock {
+  position: absolute;
+  left: 50px;
+  right: 56px;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  transition: opacity 0.25s ease-in-out;
+}
+
+/* The closed island's one line (core/closed.ts): the time, the plan, the song. */
+#island-closed {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: rgba(245, 246, 248, 0.92);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease-in;
+}
+
+#island-closed.on {
+  opacity: 1;
+  transition: opacity 0.3s ease-out 0.12s;
+}
+
+#island-closed .text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Files waiting on the shelf: a small teal count after the text. */
+#island-closed .shelf {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #9fe6e6;
+}
+
+#island-closed .dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+#island-closed.note::before {
+  content: "♪";
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #1ed760;
+}
+
+/* A mini Mochi: the slot is the body, the canvas is larger and overflows it so
+   hands, badges and particles are not cut off. */
+.mini {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.mini canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Content shell (expanded) ───────────────────────────────────────────── */
+
+#content {
+  position: absolute;
+  inset: 0;
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.2s ease-in-out;
+}
+
+#header {
+  position: relative;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  margin: 0 -10px;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-left: 12px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tab {
+  width: 32px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--dim-3);
+  cursor: default;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab.on {
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.16);
+  color: var(--miku-bright);
+  box-shadow: inset 0 0 0 1px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.38), 0 0 12px rgba(var(--skin-accent-rgb, 57, 197, 187), 0.22);
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  padding-right: 16px;
+}
+
+.header-actions button {
+  border: 0;
+  background: transparent;
+  color: var(--dim-3);
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition: color 0.15s;
+}
+
+.header-actions button:hover {
+  color: var(--miku-bright);
+}
+
+.header-actions button.close:hover {
+  color: var(--red-text);
+}
+
+.header-actions button.on {
+  color: var(--miku-bright);
+}
+
+#views {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.16s ease-in;
+}
+
+/* A view comes up onto the stage, the way she does in the greeting. */
+.view.on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity 0.28s ease-out 0.14s, transform 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) 0.14s;
+}
+
+/* A view that is not on is only transparent, not gone: an infinite animation
+   inside it (the drop frame's marching dashes) would keep the webview
+   repainting every frame for as long as the app runs, island hidden or not. */
+.view:not(.on) * {
+  animation-play-state: paused;
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  height: 100%;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.012) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+/* The overview's left card is where she stands: a spotlight falls on her mark. */
+.overview > .left > .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(64px 26px at 58px 100%, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.3), transparent 75%),
+    conic-gradient(from 180deg at 58px -10px, transparent 162deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.11) 172deg, rgba(var(--skin-accent-rgb, 57, 197, 187), 0.11) 188deg, transparent 198deg);
+}
+
+
+/* The ritual card: one line of dim body under the heading. */
+.ritual-body {
+  font: 500 12px var(--font);
+  color: #cfeeea;
+}
+
+/* A lit card (views.ts card(tone)): a bar along the top in its tone, and a
+   spotlight on the floor where Miku stands, at the left, like the overview. */
+.card.lit { --tone: rgba(57, 197, 187, 0.45); }
+.card.lit.pink { --tone: rgba(232, 69, 124, 0.5); }
+.card.lit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, var(--tone) 30%, var(--tone) 70%, transparent) 18px 0 / calc(100% - 36px) 2px no-repeat,
+    conic-gradient(from 166deg at 58px -6px, transparent 0deg, color-mix(in srgb, var(--tone) 35%, transparent) 9deg, color-mix(in srgb, var(--tone) 35%, transparent) 19deg, transparent 28deg),
+    radial-gradient(70px 22px at 58px 100%, var(--tone), transparent 75%);
+  pointer-events: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  display: inline-block;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn {
+  font: 500 12.5px var(--font);
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 999px;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: transform 0.08s ease-out, background 0.12s ease-out;
+}
+
+.btn:active {
+  transform: scale(0.94);
+}
+
+.btn.primary {
+  background: var(--miku);
+  color: var(--on-miku);
+  font-weight: 600;
+  box-shadow: 0 0 14px var(--miku-glow);
+}
+
+.btn.primary:hover {
+  background: var(--miku-bright);
+}
+
+.btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+  color: var(--ink-2);
+}
+
+.btn.secondary:hover {
+  box-shadow: inset 0 0 0 1px var(--miku-line);
+  background: var(--miku-tint);
+}
+
+.btn .kbd {
+  font-size: 10.5px;
+  padding: 0 4px;
+  border-radius: 4px;
+  opacity: 0.55;
+}
+
+.btn.primary .kbd {
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.btn.secondary .kbd {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.link-btn {
+  border: 0;
+  background: transparent;
+  font: 500 11px var(--font);
+  cursor: default;
+}
+
+.icon-btn {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--dim-4);
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+
+/* ── Overview ───────────────────────────────────────────────────────────── */
+
+/* The stage runs the whole width of the island, Miku on her mark at its left
+   and one pill's slide beside her. The pager in the header, a sideways swipe,
+   a drag or ←/→ move to the next slide. */
+.overview {
+  height: 100%;
+}
+
+.overview > .left {
+  height: 100%;
+}
+
+.left-body {
+  height: 100%;
+  transition: transform 0.25s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.left-body.slide-next { animation: slide-next 0.34s cubic-bezier(0.2, 1, 0.3, 1); }
+.left-body.slide-prev { animation: slide-prev 0.34s cubic-bezier(0.2, 1, 0.3, 1); }
+.left-body.edge-next { animation: edge-next 0.3s ease-out; }
+.left-body.edge-prev { animation: edge-prev 0.3s ease-out; }
+
+@keyframes slide-next { from { opacity: 0; transform: translateX(46px); } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(-46px); } }
+/* At the last slide: a small push that comes back. */
+@keyframes edge-next { 40% { transform: translateX(-10px); } }
+@keyframes edge-prev { 40% { transform: translateX(10px); } }
+
+/* ── Pager ──────────────────────────────────────────────────────────────── */
+
+.pager {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.pager button:focus-visible {
+  outline: 1px solid var(--miku-line);
+}
+
+.pager button {
+  border: 0;
+  background: transparent;
+  cursor: default;
+  display: grid;
+  place-items: center;
+}
+
+.pager-step {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--dim-3);
+  transition: color 0.15s, background 0.15s;
+}
+
+.pager-step:hover:not([disabled]) {
+  color: var(--miku-bright);
+  background: rgba(var(--skin-accent-rgb, 57, 197, 187), 0.12);
+}
+
+.pager-step[disabled] {
+  opacity: 0.3;
+}
+
+.pager-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px;
+  transition: opacity 0.2s;
+}
+
+.pager-dots.dim {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.pager .pager-dot {
+  --pill: #9398a1;
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--pill) 45%, rgba(255, 255, 255, 0.15));
+  transition: width 0.25s cubic-bezier(0.2, 1.2, 0.4, 1), background 0.2s, box-shadow 0.2s;
+}
+
+.pager .pager-dot:hover {
+  background: var(--pill);
+}
+
+.pager .pager-dot.on {
+  width: 18px;
+  background: var(--pill);
+  box-shadow: 0 0 8px var(--pill);
+}
+
+/* A slide that wants a look: a ring in the badge's colour (was the pill's badge). */
+.pager .pager-dot.badge-approval { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #f5a524; }
+.pager .pager-dot.badge-finished { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #22c55e; }
+.pager .pager-dot.badge-error { box-shadow: 0 0 0 2px #0a0c0f, 0 0 0 3.5px #f4505e; }
+
+.pager-edit {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: var(--dim-3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.pager-edit:hover {
+  color: var(--miku-bright);
+}
+
+.pager-edit.on {
+  color: var(--on-miku);
+  background: var(--miku);
+  box-shadow: 0 0 10px var(--miku-glow);
+}
+
+/* ── Choosing the slides (Edit) ─────────────────────────────────────────── */
+
+.slide-edit {
+  height: 100%;
+  padding: 8px 12px 6px 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slide-edit-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 20px;
+  gap: 4px;
+  align-content: start;
+}
+
+.slide-chip {
+  --pill: #9398a1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--dim-3);
+  font: 600 10.5px var(--font);
+  cursor: default;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+
+.slide-chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slide-chip i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pill) 60%, transparent);
+}
+
+.slide-chip:hover {
+  color: var(--ink);
+}
+
+.slide-chip.on {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--pill) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pill) 50%, transparent);
+}
+
+.slide-chip.on i {
+  background: var(--pill);
+  box-shadow: 0 0 6px var(--pill);
+}
+
+/* The main pill always has a slide: shown on, not switchable here. */
+.slide-chip.main {
+  opacity: 0.75;
+}
+
+.slide-edit-note {
+  font: 500 10.5px var(--font);
+  color: var(--dim-3);
+}
+
+.slide-edit-note.warn {
+  color: var(--amber);
+}
+
+.card-body {
+  position: relative;
+  z-index: 1;
+  padding-top: 10px;
+}
+
+.who {
+  padding: 0 36px 0 108px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.who .name {
+  font: 600 12px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.who .tool {
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+}
+
+.who .count {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.jump {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+}
+
+/* Folds a waiting permission card or question away without answering it. */
+.fold {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+}
+
+/* Ticker */
+
+.ticker {
+  position: relative;
+  height: 44px;
+  margin: 6px 12px 0 108px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 12%,
+    #000 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 85%, transparent 100%);
+}
+
+.ticker-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform-origin: left center;
+  will-change: transform, opacity;
+}
+
+.ticker-row .tick-icon {
+  width: 12px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 12px;
+  color: var(--dim-2);
+}
+
+.ticker-row .tick-text {
+  font: 500 13px var(--font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Live diff step: file name, then +N −M right after it (TickerRowView). */
+.ticker-row .tick-count {
+  flex: 0 0 auto;
+  margin-left: -6px; /* no row gap: the counts sit right after the name */
+  font: 500 10px var(--mono);
+  white-space: pre;
+}
+
+.ticker-row .tick-count .plus {
+  color: var(--green);
+}
+
+.ticker-row .tick-count .minus {
+  color: var(--red);
+}
+
+/* ── Diff card (overview, left card) — DiffCardView ─────────────────────── */
+
+.diff-card {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 10px 4px 108px;
+}
+
+.diff-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 3px;
+  min-width: 0;
+}
+
+.diff-back {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: default;
+}
+
+.diff-back b {
+  font: 600 12px var(--font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff-head .grow {
+  flex: 1 1 auto;
+}
+
+.diff-head .tick-count {
+  flex: 0 0 auto;
+  font: 500 10px var(--mono);
+}
+
+.diff-head .plus {
+  color: var(--green);
+}
+
+.diff-head .minus {
+  color: var(--red);
+}
+
+.diff-head .icon-btn {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.diff-note {
+  font: 400 10.5px var(--font);
+  color: var(--dim-3);
+}
+
+.diff-lines {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  user-select: text;
+}
+
+.diff-lines::-webkit-scrollbar {
+  display: none;
+}
+
+.diff-line {
+  display: flex;
+  min-height: 14px; /* an empty line still takes a row */
+  font: 400 10.5px/1.35 var(--mono);
+  color: var(--dim-3);
+}
+
+.diff-line .sym {
+  flex: 0 0 12px;
+  color: #454850;
+}
+
+.diff-line .txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff-line.added {
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+}
+
+.diff-line.added .sym {
+  color: var(--green);
+}
+
+.diff-line.removed {
+  background: rgba(244, 80, 94, 0.12);
+  color: #fca5a5;
+}
+
+.diff-line.removed .sym {
+  color: var(--red);
+}
+
+/* Shimmer sweep, 2.2 s — same as TickerShimmerText / ShimmeringText */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #7c818a 0%,
+    #f2f3f5 40%,
+    #7c818a 70%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+
+/* ── Agent pills ────────────────────────────────────────────────────────── */
+
+.pills {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 28px;
+  gap: 4px;
+  align-content: center;
+  padding: 0 8px;
+}
+
+/* Each agent is a channel strip: its colour as a lit bar on the left edge. */
+.pill {
+  --pill: #9398a1;
+  position: relative;
+  height: 28px;
+  border-radius: 9px;
+  background: rgba(8, 9, 11, 0.72);
+  border: 1px solid color-mix(in srgb, var(--pill) 20%, transparent);
+  display: flex;
+  align-items: center;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), background 0.18s, border-color 0.18s,
+    box-shadow 0.18s, filter 0.18s;
+}
+
+.pill::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--pill);
+  box-shadow: 0 0 6px var(--pill);
+  opacity: 0.85;
+}
+
+.pill .mini {
+  margin-left: 7px;
+}
+
+.pill .lbl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: left;
+  font: 600 10.5px var(--font);
+  letter-spacing: 0.02em;
+  color: var(--dim-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px 0 36px;
+  pointer-events: none;
+  transition: color 0.18s;
+}
+
+.pill:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--pill) 15%, rgba(8, 9, 11, 0.72));
+  border-color: color-mix(in srgb, var(--pill) 55%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--pill) 30%, transparent);
+}
+
+.pill:hover .lbl {
+  color: color-mix(in srgb, var(--pill) 55%, white);
+}
+
+.pill-badge {
+  position: absolute;
+  top: -3px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0b0c0e;
+  display: grid;
+  place-items: center;
+}
+
+.pill-badge i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #000;
+}
+
+.pill-badge svg {
+  width: 6px;
+  height: 6px;
+}
+
+/* ── Generic text blocks ────────────────────────────────────────────────── */
+
+.title {
+  font: 600 15px var(--font);
+}
+
+/* Claude's final message on the finished card: one line, never past the card. */
+.title.one-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.sub {
+  font: 400 13px var(--font);
+  color: var(--dim);
+}
+
+.detail {
+  font: 400 12px var(--font);
+  color: #f39abb;
+}
+
+.who-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 400 12px var(--font);
+  color: var(--dim-2);
+}
+
+.who-row .n {
+  font: 600 12px var(--font);
+  color: var(--ink);
+}
+
+.code {
+  font: 400 12px var(--mono);
+  color: #e8e9ec;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 5px 10px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: text;
+}
+
+.stack {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+}
+
+/* ── Settings view (in-island) ──────────────────────────────────────────── */
+
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 400 12.5px var(--font);
+  color: #c5c8cd;
+}
+
+.switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.15);
+  flex: 0 0 32px;
+  transition: background 0.18s;
+  cursor: default;
+  border: 0;
+}
+
+.switch.on {
+  background: var(--green);
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.18s;
+}
+
+.switch.on::after {
+  transform: translateX(14px);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 72px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.seg {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.seg button {
+  font: 400 11px var(--font);
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim-3);
+  cursor: default;
+}
+
+.seg button.on {
+  background: #252830;
+  color: var(--ink);
+}
+
+/* ── Utility ────────────────────────────────────────────────────────────── */
+
+.grow {
+  flex: 1 1 auto;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ── Chat (prompt view) ─────────────────────────────────────────────────── */
+
+.chat-card {
+  overflow: hidden;
+}
+
+.chat-body {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px 84px;
+}
+
+.chip-row:empty {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font: 400 11.5px var(--font);
+  color: var(--ink-2);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  transform: scale(1.06);
+  transition: border-color 0.3s ease-out 0.45s, transform 0.3s ease-out 0.45s;
+}
+
+.chip.settled {
+  border-color: rgba(255, 255, 255, 0);
+  transform: scale(1);
+}
+
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b5b, #f7b32b, #2dd4a7, #38bdf8, #a78bfa);
+}
+
+.chat-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.chat-row {
+  display: flex;
+}
+
+.chat-row.user {
+  justify-content: flex-end;
+  padding-left: 32px;
+}
+
+.bubble {
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  padding: 6px 10px;
+  font: 400 12.5px var(--font);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.reply {
+  font: 400 12.5px var(--font);
+  color: #b0b5be;
+  white-space: pre-wrap;
+  padding-right: 8px;
+  user-select: text;
+  /* Answers are Markdown blocks (views/markdown.ts), spaced as ChatMarkdownView. */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ── Markdown in the answers ─────────────────────────────────────────────── */
+
+.md-p {
+  font: 400 12.5px var(--font);
+  color: #b0b5be;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.md-h {
+  font: 600 13px var(--font);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.md-h1 {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.reply strong {
+  color: #e8e9ec;
+  font-weight: 600;
+}
+
+.md-code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  font: 400 11.5px var(--mono);
+  color: #c8cdd4;
+}
+
+.md-link {
+  color: #60a5fa;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.md-pre {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: #0d0e12;
+}
+
+.md-pre pre {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 400 11px var(--mono);
+  color: #c8cdd4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.md-copy {
+  flex: 0 0 22px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--dim-3);
+  cursor: default;
+}
+
+.md-copy:hover {
+  color: var(--dim);
+}
+
+.md-copy.done {
+  color: var(--green);
+}
+
+.md-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.md-bullet {
+  flex: 0 0 auto;
+  min-width: 10px;
+  font: 400 12.5px var(--font);
+  color: var(--dim-3);
+}
+
+.md-quote {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.md-quote i {
+  flex: 0 0 2px;
+  border-radius: 1px;
+  background: var(--dim-5);
+}
+
+.md-quote .md-p {
+  color: #8a8f98;
+}
+
+.md-rule {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  opacity: 0.3;
+}
+
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 2px;
+}
+
+.typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dim-3);
+  animation: typing 0.9s ease-in-out infinite;
+}
+
+.typing i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.typing i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes typing {
+  0%, 100% { transform: scale(0.6); }
+  50% { transform: scale(1.2); }
+}
+
+/* ── Provider and model switcher (PromptView's model button) ─────────────── */
+
+.model-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 10px;
+}
+
+.model-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #5c6370;
+  cursor: default;
+}
+
+.model-btn:hover:not(:disabled),
+.model-btn.open {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.model-btn:disabled {
+  opacity: 0.6;
+}
+
+.model-dot {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.model-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 10.5px var(--font);
+  color: #7b8089;
+}
+
+.picker {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #16171b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chat-body.picking .picker {
+  display: flex;
+}
+
+.chat-body.picking .chat-log,
+.chat-body.picking .chip-row {
+  display: none;
+}
+
+.picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  font: 400 11.5px var(--font);
+  color: #c8cdd4;
+  cursor: default;
+}
+
+.picker-chip.on {
+  font-weight: 600;
+  color: var(--ink-2);
+  /* Plain fallbacks for WebKitGTK builds without color-mix(). */
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.picker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.picker-rule {
+  flex: 0 0 1px;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0.4;
+}
+
+.picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picker-model {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #c8cdd4;
+  font: 400 12px var(--font);
+  text-align: left;
+  cursor: default;
+}
+
+.picker-model:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.picker-model.on {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.picker-model-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  font: 400 11px var(--font);
+  color: #8a8f98;
+}
+
+.picker-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #60a5fa;
+  font: inherit;
+  cursor: default;
+}
+
+.chat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 400 13px var(--font);
+  outline: none;
+  cursor: text;
+}
+
+.chat-input::placeholder {
+  color: var(--dim-3);
+}
+
+.send-btn {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #0b0c0e;
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition: transform 0.08s ease-out;
+}
+
+.send-btn:active {
+  transform: scale(0.94);
+}
+
+/* ── Integration cards (overview, left card) ────────────────────────────── */
+
+.left-body {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+.int-card {
+  padding: 10px 12px 0 108px;
+  display: flex;
+  flex-direction: column;
+}
+
+.int-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+/* ── Slide content ───────────────────────────────────────────────────────
+   A pill's own slide reads like a title card: what kind of pill it is as a
+   small spaced-out line, its name large in its own colour's light, the state
+   as a chip, and what can be done as capsules. List cards keep their rows. */
+
+/* Title on top; the state chip and the capsules share the line under it. */
+.int-card.idle {
+  --pill: var(--miku);
+  padding-top: 10px;
+  flex-flow: row wrap;
+  align-items: center;
+  align-content: flex-start;
+  column-gap: 6px;
+}
+
+.int-card.idle > .int-head {
+  flex-basis: 100%;
+  margin-bottom: 8px;
+}
+
+.int-card.idle .int-head {
+  flex-wrap: wrap;
+  row-gap: 1px;
+  column-gap: 7px;
+}
+
+.int-card.idle .int-head > span {
+  order: -1;
+  flex-basis: 100%;
+  font: 700 8.5px var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pill) 70%, var(--dim-3));
+}
+
+.int-card.idle .int-head b {
+  font: 700 17px var(--font);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--pill) 45%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.int-card.idle .int-head > .dot {
+  width: 8px !important;
+  height: 8px !important;
+  box-shadow: 0 0 8px var(--pill);
+}
+
+.int-card.idle .int-status {
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  font: 500 10.5px var(--font);
+  color: var(--dim-2);
+}
+
+.int-card.idle .int-actions {
+  gap: 6px;
+  padding-top: 0;
+}
+
+.int-card.idle .int-actions .link-btn {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font: 600 10.5px var(--font);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 32%, transparent);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.int-card.idle .int-actions .link-btn:hover {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 60%, transparent), 0 0 10px color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* A live session's slide: the agent's name a step larger than its tool. */
+.overview .who .name {
+  font: 700 13.5px var(--font);
+}
+
+.int-head b {
+  font: 600 12px var(--font);
+  color: var(--ink);
+}
+
+.int-head > span {
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+}
+
+.int-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.int-total span {
+  font: 500 11px var(--font);
+  color: #c5c8cd;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulse {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+.int-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 4px;
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+}
+
+.int-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.int-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 5px;
+}
+
+.int-rows.tight {
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.int-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  min-width: 0;
+}
+
+.int-name {
+  font: 500 11px var(--font);
+  color: #9398a1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.int-row.first .int-name {
+  color: #c5c8cd;
+}
+
+.int-ago {
+  font: 400 10px var(--font);
+  color: var(--dim-3);
+  flex: 0 0 auto;
+}
+
+.int-sub {
+  font: 400 10px var(--font);
+  color: #4d5159;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.int-amount {
+  font: 500 11px var(--mono);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.int-time {
+  font: 500 10px var(--mono);
+  color: #c9956a;
+  flex: 0 0 auto;
+}
+
+.int-more,
+.int-back {
+  border: 0;
+  background: transparent;
+  color: var(--dim-3);
+  display: grid;
+  place-items: center;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.int-more {
+  width: 18px;
+  height: 18px;
+}
+
+.int-back {
+  width: 28px;
+  height: 28px;
+}
+
+.int-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 8px;
+  padding-right: 12px;
+}
+
+/* The System pill's gauges: a label, its number, and a bar that fills to it.
+   The colour comes from the value (views/system.ts's heatColor) rather than
+   from the stylesheet, so a number crossing a threshold shows at once. */
+.sys-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 8px;
+  padding-right: 12px;
+}
+
+.sys-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sys-gauge {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sys-label {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+}
+
+.sys-value {
+  margin-left: auto;
+  font: 600 12px var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-detail {
+  font: 400 10px var(--font);
+  color: var(--dim-3);
+  white-space: nowrap;
+}
+
+.sys-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: #ffffff14;
+  overflow: hidden;
+}
+
+.sys-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  /* A percentage that moved 3% reads as a bar that moved, not one that
+     flickered: the fill eases instead of jumping. */
+  transition: width 600ms ease, background 600ms ease;
+}
+
+.int-stat {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.int-stat-icon {
+  width: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.int-stat-label {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+}
+
+.int-stat-value {
+  margin-left: auto;
+  font: 600 12px var(--font);
+  color: #c5c8cd;
+  font-variant-numeric: tabular-nums;
+}
+
+.int-balance {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  padding-top: 4px;
+}
+
+.int-balance span {
+  font: 700 20px var(--mono);
+  color: var(--ink);
+}
+
+.int-balance i {
+  font: 600 9px var(--font);
+  font-style: normal;
+  color: var(--dim-3);
+}
+
+.int-page {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  min-width: 0;
+}
+
+.int-page:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+}
+
+.int-emoji {
+  width: 14px;
+  font-size: 10px;
+  color: var(--dim-3);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-style: normal;
+}
+
+.int-empty {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+  padding-left: 8px;
+}
+
+.int-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: var(--dim-3);
+  cursor: default;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.int-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.int-detail-head b {
+  font: 600 11px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.int-badge {
+  font: 500 10px var(--font);
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.int-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.int-commit {
+  font: 400 10.5px var(--font);
+  color: #c5c8cd;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.int-meta {
+  display: flex;
+  gap: 8px;
+  font: 400 10px var(--font);
+  color: var(--dim-3);
+}
+
+.int-link {
+  border: 0;
+  background: transparent;
+  font: 400 10px var(--mono);
+  color: #7c5cffd9;
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.int-detail-text {
+  font: 400 10.5px/1.5 var(--mono);
+  color: var(--dim);
+  margin-top: 8px;
+  max-height: 88px;
+  overflow: auto;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.int-card.detail {
+  padding-top: 8px;
+}
+
+/* ── Plan usage: the pills in the header and the card behind them ────────────
+   ClaudePlanHeaderPill / ClaudePlanCardView / CodexPlanCardView on the Mac.
+   Nothing here applies until a pill is turned on in Settings. */
+
+/* Off: takes no room, so the header is exactly as it shipped. */
+.plan-pills {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  /* .header-actions spaces its items 14px apart; the Mac puts 8px between
+     the pills and the gear. */
+  margin-right: -6px;
+}
+
+.plan-pills.on {
+  display: flex;
+}
+
+/* Both pills: the Mac tightens the right side (icons 10px apart, pills 5px
+   from the gear, 8px from the edge). */
+.header-actions.both-plans {
+  gap: 10px;
+  padding-right: 8px;
+}
+
+.header-actions.both-plans .plan-pills {
+  margin-right: -5px;
+}
+
+.header-actions .plan-pill {
+  --plan: #6b7079;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--plan) 14%, transparent);
+  border-radius: 999px;
+  background: #0e0f11;
+  color: var(--dim-3);
+  font: 600 10px var(--font);
+  line-height: 12px;
+  white-space: nowrap;
+  cursor: default;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.header-actions .plan-pill:hover,
+.header-actions .plan-pill.active {
+  background: color-mix(in srgb, var(--plan) 18%, transparent);
+  border-color: color-mix(in srgb, var(--plan) 55%, transparent);
+  color: color-mix(in srgb, var(--plan) 70%, white);
+}
+
+.plan-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.plan-card {
+  position: relative;
+  z-index: 1;
+  padding-top: 10px;
+}
+
+.plan-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 36px 0 108px;
+  white-space: nowrap;
+}
+
+.plan-head > * {
+  flex: 0 0 auto;
+}
+
+.plan-title {
+  font: 600 12px var(--font);
+  color: var(--ink);
+}
+
+.plan-head > .plan-sub {
+  flex: 0 1 auto; /* the one part that gives way, with an ellipsis */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+}
+
+.plan-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px 0 108px;
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 400 11px var(--font);
+  white-space: nowrap;
+}
+
+.plan-label {
+  flex: 0 0 40px;
+  color: var(--dim-3);
+}
+
+.plan-bar {
+  flex: 0 0 50px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.plan-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.plan-pct {
+  flex: 0 0 30px;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #c5c8cd;
+}
+
+.plan-reset-icon {
+  display: inline-flex;
+  color: var(--dim-3);
+}
+
+.plan-reset {
+  font-size: 10px;
+  color: var(--dim-3);
+}
+
+.plan-none {
+  color: var(--dim-3);
+}
+
+.plan-credits {
+  font-weight: 600;
+  color: #c5c8cd;
+}
+
+/* ── GitHub pulse (GitHubPulseCardView / GitHubDetailView) ─────────────── */
+
+.gh-spark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+  cursor: default;
+  min-width: 0;
+}
+
+.gh-mini {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.gh-mini i,
+.gh-cell {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  flex: 0 0 auto;
+}
+
+.int-stats.gh-rows {
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.gh-stat {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: default;
+}
+
+.gh-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gh-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: 600 12px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.gh-head-right {
+  margin-left: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  cursor: default;
+}
+
+.gh-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 60px; /* three 20 px rows; the rest scrolls */
+  overflow-y: auto;
+  margin-top: 4px;
+  scrollbar-width: none;
+}
+
+.gh-list::-webkit-scrollbar {
+  display: none;
+}
+
+.gh-list.fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 80%, transparent 100%);
+}
+
+.gh-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  flex: 0 0 20px;
+  padding: 0 4px 0 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  min-width: 0;
+}
+
+.gh-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Ctrl+↓ / Ctrl+↑: the highlighted row (GitHubPRRowView's `selected`, white 12 %). */
+.gh-row.selected {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.gh-gap {
+  width: 5px;
+  flex: 0 0 5px;
+}
+
+.gh-ref {
+  font: 400 10.5px var(--font);
+  color: #9398a1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.gh-title {
+  font: 400 11px var(--font);
+  color: #c5c8cd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.gh-draft {
+  font: 400 9.5px var(--font);
+  color: var(--dim-3);
+  flex: 0 0 auto;
+}
+
+.gh-word {
+  margin-left: auto;
+  padding-left: 4px;
+  font: 400 10px var(--font);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.gh-empty {
+  font: 400 10.5px var(--font);
+  color: var(--dim-3);
+  padding-top: 8px;
+}
+
+.gh-grid {
+  display: flex;
+  gap: 1.5px;
+  padding-top: 5px;
+}
+
+.gh-week {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+}
+
+.gh-cell.empty {
+  background: transparent;
+}
+
+/* ── Weekly recap ───────────────────────────────────────────────────────── */
+/* On her stage like the update card: a stage panel right of Miku (the island
+   draws her at the left), a teal label, the numbers on small tiles, the rest
+   as pills. Lines added in teal, removed in pink. */
+
+.recap-card {
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.recap-stack {
+  padding: 6px 16px 6px 116px;
+  gap: 5px;
+}
+
+.recap-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.recap-title {
+  color: var(--stage-teal);
+  font: 600 10.5px var(--font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.recap-range {
+  font: 500 10px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+}
+
+.recap-chips {
+  display: flex;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* A number and its word on one line: the island has no room for two. */
+.recap-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 7px 3px;
+  border-radius: 10px;
+  background: rgba(57, 197, 187, 0.06);
+  box-shadow: inset 0 0 0 1px var(--stage-line);
+}
+
+/* The first tile is the week's headline: coding time, in her colour. */
+.recap-chip:first-child .v {
+  color: var(--stage-teal);
+  text-shadow: 0 0 10px rgba(57, 197, 187, 0.45);
+}
+
+.recap-chip .v {
+  font: 700 16px var(--font);
+  color: var(--ink-2);
+}
+
+.recap-chip .v .plus { color: var(--stage-teal); }
+.recap-chip .v .minus { color: var(--stage-pink); }
+
+.recap-chip .l {
+  font: 500 10px var(--font);
+  color: var(--dim-2);
+}
+
+.recap-meta {
+  display: flex;
+  gap: 5px;
+  font: 400 10.5px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.recap-pill {
+  display: inline-flex;
+  gap: 5px;
+  min-width: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--stage-line);
+}
+
+.recap-meta .n {
+  color: var(--ink-2);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recap-stack .actions {
+  margin-top: 2px;
+}
+
+.recap-share {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 8px 16px 8px 116px;
+}
+
+.recap-thumb {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 114px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--stage-line), 0 4px 14px rgba(57, 197, 187, 0.18);
+}
+
+.recap-share-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.recap-status {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 14px;
+  font: 400 11px var(--font);
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recap-link {
+  color: var(--stage-teal);
+  padding: 0;
+}
+
+/* ── Wardrobe (right-click on Miku) ─────────────────────────────────────── */
+
+.wardrobe-stack {
+  padding: 12px 16px 12px 104px;
+  gap: 10px;
+}
+
+.wardrobe-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wardrobe-title {
+  font: 600 10.5px var(--font);
+  color: var(--stage-teal);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.wardrobe-note {
+  margin-left: auto;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wardrobe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.wardrobe-item {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid var(--stage-line-2);
+  background: #141c30;
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition: background 0.12s ease-out, border-color 0.12s ease-out;
+}
+
+.wardrobe-item:hover {
+  background: rgba(57, 197, 187, 0.1);
+  border-color: rgba(57, 197, 187, 0.5);
+}
+
+.wardrobe-item.on {
+  border-color: var(--stage-teal);
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.4);
+}
+
+.wardrobe-item canvas {
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+
+/* Which Miku: a swatch of her hair colour, beside the garment row. The "auto"
+   one shows the season's colour and is redrawn on every sync. */
+.wardrobe-variants {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--stage-line);
+}
+
+.wardrobe-variant {
+  border-radius: 50%;
+}
+
+.wardrobe-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.wardrobe-swatch-auto {
+  display: grid;
+  place-items: center;
+  background: #1b2540;
+  font: 600 7px var(--font);
+  letter-spacing: 0.04em;
+  color: #9fe6e6;
+}
+
+/* ── New version (views/update.ts) — UpdateCardView on macOS ────────────────── */
+
+.update-line {
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The download's progress: the Mac's green, 260 px at most. */
+.update-bar {
+  width: 100%;
+  max-width: 260px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.update-bar .fill {
+  height: 100%;
+  width: 0;
+  background: #34d399;
+  transition: width 0.25s linear;
+}
+
+/* ── Spotify: the pill's controls and the now-playing card ──────────────────
+   SpotifyPill, MusicControlButton and SpotifyCardView (SpotifyViews.swift,
+   NowPlayingViews.swift): sizes and colours are the Mac's. */
+
+.np-pill .lbl {
+  transition: padding 0.2s cubic-bezier(0.3, 1.2, 0.4, 1);
+}
+
+.np-pill.controls .lbl {
+  padding: 0 52px 0 34px;
+}
+
+.np-pill-controls {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(0.85);
+  transform-origin: right center;
+  transition: opacity 0.18s, transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1);
+}
+
+.np-pill.controls .np-pill-controls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
+}
+
+.np-pill-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: var(--card-flat);
+  color: var(--dim-3);
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), background 0.18s, border-color 0.18s,
+    box-shadow 0.18s, color 0.18s;
+}
+
+.np-pill-btn:hover {
+  transform: scale(1.1);
+}
+
+.np-root {
+  height: 100%;
+}
+
+.np-card {
+  padding: 10px 12px 0 108px;
+  display: flex;
+  flex-direction: column;
+}
+
+.np-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-right: 24px;
+  min-width: 0;
+}
+
+.np-art {
+  position: relative;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: default;
+}
+
+.np-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.np-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease-in-out;
+}
+
+.np-art.has-art img {
+  opacity: 1;
+}
+
+.np-art.has-art svg {
+  opacity: 0;
+}
+
+.np-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.np-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.np-title,
+.np-sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.np-title {
+  font: 600 12px var(--font);
+  color: var(--ink);
+}
+
+.np-sub {
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+}
+
+.np-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 7px;
+  font: 400 9.5px var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--dim-3);
+}
+
+.np-time.elapsed {
+  min-width: 26px;
+  text-align: right;
+}
+
+.np-time.remaining {
+  min-width: 28px;
+  text-align: left;
+}
+
+.np-bar {
+  position: relative;
+  flex: 1 1 auto;
+  height: 10px;
+  touch-action: none;
+  cursor: default;
+}
+
+.np-track,
+.np-fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+}
+
+.np-track {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.np-bar.active .np-track,
+.np-bar.active .np-fill {
+  height: 4px;
+}
+
+.np-knob {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.12s ease-out;
+}
+
+.np-bar.active .np-knob {
+  opacity: 1;
+}
+
+.np-controls {
+  display: flex;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.np-controls .grow {
+  min-width: 8px;
+}
+
+.np-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.np-icon,
+.np-play {
+  padding: 0;
+  border: 0;
+  display: grid;
+  place-items: center;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), filter 0.12s ease-out;
+}
+
+.np-icon {
+  width: 16px;
+  height: 18px;
+  background: transparent;
+}
+
+.np-icon:hover {
+  filter: brightness(1.3);
+}
+
+.np-play {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--card-flat);
+}
+
+.np-icon:active,
+.np-play:active {
+  transform: scale(0.9);
+}
+
+.np-volume {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.np-vol-icon {
+  width: 13px;
+  display: flex;
+  justify-content: flex-end;
+  color: var(--dim-3);
+}
+
+.np-volume .np-bar {
+  flex: 0 0 44px;
+  width: 44px;
+}
+
+/* ── WhatsApp (views/whatsapp.ts) — WhatsAppCardView on macOS ────────────────
+   Nothing here applies to a view that already ships: every class is the card's own. */
+
+.wa-card {
+  height: 100%;
+  box-sizing: border-box;
+  padding-top: 10px;
+}
+
+.wa-list,
+.wa-convo {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.wa-unread {
+  font: 600 10px var(--font);
+  color: #25d366;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(37, 211, 102, 0.14);
+}
+
+.wa-empty {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+  padding: 8px 0 0 8px;
+}
+
+.wa-status-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.wa-settings {
+  color: var(--dim-2);
+  padding: 0;
+}
+
+.wa-rows {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 12px;
+  scrollbar-width: none;
+}
+
+.wa-row {
+  border: 0;
+  background: transparent;
+  text-align: start;
+  width: 100%;
+  gap: 6px;
+  padding: 3px 6px;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.wa-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.wa-row.unread {
+  background: rgba(37, 211, 102, 0.08);
+}
+
+.wa-row.unread:hover {
+  background: rgba(37, 211, 102, 0.14);
+}
+
+.wa-row-name {
+  max-width: 92px;
+  flex: 0 1 auto;
+}
+
+.wa-row.unread .wa-row-name {
+  font-weight: 600;
+  color: #e8e9ec;
+}
+
+.wa-row.unread .wa-preview {
+  color: var(--dim-2);
+}
+
+.wa-spacer {
+  flex: 1 1 0;
+}
+
+.wa-count {
+  font: 700 9px var(--font);
+  color: #0b0c0e;
+  background: #25d366;
+  border-radius: 999px;
+  padding: 1px 5px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.wa-ignore {
+  color: #f4505e;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.wa-avatar {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(37, 211, 102, 0.22);
+  color: #25d366;
+  font-family: var(--font);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wa-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 36px;
+  margin-left: -6px;
+}
+
+.wa-back {
+  width: 20px;
+  height: 20px;
+}
+
+.wa-name {
+  font: 600 11px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.wa-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 12px 4px 0;
+  scrollbar-width: none;
+}
+
+.wa-line {
+  display: flex;
+  padding-right: 40px;
+}
+
+.wa-line.mine {
+  justify-content: flex-end;
+  padding-right: 0;
+  padding-left: 40px;
+}
+
+.wa-bubble {
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  min-width: 0;
+  user-select: text;
+}
+
+.wa-bubble.mine {
+  background: rgba(37, 211, 102, 0.16);
+}
+
+.wa-sender {
+  font: 600 9px var(--font);
+  color: rgba(37, 211, 102, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-media {
+  font: 500 10px var(--font);
+  color: #9398a1;
+}
+
+.wa-text {
+  font: 400 10.5px/1.35 var(--font);
+  color: #c5c8cd;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wa-bubble.mine .wa-text {
+  color: #e8e9ec;
+}
+
+.wa-reply {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 4px 8px;
+  margin-right: 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  flex: 0 0 auto;
+}
+
+.wa-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: 400 11px/1.35 var(--font);
+  max-height: 44px;
+  padding: 1px 0;
+  field-sizing: content;
+}
+
+.wa-field::placeholder {
+  color: var(--dim-3);
+}
+
+.wa-send {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(37, 211, 102, 0.3);
+  display: grid;
+  place-items: center;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.wa-send.ready {
+  background: #25d366;
+}
+
+.wa-note {
+  font: 400 9.5px var(--font);
+  min-height: 0;
+  padding: 2px 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-note.warn {
+  color: #f5b83d;
+}
+
+.wa-note.err {
+  color: #f4505e;
+}
+
+html[data-dir="rtl"] #views :is(.wa-text, .wa-field, .wa-preview) {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+/* ── Arabic: right to left ─────────────────────────────────────────────────────
+   i18n.ts sets <html data-dir="rtl">. The text of the cards reads and aligns
+   right to left; Mochi, the pills, the header and the cards themselves keep
+   their places, and code, commands and the contribution grid stay left to
+   right. A chat message follows its own text's direction (an English answer
+   stays left to right). */
+html[data-dir="rtl"] #views :is(.stack, .int-card, .plan-card) {
+  direction: rtl;
+}
+
+html[data-dir="rtl"] #views :is(.code, .gh-grid, .diff-card, .md-pre) {
+  direction: ltr;
+}
+
+html[data-dir="rtl"] #views :is(.np-title, .np-sub) {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-item, .reply .md-quote, .chat-input) {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+/* ── Mail (classic Outlook) — MailViews.swift ─────────────────────────────── */
+.mail-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.mail-list,
+.mail-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.mail-card.detail-open .mail-list,
+.mail-card:not(.detail-open) .mail-detail {
+  display: none;
+}
+
+.mail-head {
+  padding-right: 36px;
+}
+
+.mail-unread {
+  font: 600 10px var(--font);
+  color: #2f8cff;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(47, 140, 255, 0.14);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.mail-spacer {
+  flex: 1 1 0;
+}
+
+.mail-icon {
+  border: 0;
+  background: transparent;
+  color: #8e939c;
+  width: 18px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.mail-icon:hover {
+  color: var(--ink);
+}
+
+.mail-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: 400 11px var(--font);
+  color: #e8e9ec;
+}
+
+.mail-filters {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-top: 4px;
+  /* One line whatever the language: a longer set scrolls sideways, never wraps. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mail-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.mail-chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: transparent;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font: 400 9.5px var(--font);
+  color: #6b7079;
+  cursor: default;
+}
+
+.mail-chip:hover {
+  color: #b0b5be;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mail-chip.on {
+  font-weight: 600;
+  color: #e8e9ec;
+  background: rgba(47, 140, 255, 0.22);
+}
+
+/* A search in progress, in the header: the filters keep their line. */
+.mail-spinner {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(142, 147, 156, 0.35);
+  border-top-color: #8e939c;
+  animation: mail-spin 0.8s linear infinite;
+}
+
+@keyframes mail-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 12px 6px 0;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: none;
+}
+
+.mail-row {
+  border: 0;
+  background: transparent;
+  text-align: start;
+  width: 100%;
+  cursor: default;
+  flex: 0 0 auto;
+}
+
+.mail-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mail-row.unread {
+  background: rgba(47, 140, 255, 0.08);
+}
+
+.mail-row.unread:hover {
+  background: rgba(47, 140, 255, 0.14);
+}
+
+.mail-row.unread .mail-name {
+  font-weight: 600;
+  color: #e8e9ec;
+}
+
+.mail-row.unread .mail-subject {
+  color: #8e939c;
+}
+
+.mail-name {
+  max-width: 82px;
+  flex: 0 1 auto;
+}
+
+.mail-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: 1px solid #4d5159;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.mail-dot.on {
+  border: 0;
+  background: #2f8cff;
+}
+
+.mail-flag {
+  font-size: 8px;
+  color: #f5a524;
+  flex: 0 0 auto;
+}
+
+.mail-empty {
+  font: 400 11px var(--font);
+  color: var(--dim-3);
+  padding: 8px 0 0 8px;
+}
+
+.mail-more {
+  color: rgba(47, 140, 255, 0.9);
+  align-self: flex-start;
+  padding: 3px 8px;
+}
+
+.mail-detail {
+  gap: 4px;
+  padding-right: 12px;
+}
+
+.mail-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 24px;
+  margin-left: -6px;
+}
+
+.mail-back {
+  width: 20px;
+  height: 20px;
+}
+
+.mail-from {
+  font: 600 11px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.mail-detail-subject {
+  font: 500 11px var(--font);
+  color: #c5c8cd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-detail-text {
+  font: 400 10.5px var(--font);
+  color: #9398a1;
+  height: 28px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  user-select: text;
+  scrollbar-width: none;
+}
+
+.mail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mail-actions .link-btn {
+  padding: 0;
+  color: #c5c8cd;
+}
+
+.mail-actions .link-btn.accent {
+  color: rgba(47, 140, 255, 0.9);
+}
+
+.mail-actions .link-btn.amber {
+  color: rgba(245, 165, 36, 0.9);
+}
+
+.mail-actions .link-btn.dim {
+  color: #8e939c;
+}
+
+.mail-dots-wrap {
+  position: relative;
+}
+
+.mail-more-menu {
+  display: none;
+  position: absolute;
+  bottom: 18px;
+  right: 0;
+  flex-direction: column;
+  background: #1d1f23;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.mail-more-menu.on {
+  display: flex;
+}
+
+.mail-more-menu button {
+  border: 0;
+  background: transparent;
+  text-align: start;
+  font: 400 11px var(--font);
+  color: #e8e9ec;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.mail-more-menu button:hover {
+  background: rgba(47, 140, 255, 0.3);
+}
+
+/* The chat's Mail switch and a plan's card (MailAgentViews.swift). */
+.model-row {
+  gap: 6px;
+}
+
+.mail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font: 500 10.5px var(--font);
+  color: #7b8089;
+  cursor: default;
+}
+
+.mail-toggle.on {
+  background: rgba(47, 140, 255, 0.85);
+  color: #fff;
+}
+
+.mail-plan {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(47, 140, 255, 0.08);
+  border: 1px solid rgba(47, 140, 255, 0.25);
+}
+
+.mail-plan .plan-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 11.5px var(--font);
+  color: #f1f2f4;
+}
+
+.mail-plan .plan-icon {
+  font-style: normal;
+  color: #2f8cff;
+}
+
+.mail-plan .plan-line {
+  display: flex;
+  gap: 5px;
+  font: 400 10.5px var(--font);
+  color: #c5c8cd;
+}
+
+.mail-plan .plan-arrow {
+  color: #2f8cff;
+}
+
+.mail-plan .plan-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 90px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.mail-plan .plan-row {
+  display: flex;
+  gap: 6px;
+  font: 400 10px var(--font);
+  min-width: 0;
+}
+
+.mail-plan .plan-to {
+  width: 150px;
+  flex: 0 0 auto;
+  color: #c5c8cd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-plan .plan-row.bad .plan-to,
+.mail-plan .plan-problem {
+  color: #f4505e;
+}
+
+.mail-plan .plan-subject {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #8e939c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-plan .plan-file {
+  max-width: 150px;
+  color: #8e939c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-plan .plan-note {
+  font: 400 10px var(--font);
+  color: #f5a524;
+}
+
+.mail-plan .plan-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.mail-plan .plan-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font: 600 10.5px var(--font);
+  color: #c5c8cd;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: default;
+}
+
+.mail-plan .plan-btn.primary {
+  color: #fff;
+  background: #2f8cff;
+}
+
+.mail-plan .plan-status {
+  font: 400 10.5px var(--font);
+  color: #8e939c;
+  font-variant-numeric: tabular-nums;
+}
+
+.mail-plan .plan-status.ok {
+  color: #34d399;
+}
+
+.mail-plan .plan-status.amber {
+  color: #f5a524;
+  font-weight: 600;
+}
+
+.mail-plan .plan-bar {
+  width: 140px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.mail-plan .plan-bar i {
+  display: block;
+  height: 100%;
+}
+
+/* Scrollbars as on the Mac: a thin rounded thumb that floats on the page, no
+   arrows and no track. (Chromium ignores these once scrollbar-width or
+   scrollbar-color is set on the element, so those stay unset.) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  min-height: 36px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* ── The synth strip (closed island, "mochi" style; docs/mockups/notch-combined.png):
+   Miku's head at the left (the bot canvas), an equaliser, then the time or the
+   song. The bars dance while a song plays or an agent works. */
+#island-closed.synth {
+  justify-content: flex-start;
+  padding: 0 4px 0 32px;
+  gap: 7px;
+}
+#island-closed .eq { display: none; }
+#island-closed.synth .eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+#island-closed.synth .eq i {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(#e8457c, #39c5bb);
+  transform-origin: bottom;
+  transform: scaleY(0.3);
+}
+#island-closed.synth.live .eq i { animation: synth-bounce 0.9s ease-in-out infinite; }
+#island-closed.synth .eq i:nth-child(2) { animation-delay: -0.3s; }
+#island-closed.synth .eq i:nth-child(3) { animation-delay: -0.6s; }
+#island-closed.synth .eq i:nth-child(4) { animation-delay: -0.15s; }
+#island-closed.synth .eq i:nth-child(5) { animation-delay: -0.45s; }
+#island-closed.synth .eq i:nth-child(6) { animation-delay: -0.75s; }
+#island-closed.synth .eq i:nth-child(7) { animation-delay: -0.2s; }
+@keyframes synth-breathe {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(0.45); }
+}
+@keyframes synth-bounce {
+  0%, 100% { transform: scaleY(0.3); }
+  25% { transform: scaleY(1); }
+  50% { transform: scaleY(0.55); }
+  75% { transform: scaleY(0.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #island-closed.synth .eq i { animation: none; }
+}
+
+
+/* ══ Miku's stage, everywhere in the island (docs/mockups/notch-*.png) ═══════
+   The island is no longer a black notch: it is a small stage. Navy instead of
+   black, a teal→pink bar along the top like her twin tails, an LED floor along
+   the bottom, spotlights on her mark, navy cards with teal headings, teal
+   capsules for what can be pressed. Last in the file so it wins over the
+   upstream look without rewriting it rule by rule. */
+
+:root {
+  --stage-top: #0d1322;
+  --stage-bottom: #18213a;
+  --stage-panel: rgba(10, 15, 26, 0.92);
+  --stage-line: #26324c;
+  --stage-line-2: #2d3858;
+  --stage-teal: #39c5bb;
+  --stage-pink: #e8457c;
+}
+
+/* The island itself: navy, a thin edge, at every size. */
+#island {
+  background: linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+#island[data-mode="hidden"] {
+  background: linear-gradient(180deg, #0a0f1a, #121a2b);
+  box-shadow: inset 0 0 0 1px var(--stage-line);
+}
+#island[data-mode="expanded"] {
+  background:
+    radial-gradient(70% 90% at 50% -20%, rgba(57, 197, 187, 0.16), transparent 60%),
+    linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+
+/* Twin tails: a teal→pink bar glowing along the top edge. */
+#island[data-mode="expanded"] #island-clip::before,
+#island[data-mode="compact"] #island-clip::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, var(--stage-pink), var(--stage-teal), var(--stage-pink));
+  box-shadow: 0 0 14px rgba(57, 197, 187, 0.65);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* The LED floor along the bottom, where the footlight dots were. */
+#island[data-mode="expanded"] #island-clip::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--stage-teal) 0 16px, #1b6c6a 16px 18px, var(--stage-pink) 18px 34px, #7a2547 34px 36px);
+  box-shadow: 0 0 16px rgba(57, 197, 187, 0.55);
+  opacity: 0.85;
+  animation: none;
+}
+
+/* Header: the tabs as a navy capsule; the open tab is a teal button. */
+.tabs {
+  background: #0a0f1a;
+  border: 1px solid var(--stage-line);
+}
+.tab.on {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 12px rgba(57, 197, 187, 0.45);
+}
+.header-actions button:hover { color: var(--stage-teal); }
+
+/* Cards: navy panels with a hairline edge, like the widgets in the mockups. */
+.card {
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+}
+
+/* Her mark on the left card: three spotlights and a strip of LED floor. */
+.overview > .left > .card::before {
+  background:
+    linear-gradient(rgba(57, 197, 187, 0.3), rgba(57, 197, 187, 0)) 58px 0 / 1px 100% no-repeat,
+    conic-gradient(from 168deg at 58px -6px, transparent 0deg, rgba(57, 197, 187, 0.2) 8deg, rgba(57, 197, 187, 0.2) 16deg, transparent 24deg),
+    conic-gradient(from 150deg at 20px -6px, transparent 0deg, rgba(57, 197, 187, 0.12) 10deg, transparent 20deg),
+    conic-gradient(from 190deg at 96px -6px, transparent 0deg, rgba(232, 69, 124, 0.12) 10deg, transparent 20deg),
+    radial-gradient(60px 20px at 58px 100%, rgba(57, 197, 187, 0.35), transparent 75%);
+}
+.overview > .left > .card::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  width: 96px;
+  bottom: 8px;
+  height: 5px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, var(--stage-teal) 0 10px, #1b6c6a 10px 12px, var(--stage-pink) 12px 22px, #7a2547 22px 24px);
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.55);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* A slide's kind ("INTEGRATION") in teal, spaced like the mockups' headings. */
+.int-card.idle .int-head > span {
+  color: var(--stage-teal);
+  letter-spacing: 0.18em;
+}
+.int-card.idle .int-status {
+  background: #141c30;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+.int-card.idle .int-actions .link-btn {
+  color: #cfeeea;
+  background: #18213a;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+.int-card.idle .int-actions .link-btn:hover {
+  color: var(--stage-teal);
+  background: rgba(57, 197, 187, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.6), 0 0 10px rgba(57, 197, 187, 0.3);
+}
+
+/* Buttons: teal to press, navy for the rest. */
+.btn.primary {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 14px rgba(57, 197, 187, 0.4);
+}
+.btn.secondary {
+  background: #18213a;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+  color: var(--ink);
+}
+
+
+/* ══ The widget deck (views/deck.ts; docs/mockups/notch-widgets.png) ═════════
+   Opens in place of the old overview: a bar to swipe between widgets on top,
+   Miku full-length on the left in the page's pose, the widget on the right. */
+#island[data-view="overview"] #header { display: none; }
+/* The deck hugs the island on the left (Miku's stage), and steps back 8 px on
+   the right so the card doesn't sit against the edge. */
+#island[data-view="overview"] #content { padding: 8px 8px 10px 0; }
+.view.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+.dk-top {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  flex: none;
+  /* The card hugs the island's edge, but the bar keeps a side inset so the
+     end buttons stay clear of the island's corner curve. */
+  padding: 0 10px;
+}
+.dk-tabs {
+  display: flex;
+  /* Gives way (scrolling sideways) to the end buttons: Close must always fit,
+     with the update chip or a long language. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 1px;
+  padding: 2px 1px;
+  border-radius: 999px;
+  background: #0a0f1a;
+  border: 1px solid var(--stage-line);
+}
+.dk-tab {
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  font: 600 11px var(--font);
+  /* Eight pages and the three buttons must fit the deck's 500 px, Close included. */
+  letter-spacing: 0;
+  padding: 4px 5px;
+  border-radius: 999px;
+  cursor: default;
+  transition: background 0.15s, color 0.15s;
+}
+.dk-tab:hover { color: var(--ink); }
+.dk-tab.on {
+  background: var(--stage-teal);
+  color: #062a28;
+  box-shadow: 0 0 10px rgba(57, 197, 187, 0.45);
+}
+.dk-arrow, .dk-icon {
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  width: 24px;
+  height: 24px;
+  /* The bar is tight: without this the flex squeeze flattens the buttons and
+     the last one lands half outside the island's corner. */
+  flex: none;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font: 700 17px var(--font);
+  cursor: default;
+}
+.dk-arrow { width: 18px; }
+.dk-arrow:hover, .dk-icon:hover { color: var(--stage-teal); background: rgba(57, 197, 187, 0.1); }
+.dk-icon { margin-left: 2px; }
+/* A new version waits: a lit chip before the icons, breathing pink. */
+.dk-update {
+  flex: none;
+  height: 22px;
+  padding: 0 9px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e8457c, #c42a6f);
+  color: #fff;
+  font: 700 11px var(--font);
+  cursor: default;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset, 0 0 12px rgba(232, 69, 124, 0.55);
+  animation: dk-update-breathe 2.4s ease-in-out infinite;
+}
+.dk-update[hidden] { display: none; }
+.dk-update:hover { filter: brightness(1.12); }
+@keyframes dk-update-breathe { 50% { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset, 0 0 4px rgba(232, 69, 124, 0.3); } }
+@media (prefers-reduced-motion: reduce) { .dk-update { animation: none; } }
+
+.dk-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
+}
+.dk-left {
+  position: relative;
+  width: 140px;
+  flex: none;
+}
+.dk-miku {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 16px;
+  width: 100%;
+  height: calc(100% - 16px);
+}
+.dk-floor {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(rgba(57, 197, 187, 0.45), transparent 70%);
+}
+.dk-body {
+  flex: 1;
+  min-width: 0;
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  border-radius: 16px;
+  /* The card hugs the island's edge; the roomy side padding keeps the content
+     (the Notif badge especially) clear of it. */
+  padding: 10px 18px;
+  overflow: hidden;
+}
+/* A page the deck shows slides up as it arrives, hub-page-in's little
+   sibling. Mounting an element again replays it on its own; a refresh of the
+   page already on screen — the song's clock, the machine's poll — carries
+   .dk-still so it swaps without flashing the entrance every second. */
+.dk-page { animation: dk-page-in 0.16s cubic-bezier(0.22, 1, 0.36, 1); }
+.dk-page.dk-still { animation: none; }
+@keyframes dk-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .dk-page { animation: none; } }
+.dk-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.dk-title { font: 800 12.5px var(--font); letter-spacing: 0.14em; color: var(--stage-teal); }
+.dk-meta { font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; margin-left: auto; }
+.dk-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 92px;
+  align-items: center;
+  gap: 8px;
+  font: 500 12px var(--font);
+  padding: 3px 0;
+  border-top: 1px solid #18213a;
+}
+.dk-val { text-align: right; font: 500 11px ui-monospace, Consolas, monospace; color: #cfd8e3; }
+.dk-bar { height: 7px; border-radius: 4px; background: #1a2238; overflow: hidden; }
+.dk-bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.dk-say {
+  margin-top: 8px;
+  font: 500 12px var(--font);
+  background: #141c30;
+  border-left: 3px solid var(--stage-teal);
+  padding: 6px 9px;
+  border-radius: 0 8px 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dk-dim { font: 500 11px var(--font); color: #8fa3b8; }
+.dk-big { font: 800 34px var(--font); line-height: 1; }
+.dk-big.pink { color: var(--stage-pink); margin-top: 4px; }
+.dk-song { display: flex; align-items: center; gap: 10px; }
+.dk-art { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex: none; background: linear-gradient(135deg, #2b1a4d, #1a3b5c); }
+.dk-art img { width: 100%; height: 100%; object-fit: cover; }
+.dk-song-text { min-width: 0; }
+.dk-song-title { font: 700 14px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-song-artist { font: 500 12px var(--font); color: #8fa3b8; }
+.dk-prog { grid-template-columns: 40px 1fr 40px; border-top: 0; margin-top: 6px; }
+.dk-ctl { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 2px; }
+.dk-ctl.left { justify-content: flex-start; margin-top: 8px; }
+.dk-ctl button { border: 0; background: transparent; color: #8fa3b8; display: grid; place-items: center; cursor: default; }
+.dk-ctl .dk-play { width: 30px; height: 30px; border-radius: 50%; background: var(--stage-teal); color: #062a28; }
+.dk-focus { display: flex; align-items: center; gap: 16px; }
+.dk-ring {
+  --done: 0%;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--stage-pink) 0 var(--done), #1f2840 var(--done) 100%);
+  flex: none;
+}
+.dk-ring > div {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: #0a0f1a;
+  display: grid;
+  place-items: center;
+  font: 700 18px ui-monospace, Consolas, monospace;
+}
+.dk-focus-side { display: flex; flex-direction: column; gap: 6px; }
+.dk-weather { display: flex; align-items: center; gap: 12px; }
+.dk-weather-text { font: 600 13px var(--font); }
+.dk-hours { display: flex; justify-content: space-between; margin-top: 8px; }
+.dk-hours > div { display: flex; flex-direction: column; align-items: center; font: 500 10.5px var(--font); color: #8fa3b8; }
+.dk-hours b { font-size: 15px; margin: 2px 0; }
+.dk-city { display: flex; gap: 8px; margin-top: 4px; }
+.dk-input {
+  flex: 1;
+  min-width: 0;
+  background: #0b1120;
+  border: 1px solid var(--stage-line-2);
+  border-radius: 10px;
+  color: var(--ink);
+  font: 500 12.5px var(--font);
+  padding: 7px 10px;
+  outline: none;
+}
+.dk-input:focus { border-color: var(--stage-teal); }
+.dk-agent { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid #18213a; font: 500 12px var(--font); min-width: 0; }
+.dk-agent .dk-dim { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dk-dot { width: 8px; height: 8px; border-radius: 50%; background: #8fa3b8; flex: none; }
+.dk-dot.working, .dk-dot.thinking, .dk-dot.searching { background: var(--stage-teal); box-shadow: 0 0 6px var(--stage-teal); }
+.dk-dot.approval, .dk-dot.question { background: #ffd36b; }
+.dk-dot.error { background: var(--stage-pink); }
+.dk-dot.finished { background: #5fd37a; }
+
+/* No stage floor under the open island, and no pose line under Miku. */
+#island[data-mode="expanded"] #island-clip::after { display: none; }
+.dk-place {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  font: 500 11px var(--font);
+  cursor: default;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.dk-place:hover { color: var(--stage-teal); background: rgba(57, 197, 187, 0.1); }
+.dk-focus { gap: 12px; }
+.dk-left { width: 120px; }
+.dk-miku { bottom: 0; height: 100%; }
+.dk-floor { bottom: 4px; }
+
+/* ══ Notices (island/notices.ts; docs/mockups/notch-prototype.html) ══════════
+   The card that grows out of the capsule when something arrives, and Miku
+   hanging under the capsule with a sign while something is still unseen. */
+.nt-card {
+  --nt: #39c5bb;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 30;
+  width: 470px;
+  height: 148px;
+  box-sizing: border-box;
+  display: flex;
+  padding: 8px 10px 10px 0;
+  border-radius: 0 0 22px 22px;
+  color: #f2fbfa;
+  transform: translateX(-50%) scale(0.3, 0.15);
+  transform-origin: 50% 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.55, 1), opacity 0.2s ease;
+}
+.nt-card.on { transform: translateX(-50%) scale(1); opacity: 1; pointer-events: auto; }
+/* Miku's floor, outside the card, with a teal spotlight under her feet. */
+.nt-floor { position: relative; flex: none; width: 104px; }
+.nt-floor::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 110px;
+  height: 20px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(57, 197, 187, 0.3), transparent 70%);
+  pointer-events: none;
+}
+.nt-miku { position: relative; z-index: 1; display: block; width: 104px; height: 100%; }
+/* The card: dark teal glass, a faint five-line staff, a teal → pink rim. */
+.nt-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 9px 14px 9px;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(transparent 0 10px, rgba(57, 197, 187, 0.05) 10px 11px) 0 22px / 100% 55px no-repeat,
+    radial-gradient(circle at 0% 80%, rgba(57, 197, 187, 0.16), transparent 260px),
+    linear-gradient(#0f1a1c, #0a0f11);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.25s 0.18s, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
+}
+.nt-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.25px;
+  background: linear-gradient(90deg, rgba(57, 197, 187, 0.7), rgba(57, 197, 187, 0.22) 65%, rgba(225, 40, 133, 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.nt-card.on .nt-body { opacity: 1; transform: none; }
+/* Every line keeps its height: squeezed, the message and its romaji overlap. */
+.nt-body > * { flex-shrink: 0; }
+.nt-src { display: flex; align-items: center; gap: 6px; font: 700 10px var(--font); letter-spacing: 0.12em; text-transform: uppercase; color: #8fa3b8; }
+.nt-time { margin-left: auto; font: 500 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; letter-spacing: 0; text-transform: none; }
+.nt-who { display: flex; align-items: center; gap: 8px; margin-top: 5px; min-width: 0; }
+.nt-av { position: relative; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 11px var(--font); color: #0a0f11; background: var(--c); flex: none; }
+.nt-av .app-ic { position: absolute; right: -4px; bottom: -3px; width: 12px; height: 12px; border-radius: 4px; box-shadow: 0 0 0 1.5px #0a0f11; }
+.nt-name { font: 700 13.5px var(--font); color: #f2fbfa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt-msg { font: 500 12.5px var(--font); color: #c9d3d8; margin-top: 3px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* With a romaji line under it, the message keeps to one line so the buttons fit. */
+.nt-body:has(.nt-rom) .nt-msg { -webkit-line-clamp: 1; }
+.nt-big { font-weight: 700; }
+.nt-dim { color: #8fa3b8; font-size: 11.5px; }
+.nt-acts { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
+.nt-btn { font: 600 11.5px var(--font); padding: 5px 13px; border-radius: 999px; border: 0; cursor: default; white-space: nowrap; transition: transform 0.12s, filter 0.15s; }
+.nt-btn:active { transform: scale(0.94); }
+.nt-btn:hover { filter: brightness(1.12); }
+.nt-btn:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; }
+.nt-btn.p { background: #39c5bb; color: #06302d; }
+.nt-btn.s { background: transparent; color: #9fe6e6; box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.45); }
+.nt-btn[disabled] { opacity: 0.5; }
+.nt-input { flex: 1; min-width: 0; height: 27px; box-sizing: border-box; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(57, 197, 187, 0.3); border-radius: 999px; padding: 0 12px; font: 500 12px var(--font); color: #f2fbfa; outline: none; }
+.nt-input::placeholder { color: #8fa3b8; }
+.nt-input:focus { border-color: #39c5bb; }
+/* A permission or a question (island/notices.ts request()): the command in a
+   mono box, the answers as pills, Later as a quiet link at the end. */
+.nt-card.tall { height: 190px; }
+.nt-who .nt-dim { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nt-code { margin-top: 6px; padding: 5px 9px; border-radius: 8px; background: #0b1120; box-shadow: inset 0 0 0 1px rgba(255, 211, 107, 0.18); font: 500 11.5px/1.4 ui-monospace, Consolas, monospace; color: #e6edf3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; word-break: break-all; }
+.nt-link { margin-left: auto; padding: 5px 4px; border: 0; background: transparent; font: 600 11.5px var(--font); color: #8fa3b8; cursor: default; white-space: nowrap; }
+.nt-link:hover { color: #f2fbfa; }
+.nt-link:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; border-radius: 6px; }
+.nt-link + .nt-link { margin-left: 4px; }
+.nt-q { font-weight: 600; color: #f2fbfa; -webkit-line-clamp: 3; }
+.nt-opts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; max-height: 58px; overflow: hidden; }
+.nt-opts .nt-btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* What's new after an update: what the version brings, as small chips. */
+/* Two rows at most: the card's height is fixed (NOTICE_H). */
+.nt-wns { display: flex; flex-wrap: wrap; gap: 4px 5px; margin-top: 6px; max-height: 42px; overflow: hidden; }
+.nt-wn { display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; box-sizing: border-box; padding: 2px 8px 2px 6px; border-radius: 999px; font: 600 10.5px var(--font); line-height: 15px; color: #d9f3f1; background: rgba(57, 197, 187, 0.1); box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.3); }
+.nt-wn svg { flex: none; color: #39c5bb; }
+.nt-wn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The update's download: teal → pink, sliding while it checks and installs. */
+.nt-bar { position: relative; height: 6px; margin-top: 9px; border-radius: 999px; background: rgba(57, 197, 187, 0.12); overflow: hidden; }
+.nt-bar i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #39c5bb, #e8457c); transition: width 0.3s ease; }
+.nt-bar.indet i { width: 35%; animation: nt-indet 1.4s ease-in-out infinite; }
+@keyframes nt-indet { from { left: -35%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .nt-bar.indet i { animation: none; left: 32%; } }
+.nt-bar + .nt-msg { margin-top: 6px; }
+/* An app's mark (views/appicons.ts), or a glowing dot for the rest. */
+.app-ic { display: inline-block; flex: none; width: 14px; height: 14px; }
+.app-ic svg { display: block; width: 100%; height: 100%; }
+.app-ic.dot { width: 6px; height: 6px; margin: 0 4px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+
+.hg {
+  position: fixed;
+  left: 50%;
+  top: 18px;
+  z-index: 20;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  transform: translateY(-70px) scale(0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.55s cubic-bezier(0.34, 1.45, 0.55, 1), opacity 0.25s ease;
+}
+.hg.on { transform: none; opacity: 1; pointer-events: auto; }
+.hg-thread { position: absolute; left: 50%; top: 0; width: 1.5px; height: 14px; background: linear-gradient(rgba(57, 197, 187, 0.8), transparent); }
+.hg-miku { position: absolute; left: 0; top: 2px; width: 92px; height: 92px; transform-origin: 50% 0; animation: hg-swing 3.2s ease-in-out infinite; }
+@keyframes hg-swing { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.hg-sign {
+  --hg: #26324c;
+  position: absolute;
+  left: 86px;
+  top: 32px;
+  white-space: nowrap;
+  font: 700 12px var(--font);
+  color: #e9f6f5;
+  padding: 6px 11px;
+  border-radius: 11px;
+  background: #121a2b;
+  border: 1px solid var(--hg);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hg) 35%, transparent);
+  transform: translateX(-10px);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.55, 1) 0.15s, opacity 0.25s 0.15s;
+}
+.hg.on .hg-sign { transform: none; opacity: 1; }
+.hg-sign small { display: block; font-weight: 500; color: #8fa3b8; font-size: 10.5px; margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.hg-bdg { min-width: 16px; height: 16px; border-radius: 8px; font-size: 9.5px; font-weight: 800; display: inline-grid; place-items: center; padding: 0 4px; color: #06231a; background: #25d366; margin-left: 5px; }
+.hg-sign.pulse { animation: hg-pulse 1.4s ease-in-out infinite; }
+@keyframes hg-pulse { 0%, 100% { box-shadow: 0 0 6px rgba(255, 211, 107, 0.3); } 50% { box-shadow: 0 0 18px rgba(255, 211, 107, 0.9); } }
+@media (prefers-reduced-motion: reduce) { .hg-miku, .hg-sign.pulse { animation: none; } }
+
+/* The capsule: the equaliser only while a song plays (time and weather otherwise). */
+#island-closed.synth:not(.live) .eq { display: none; }
+
+.nt-rom { font: italic 500 11.5px var(--font); color: #9fe6e6; opacity: 0.8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── The deck's Agents page, live (views/deck.ts; docs/mockups/widgets-agents.png) ── */
+.ag { --ac: #39c5bb; display: flex; flex-direction: column; gap: 5px; }
+.ag .dk-head { margin-bottom: 0; }
+.ag-chips { display: flex; gap: 5px; flex-wrap: nowrap; overflow: hidden; }
+.ag-chip { --ac: #39c5bb; display: flex; align-items: center; gap: 5px; font: 600 10.5px var(--font); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--stage-line-2); color: #8fa3b8; background: transparent; cursor: default; white-space: nowrap; }
+.ag-chip.on { color: var(--ink); border-color: var(--ac); background: color-mix(in srgb, var(--ac) 18%, transparent); }
+.ag-chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--ac); }
+.ag-chip i.live { box-shadow: 0 0 6px var(--ac); animation: ag-blink 1.2s ease-in-out infinite; }
+@keyframes ag-blink { 50% { opacity: 0.4; } }
+.ag-now { display: flex; align-items: center; gap: 7px; font: 500 11.5px var(--font); border: 1px solid color-mix(in srgb, var(--ac) 55%, transparent); background: color-mix(in srgb, var(--ac) 8%, #0b1120); border-radius: 10px; padding: 6px 9px; min-width: 0; }
+.ag-now.finished { border-color: rgba(95, 211, 122, 0.55); }
+.ag-now.error { border-color: rgba(232, 69, 124, 0.6); }
+.ag-now.approval, .ag-now.question { border-color: rgba(255, 211, 107, 0.6); }
+.ag-spin { width: 11px; height: 11px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--ac) 30%, transparent); border-top-color: var(--ac); flex: none; animation: ag-spin 0.8s linear infinite; }
+@keyframes ag-spin { to { transform: rotate(360deg); } }
+.ag-mark { flex: none; font-weight: 800; color: var(--ac); }
+.ag-now.finished .ag-mark { color: #5fd37a; } .ag-now.error .ag-mark { color: #ff8fb3; } .ag-now.approval .ag-mark, .ag-now.question .ag-mark { color: #ffd36b; }
+.ag-tool { font: 700 10px ui-monospace, Consolas, monospace; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--ac) 22%, transparent); color: var(--ac); flex: none; }
+.ag-cmd { font: 500 11px ui-monospace, Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.ag-el { font: 600 10.5px ui-monospace, Consolas, monospace; color: #8fa3b8; flex: none; }
+.ag-out { font: 500 10px ui-monospace, Consolas, monospace; color: #9fb0c4; line-height: 1.4; background: #070b14; border-radius: 6px; padding: 4px 7px; }
+.ag-out div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-out .bad { color: #ff8fb3; }
+.ag-cols { display: grid; grid-template-columns: 1.05fr 1fr; gap: 10px; min-height: 0; }
+.ag-cols.one { grid-template-columns: 1fr; }
+.ag-col { min-width: 0; }
+.ag-sec { display: flex; align-items: center; gap: 6px; font: 700 9.5px var(--font); letter-spacing: 0.12em; color: #8fa3b8; margin-bottom: 2px; }
+.ag-pb { flex: 1; height: 4px; border-radius: 2px; background: #1a2238; overflow: hidden; }
+.ag-pb i { display: block; height: 100%; background: var(--ac); }
+.ag-todo { font: 500 11px var(--font); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-todo.done { color: #6d7d96; text-decoration: line-through; }
+.ag-todo.cur { color: var(--ac); font-weight: 600; }
+.ag-tl { font: 500 10.5px ui-monospace, Consolas, monospace; color: #cfd8e3; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ag-tl b { color: #8fa3b8; font-weight: 500; margin-right: 5px; }
+@media (prefers-reduced-motion: reduce) { .ag-spin, .ag-chip i.live { animation: none; } }
+
+/* The sign keeps to a width the folded window can hold; long lines end in "…". */
+.hg-sign { max-width: 230px; }
+.hg-sign > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══ The update card (views/update.ts; dev/update-mockup.html) ═══════════════
+   The mockup's geometry: Miku stands at the stage's left foot (6, bottom 2),
+   the card is the panel from x = 128 to 16 off the right edge, 16 off the
+   bottom, 40 down to clear the header. No LED floor under her, as the mockup;
+   the progress bar is the stage's teal→pink. */
+
+#island[data-view="update"] #island-clip::after {
+  content: none;
+}
+
+.up-kind {
+  color: var(--stage-teal);
+  font: 600 11px var(--font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+/* The stack's children must keep their size: shrinking them clips the title. */
+.up-stack > * { flex: none; }
+
+.up-main {
+  position: relative;
+  height: 100%;
+}
+.up-left {
+  position: absolute;
+  left: 6px;
+  bottom: 2px;
+  width: 116px;
+  height: 114px;
+}
+.up-miku {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.up-main > .card {
+  position: absolute;
+  left: 128px;
+  right: 16px;
+  /* The views container already clears the header; a breath below it, and 16
+     off the bottom, as the mockup. */
+  top: 6px;
+  bottom: 16px;
+  height: auto;
+  min-height: 118px;
+  border-radius: 18px;
+  background: var(--stage-panel);
+  border: 1px solid var(--stage-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.up-stack {
+  padding: 14px 20px 16px;
+  gap: 5px;
+}
+.up-stack .title {
+  font-size: 19px;
+  line-height: 1.15;
+}
+.up-stack .sub {
+  font-size: 13.5px;
+}
+.up-stack .update-bar {
+  height: 10px;
+  max-width: none;
+  background: #141c30;
+  box-shadow: inset 0 0 0 1px var(--stage-line-2);
+}
+.up-stack .update-bar .fill {
+  background: linear-gradient(90deg, var(--stage-teal), var(--stage-pink));
+  box-shadow: 0 0 12px rgba(57, 197, 187, 0.5);
+}
+
+/* ── The Notif page in the widget deck (views/deck.ts, island/history.ts,
+   dev/notif-history-mockup.html): what the notice cards said, newest first,
+   grouped just now / yesterday / earlier, as a timeline on one staff line:
+   each notice a note on it, pink while unread; the app is a small mark, never
+   a whole coloured box; romaji rides along in teal. ── */
+.dk-tab.has-new::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--stage-pink);
+  box-shadow: 0 0 6px var(--stage-pink);
+}
+.dk-tab.has-new.on::after {
+  background: #062a28;
+  box-shadow: none;
+  opacity: 0.55;
+}
+.dk-tab { position: relative; }
+
+.nh-page {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.nh-head {
+  /* The deck body is narrow (Miku's column takes the left 140px): the title
+     and the filters stack, or both get cut at the right edge. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+/* The title in sentence case on one line, so the list keeps its room. */
+.nh-title { font: 700 14px var(--font); letter-spacing: 0; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nh-head .dk-head { display: flex; align-items: center; max-width: 100%; }
+.nh-badge {
+  /* Whole pill, never squeezed by the title beside it. */
+  flex: none;
+  white-space: nowrap;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 700 10px var(--font);
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: #e12885;
+  vertical-align: 2px;
+}
+.nh-filters { display: flex; gap: 2px; flex: none; }
+.nh-filter {
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: 600 10.5px var(--font);
+  cursor: default;
+  background: transparent;
+  color: #8fa3b8;
+  transition: background 0.15s, color 0.15s;
+}
+.nh-filter:hover { color: var(--ink); }
+.nh-filter.on { background: rgba(57, 197, 187, 0.14); color: #9fe6e6; }
+.nh-filter:focus-visible, .nh-seen:focus-visible, .nh-clear-btn:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; }
+.nh-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* A fade at the cut edge hints there is more below (.gh-list). */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 88%, transparent 100%);
+}
+.nh-list::-webkit-scrollbar { display: none; }
+/* Groups: a small label and a rule that fades out. */
+.nh-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 3px 22px;
+  font: 700 9.5px var(--font);
+  letter-spacing: 0.16em;
+  color: #8fa3b8;
+}
+.nh-group::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(57, 197, 187, 0.16), transparent); }
+/* A timeline on one staff line: each notice is a note on it, pink while unread. */
+.nh-entry {
+  position: relative;
+  display: block;
+  padding: 6px 8px 7px 22px;
+  border-radius: 10px;
+  cursor: default;
+  transition: background 0.15s ease;
+}
+.nh-entry::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; background: rgba(57, 197, 187, 0.16); }
+.nh-entry:hover { background: rgba(57, 197, 187, 0.07); }
+.nh-entry.unread { background: linear-gradient(90deg, rgba(225, 40, 133, 0.08), transparent 70%); }
+.nh-led {
+  position: absolute;
+  top: 10px;
+  left: 3px;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid rgba(57, 197, 187, 0.55);
+  background: #0a0f11;
+}
+.nh-entry.unread .nh-led { border: 0; background: #e12885; box-shadow: 0 0 8px rgba(225, 40, 133, 0.7); animation: nh-led 1.6s ease-in-out infinite; }
+@keyframes nh-led {
+  0%, 100% { box-shadow: 0 0 4px rgba(225, 40, 133, 0.5); }
+  50% { box-shadow: 0 0 10px rgba(225, 40, 133, 0.9); }
+}
+.nh-body { min-width: 0; }
+.nh-src { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.nh-who { color: var(--ink); font: 700 12.5px var(--font); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.nh-app { flex: none; font: 700 9.5px var(--font); letter-spacing: 0.12em; text-transform: uppercase; color: #8fa3b8; }
+.nh-time { margin-left: auto; flex: none; font: 500 10px ui-monospace, Consolas, monospace; color: #8fa3b8; }
+.nh-msg {
+  font: 500 12px var(--font);
+  line-height: 1.35;
+  margin-top: 2px;
+  color: #c9d3d8;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.nh-entry.read .nh-msg { color: #8fa3b8; }
+.nh-rom { font: italic 500 11px var(--font); color: #9fe6e6; opacity: 0.75; margin-top: 2px; }
+.nh-acts { display: flex; gap: 2px; margin-top: 3px; }
+.nh-seen {
+  border: 0;
+  background: transparent;
+  color: #39c5bb;
+  font: 600 11px var(--font);
+  padding: 3px 4px;
+  border-radius: 999px;
+  cursor: default;
+}
+.nh-seen:hover { filter: brightness(1.15); }
+.nh-clear { display: flex; justify-content: flex-end; margin-top: 4px; }
+.nh-clear-btn {
+  border: 0;
+  background: transparent;
+  color: #8fa3b8;
+  font: 600 11px var(--font);
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: default;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.nh-clear-btn:hover { color: #39c5bb; }
+.nh-clear-btn.armed {
+  background: rgba(225, 40, 133, 0.1);
+  box-shadow: inset 0 0 0 1px #e12885;
+  color: #f7a8cf;
+}
+.nh-empty {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding-bottom: 12px;
+}
+.nh-empty-title { font: 700 14px var(--font); color: var(--ink); }
+.nh-empty-note {
+  margin: 6px auto 0;
+  max-width: 320px;
+  font: 500 11.5px var(--font);
+  line-height: 1.5;
+  color: #8fa3b8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nh-entry.unread .nh-led { animation: none; }
+}
+
+/* ── The Shelf page in the widget deck (views/deck.ts, core/shelf.ts,
+   dev/miku-pages-mockup.html): what Miku caught, a tile per file to click
+   open, show in its folder, take off, or (Windows) drag back out. ── */
+.sh-head { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 6px; }
+.sh-head .grow { flex: 1; }
+.sh-head .nh-title { flex: none; }
+/* The count gives way first on a narrow deck; the title never does. */
+.sh-meta { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #8fa3b8; font: 500 11.5px var(--font); white-space: nowrap; }
+.sh-link {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: #39c5bb;
+  font: 600 11px var(--font);
+  padding: 3px 4px;
+  border-radius: 999px;
+  cursor: default;
+  white-space: nowrap;
+}
+.sh-link:hover { filter: brightness(1.15); }
+.sh-link.dim { color: #8fa3b8; }
+.sh-link.armed { color: #f7a8cf; background: rgba(225, 40, 133, 0.1); box-shadow: inset 0 0 0 1px #e12885; padding: 3px 9px; }
+.sh-link:focus-visible, .sh-tile:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; }
+.sh-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px 0 4px; }
+.sh-tile {
+  position: relative;
+  min-width: 0;
+  border-radius: 11px;
+  padding: 8px 6px 6px;
+  background: rgba(57, 197, 187, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.16);
+  text-align: center;
+  cursor: default;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.sh-tile:hover { background: rgba(57, 197, 187, 0.1); box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.8); }
+/* A document: a page with a folded corner and its type on a coloured tag. */
+.sh-doc {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 30px;
+  margin: 0 auto;
+  background:
+    linear-gradient(#d5dbe3, #d5dbe3) 4px 10px / 13px 1.5px no-repeat,
+    linear-gradient(#d5dbe3, #d5dbe3) 4px 14px / 13px 1.5px no-repeat,
+    linear-gradient(225deg, #c9d0da 0 22%, #f4f6f9 22%);
+  clip-path: polygon(0 0, 68% 0, 100% 26%, 100% 100%, 0 100%);
+  border-radius: 2px;
+}
+.sh-doc b {
+  position: absolute;
+  left: 0;
+  bottom: 5px;
+  padding: 1px 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--c);
+  color: #fff;
+  font: 800 6.5px var(--font);
+  letter-spacing: 0.02em;
+}
+.sh-name { margin-top: 5px; font: 500 10.5px var(--font); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-size { margin-top: 1px; font: 500 9.5px ui-monospace, Consolas, monospace; color: #8fa3b8; white-space: nowrap; }
+.sh-go, .sh-x {
+  position: absolute;
+  top: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #22302f;
+  color: #c9d3d8;
+  font: 600 10px var(--font);
+  cursor: default;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.sh-go { left: 4px; }
+.sh-x { right: 4px; }
+.sh-tile:hover .sh-go, .sh-tile:hover .sh-x, .sh-tile:focus-within .sh-go, .sh-tile:focus-within .sh-x { opacity: 1; }
+.sh-go:hover, .sh-x:hover { color: #fff; background: #2f4644; }
+.sh-hint { flex: none; padding-top: 4px; font: 500 10.5px var(--font); color: rgba(159, 230, 230, 0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Catching dropped files on the Shelf page (views/catch.ts) ──
+   The files in the air are drawn on a sheet over the whole deck; a tile waits
+   hidden until its file lands on it, then pops in. */
+.dk-main { position: relative; }
+.dk-catch { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+.sh-tile { transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s, box-shadow 0.15s; }
+.sh-tile.sh-wait { opacity: 0; transform: scale(0.55); }
+/* Files hovering the island: the card lights up and says where they go. */
+.dk-main.dropping .dk-body { border-color: rgba(57, 197, 187, 0.85); background: linear-gradient(rgba(57, 197, 187, 0.08), rgba(225, 40, 133, 0.05)), var(--stage-panel); }
+.sh-drop {
+  display: grid;
+  gap: 3px;
+  margin: 6px 0 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(57, 197, 187, 0.6);
+  background: rgba(57, 197, 187, 0.06);
+}
+.sh-drop b { font: 700 14px var(--font); color: var(--ink); }
+.sh-drop span { font: 500 11.5px var(--font); color: rgba(159, 230, 230, 0.75); }
+/* Copies still running: room for the copy bar (drawn on the sheet, a little
+   Miku running it), and a ghost tile for each file still copying. */
+.sh-copy { height: 40px; flex: none; }
+.sh-tile.sh-ghost { background: none; box-shadow: none; outline: 1.5px dashed rgba(57, 197, 187, 0.45); outline-offset: -1.5px; animation: sh-ghost 1.6s ease-in-out infinite; }
+.sh-ghost .sh-doc { opacity: 0.35; }
+.sh-ghost .sh-name { color: #8fa3b8; }
+.sh-prog { height: 4px; margin: 5px 6px 0; border-radius: 2px; background: #1a2236; overflow: hidden; }
+.sh-prog i { display: block; height: 100%; width: calc(var(--p, 0) * 100%); min-width: 4px; border-radius: 2px; background: var(--miku, #39c5bb); transition: width 0.12s linear; }
+.sh-pct { margin-top: 2px; font: 600 9px ui-monospace, Consolas, monospace; color: #9fe6e6; }
+/* Copied, about to fly: the ghost lights up with a check. */
+.sh-tile.sh-ghost.ok { outline: 1.5px solid #39c5bb; background: rgba(57, 197, 187, 0.12); animation: none; }
+.sh-ghost.ok .sh-prog { display: none; }
+.sh-ghost.ok .sh-pct { font-size: 0; }
+.sh-ghost.ok .sh-pct::before { content: "✓"; display: inline-grid; place-items: center; width: 13px; height: 13px; margin-top: 3px; border-radius: 50%; background: #39c5bb; color: #06302d; font: 900 9px var(--font); }
+@keyframes sh-ghost { 50% { outline-color: rgba(57, 197, 187, 0.8); } }
+@media (prefers-reduced-motion: reduce) { .sh-tile.sh-ghost { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sh-tile { transition: none; } }
+

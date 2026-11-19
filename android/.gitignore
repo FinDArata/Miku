@@ -1,0 +1,17 @@
+# Build outputs
+app/build/
+build/
+.gradle/
+.kotlin/
+
+# Dependencies
+node_modules/
+
+# Local config / secrets
+local.properties
+.env
+.env.*
+
+# IDE
+*.iml
+.idea/

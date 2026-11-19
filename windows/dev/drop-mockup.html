@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drop mockup</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #1b1b1f;
+        color: #cfd4dc;
+        font: 13px "Segoe UI", system-ui, sans-serif;
+      }
+      main {
+        display: grid;
+        gap: 14px;
+        justify-items: center;
+        padding: 28px 16px;
+      }
+      h1 {
+        color: #9fe6e6;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      canvas {
+        display: block;
+        width: 960px;
+        max-width: 100%;
+        height: auto;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+      }
+      button {
+        font: inherit;
+        color: #cfeff0;
+        background: #262a33;
+        border: 1px solid #343b49;
+        border-radius: 8px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        border-color: #39c5bb;
+        color: #9fe6e6;
+      }
+      #phase {
+        font: 600 13px ui-monospace, monospace;
+        color: #8b93a3;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Drop files on Miku</h1>
+      <canvas id="stage" aria-label="Miku catches the files dropped on the notch, one by one, and puts them on the shelf"></canvas>
+      <div id="phase">–</div>
+      <div class="bar" role="group" aria-label="What is dropped">
+        <button data-n="1" aria-pressed="true">1 file</button>
+        <button data-n="3">3 files</button>
+        <button data-n="12">12 files</button>
+        <button id="replay">Replay</button>
+      </div>
+    </main>
+    <script type="module">
+      import { drawChibi } from "/src/mochi/chibi";
+
+      // Island space, same as src/upload/sequence.ts: the island is 640 × 176.
+      const W = 640;
+      const H = 176;
+      const CARD = { x: 156, y: 30, w: 474, h: 136, r: 20 };
+      const MIKU = { x: 78, feet: 170, s: 0.3 };
+      const TEXT_X = 176;
+      const TEXT_R = CARD.x + CARD.w - 20;
+      const FEET = 480; // the chibi's feet, in her own design units
+
+      const TEAL = "#39C5BB";
+      const TEAL_LIGHT = "#9FE6E6";
+      const PINK = "#E12885";
+
+      // ── The files ──────────────────────────────────────────────────────────
+      const TYPES = {
+        PDF: "#E8697B", PNG: "#2FA9B0", TS: "#4A7BD0", MP3: "#E12885",
+        DOCX: "#3F6FD8", ZIP: "#E9A23B", JPG: "#1F8A8F", MD: "#7A5BA8",
+      };
+      const file = (name, kb) => {
+        const tag = name.split(".").pop().toUpperCase();
+        return { name, tag, kb, color: TYPES[tag] ?? "#4A5468" };
+      };
+      const SETS = {
+        1: [file("rapport-q3.pdf", 240)],
+        3: [file("rapport-q3.pdf", 240), file("poster-final.png", 860), file("island.ts", 12)],
+        12: [
+          file("rapport-q3.pdf", 240), file("poster-final.png", 860), file("island.ts", 12),
+          file("demo-take3.mp3", 5200), file("notes.md", 4), file("contract.docx", 96),
+          file("photos.zip", 48000), file("IMG_2041.jpg", 2400), file("IMG_2042.jpg", 2300),
+          file("setlist.md", 3), file("cover.png", 1200), file("budget.docx", 64),
+        ],
+      };
+      // More than this and she cannot hold them: she sets the pile down.
+      const ARMFUL = 5;
+      // At most this many fall visibly; the rest pour in with the last one.
+      const FALLERS = 7;
+
+      const size = (kb) => (kb >= 1024 * 1024 ? `${(kb / 1024 / 1024).toFixed(1)} GB` : kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`);
+
+      // ── Timeline, seconds ──────────────────────────────────────────────────
+      const T_DROP = 1.5;
+      const FALL = 0.42;
+      const STAGGER = 0.24;
+      // Putting away: each file flies from her arms to its tile.
+      const PUT_GAP = 0.1;
+      const PUT_FLY = 0.4;
+      function timeline(n) {
+        const m = Math.min(n, FALLERS);
+        const caught = T_DROP + (m - 1) * STAGGER + FALL;
+        const heavy = n > ARMFUL;
+        const thud = heavy ? caught + 0.9 : null;
+        // `ready` is when she starts putting them on the shelf.
+        const ready = heavy ? thud + 0.5 : caught + 0.5;
+        const put = PUT_FLY + (Math.min(n, 6) - 1) * PUT_GAP;
+        // Later, the first file is dragged back out of the notch.
+        const out = ready + put + 1.4;
+        return { m, caught, heavy, thud, ready, put, out, cycle: out + 2.4 };
+      }
+
+      const canvas = document.getElementById("stage");
+      const dpr = Math.max(2, window.devicePixelRatio || 1) * 1.5;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      const ctx = canvas.getContext("2d");
+      const phaseEl = document.getElementById("phase");
+
+      // ?at=2.1 freezes the timeline there; &n=12 picks how many files.
+      const q = new URLSearchParams(location.search);
+      const AT = q.has("at") ? Number(q.get("at")) : null;
+      let n = SETS[q.get("n")] ? Number(q.get("n")) : 1;
+      let start = performance.now();
+      for (const b of document.querySelectorAll("button[data-n]")) {
+        b.setAttribute("aria-pressed", String(Number(b.dataset.n) === n));
+        b.addEventListener("click", () => {
+          n = Number(b.dataset.n);
+          for (const o of document.querySelectorAll("button[data-n]")) o.setAttribute("aria-pressed", String(o === b));
+          start = performance.now();
+        });
+      }
+      document.getElementById("replay").addEventListener("click", () => (start = performance.now()));
+
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const eOut = (k) => 1 - Math.pow(1 - k, 3);
+      const eIn = (k) => k * k * k;
+      const eBack = (k) => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+
+      // ── Props ──────────────────────────────────────────────────────────────
+      function fileIcon(cx, cy, w, h, f, rot = 0) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        const fold = w * 0.32;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2, -h / 2 + 3);
+        ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + 3, -h / 2);
+        ctx.lineTo(w / 2 - fold, -h / 2);
+        ctx.lineTo(w / 2, -h / 2 + fold);
+        ctx.lineTo(w / 2, h / 2 - 3);
+        ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - 3, h / 2);
+        ctx.lineTo(-w / 2 + 3, h / 2);
+        ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - 3);
+        ctx.closePath();
+        ctx.fillStyle = "#F4F6F9";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.12)";
+        ctx.lineWidth = Math.max(0.6, w * 0.02);
+        ctx.stroke();
+        ctx.fillStyle = "#C9D0DA";
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - fold, -h / 2);
+        ctx.lineTo(w / 2 - fold, -h / 2 + fold);
+        ctx.lineTo(w / 2, -h / 2 + fold);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#D5DBE3";
+        for (let i = 0; i < 3; i++) ctx.fillRect(-w / 2 + w * 0.16, -h / 2 + h * (0.34 + i * 0.13), w * (i === 2 ? 0.4 : 0.66), Math.max(1, h * 0.05));
+        ctx.fillStyle = f.color;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2 - w * 0.08, h / 2 - h * 0.34, w * 0.78, h * 0.24, Math.max(1, w * 0.06));
+        ctx.fill();
+        if (h >= 18) {
+          ctx.fillStyle = "#fff";
+          ctx.font = `700 ${Math.round(h * 0.16)}px "Segoe UI", sans-serif`;
+          ctx.textBaseline = "middle";
+          ctx.fillText(f.tag, -w / 2 + w * 0.02, h / 2 - h * 0.22);
+        }
+        ctx.restore();
+      }
+
+      // A fanned stack of files (dragged, held or set down), bottom first.
+      const FAN = [0, -0.16, 0.14, -0.08, 0.2, -0.22, 0.1];
+      function pile(cx, bottom, w, h, files, k, sway = 0) {
+        files.forEach((f, i) => {
+          const lift = i * h * 0.06;
+          const dx = ((i % 3) - 1) * w * 0.12 + sway * i * 0.4;
+          fileIcon(cx + dx, bottom - h / 2 - lift, w, h, f, FAN[i % FAN.length] * k + sway * 0.01 * i);
+        });
+      }
+
+      function badge(x, y, count) {
+        ctx.save();
+        ctx.fillStyle = PINK;
+        ctx.beginPath();
+        ctx.arc(x, y, 8.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#0A0F11";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = '700 10px "Segoe UI", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(count), x, y + 0.5);
+        ctx.restore();
+      }
+
+      // ── Miku ───────────────────────────────────────────────────────────────
+      function miku(t, pose, opts, prop, squash = 1, lift = 0) {
+        const { x: cx, feet, s } = MIKU;
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath();
+        ctx.ellipse(cx, feet + 1, 92 * s, 7 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.translate(cx, feet - lift);
+        ctx.scale(s * (2 - squash), s * squash);
+        ctx.translate(-260, -FEET);
+        drawChibi(ctx, pose, t, "classic", { noShadow: true, ...opts });
+        if (prop) prop();
+        ctx.restore();
+      }
+      // The arms she holds things with, and the arms she reaches up with.
+      const HOLD = [15, -70, -15, 70];
+      const REACH = [130, 25, -130, -25];
+
+      // ── The Miku-style card ────────────────────────────────────────────────
+      function island() {
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.roundRect(0, 0, W, H, [0, 0, 26, 26]);
+        ctx.fill();
+        const g = ctx.createRadialGradient(MIKU.x, MIKU.feet, 2, MIKU.x, MIKU.feet, 70);
+        g.addColorStop(0, "rgba(57,197,187,0.28)");
+        g.addColorStop(1, "rgba(57,197,187,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(MIKU.x, MIKU.feet, 70, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function card(glow, pulse) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(CARD.x, CARD.y, CARD.w, CARD.h, CARD.r);
+        const bg = ctx.createLinearGradient(0, CARD.y, 0, CARD.y + CARD.h);
+        bg.addColorStop(0, "#0F1A1C");
+        bg.addColorStop(1, "#0A0F11");
+        ctx.fillStyle = bg;
+        ctx.fill();
+        ctx.clip();
+        const g = ctx.createRadialGradient(CARD.x, 110, 6, CARD.x, 110, 380);
+        g.addColorStop(0, `rgba(57,197,187,${0.24 * glow})`);
+        g.addColorStop(1, "rgba(57,197,187,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(CARD.x, CARD.y, CARD.w, CARD.h);
+        // a five-line staff, faint, behind everything
+        ctx.strokeStyle = "rgba(57,197,187,0.06)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+          const y = CARD.y + 34 + i * 11;
+          ctx.beginPath();
+          ctx.moveTo(CARD.x, y);
+          ctx.lineTo(CARD.x + CARD.w, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(CARD.x + 0.75, CARD.y + 0.75, CARD.w - 1.5, CARD.h - 1.5, CARD.r);
+        const rim = ctx.createLinearGradient(CARD.x, 0, CARD.x + CARD.w, 0);
+        rim.addColorStop(0, `rgba(57,197,187,${0.35 + 0.45 * glow * pulse})`);
+        rim.addColorStop(0.7, `rgba(57,197,187,${0.18 + 0.3 * glow})`);
+        rim.addColorStop(1, `rgba(225,40,133,${0.25 + 0.4 * glow * pulse})`);
+        ctx.strokeStyle = rim;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // An equalizer along the card's floor while a drag hovers; the bars near the cursor jump.
+      function equalizer(t, a, cursorX) {
+        if (a <= 0) return;
+        ctx.save();
+        const n = 46;
+        const x0 = TEXT_X;
+        const x1 = TEXT_R;
+        const base = CARD.y + CARD.h - 9;
+        for (let i = 0; i < n; i++) {
+          const x = lerp(x0, x1, i / (n - 1));
+          const near = cursorX == null ? 0 : Math.max(0, 1 - Math.abs(x - cursorX) / 120);
+          const h = 2 + (3 + 8 * near) * (0.5 + 0.5 * Math.sin(t * 7 + i * 0.9) * Math.sin(t * 3.1 + i * 0.37));
+          ctx.fillStyle = near > 0.55 ? PINK : TEAL;
+          ctx.globalAlpha = a * (0.3 + 0.6 * near);
+          ctx.beginPath();
+          ctx.roundRect(x - 1.5, base - h, 3, h, 1.5);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // A pill: a coloured dot and a label, cut to fit `maxW`. Returns its width.
+      function pill(x, y, label, dot, maxW = 200) {
+        ctx.font = '600 11px "Segoe UI", sans-serif';
+        let text = label;
+        while (ctx.measureText(text).width + 24 > maxW && text.length > 4) text = text.slice(0, -2);
+        if (text !== label) text = text.slice(0, -1) + "…";
+        const w = ctx.measureText(text).width + 24;
+        ctx.strokeStyle = "rgba(57,197,187,0.4)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x + 0.5, y + 0.5, w, 19, 9.5);
+        ctx.stroke();
+        ctx.fillStyle = dot;
+        ctx.beginPath();
+        ctx.arc(x + 10, y + 10, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = TEAL_LIGHT;
+        ctx.fillText(text, x + 17, y + 14);
+        return w;
+      }
+
+      function dropText(a, count) {
+        if (a <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "#F2FBFA";
+        ctx.font = '600 16px "Segoe UI", sans-serif';
+        ctx.fillText(count > 1 ? `Drop ${count} files here` : "Drop it here", TEXT_X, 74);
+        ctx.fillStyle = "rgba(159,230,230,0.7)";
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.fillText(count > 1 ? "Miku will catch every one of them." : "Miku will catch it for you.", TEXT_X, 92);
+        let x = TEXT_X;
+        for (const c of ["PDF", "Images", "Code", "Docs"]) x += pill(x, 104, c, PINK) + 6;
+        ctx.restore();
+      }
+
+      // ── The shelf ──────────────────────────────────────────────────────────
+      // Where the files stay once she has put them away: one tile each, to be
+      // dragged back out to any app or folder, clicked to open, ✕ to drop.
+      const TILE = { w: 66, h: 62, gap: 6, top: 64 };
+      const SLOTS = Math.floor((TEXT_R - TEXT_X + TILE.gap) / (TILE.w + TILE.gap));
+      const slotX = (i) => TEXT_X + i * (TILE.w + TILE.gap);
+
+      function fit(text, maxW) {
+        if (ctx.measureText(text).width <= maxW) return text;
+        let s = text;
+        while (s.length > 2 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+        return s + "…";
+      }
+
+      function tile(x, y, f, { scale = 1, hover = false, lifted = false } = {}) {
+        ctx.save();
+        ctx.translate(x + TILE.w / 2, y + TILE.h / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-TILE.w / 2, -TILE.h / 2);
+        if (lifted) {
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+        }
+        ctx.fillStyle = lifted ? "#16292B" : "rgba(57,197,187,0.07)";
+        ctx.beginPath();
+        ctx.roundRect(0, 0, TILE.w, TILE.h, 10);
+        ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.strokeStyle = hover || lifted ? "rgba(57,197,187,0.85)" : "rgba(57,197,187,0.22)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        fileIcon(TILE.w / 2, 23, 24, 30, f);
+        ctx.font = '10.5px "Segoe UI", sans-serif';
+        ctx.fillStyle = "#C9D3D8";
+        ctx.textAlign = "center";
+        ctx.fillText(fit(f.name, TILE.w - 8), TILE.w / 2, 53);
+        if (hover && !lifted) {
+          ctx.fillStyle = "#2A3336";
+          ctx.beginPath();
+          ctx.arc(TILE.w - 4, 4, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#C9D3D8";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(TILE.w - 6.5, 1.5);
+          ctx.lineTo(TILE.w - 1.5, 6.5);
+          ctx.moveTo(TILE.w - 1.5, 1.5);
+          ctx.lineTo(TILE.w - 6.5, 6.5);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function moreTile(x, y, count, scale) {
+        ctx.save();
+        ctx.translate(x + TILE.w / 2, y + TILE.h / 2);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "rgba(225,40,133,0.1)";
+        ctx.strokeStyle = "rgba(225,40,133,0.45)";
+        ctx.beginPath();
+        ctx.roundRect(-TILE.w / 2, -TILE.h / 2, TILE.w, TILE.h, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#F7A8CF";
+        ctx.font = '700 15px "Segoe UI", sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(`+${count}`, 0, 1);
+        ctx.font = '10.5px "Segoe UI", sans-serif';
+        ctx.fillText("more", 0, 16);
+        ctx.restore();
+      }
+
+      // `shelved` is what is on the shelf now; `pop` is the time since she put them there;
+      // `hover` marks the tile under the cursor; `skip` is the one being dragged out.
+      function shelf(a, shelved, pop, hover, skip) {
+        if (a <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = a;
+        const total = size(shelved.reduce((s, f) => s + f.kb, 0));
+        ctx.font = '700 14px "Segoe UI", sans-serif';
+        ctx.fillStyle = "#F2FBFA";
+        ctx.fillText("Shelf", TEXT_X, 54);
+        const hw = ctx.measureText("Shelf").width;
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.fillStyle = "rgba(159,230,230,0.7)";
+        ctx.fillText(shelved.length ? ` · ${shelved.length} ${shelved.length === 1 ? "file" : "files"} · ${total}` : " · empty", TEXT_X + hw, 54);
+        ctx.textAlign = "right";
+        ctx.fillStyle = TEAL;
+        ctx.font = '600 12px "Segoe UI", sans-serif';
+        if (shelved.length) ctx.fillText("Clear all", TEXT_R, 54);
+        ctx.textAlign = "left";
+
+        const over = shelved.length > SLOTS;
+        const shown = over ? SLOTS - 1 : shelved.length;
+        let slot = 0;
+        for (let i = 0; i < shown; i++) {
+          const f = shelved[i];
+          if (f === skip) continue;
+          const land = i * PUT_GAP + PUT_FLY;
+          if (pop >= land) tile(slotX(slot), TILE.top, f, { scale: clamp(eBack(clamp((pop - land) / 0.25)), 0, 1.2), hover: f === hover });
+          slot++;
+        }
+        const landMore = shown * PUT_GAP + PUT_FLY;
+        if (over && pop >= landMore) moreTile(slotX(SLOTS - 1), TILE.top, shelved.length - shown, clamp(eBack(clamp((pop - landMore) / 0.25)), 0, 1.2));
+
+        ctx.globalAlpha = a;
+        ctx.font = '11px "Segoe UI", sans-serif';
+        ctx.fillStyle = "rgba(159,230,230,0.5)";
+        ctx.fillText(shelved.length ? "Drag a file out to drop it anywhere · click to open" : "Drop files on Miku to keep them here for later.", TEXT_X, shelved.length ? 148 : 92);
+        ctx.restore();
+      }
+
+      // ── The sequence ───────────────────────────────────────────────────────
+      function frame(now) {
+        const files = SETS[n];
+        const tl = timeline(files.length);
+        const t = AT ?? ((now - start) / 1000) % tl.cycle;
+        const clock = now / 1000;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        island();
+
+        const thudK = tl.heavy && t >= tl.thud ? clamp(1 - (t - tl.thud) / 0.25) : 0;
+        ctx.translate(0, Math.sin(t * 90) * 1.5 * thudK);
+
+        const hover = t < T_DROP ? 1 : clamp(1 - (t - T_DROP) / 0.6);
+        const readyA = clamp((t - tl.ready) / 0.35);
+        // The drag rides in from the right and settles just over her hands.
+        const k = eOut(clamp(t / 1.2));
+        const cx = lerp(600, MIKU.x + 16, k);
+        const cy = lerp(56, 22, k) + Math.sin(clock * 3) * 2;
+
+        // Dragging the first file back out: the cursor comes for it, lifts it, carries it off.
+        const u = t - tl.out;
+        const first = files[0];
+        const grabX = slotX(0) + TILE.w / 2;
+        const grabY = TILE.top + TILE.h / 2;
+        let outPos = null;
+        let gone = false;
+        let hoverTile = null;
+        if (u >= 0 && u < 0.5) {
+          hoverTile = u > 0.25 ? first : null;
+          const e = eOut(clamp(u / 0.35));
+          outPos = { x: lerp(520, grabX, e), y: lerp(160, grabY, e), carrying: false };
+        } else if (u >= 0.5 && u < 1.3) {
+          const e = clamp((u - 0.5) / 0.8);
+          outPos = { x: lerp(grabX, 700, e * e), y: lerp(grabY, -20, e * e), carrying: true, a: 1 - clamp((e - 0.7) / 0.3) };
+        } else if (u >= 1.3) gone = true;
+        const shelved = gone ? files.slice(1) : files;
+
+        card(Math.max(hover, 0.25), 0.75 + 0.25 * Math.sin(clock * 4));
+        equalizer(clock, hover, t < T_DROP ? cx : null);
+        dropText(1 - clamp((t - T_DROP) / 0.3), files.length);
+        // Once the dragged one is gone the shelf is redrawn without it (tiles shift left).
+        shelf(readyA, shelved, gone ? 9 : t - tl.ready, hoverTile, outPos?.carrying ? first : null);
+
+        // How many have landed in her arms, and a squash for each landing.
+        const fallers = files.slice(0, tl.m);
+        let landed = 0;
+        let squash = 1;
+        let lastLand = -1;
+        fallers.forEach((_, i) => {
+          const land = T_DROP + i * STAGGER + FALL;
+          if (t >= land) {
+            landed++;
+            lastLand = land;
+            squash -= Math.sin(clamp((t - land) / 0.22) * Math.PI) * (tl.heavy ? 0.05 + i * 0.012 : 0.06);
+          }
+        });
+        const held = files.slice(0, Math.min(landed, tl.heavy ? FALLERS : ARMFUL));
+        const sway = tl.heavy ? Math.sin(clock * 6) * (2 + landed) : 0;
+        const armful = () => pile(260, 440, 115, 140, held, 1, sway);
+        // What she holds fades away as the tiles pop onto the shelf.
+        const shrinking = (draw) => () => {
+          if (putA >= 1) return;
+          ctx.save();
+          ctx.globalAlpha = 1 - putA;
+          draw();
+          ctx.restore();
+        };
+        const putA = clamp((t - tl.ready) / tl.put);
+        const waving = u >= 0.3 && u < 1.8;
+
+        let phase;
+        if (t < T_DROP) {
+          phase = "hover — she reaches up for it";
+          miku(clock, "surprised", { arms: REACH, look: [clamp((cx - MIKU.x) / 6, -14, 14), -10], pitch: -0.4 });
+          pile(cx, cy + 18, 30, 36, files.slice(0, 3), 1);
+          if (files.length > 1) badge(cx + 16, cy - 16, files.length);
+          cursor(cx + 12, cy + 14);
+        } else if (t < tl.caught) {
+          phase = `drop — catching ${landed}/${files.length}`;
+          const first = T_DROP + FALL;
+          const hop = t < first ? Math.sin(clamp((t - (first - 0.3)) / 0.3) * Math.PI) * 10 : 0;
+          miku(clock, "surprised", { arms: landed ? HOLD : REACH, eyes: landed && t - lastLand < 0.28 ? "happy" : undefined, look: [0, landed ? -6 : -14], pitch: landed ? -0.2 : -0.5, skipFx: new Set(["lines"]) }, landed ? armful : null, squash, hop);
+          fallers.forEach((f, i) => {
+            const s0 = T_DROP + i * STAGGER;
+            if (t < s0 || t >= s0 + FALL) return;
+            const e = eIn((t - s0) / FALL);
+            fileIcon(lerp(cx + (i % 3 - 1) * 6, MIKU.x, e), lerp(cy + 8, MIKU.feet - 44, e), 30, 36, f, lerp(-0.12, (i % 2 ? -1 : 1) * 0.5, e));
+          });
+          if (files.length > tl.m && landed) badge(MIKU.x + 26, MIKU.feet - 80, `+${files.length - tl.m}`);
+        } else if (waving) {
+          phase = "drag out — she waves it goodbye";
+          miku(clock, "wave", { look: [14, -6] });
+        } else if (!tl.heavy) {
+          phase = putA >= 1 ? (gone ? "shelf — one dragged out" : "shelf — she put them away") : t >= tl.ready ? "putting them on the shelf" : "caught — got it!";
+          const putting = t >= tl.ready && putA < 1;
+          miku(clock, putA >= 1 ? "idle" : "love", { arms: putA >= 1 ? undefined : HOLD, eyes: putting ? "open" : "happy", look: putting ? [14, -2] : undefined, skipFx: new Set(["hearts"]) },
+            shrinking(() => pile(260, 440, 115, 140, held, 1, Math.sin(clock * 2) * 1.5)), squash);
+          if (putA >= 1) note(clock, MIKU.x + 46, MIKU.feet - 128);
+        } else if (t < tl.thud) {
+          phase = "too many — wobbling";
+          miku(clock, "error", { arms: HOLD, eyes: "wide", look: [0, -12], pitch: -0.3 }, armful, squash - 0.03);
+        } else {
+          phase = putA >= 1 ? (gone ? "shelf — one dragged out" : "shelf — phew, all put away") : t >= tl.ready ? "putting them on the shelf" : "thud — set down";
+          const d = clamp((t - tl.thud) / 0.5);
+          shrinking(() => {
+            pile(MIKU.x + 52, MIKU.feet, 24, 30, held, 0.5);
+            badge(MIKU.x + 66, MIKU.feet - 50, files.length);
+          })();
+          if (d < 1) dust(MIKU.x + 52, MIKU.feet, d);
+          miku(clock, "proud", { look: [14, 0] });
+        }
+
+        fallers.forEach((_, i) => {
+          const since = t - (T_DROP + i * STAGGER + FALL);
+          if (since < 0 || since >= 0.6) return;
+          sparkle(MIKU.x + 4, MIKU.feet - 50, since / 0.6);
+          plusOne(MIKU.x + 30, MIKU.feet - 92 - since * 36, since / 0.6);
+        });
+
+        if (t >= tl.ready && putA < 1) {
+          const from = tl.heavy ? { x: MIKU.x + 52, y: MIKU.feet - 20 } : { x: MIKU.x + 6, y: MIKU.feet - 60 };
+          const slots = Math.min(files.length, SLOTS);
+          for (let i = 0; i < slots; i++) {
+            const e = (t - tl.ready - i * PUT_GAP) / PUT_FLY;
+            if (e < 0 || e >= 1) continue;
+            const k2 = eOut(e);
+            const tx = slotX(i) + TILE.w / 2;
+            const ty = TILE.top + 26;
+            fileIcon(lerp(from.x, tx, k2), lerp(from.y, ty, k2) - Math.sin(e * Math.PI) * 34, lerp(30, 24, k2), lerp(36, 30, k2), files[i], (1 - k2) * 0.6);
+          }
+        }
+
+        if (outPos) {
+          if (outPos.carrying) {
+            ctx.save();
+            ctx.globalAlpha = outPos.a;
+            tile(outPos.x - TILE.w / 2, outPos.y - TILE.h / 2, first, { scale: 0.9, lifted: true });
+            ctx.restore();
+          }
+          cursor(outPos.x + 6, outPos.y + 8);
+        }
+        phaseEl.textContent = `t = ${t.toFixed(2)} s · ${phase}`;
+        requestAnimationFrame(frame);
+      }
+
+      function sparkle(x, y, k) {
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        const r0 = 4 + k * 6;
+        const r1 = 8 + k * 10;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          ctx.strokeStyle = i % 2 ? PINK : "#F5C542";
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0);
+          ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // "+1" in Miku pink, popping up from her hands on each catch.
+      function plusOne(x, y, k) {
+        ctx.save();
+        ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
+        ctx.translate(x, y);
+        ctx.scale(0.8 + 0.4 * eBack(clamp(k / 0.3)), 0.8 + 0.4 * eBack(clamp(k / 0.3)));
+        ctx.font = '800 13px "Segoe UI", sans-serif';
+        ctx.textAlign = "center";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#0A0F11";
+        ctx.strokeText("+1", 0, 0);
+        ctx.fillStyle = PINK;
+        ctx.fillText("+1", 0, 0);
+        ctx.restore();
+      }
+
+      function dust(x, y, k) {
+        ctx.save();
+        ctx.globalAlpha = 0.55 * (1 - k);
+        ctx.fillStyle = "#C9D3D8";
+        for (const dx of [-1, 1]) {
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(x + dx * (12 + k * 18 + i * 5), y - 3 - i * 2 - k * 4, 2.5 + k * 2 - i * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function note(t, x, y) {
+        const k = (t % 2) / 2;
+        ctx.save();
+        ctx.globalAlpha = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
+        ctx.translate(x + Math.sin(t * 3) * 3, y - 18 * k);
+        ctx.fillStyle = PINK;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 3.2, 2.4, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(2.2, -10, 1.4, 10);
+        ctx.beginPath();
+        ctx.moveTo(3.6, -10);
+        ctx.quadraticCurveTo(8, -7, 6.5, -3);
+        ctx.lineTo(3.6, -7);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function cursor(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 15);
+        ctx.lineTo(4, 11);
+        ctx.lineTo(7, 17);
+        ctx.lineTo(9.5, 16);
+        ctx.lineTo(6.5, 10);
+        ctx.lineTo(11, 10);
+        ctx.closePath();
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

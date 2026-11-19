@@ -1,0 +1,404 @@
+/* The floating lyrics overlay (lyrics.html): three lines of a song on a card
+   that can be dragged anywhere. Its own window is transparent and
+   always-on-top, so what shows is the card and nothing else.
+
+   Everything the user can change in Settings arrives as a custom property on
+   <html> (see applyLook in main.ts): the card's colour and opacity, the words'
+   colour, and how big the sung line is. The sizes for the lines around it and
+   the title follow from --lyrics-size, so one slider moves the whole card. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --lyrics-bg: #08090c;
+  --lyrics-opacity: 0.25;
+  --lyrics-ink: #ffffff;
+  --lyrics-size: 16px;
+  /* The quiet lines and the title, derived from the sung line's size. */
+  --lyrics-small: calc(var(--lyrics-size) * 0.72);
+  --lyrics-title: calc(var(--lyrics-size) * 0.58);
+  --lyrics-note: calc(var(--lyrics-size) * 0.76);
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  font: 600 var(--lyrics-size) system-ui, "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
+  color: var(--lyrics-ink);
+}
+
+#lyrics {
+  position: absolute;
+  inset: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  /* The card, see-through by the user's own amount; the text's shadow keeps
+     the words readable over whatever shows behind them. */
+  background: color-mix(in srgb, var(--lyrics-bg) calc(var(--lyrics-opacity) * 100%), transparent);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  /* The whole card is the drag handle (data-tauri-drag-region="deep"). */
+  cursor: grab;
+  overflow: hidden;
+}
+
+/* Acrylic really is behind the window (Rust said so): the card thins out to
+   half the user's own opacity, and the system blur does the reading. */
+body.acrylic #lyrics {
+  background: color-mix(in srgb, var(--lyrics-bg) calc(var(--lyrics-opacity) * 50%), transparent);
+}
+
+/* The hover adds the one thing the card is missing: it can be moved. */
+#lyrics:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.row {
+  position: relative;
+  min-height: calc(var(--lyrics-size) * 1.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* The line before and the one after: there, and quiet. */
+.row.past,
+.row.next {
+  font-size: var(--lyrics-small);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--lyrics-ink) 38%, transparent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  /* A long line is cut, not wrapped: three rows are what fits. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* The line being sung: the brightest thing on screen, and the only big one. */
+.row.current {
+  font-size: var(--lyrics-size);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--lyrics-ink);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.55);
+  min-height: calc(var(--lyrics-size) * 1.7);
+  max-width: 100%;
+}
+
+.row.current .line {
+  /* A line too long for the width gets smaller rather than clipped. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* A change of line: the new one slides up into place, the old one goes. */
+.row.current.enter .line {
+  animation: rise 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Nothing to sing: an advertisement, an instrumental, or no words on LRCLIB. */
+.note {
+  font-size: var(--lyrics-note);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--lyrics-ink) 46%, transparent);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  text-align: center;
+  position: relative;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The song at the top of the card: cover, title and artist, left-aligned. */
+#song {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.8);
+}
+#song.empty { display: none; }
+#song-art {
+  flex: none;
+  width: calc(var(--lyrics-title) * 3.2);
+  height: calc(var(--lyrics-title) * 3.2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1b3b4a, #2b1a4d);
+  display: grid;
+  place-items: center;
+}
+#song-art::before { content: "♪"; color: rgba(57, 197, 187, 0.85); font-size: var(--lyrics-title); }
+#song-art.has-art::before { content: none; }
+#song-art img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#song-art.has-art img { display: block; }
+#song-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+#song-title,
+#song-artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#song-title { font-size: calc(var(--lyrics-title) * 1.15); color: #39c5bb; }
+#song-artist { font-size: var(--lyrics-title); font-weight: 500; color: color-mix(in srgb, var(--lyrics-ink) 55%, transparent); }
+
+/* Miku in the bottom-left corner; the words keep clear of her. */
+#song-miku {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  width: 58px;
+  height: 58px;
+  pointer-events: none;
+}
+#rows { padding: calc(var(--lyrics-title) * 3.2) 0 0 46px; }
+
+/* A row that is not there takes no space: an overlay with an ad keeps the
+   card the same size it always is. */
+.row:empty {
+  display: none;
+}
+
+/* While the menu is up the card keeps its own size and position: the window
+   grew to hold the menu, and the card must not stretch with it. */
+#lyrics.menu-open {
+  inset: auto;
+  height: var(--card-height, 160px);
+  width: var(--card-width, 420px);
+  left: 6px;
+  top: 6px;
+}
+
+/* ── The card's own menu (a right-click) ──────────────────────────────────────
+   Small, opaque enough to read over any wallpaper, and never larger than the
+   card it belongs to: menu.ts keeps it inside the window. */
+
+#lyrics-menu {
+  position: fixed;
+  z-index: 10;
+  width: 210px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 7px;
+  border-radius: 11px;
+  background: rgba(14, 15, 18, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color: #f5f6f8;
+  font: 500 11px system-ui, "Segoe UI", "Noto Sans", sans-serif;
+  cursor: default;
+}
+
+#lyrics-menu[hidden] {
+  display: none;
+}
+
+#lyrics-menu .menu-head {
+  padding: 2px 4px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6b7079;
+}
+
+#lyrics-menu .menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+}
+
+#lyrics-menu .menu-row > label {
+  flex: 0 0 auto;
+  min-width: 62px;
+  color: #9398a1;
+  font-size: 11px;
+}
+
+#lyrics-menu input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 86px;
+  height: 14px;
+  accent-color: #1db954;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-colour {
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-colour::-webkit-color-swatch-wrapper { padding: 1px; }
+#lyrics-menu .menu-colour::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+#lyrics-menu .menu-sep {
+  height: 1px;
+  margin: 6px 2px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+#lyrics-menu .menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #f5f6f8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#lyrics-menu .menu-item:hover {
+  background: rgba(46, 230, 200, 0.16);
+  color: #63f0d9;
+}
+
+/* Locked in place: nothing says "drag me" any more. */
+body.locked #lyrics { cursor: default; }
+
+/* ── Miku's dress for the card (docs/mockups/notch-music.png) ───────────────── */
+#lyrics {
+  border-color: rgba(57, 197, 187, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(57, 197, 187, 0.08);
+  border-radius: 18px;
+}
+#lyrics:hover { border-color: rgba(57, 197, 187, 0.7); }
+#song-grip {
+  margin-left: auto;
+  flex: none;
+  color: #5d6d86;
+  font-size: 14px;
+  letter-spacing: -2px;
+}
+body.locked #song-grip { visibility: hidden; }
+.row.current .line {
+  color: #39c5bb;
+  text-shadow: 0 0 12px rgba(57, 197, 187, 0.7), 0 1px 5px rgba(0, 0, 0, 0.8);
+}
+
+/* Karaoke: teal fills the timed line left to right as it is sung (main.ts sets
+   --sung each tick; the transition smooths the 200 ms steps). The shadow moves
+   to a filter: a text-shadow would paint over a background-clipped text. The
+   inline .ink's background runs across its wrapped rows end to end (slice), so
+   a two-row line fills the first row, then the second. */
+@property --sung {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+.row.current .ink.sing,
+body.see-through .row.current .ink.sing {
+  display: inline;
+  box-decoration-break: slice;
+  -webkit-box-decoration-break: slice;
+  background: linear-gradient(90deg, #39c5bb var(--sung), var(--lyrics-ink) var(--sung));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 8px rgba(57, 197, 187, 0.45)) drop-shadow(0 1px 4px rgba(0, 0, 0, 0.85));
+  transition: --sung 200ms linear;
+}
+body.no-miku #song-miku { display: none; }
+body.no-miku #rows { padding-left: 0; }
+body.no-cover #song-art { display: none; }
+#lyrics-menu .menu-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#lyrics-menu .menu-state { font-size: 0.85em; color: #8fa3b8; }
+#lyrics-menu .menu-state.on { color: #39c5bb; }
+
+
+/* ── The window wraps the card: no margin of empty window around it (the
+   Acrylic blur covers the whole window, so any margin showed as a frame). ── */
+#lyrics {
+  inset: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+#lyrics.menu-open { left: 0; top: 0; }
+
+/* Transparent: no card, no border — the words float with their own shadow. */
+body.see-through #lyrics,
+body.see-through.acrylic #lyrics {
+  background: transparent;
+  border-color: transparent;
+}
+body.see-through #lyrics:hover { border-color: rgba(57, 197, 187, 0.35); }
+body.see-through .row .line,
+body.see-through #song-text {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+
+/* ── The card's menu, dressed like the mockup (docs/mockups/notch-music.png) ── */
+#lyrics-menu {
+  background: #0e1424;
+  border: 1px solid #26324c;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+#lyrics-menu .menu-item {
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e9f6f5;
+}
+#lyrics-menu .menu-item:hover,
+#lyrics-menu .menu-item.menu-first { background: #18213a; }
+#lyrics-menu .menu-sep { background: #1d2742; margin: 4px 6px; }
+#lyrics-menu input[type="range"] { accent-color: #39c5bb; }
+#lyrics-menu .menu-head { color: #39c5bb; letter-spacing: 0.12em; }
+
+/* Windows 11 rounds this window by 8 px (platform::round_corners): the card
+   follows that curve exactly, so no square of blur shows past it. */
+#lyrics { border-radius: 8px; }

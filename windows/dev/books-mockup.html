@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Books mockup</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #12141c;
+        display: grid;
+        place-items: center;
+        font-family: "Segoe UI", sans-serif;
+      }
+      main {
+        display: grid;
+        gap: 16px;
+        justify-items: center;
+        padding: 24px 16px;
+      }
+      h1 {
+        color: #9fe6e6;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .bar {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        font: inherit;
+        font-size: 13px;
+        color: #cfeff0;
+        background: #1e222b;
+        border: 1px solid #2c3340;
+        border-radius: 8px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        border-color: #2fa9b0;
+        color: #9fe6e6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Miku vs. the book tower</h1>
+      <canvas id="stage" aria-label="Miku hauling a tall, wobbling tower of books"></canvas>
+      <div class="bar" role="group" aria-label="Variant">
+        <button data-v="classic" aria-pressed="true">Classic</button>
+        <button data-v="snow">Snow</button>
+        <button data-v="sakura">Sakura</button>
+      </div>
+    </main>
+    <script type="module">
+      import { CHIBI_W, drawChibi } from "/src/mochi/chibi";
+
+      // Design space: the chibi (520 wide) sits on the right, the tower on her left.
+      const W = 800;
+      const H = 660;
+      const CHIBI_X = 220; // where the chibi's own x=0 lands
+      const CHIBI_Y = 145;
+
+      const canvas = document.getElementById("stage");
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = `${W}px`;
+      const ctx = canvas.getContext("2d");
+
+      let variant = "classic";
+      for (const b of document.querySelectorAll("button[data-v]")) {
+        b.addEventListener("click", () => {
+          variant = b.dataset.v;
+          for (const o of document.querySelectorAll("button[data-v]")) o.setAttribute("aria-pressed", String(o === b));
+        });
+      }
+
+      const PAGES = "#F4EFE2";
+      // [cover, width, height]; bottom first. Wide and heavy at the base, thinner up top.
+      const COVERS = ["#4A5468", "#E8697B", "#2FA9B0", "#F5C542", "#7A5BA8", "#F0468A", "#1F8A8F", "#E9A23B"];
+      const TOWER = Array.from({ length: 22 }, (_, i) => [
+        COVERS[(i * 3) % COVERS.length],
+        150 - i * 2.4 + ((i * 7) % 5) * 3,
+        20 + ((i * 5) % 4) * 3,
+      ]);
+
+      function shade(hex, k) {
+        const n = parseInt(hex.slice(1), 16);
+        const f = (c) => Math.max(0, Math.min(255, Math.round(c * k)));
+        return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+      }
+
+      // A book seen from the side: cover slab, pages along one long edge, a ribbon now and then.
+      function book(cx, cy, w, h, rot, color, flip = 1, ribbon = false) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.scale(flip, 1);
+        const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+        g.addColorStop(0, shade(color, 1.12));
+        g.addColorStop(1, shade(color, 0.86));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+        ctx.fill();
+        // the page block, inset between the boards
+        ctx.fillStyle = PAGES;
+        ctx.beginPath();
+        ctx.roundRect(-w / 2 + 6, -h / 2 + 3.5, w - 12, h - 7, 2);
+        ctx.fill();
+        // page lines
+        ctx.strokeStyle = "rgba(120,110,90,0.25)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 4; i++) {
+          const y = -h / 2 + 3.5 + ((h - 7) * i) / 4;
+          ctx.beginPath();
+          ctx.moveTo(-w / 2 + 10, y);
+          ctx.lineTo(w / 2 - 8, y);
+          ctx.stroke();
+        }
+        // spine end, rounded, on the left
+        ctx.fillStyle = shade(color, 0.95);
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, 14, h, 4);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fillRect(-w / 2 + 4, -h / 2 + 4, 2.5, h - 8);
+        if (ribbon) {
+          ctx.fillStyle = "#E0354F";
+          ctx.beginPath();
+          ctx.moveTo(w * 0.15, h / 2 - 2);
+          ctx.lineTo(w * 0.15 + 6, h / 2 - 2);
+          ctx.lineTo(w * 0.15 + 5, h / 2 + 12);
+          ctx.lineTo(w * 0.15 + 3, h / 2 + 9);
+          ctx.lineTo(w * 0.15 + 1, h / 2 + 12);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // The tower bends like a reed: the higher a book, the further the lean and the wobble carry it.
+      function towerAt(t) {
+        const sway = Math.sin(t * 1.9) * 38 + Math.sin(t * 4.3) * 5;
+        const lean = -60;
+        const baseX = 136;
+        let y = 470;
+        const out = [];
+        for (let i = 0; i < TOWER.length; i++) {
+          const [color, w, h] = TOWER[i];
+          y -= h / 2;
+          const k = i / (TOWER.length - 1);
+          const dx = (lean + sway) * k * k + (i % 2 ? 4 : -4) * (1 - k * 0.5);
+          const slope = (2 * (lean + sway) * k) / (TOWER.length - 1) / 24;
+          out.push({ x: baseX + dx, y, w, h, rot: slope + (i % 3 - 1) * 0.03, color, flip: i % 2 ? -1 : 1, ribbon: i % 6 === 3 });
+          y -= h / 2 - 1.5; // overlap a hair so the stack reads solid
+        }
+        return { books: out, sway };
+      }
+
+      // Every 3.2 s the top book slips off the far side and drops to the floor.
+      function topBook(t, top) {
+        const period = 3.2;
+        const k = (t % period) / period;
+        const rest = { x: top.x - 6, y: top.y - top.h / 2 - 11, rot: top.rot - 0.12, a: 1 };
+        if (k < 0.55) {
+          const nudge = Math.max(0, (k - 0.35) / 0.2); // starts sliding
+          return { ...rest, x: rest.x - 18 * nudge, rot: rest.rot - 0.35 * nudge };
+        }
+        const f = (k - 0.55) / 0.45; // free fall
+        return {
+          x: rest.x - 18 - 70 * f,
+          y: rest.y + 380 * f * f,
+          rot: rest.rot - 0.35 - 4 * f,
+          a: f > 0.85 ? 1 - (f - 0.85) / 0.15 : 1,
+        };
+      }
+
+      function frame(ms) {
+        const t = ms / 1000;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        // floor
+        ctx.fillStyle = "#191c26";
+        ctx.fillRect(0, CHIBI_Y + 480, W, H - CHIBI_Y - 480);
+        ctx.strokeStyle = "#252a36";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, CHIBI_Y + 480);
+        ctx.lineTo(W, CHIBI_Y + 480);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(CHIBI_X, CHIBI_Y);
+
+        // The trail she left behind: books already lost on the way.
+        book(500, 478, 96, 20, 0.08, "#7A5BA8", -1);
+        book(538, 466, 84, 18, -0.3, "#E9A23B");
+
+        // Miku: worried brows, wavy mouth, shaking, sweating; eyes up on the top of the tower.
+        // Left arm hugs the tower's side, right arm reaches across her body to it.
+        const { books, sway } = towerAt(t);
+        drawChibi(ctx, "error", t, variant, {
+          eyes: "wide",
+          look: [-16 + sway * 0.15, -14],
+          pitch: -0.45,
+          arms: [34, 22, 42, 34],
+        });
+
+        // the tower's shadow on the floor
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.beginPath();
+        ctx.ellipse(136, 484, 86, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (const b of books) book(b.x, b.y, b.w, b.h, b.rot, b.color, b.flip, b.ribbon);
+        const top = topBook(t, books[books.length - 1]);
+        ctx.globalAlpha = top.a;
+        book(top.x, top.y, 92, 18, top.rot, "#F0468A");
+        ctx.globalAlpha = 1;
+
+        // Her hands, clamped onto the tower's right edge, squeezing with the wobble.
+        const grip = Math.sin(t * 1.9) * 1.5;
+        ctx.fillStyle = "#FFE9DC";
+        for (const [hx, hy] of [[208 + grip, 372], [214 + grip * 0.6, 404]]) {
+          ctx.beginPath();
+          ctx.ellipse(hx, hy, 11, 9, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(hx - 8, hy - 5, 5, 4, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Strain marks by her elbows, flickering.
+        if (Math.floor(t * 6) % 2 === 0) {
+          ctx.strokeStyle = "#F5C542";
+          ctx.lineWidth = 4;
+          ctx.lineCap = "round";
+          for (const [x0, y0, x1, y1] of [[330, 350, 346, 340], [334, 370, 352, 370], [330, 390, 346, 400]]) {
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+          }
+        }
+
+        ctx.restore();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

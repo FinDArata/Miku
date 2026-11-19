@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Notif and shelf mockup</title>
+    <style>
+      /* Miku's skin, shared with the drop mockup: dark teal glass, a teal → pink
+         rim, a faint five-line staff. App colours are only accents (a dot, an
+         initial), never a whole box. */
+      :root {
+        --teal: #39c5bb;
+        --teal-light: #9fe6e6;
+        --pink: #e12885;
+        --ink: #f2fbfa;
+        --ink-2: #c9d3d8;
+        --dim: #8fa3b8;
+        --glass-top: #0f1a1c;
+        --glass-bot: #0a0f11;
+        --hair: rgba(57, 197, 187, 0.16);
+        --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: #1b1b1f;
+        color: var(--ink-2);
+        font: 13px var(--font);
+      }
+      main {
+        display: grid;
+        gap: 22px;
+        justify-items: center;
+        padding: 28px 16px 60px;
+      }
+      h1 {
+        color: var(--teal-light);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin: 18px 0 0;
+      }
+      .note {
+        max-width: 720px;
+        margin: 0;
+        color: var(--dim);
+        text-align: center;
+        line-height: 1.5;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        justify-content: center;
+      }
+      .zoom { zoom: 1.35; }
+
+      /* ── The island and its floor ─────────────────────────────────────── */
+      .island {
+        position: relative;
+        background: #000;
+        border-radius: 0 0 22px 22px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .floor {
+        position: relative;
+        flex: none;
+        display: grid;
+        place-items: end center;
+      }
+      .floor::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 2px;
+        width: 120px;
+        height: 22px;
+        transform: translateX(-50%);
+        background: radial-gradient(ellipse at center, rgba(57, 197, 187, 0.3), transparent 70%);
+        pointer-events: none;
+      }
+      .floor canvas { position: relative; z-index: 1; display: block; }
+
+      .glass {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        border-radius: 18px;
+        background:
+          repeating-linear-gradient(transparent 0 10px, rgba(57, 197, 187, 0.05) 10px 11px) 0 22px / 100% 55px no-repeat,
+          radial-gradient(circle at 0% 80%, rgba(57, 197, 187, 0.16), transparent 260px),
+          linear-gradient(var(--glass-top), var(--glass-bot));
+      }
+      .glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.25px;
+        background: linear-gradient(90deg, rgba(57, 197, 187, 0.7), rgba(57, 197, 187, 0.22) 65%, rgba(225, 40, 133, 0.6));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+
+      /* ── Pieces ───────────────────────────────────────────────────────── */
+      .btn {
+        border: 0;
+        font: 600 11.5px var(--font);
+        padding: 5px 13px;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn.p { background: var(--teal); color: #06302d; }
+      .btn.s { background: transparent; color: var(--teal-light); box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.45); }
+      .btn.link { background: transparent; color: var(--teal); padding: 5px 4px; }
+      .btn:hover { filter: brightness(1.12); }
+      .btn:focus-visible, .tab:focus-visible, .seg button:focus-visible, .tile:focus-visible, .entry:focus-visible {
+        outline: 2px solid var(--teal-light);
+        outline-offset: 2px;
+      }
+      .app {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font: 700 10px var(--font);
+        letter-spacing: 0.12em;
+        color: var(--dim);
+        text-transform: uppercase;
+      }
+      .app i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: 0 0 6px var(--c);
+      }
+      .av {
+        flex: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font: 700 11px var(--font);
+        color: #0a0f11;
+        background: var(--c);
+      }
+      .app svg { width: 14px; height: 14px; flex: none; }
+      .av[data-app] { position: relative; }
+      .av[data-app] svg { position: absolute; right: -4px; bottom: -3px; width: 12px; height: 12px; border-radius: 4px; box-shadow: 0 0 0 1.5px var(--glass-bot); }
+      .time { margin-left: auto; font: 500 10.5px ui-monospace, Consolas, monospace; color: var(--dim); }
+      .rom { color: var(--teal-light); opacity: 0.75; font-style: italic; font-size: 11.5px; }
+
+      /* ── Notice card ─────────────────────────────────────────────────── */
+      .notice { width: 470px; height: 140px; flex-direction: row; padding: 8px 10px 10px 0; }
+      .notice .floor { width: 104px; }
+      .notice .glass { padding: 11px 14px 10px; display: flex; flex-direction: column; }
+      .notice .top { display: flex; align-items: center; gap: 8px; }
+      .notice .who { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: var(--ink); font-weight: 700; font-size: 13.5px; }
+      .notice .who small { color: var(--dim); font-weight: 400; font-size: 11.5px; }
+      .notice .msg { margin-top: 4px; color: var(--ink-2); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+      .notice .acts { display: flex; gap: 6px; margin-top: auto; align-items: center; }
+      .reply {
+        flex: 1;
+        min-width: 0;
+        height: 27px;
+        border-radius: 999px;
+        border: 1px solid rgba(57, 197, 187, 0.3);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--ink);
+        font: 12px var(--font);
+        padding: 0 12px;
+      }
+      .reply::placeholder { color: var(--dim); }
+      .send { width: 27px; height: 27px; padding: 0; display: grid; place-items: center; }
+
+      /* ── Deck ─────────────────────────────────────────────────────────── */
+      .deck { width: 500px; height: 280px; }
+      .bar { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; flex: none; }
+      .tabs { display: flex; gap: 1px; padding: 2px; border-radius: 999px; background: #0a0f11; border: 1px solid var(--hair); }
+      .tab {
+        position: relative;
+        border: 0;
+        background: transparent;
+        color: var(--dim);
+        font: 600 10.5px var(--font);
+        padding: 3px 7px;
+        border-radius: 999px;
+      }
+      .tab.on { background: var(--teal); color: #06302d; }
+      .tab .dot { position: absolute; top: 1px; right: 1px; width: 5px; height: 5px; border-radius: 50%; background: var(--pink); }
+      .tab .n { margin-left: 3px; font-size: 9.5px; opacity: 0.8; }
+      .bar .ic { margin-left: auto; display: flex; gap: 2px; }
+      .bar .ic span { width: 22px; height: 22px; display: grid; place-items: center; color: var(--dim); }
+      .body { flex: 1; min-height: 0; display: flex; padding: 0 10px 10px 0; }
+      .deck .floor { width: 112px; }
+      .deck .glass { display: flex; flex-direction: column; padding: 11px 12px 0 14px; }
+      .head { display: flex; align-items: center; gap: 8px; }
+      .head h2 { margin: 0; font: 700 14px var(--font); color: var(--ink); }
+      .head .meta { color: var(--dim); font-size: 11.5px; }
+      .pill { font: 700 10px var(--font); color: #fff; background: var(--pink); border-radius: 999px; padding: 2px 7px; }
+      .head .right { margin-left: auto; display: flex; gap: 2px; }
+      .seg { display: flex; gap: 2px; margin-top: 8px; }
+      .seg button {
+        border: 0;
+        font: 600 10.5px var(--font);
+        padding: 3px 9px;
+        border-radius: 999px;
+        color: var(--dim);
+        background: transparent;
+      }
+      .seg button.on { color: var(--teal-light); background: rgba(57, 197, 187, 0.13); }
+      .list { flex: 1; min-height: 0; overflow: auto; margin: 6px -12px 0 -2px; padding: 0 12px 10px 2px; scrollbar-width: thin; scrollbar-color: rgba(57,197,187,0.3) transparent; }
+
+      /* Notif page: a timeline along a staff line; unread entries are pink notes. */
+      .grp { font: 700 9.5px var(--font); letter-spacing: 0.16em; color: var(--dim); margin: 8px 0 4px 22px; display: flex; align-items: center; gap: 8px; }
+      .grp::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--hair), transparent); }
+      .entry { position: relative; display: block; padding: 6px 8px 7px 22px; border-radius: 10px; cursor: pointer; }
+      .entry::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; background: var(--hair); }
+      .entry .mark { position: absolute; left: 3px; top: 10px; width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid rgba(57, 197, 187, 0.55); background: var(--glass-bot); }
+      .entry.unread .mark { border: 0; background: var(--pink); box-shadow: 0 0 8px rgba(225, 40, 133, 0.7); }
+      .entry.unread { background: linear-gradient(90deg, rgba(225, 40, 133, 0.08), transparent 70%); }
+      .entry:hover { background: rgba(57, 197, 187, 0.07); }
+      .entry .l1 { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+      .entry .l1 b { color: var(--ink); font-weight: 700; }
+      .entry .msg { margin-top: 2px; color: var(--ink-2); font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .entry:not(.unread) .msg { color: var(--dim); }
+      .entry .acts { display: flex; gap: 2px; margin-top: 3px; }
+
+      /* Shelf page: a grid of files to drag back out. */
+      .types { display: flex; gap: 2px; margin-top: 8px; flex-wrap: wrap; }
+      .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding-top: 2px; }
+      .tile {
+        position: relative;
+        border-radius: 11px;
+        padding: 8px 6px 6px;
+        background: rgba(57, 197, 187, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.16);
+        text-align: center;
+        cursor: grab;
+      }
+      .tile:hover, .tile.hover { box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.8); background: rgba(57, 197, 187, 0.1); }
+      .tile svg { display: block; margin: 0 auto; }
+      .tile .nm { margin-top: 5px; font-size: 10.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tile .sz { font: 500 9.5px ui-monospace, Consolas, monospace; color: var(--dim); margin-top: 1px; }
+      .tile .x, .tile .go {
+        position: absolute;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: none;
+        place-items: center;
+        background: #22302f;
+        color: var(--ink-2);
+        font-size: 10px;
+      }
+      .tile .x { right: 4px; }
+      .tile .go { left: 4px; }
+      .tile:hover .x, .tile:hover .go, .tile.hover .x, .tile.hover .go { display: grid; }
+      .hint { flex: none; font-size: 10.5px; color: rgba(159, 230, 230, 0.55); padding: 6px 0 8px; display: flex; gap: 6px; }
+
+      .empty { flex: 1; display: grid; place-content: center; text-align: center; gap: 4px; padding: 0 20px 20px; }
+      .empty b { color: var(--ink); font-size: 14px; }
+      .empty span { color: var(--dim); font-size: 12px; line-height: 1.45; }
+
+      /* The capsule, closed, with what waits inside. */
+      .capsule { width: 300px; height: 92px; background: transparent; overflow: visible; align-items: center; }
+      .cap {
+        width: 184px;
+        height: 32px;
+        background: #000;
+        border-radius: 0 0 14px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: var(--ink-2);
+        font-size: 11px;
+      }
+      .cap .chip { display: inline-flex; align-items: center; gap: 4px; }
+      .cap .chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+      @media (prefers-reduced-motion: reduce) { .zoom * { transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>1 · Notice card</h1>
+      <p class="note">Miku stands on the island floor, outside the card. Her headset pings, the message drops into her hands, she reads it. The app's colour is a dot and an initial only.</p>
+      <div class="row zoom">
+        <section class="island notice" aria-label="WhatsApp notice">
+          <div class="floor"><canvas data-scene="ping" data-delay="0"></canvas></div>
+          <div class="glass">
+            <div class="top"><span class="app" data-icon="wa" style="--c:#25d366"><i></i>WhatsApp</span><span class="time">now</span></div>
+            <div class="who"><span class="av" data-app="wa" style="--c:#25d366">R</span>Rin <small>· Vocaloid club</small></div>
+            <div class="msg">Miku, are you on your way? We start at seven!</div>
+            <div class="acts">
+              <input class="reply" placeholder="Reply to Rin…" aria-label="Reply to Rin" />
+              <button class="btn p send" aria-label="Send">➤</button>
+              <button class="btn s">Later</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="row zoom">
+        <section class="island notice" aria-label="Discord notice">
+          <div class="floor"><canvas data-scene="ping" data-delay="1.7"></canvas></div>
+          <div class="glass">
+            <div class="top"><span class="app" data-icon="discord" style="--c:#5865f2"><i></i>Discord</span><span class="time">19:47</span></div>
+            <div class="who"><span class="av" data-app="discord" style="--c:#8b93f8">V</span>vocaloid-fanclub <small>· #general</small></div>
+            <div class="msg">世界で一番好きな曲、決めてる？</div>
+            <div class="rom">Sekai de ichiban suki na kyoku, kimeteru?</div>
+            <div class="acts"><button class="btn p">Open Discord</button><button class="btn s">Mark as read</button></div>
+          </div>
+        </section>
+      </div>
+      <div class="row zoom">
+        <section class="island notice" aria-label="Agent notice">
+          <div class="floor"><canvas data-scene="done"></canvas></div>
+          <div class="glass">
+            <div class="top"><span class="app" style="--c:#39c5bb"><i></i>Claude Code</span><span class="time">2m</span></div>
+            <div class="who">Finished: tidy the shelf drop <small>· miku/windows</small></div>
+            <div class="msg">4 files changed, tests pass. Waiting for you to look.</div>
+            <div class="acts"><button class="btn p">Open</button><button class="btn s">Dismiss</button></div>
+          </div>
+        </section>
+      </div>
+
+      <h1>2 · Closed: what waits inside</h1>
+      <p class="note">Closed, the capsule says what is waiting: unread notices (pink) and files on the shelf (teal). A click opens the deck on that page.</p>
+      <div class="row zoom">
+        <section class="island capsule" aria-label="Closed capsule">
+          <div class="cap">
+            <span class="chip" style="--c:#e12885"><i></i>3</span>
+            <span style="color:var(--teal-light);font-weight:600">Miku</span>
+            <span class="chip" style="--c:#39c5bb"><i></i>📎 12</span>
+          </div>
+        </section>
+      </div>
+
+      <h1>3 · Notif page (history)</h1>
+      <p class="note">A timeline on a staff line: each notice is a note, pink while unread. Grouped by when. Actions only show on unread entries; a click opens the source.</p>
+      <div class="row zoom">
+        <section class="island deck" aria-label="Notification history">
+          <div class="bar">
+            <div class="tabs" role="tablist">
+              <button class="tab">PC</button><button class="tab">Music</button><button class="tab">Agents</button>
+              <button class="tab on" aria-selected="true">Notif<span class="dot"></span></button>
+              <button class="tab">Shelf<span class="n">12</span></button>
+            </div>
+            <div class="ic"><span>⚙</span></div>
+          </div>
+          <div class="body">
+            <div class="floor"><canvas data-scene="read"></canvas></div>
+            <div class="glass">
+              <div class="head">
+                <h2>Notifications</h2><span class="pill">3 unread</span>
+                <div class="right"><button class="btn link">Mark all read</button></div>
+              </div>
+              <div class="seg" role="tablist"><button class="on">All</button><button>Chat</button><button>Agents</button><button>System</button></div>
+              <div class="list">
+                <div class="grp">JUST NOW</div>
+                <div class="entry unread" tabindex="0">
+                  <span class="mark"></span>
+                  <div class="l1"><span class="av" style="--c:#06c755;width:16px;height:16px;font-size:9px">花</span><b>花梨ちゃん</b><span class="app" data-icon="line" style="--c:#06c755"><i></i>LINE</span><span class="time">20:05</span></div>
+                  <div class="msg">今度一緒にカラオケ行かない？歌いたい曲があるの！</div>
+                  <div class="rom">Kondo issho ni karaoke ikanai? Utaitai kyoku ga aru no!</div>
+                  <div class="acts"><button class="btn link">Open LINE</button><button class="btn link" style="color:var(--dim)">Mark read</button></div>
+                </div>
+                <div class="entry unread" tabindex="0">
+                  <span class="mark"></span>
+                  <div class="l1"><span class="av" style="--c:#25d366;width:16px;height:16px;font-size:9px">D</span><b>Dita</b><span class="app" data-icon="wa" style="--c:#25d366"><i></i>WhatsApp</span><span class="time">19:51</span></div>
+                  <div class="msg">Tickets for the ICC show are secured 🎫</div>
+                </div>
+                <div class="grp">YESTERDAY</div>
+                <div class="entry" tabindex="0">
+                  <span class="mark"></span>
+                  <div class="l1"><span class="av" style="--c:#39c5bb;width:16px;height:16px;font-size:9px">C</span><b>Claude Code</b><span class="app" style="--c:#39c5bb"><i></i>Agent</span><span class="time">22:10</span></div>
+                  <div class="msg">Finished: refactor the island layout · 6 files</div>
+                </div>
+                <div class="entry" tabindex="0">
+                  <span class="mark"></span>
+                  <div class="l1"><span class="av" style="--c:#e12885;width:16px;height:16px;font-size:9px">M</span><b>Miku 0.0.2</b><span class="app" style="--c:#e12885"><i></i>Update</span><span class="time">09:02</span></div>
+                  <div class="msg">A new version is ready. What's new: the shelf.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="island deck" aria-label="Notification history, empty">
+          <div class="bar">
+            <div class="tabs"><button class="tab">PC</button><button class="tab">Music</button><button class="tab">Agents</button><button class="tab on">Notif</button><button class="tab">Shelf</button></div>
+          </div>
+          <div class="body">
+            <div class="floor"><canvas data-scene="sleep"></canvas></div>
+            <div class="glass">
+              <div class="head"><h2>Notifications</h2></div>
+              <div class="empty"><b>All caught up ✨</b><span>Notices that passed wait here.<br />They never leave this computer.</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <h1>4 · Shelf page (the files)</h1>
+      <p class="note">Everything Miku caught. Drag a tile out to any app or folder, click to open, ↗ shows it in Explorer, ✕ takes it off. The inbox is swept after 7 days, so the page says so.</p>
+      <div class="row zoom">
+        <section class="island deck" aria-label="Shelf">
+          <div class="bar">
+            <div class="tabs"><button class="tab">PC</button><button class="tab">Music</button><button class="tab">Agents</button><button class="tab">Notif<span class="dot"></span></button><button class="tab on" aria-selected="true">Shelf<span class="n">12</span></button></div>
+            <div class="ic"><span>⚙</span></div>
+          </div>
+          <div class="body">
+            <div class="floor"><canvas data-scene="hold"></canvas></div>
+            <div class="glass">
+              <div class="head">
+                <h2>Shelf</h2><span class="meta">12 files · 59.0 MB</span>
+                <div class="right"><button class="btn link">Open folder</button><button class="btn link" style="color:var(--dim)">Clear all</button></div>
+              </div>
+              <div class="types seg"><button class="on">All</button><button>Docs</button><button>Images</button><button>Audio</button><button>Code</button></div>
+              <div class="list">
+                <div class="grid" id="grid"></div>
+              </div>
+              <div class="hint">⇱ Drag out to drop anywhere · files leave the shelf after 7 days</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="island deck" aria-label="Shelf, empty">
+          <div class="bar">
+            <div class="tabs"><button class="tab">PC</button><button class="tab">Music</button><button class="tab">Agents</button><button class="tab">Notif</button><button class="tab on">Shelf</button></div>
+          </div>
+          <div class="body">
+            <div class="floor"><canvas data-scene="wave"></canvas></div>
+            <div class="glass">
+              <div class="head"><h2>Shelf</h2></div>
+              <div class="empty"><b>Nothing on the shelf</b><span>Drop files on Miku and she keeps<br />them here for you, ready to drag out.</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { CHIBI_H, CHIBI_W, drawChibi } from "/src/mochi/chibi";
+
+      const PINK = "#E12885";
+      const TEAL = "#39C5BB";
+      const TOP = 70; // headroom over her head, for the bubble
+      const HOLD = [15, -70, -15, 70];
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const eBack = (k) => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+
+      // ── App icons ──────────────────────────────────────────────────────────
+      // Simplified marks drawn for the mockup. shortcut: hand-drawn approximations,
+      // swap in the official brand SVGs (e.g. Simple Icons, CC0) when it ships.
+      const ICON = {
+        wa: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#25D366"/><path d="M12 4.6a7.4 7.4 0 0 0-6.4 11.1L4.6 19.4l3.8-1a7.4 7.4 0 1 0 3.6-13.8z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.3 8.3c.2-.4.5-.4.7-.4h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .4-.1.6l-.5.6c.4.9 1.2 1.7 2.1 2.1l.6-.5c.2-.2.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3-.1.5-.4.7-.5.4-1.2.5-1.9.3-1.9-.6-3.5-2.2-4.1-4.1-.2-.7-.1-1.4.3-1.9z" fill="#fff"/></svg>`,
+        line: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#06C755"/><path d="M12 4.8c-4.4 0-8 2.8-8 6.3 0 3.1 2.8 5.7 6.6 6.2.3.1.6.2.7.5l.1 1.2c0 .3.3.5.6.3 1.9-1.1 6.4-3.9 7.5-6.6.3-.7.5-1.2.5-1.6 0-3.5-3.6-6.3-8-6.3z" fill="#fff"/><text x="12" y="12.9" font-size="4.3" font-weight="800" fill="#06C755" text-anchor="middle" font-family="Segoe UI, sans-serif">LINE</text></svg>`,
+        discord: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#5865F2"/><path d="M17.3 7.4a12 12 0 0 0-3-.9l-.4.8a11 11 0 0 0-3.8 0l-.4-.8a12 12 0 0 0-3 .9C4.8 10.2 4.3 13 4.5 15.7a12 12 0 0 0 3.7 1.9l.8-1.3a8 8 0 0 1-1.2-.6l.3-.2a8.6 8.6 0 0 0 7.8 0l.3.2c-.4.2-.8.4-1.2.6l.8 1.3a12 12 0 0 0 3.7-1.9c.3-3.1-.5-5.9-2.2-8.3z" fill="#fff"/><ellipse cx="9.6" cy="12.8" rx="1.25" ry="1.4" fill="#5865F2"/><ellipse cx="14.4" cy="12.8" rx="1.25" ry="1.4" fill="#5865F2"/></svg>`,
+      };
+      for (const el of document.querySelectorAll(".app[data-icon]")) el.querySelector("i").outerHTML = ICON[el.dataset.icon];
+      for (const el of document.querySelectorAll(".av[data-app]")) el.insertAdjacentHTML("beforeend", ICON[el.dataset.app]);
+
+      // ── Shelf tiles ────────────────────────────────────────────────────────
+      const TYPES = { PDF: "#E8697B", PNG: "#2FA9B0", TS: "#4A7BD0", MP3: "#E12885", DOCX: "#3F6FD8", ZIP: "#E9A23B", JPG: "#1F8A8F", MD: "#7A5BA8" };
+      const FILES = [
+        ["rapport-q3.pdf", "240 KB", "2m"], ["poster-final.png", "860 KB", "2m"], ["island.ts", "12 KB", "2m"],
+        ["demo-take3.mp3", "5.1 MB", "1h"], ["notes.md", "4 KB", "1h"], ["contract.docx", "96 KB", "3h"],
+        ["photos.zip", "46.9 MB", "1d"], ["IMG_2041.jpg", "2.3 MB", "1d"], ["IMG_2042.jpg", "2.2 MB", "1d"],
+        ["setlist.md", "3 KB", "2d"], ["cover.png", "1.2 MB", "4d"], ["budget.docx", "64 KB", "6d"],
+      ];
+      const doc = (tag) => {
+        const c = TYPES[tag] ?? "#4A5468";
+        return `<svg width="26" height="32" viewBox="0 0 26 32" aria-hidden="true"><path d="M2 0h15l9 9v21a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" fill="#F4F6F9"/><path d="M17 0v9h9z" fill="#C9D0DA"/><rect x="4" y="11" width="14" height="1.6" fill="#D5DBE3"/><rect x="4" y="15" width="14" height="1.6" fill="#D5DBE3"/><rect x="-1" y="20" width="21" height="8" rx="1.5" fill="${c}"/><text x="2" y="26.3" font-size="6" font-weight="700" fill="#fff" font-family="Segoe UI">${tag}</text></svg>`;
+      };
+      document.getElementById("grid").innerHTML = FILES.map(([name, sz, age], i) => {
+        const tag = name.split(".").pop().toUpperCase();
+        return `<div class="tile${i === 1 ? " hover" : ""}" tabindex="0" draggable="true" title="${name}">
+          <span class="go" aria-label="Show in folder">↗</span><span class="x" aria-label="Take off the shelf">✕</span>
+          ${doc(tag)}<div class="nm">${name}</div><div class="sz">${sz} · ${age}</div></div>`;
+      }).join("");
+
+      // ── Props in Miku's design units ───────────────────────────────────────
+      function bubble(x, cx, cy, s, rot, read) {
+        x.save();
+        x.translate(cx, cy);
+        x.rotate(rot);
+        x.scale(s, s);
+        x.fillStyle = "#F4FBFA";
+        x.beginPath();
+        x.roundRect(-70, -48, 140, 92, 26);
+        x.fill();
+        x.beginPath();
+        x.moveTo(-34, 40);
+        x.lineTo(-50, 66);
+        x.lineTo(-8, 42);
+        x.closePath();
+        x.fill();
+        x.fillStyle = "#C8D6D8";
+        x.beginPath();
+        x.roundRect(-46, -22, 92, 12, 6);
+        x.roundRect(-46, 0, 60, 12, 6);
+        x.fill();
+        if (!read) {
+          x.fillStyle = PINK;
+          x.beginPath();
+          x.arc(62, -42, 22, 0, Math.PI * 2);
+          x.fill();
+          x.fillStyle = "#fff";
+          x.font = "800 28px 'Segoe UI', sans-serif";
+          x.textAlign = "center";
+          x.textBaseline = "middle";
+          x.fillText("1", 62, -40);
+        }
+        x.restore();
+      }
+      function fileProp(x, cx, cy, rot) {
+        x.save();
+        x.translate(cx, cy);
+        x.rotate(rot);
+        x.fillStyle = "#F4F6F9";
+        x.beginPath();
+        x.roundRect(-60, -75, 120, 150, 10);
+        x.fill();
+        x.fillStyle = "#C9D0DA";
+        x.fillRect(-40, -40, 80, 8);
+        x.fillRect(-40, -20, 80, 8);
+        x.fillStyle = "#E8697B";
+        x.beginPath();
+        x.roundRect(-70, 22, 96, 34, 6);
+        x.fill();
+        x.restore();
+      }
+      function rings(x, t, a) {
+        if (a <= 0) return;
+        x.save();
+        x.lineCap = "round";
+        for (const [ex, ey] of [[140, 242], [380, 242]]) {
+          const mid = ex < 260 ? Math.PI : 0;
+          for (let i = 0; i < 3; i++) {
+            const k = (t * 1.6 + i / 3) % 1;
+            x.globalAlpha = a * (1 - k);
+            x.strokeStyle = i % 2 ? TEAL : PINK;
+            x.lineWidth = 9 - k * 4;
+            x.beginPath();
+            x.arc(ex, ey, 16 + k * 60, mid - 0.7, mid + 0.7);
+            x.stroke();
+          }
+        }
+        x.restore();
+      }
+
+      // ── Scenes ─────────────────────────────────────────────────────────────
+      // ping: the asset you liked — headset rings, bubble drops into her hands, she reads, smiles.
+      function ping(x, t, clock) {
+        const T_PING = 0.6, T_FALL = 1.3, T_HOLD = 1.9, T_SMILE = 4.1;
+        const ringA = t >= T_PING && t < T_HOLD + 0.4 ? clamp((t - T_PING) / 0.15) * clamp((T_HOLD + 0.4 - t) / 0.4) : 0;
+        const hop = t >= T_PING && t < T_PING + 0.35 ? Math.sin(((t - T_PING) / 0.35) * Math.PI) * 26 : 0;
+        x.translate(0, -hop);
+        if (t < T_PING) drawChibi(x, "idle", clock, "classic", { noShadow: true, eyes: "happy" });
+        else if (t < T_FALL) drawChibi(x, "surprised", clock, "classic", { noShadow: true, look: [10, -10], skipFx: new Set(["lines"]) });
+        else if (t < T_SMILE) drawChibi(x, "idle", clock, "classic", { noShadow: true, arms: HOLD, look: t < T_HOLD ? [0, 10] : [Math.sin(clock * 3.2) * 7, 12] });
+        else drawChibi(x, "love", clock, "classic", { noShadow: true, arms: HOLD, eyes: "happy", skipFx: new Set(["hearts"]) });
+        rings(x, clock, ringA);
+        if (t >= T_PING) {
+          const pop = eBack(clamp((t - T_PING) / 0.35));
+          const fall = clamp((t - T_FALL) / (T_HOLD - T_FALL)) ** 2;
+          bubble(x, lerp(400, 260, fall), lerp(110, 372, fall), lerp(0.9, 0.62, fall) * pop, lerp(0.12, -0.05, fall), t >= T_SMILE);
+        }
+      }
+      const SCENES = {
+        ping: { cycle: 6, draw: ping },
+        done: { cycle: 4, draw: (x, t, c) => drawChibi(x, "finished", c, "classic", { noShadow: true }) },
+        read: { cycle: 4, draw: (x, t, c) => { drawChibi(x, "idle", c, "classic", { noShadow: true, arms: HOLD, look: [Math.sin(c * 2.6) * 7, 12] }); bubble(x, 260, 372, 0.62, Math.sin(c * 2) * 0.03, true); } },
+        sleep: { cycle: 4, draw: (x, t, c) => drawChibi(x, "sleeping", c, "classic", { noShadow: true }) },
+        hold: { cycle: 4, draw: (x, t, c) => { drawChibi(x, "idle", c, "classic", { noShadow: true, arms: HOLD, eyes: "happy" }); fileProp(x, 260, 380, -0.08 + Math.sin(c * 2) * 0.03); } },
+        wave: { cycle: 4, draw: (x, t, c) => drawChibi(x, "wave", c, "classic", { noShadow: true }) },
+      };
+
+      // Each canvas fills its floor: she stands on its bottom edge, with headroom for the bubble.
+      const stages = [...document.querySelectorAll("canvas[data-scene]")].map((el) => {
+        const floor = el.parentElement;
+        const w = floor.clientWidth;
+        const h = floor.clientHeight || floor.parentElement.clientHeight;
+        const dpr = Math.max(2, window.devicePixelRatio || 1) * 1.35;
+        el.style.width = `${w}px`;
+        el.style.height = `${h}px`;
+        el.width = Math.round(w * dpr);
+        el.height = Math.round(h * dpr);
+        const k = Math.min(w / CHIBI_W, h / (CHIBI_H + TOP)) * 1.08;
+        return { el, ctx: el.getContext("2d"), dpr, k, w, h, scene: SCENES[el.dataset.scene], delay: Number(el.dataset.delay || 0) };
+      });
+
+      function frame(now) {
+        const clock = now / 1000;
+        for (const s of stages) {
+          const x = s.ctx;
+          x.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
+          x.clearRect(0, 0, s.w, s.h);
+          x.translate(s.w / 2, s.h - 2);
+          x.scale(s.k, s.k);
+          x.translate(-CHIBI_W / 2, -CHIBI_H + 26);
+          s.scene.draw(x, ((clock + s.delay) % s.scene.cycle + s.scene.cycle) % s.scene.cycle, clock);
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

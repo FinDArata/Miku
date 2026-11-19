@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Miku — mockup kartu update</title>
+<style>
+  /* Miku's stage (src/style.css "Miku's stage") applied to the update card:
+     navy stage, twin-tails bar on top, LED floor below, spotlights on Miku,
+     teal capsules for what can be pressed. The chibi is the real renderer
+     (src/mochi/chibi.ts), animated. Static mockup, not wired to anything. */
+  :root {
+    --stage-top: #0d1322;
+    --stage-bottom: #18213a;
+    --stage-panel: rgba(10, 15, 26, 0.92);
+    --stage-line: #26324c;
+    --stage-line-2: #2d3858;
+    --stage-teal: #39c5bb;
+    --stage-pink: #e8457c;
+    --ink: #dfe7f5;
+    --ink-dim: #9fb0cd;
+  }
+  body {
+    margin: 0;
+    padding: 40px 0 56px;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 36px;
+    background: #232f45;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+  }
+  h1 { font-size: 14px; font-weight: 600; color: #b9c6de; letter-spacing: 0.02em; margin: 0; }
+
+  .island {
+    position: relative;
+    width: 640px;
+    border-radius: 26px;
+    overflow: hidden;
+    background:
+      radial-gradient(70% 90% at 50% -20%, rgba(57, 197, 187, 0.16), transparent 60%),
+      linear-gradient(180deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+    box-shadow: inset 0 0 0 1px var(--stage-line-2), 0 20px 50px rgba(0, 0, 0, 0.55);
+  }
+  /* Twin tails: the teal→pink bar glowing along the top edge. */
+  .island::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 14%; right: 14%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(90deg, var(--stage-pink), var(--stage-teal), var(--stage-pink));
+    box-shadow: 0 0 14px rgba(57, 197, 187, 0.65);
+    z-index: 3;
+  }
+  /* No LED floor: the stage stays clean at the bottom. */
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px 0;
+  }
+  .header .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--stage-line); }
+
+  .card {
+    position: relative;
+    margin: 0 16px 16px 128px;
+    padding: 16px 20px 20px;
+    min-height: 118px;
+    box-sizing: border-box;
+    border-radius: 18px;
+    background: var(--stage-panel);
+    border: 1px solid var(--stage-line);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  /* Miku stands on the stage itself, left of the card, like the widget deck. */
+  canvas.chibi {
+    position: absolute;
+    left: 6px; bottom: 2px;
+    width: 116px;
+    z-index: 1;
+  }
+
+  .kind {
+    color: var(--stage-teal);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  h2 { margin: 4px 0 6px; font-size: 19px; }
+  p { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-dim); }
+  p strong { color: var(--ink); font-weight: 600; }
+
+  .row { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .btn.primary {
+    background: var(--stage-teal);
+    color: #062a28;
+    box-shadow: 0 0 14px rgba(57, 197, 187, 0.4);
+  }
+  .btn.secondary {
+    background: #18213a;
+    box-shadow: inset 0 0 0 1px var(--stage-line-2);
+  }
+  .btn.ghost { background: transparent; color: var(--ink-dim); }
+  .btn.ghost:hover { color: var(--stage-teal); }
+
+  .badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--stage-teal);
+    background: rgba(57, 197, 187, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(57, 197, 187, 0.6);
+    vertical-align: 3px;
+  }
+
+  .progress {
+    height: 10px;
+    border-radius: 999px;
+    background: #141c30;
+    box-shadow: inset 0 0 0 1px var(--stage-line-2);
+    overflow: hidden;
+    margin: 4px 0 10px;
+  }
+  .progress .fill {
+    height: 100%;
+    width: 64%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--stage-teal), var(--stage-pink));
+    box-shadow: 0 0 12px rgba(57, 197, 187, 0.5);
+  }
+  .pct { font-variant-numeric: tabular-nums; color: var(--stage-teal); font-size: 12.5px; font-weight: 600; }
+
+  .note { font-size: 11.5px; color: var(--ink-dim); margin-top: 10px; }
+</style>
+</head>
+<body>
+
+  <h1>Mockup — kartu update di pulau, gaya "Miku's stage"</h1>
+
+  <!-- 1 · Version released: Miku surprised, announcing -->
+  <section class="island" data-pose="surprised" aria-label="Kartu rilis">
+    <div class="header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="card">
+      <div class="kind">Pembaruan</div>
+      <h2>Miku 0.7.0 sudah rilis <span class="badge">perbarui sekali klik</span></h2>
+      <p><strong>Pulau tetap di layar</strong> · kamu punya 0.6.0</p>
+      <div class="row">
+        <button class="btn primary">Perbarui sekarang</button>
+        <button class="btn secondary">Yang baru</button>
+        <button class="btn ghost">Nanti</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · Downloading: Miku working on it -->
+  <section class="island" data-pose="working" aria-label="Sedang mengunduh">
+    <div class="header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="card">
+      <div class="kind">Mengunduh</div>
+      <h2>Miku 0.7.0</h2>
+      <p>12,4 MB dari 19,3 MB · diverifikasi SHA-256 setelah selesai</p>
+      <div class="progress"><div class="fill"></div></div>
+      <div class="row"><span class="pct">64%</span></div>
+    </div>
+  </section>
+
+  <!-- 3 · The consent question, first run -->
+  <section class="island" data-pose="question" aria-label="Kartu izin">
+    <div class="header"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="card">
+      <div class="kind">Pembaruan</div>
+      <h2>Cek versi baru dari pulau?</h2>
+      <p>Miku akan melihat rilis GitHub tiap 6 jam — tanpa data apa pun tentangmu.</p>
+      <div class="row">
+        <button class="btn primary">Boleh</button>
+        <button class="btn ghost">Jangan otomatis</button>
+      </div>
+      <div class="note">Bisa diubah kapan saja di Pengaturan → Umum → Pembaruan.</div>
+    </div>
+  </section>
+
+  <script type="module">
+    import { CHIBI_H, CHIBI_W, drawChibi } from "/src/mochi/chibi";
+    import { DEFAULT_VARIANT } from "/src/mochi/variants";
+
+    const dpr = window.devicePixelRatio || 1;
+    const stages = [...document.querySelectorAll(".island[data-pose]")].map((island) => {
+      const canvas = document.createElement("canvas");
+      canvas.className = "chibi";
+      canvas.width = Math.round(108 * dpr);
+      canvas.height = Math.round((108 * CHIBI_H) / CHIBI_W * dpr);
+      island.append(canvas);
+      return { pose: island.dataset.pose, canvas, ctx: canvas.getContext("2d") };
+    });
+
+    function frame(ms) {
+      for (const { pose, canvas, ctx } of stages) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(canvas.width / CHIBI_W, canvas.width / CHIBI_W);
+        drawChibi(ctx, pose, ms / 1000, DEFAULT_VARIANT);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

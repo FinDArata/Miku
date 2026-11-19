@@ -1,0 +1,123 @@
+[package]
+name = "miku"
+description = "Miku for Windows and Linux — live at the top of your screen"
+authors = ["Louis Raille"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "miku_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-global-shortcut = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["net", "io-util", "sync", "time", "rt", "macros", "process"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# The update pill's SHA-256 check and WhatsApp's webhook signing use ring.
+ring = "0.17"
+# Flow dictation and the Notetaker (flow/, notes/, speech/). Speech to text runs
+# on this computer: sherpa-onnx (Apache-2.0) with NVIDIA's Parakeet, linked
+# statically (onnxruntime included), the models downloaded on the user's click.
+sherpa-onnx = { version = "1.13.8", default-features = false, features = ["static"] }
+# The microphone, and the computer's own sound for the Notetaker (WASAPI
+# loopback on Windows, a PulseAudio/PipeWire monitor on Linux). Apache-2.0.
+cpal = "0.18"
+# WhatsApp's "Install WhatsApp" takes GOWA's binary out of the zip GOWA publishes (whatsapp/archive.rs):
+# the raw DEFLATE decoder only, already in the tree through png (the same 0.8.9), so nothing new is
+# downloaded or compiled. MIT/Zlib/Apache-2.0.
+miniz_oxide = "0.8"
+# The chat's mail merge cuts a PDF into one page per recipient and reads each page's text
+# (mail/pdf.rs), as the Mac does with PDFKit; Windows has no PDF library of its own. MIT, pure
+# Rust, default features (clock, rayon) off.
+lopdf = { version = "0.46", default-features = false }
+# The system health pill (system_health.rs): CPU, memory, and a laptop's battery.
+# MIT, pure Rust. Only `system` and `multithread`: no disk, network or component
+# walk, since nothing in this pill reads a disk or a socket.
+# "disk" and "network" for the widget deck's PC page (widgets.rs).
+sysinfo = { version = "0.33", default-features = false, features = ["system", "multithread", "disk", "network"] }
+
+# music.rs's tests build a mock app: the `test` module only exists when tauri is
+# compiled with its `test` feature, which a dev-dependency turns on for tests.
+[dev-dependencies]
+tauri = { version = "2", features = ["test"] }
+# pipe.rs's tests stop the clock for the decision timeouts.
+tokio = { version = "1", features = ["test-util"] }
+
+[target.'cfg(windows)'.dependencies]
+# LINE and Discord in the island: read-only look at Windows' own notification
+# store (pc_notifications.rs). Bundled SQLite, MIT.
+rusqlite = { version = "0.32", features = ["bundled"] }
+keyring = { version = "3", features = ["windows-native"] }
+# The island's file drop reads paths straight from WebView2 (webview_drop.rs).
+# Same versions as wry, so nothing new is compiled.
+webview2-com = "0.39"
+wv2_core = { package = "windows-core", version = "0.62" }
+windows = { version = "0.61", features = [
+  # The Spotify pill: the system media controls Spotify publishes to.
+  "Foundation",
+  "Media",
+  "Media_Control",
+  "Storage_Streams",
+  "Win32_Foundation",
+  # The floating lyrics card: Windows 11 rounds its window (and its Acrylic).
+  "Win32_Graphics_Dwm",
+  # The Spotify pill's volume: Spotify's session in the Windows mixer.
+  "Win32_Media_Audio",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_System_Com",
+  # "Open terminal": the relay's process tree leads to the session's window.
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Ole",
+  "Win32_System_Pipes",
+  # The System pill: the battery, on a laptop.
+  "Win32_System_Power",
+  "Win32_System_Registry",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
+  # Which program publishes a media session: its app user model id is resolved
+  # to the executable that owns it (spotify.rs), so a browser can be told from a
+  # music player.
+  "Win32_Storage_Packaging_Appx",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Shell",
+  # The shelf's drag out of the island: the Shell's item ids (platform/windows.rs).
+  "Win32_UI_Shell_Common",
+  "Win32_UI_WindowsAndMessaging",
+  # Flow dictation's keyboard hook.
+  "Win32_System_LibraryLoader",
+] }
+# The clipboard for Flow dictation, kept out of the clipboard history. MIT/Apache-2.0.
+arboard = { version = "3.6", default-features = false }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Secret Service (GNOME Keyring, KWallet) over D-Bus, encrypted in transit.
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+libc = "0.2"
+# The GTK that Tauri already runs on, to reach its window for layer-shell and
+# the input region. libgtk-layer-shell itself is called directly (platform/linux.rs).
+gtk = "0.18"
+# libdbus, which keyring's Secret Service already links, so nothing new is
+# downloaded: Wayland global shortcuts through the XDG GlobalShortcuts portal
+# (portal.rs), the Spotify pill over MPRIS (spotify.rs) and "Open terminal"
+# through KWin's scripting (platform/linux_focus.rs).
+dbus = "0.9.12"
+# EWMH on X11 for "Open terminal", already in the tree (global-hotkey).
+x11rb = { version = "0.13", default-features = false, features = ["xinput", "xtest"] }
+# PulseAudio (or PipeWire's PulseAudio server) for the microphone list and the
+# monitor of the speakers, the Notetaker's "computer sound". Pure Rust client.
+cpal = { version = "0.18", features = ["pulseaudio"] }
+# The clipboard for Flow dictation (X11, and Wayland's data-control protocol).
+arboard = { version = "3.6", default-features = false, features = ["wayland-data-control"] }

@@ -1,0 +1,162 @@
+// Language changes must update the existing sidebar as well as its page.
+import { beforeEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
+import { installFakeDom } from "./fakedom.mjs";
+import { calls, emit, sent } from "./tauri.mjs";
+
+// The shell imports its stylesheet; layout is checked in the browser.
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.endsWith(".css")) {
+      return { url: new URL(specifier, context.parentURL).href, shortCircuit: true };
+    }
+    return nextResolve(specifier, context);
+  },
+  load(url, context, nextLoad) {
+    if (url.endsWith(".css")) return { format: "module", source: "", shortCircuit: true };
+    // The canvas helper has a parameter property beyond Node's type stripping.
+    if (url.endsWith("/hub/hero.ts")) {
+      const { outputText } = ts.transpileModule(readFileSync(fileURLToPath(url), "utf8"), {
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+      });
+      return { format: "module", source: outputText, shortCircuit: true };
+    }
+    return nextLoad(url, context);
+  },
+});
+
+const dom = installFakeDom();
+// Keep canvas animation asleep: these tests exercise the shell's DOM only.
+document.visibilityState = "hidden";
+document.addEventListener = () => {};
+document.documentElement = { dataset: {} };
+window.addEventListener = () => {};
+
+const { h } = await import("../src/views/dom.ts");
+const { onLanguageChange, setLanguage, t } = await import("../src/i18n/i18n.ts");
+const { FLOW_PAGES, HOME_PAGE, NOTCH_PAGE, MAIL_PAGE, startHub } = await import("../src/hub/shell.ts");
+// The sidebar: Home, the flow's pages, then one row each for the island and
+// Mail. Their sections are tabs inside those pages.
+const pages = [HOME_PAGE, ...FLOW_PAGES, NOTCH_PAGE, MAIL_PAGE].filter(
+  (page) => page.id !== "mail" || navigator.userAgent.includes("Windows"),
+);
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+beforeEach(() => {
+  setLanguage("en");
+  calls.length = 0;
+});
+
+async function openHub() {
+  const root = dom.root();
+  const hub = await startHub(root, {
+    version: "test",
+    // Every section draws a title, so a click on any sidebar row lands
+    // somewhere the test can see.
+    flowPages: Object.fromEntries(pages.map((page) => [page.id, (container) => {
+      container.append(h("h1", { text: page.title() }));
+    }])),
+    renderNotch: async () => {},
+  });
+  // The fake DOM keeps no input value: the settings search field starts empty.
+  for (const input of root.find(".hub-search-input")) input.value = "";
+  // The settings entry point wires language changes to this public method.
+  const off = onLanguageChange(() => hub.redraw());
+  return { root, hub, off, buttons: root.find(".hub-item") };
+}
+
+test("language redraw relabels sidebar nodes and preserves selection and navigation", async () => {
+  const { root, hub, off, buttons } = await openHub();
+  try {
+    const logo = root.find(".hub-brand")[0].find("CANVAS")[0];
+    const labels = buttons.map((button) => button.find("SPAN")[0]);
+    const groups = root.find(".hub-group");
+    // Find the page by id, not by position: the sidebar gained pages over time.
+    const at = (id) => buttons[pages.findIndex((page) => page.id === id)];
+    // "The island" is one sidebar row now: its sections are tabs inside it.
+    at("notch").fire("click");
+    await settle();
+    assert.equal(hub.current(), "general", "it opens on its first tab");
+    // The tabs the section draws, under its band.
+    assert.deepEqual(
+      root.find(".hub-tab").map((tab) => tab.textContent),
+      ["General", "Active pills", "Agents", "Chat", "OK Miku", "Shortcuts"],
+    );
+    calls.length = 0;
+
+    for (const language of ["fr", "ar", "en"]) {
+      setLanguage(language);
+      await settle();
+      assert.deepEqual(root.find(".hub-item"), buttons, "keep the existing buttons");
+      assert.deepEqual(buttons.map((button) => button.find("SPAN")[0]), labels);
+      assert.deepEqual(buttons.map((button) => button.textContent), pages.map((page) => page.title()));
+      assert.equal(groups[0].textContent, "Flow");
+      assert.equal(groups[1].textContent, t("Notch"));
+      assert.equal(root.find(".hub-status")[0].textContent, t("Dictation is off"));
+      assert.equal(root.find(".hub-brand")[0].find("CANVAS")[0], logo);
+    assert.equal(hub.current(), "general");
+    // The section's row stays lit while one of its tabs is showing.
+    assert.deepEqual(buttons.filter((button) => button.classList.contains("on")), [at("notch")]);
+      assert.deepEqual(
+        root.find(".hub-tab").filter((tab) => tab.classList.contains("on")).map((tab) => tab.textContent),
+        [t("General")],
+      );
+      assert.equal(document.documentElement.dataset.dir, language === "ar" ? "rtl" : "ltr");
+    }
+    assert.deepEqual(calls, [], "redrawing must not save settings or request data");
+    at("dictation").fire("click");
+    await settle();
+    assert.equal(hub.current(), "dictation", "existing click listeners still work");
+  } finally {
+    off();
+  }
+});
+
+test("language redraw retains the latest dictation state and key in the status line", async () => {
+  const { root, off } = await openHub();
+  try {
+    const status = root.find(".hub-status")[0];
+    emit("flow-prefs", { enabled: true, key: "right_ctrl" });
+    emit("speech-models", { parakeet: { state: "ready" } });
+    const english = status.textContent;
+    assert.match(english, /^Ready · hold /);
+    calls.length = 0;
+    setLanguage("fr");
+    await settle();
+    assert.notEqual(status.textContent, english);
+    assert.equal(status.textContent, "Prête · maintiens Ctrl de droite");
+    setLanguage("en");
+    await settle();
+    assert.equal(status.textContent, english);
+    assert.deepEqual(sent("flow_set_prefs"), []);
+    assert.deepEqual(calls, []);
+  } finally {
+    off();
+  }
+});
+
+test("the sidebar uses the selected language on its first render", async () => {
+  setLanguage("es");
+  const { root, off, buttons } = await openHub();
+  try {
+    assert.deepEqual(buttons.map((button) => button.textContent), pages.map((page) => page.title()));
+    assert.equal(root.find(".hub-group")[1].textContent, t("Notch"));
+    assert.equal(root.find(".hub-status")[0].textContent, t("Dictation is off"));
+  } finally {
+    off();
+  }
+});
+
+test("the menu's bubbles sit at equal steps along the arc, ends included", async () => {
+  const { arcSpots } = await import("../src/hub/menu.ts");
+  const spots = arcSpots(9);
+  assert.equal(spots.length, 9);
+  const gaps = spots.slice(1).map((p, i) => Math.hypot(p[0] - spots[i][0], p[1] - spots[i][1]));
+  // Chords of equal arc steps: close to one another, none bunched at the flat ends.
+  assert.ok(Math.min(...gaps) / Math.max(...gaps) > 0.9, `gaps ${gaps.map((g) => g.toFixed(1))}`);
+  assert.ok(spots[0][0] < 0 && spots[8][0] > 100, "the arc still reaches past both sides of her");
+});

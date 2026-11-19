@@ -1,0 +1,236 @@
+// Island geometry — ported from IslandTypes.swift + IslandWindowController.islandSize
+// + IslandRootView.botPosition. All values are logical pixels, identical to the
+// macOS app's points.
+
+export type IslandMode = "hidden" | "compact" | "expanded";
+
+export type IslandViewName =
+  | "overview"
+  | "empty"
+  | "approval"
+  | "question"
+  | "error"
+  | "finished"
+  | "confused"
+  | "mail"
+  | "prompt"
+  | "searching"
+  | "result"
+  | "note"
+  | "settings"
+  | "greeting"
+  | "recap"
+  | "wardrobe"
+  | "update"
+  | "ritual";
+
+export type BotStateName =
+  | "idle"
+  | "working"
+  | "thinking"
+  | "searching"
+  | "approval"
+  | "question"
+  | "error"
+  | "finished"
+  | "ratelimit"
+  | "sleeping"
+  | "dizzy";
+
+export type BotEmoteName = "love" | "surprised" | "proud" | "wink" | "yawn" | "happy" | "annoyed";
+
+export type AgentLayoutMode = "none" | "grid" | "pills" | "column";
+
+export interface ViewLayout {
+  height: number;
+  botX: number;
+  botY: number | null; // null = auto-centred
+  botDiameter: number;
+  agentMode: AgentLayoutMode;
+}
+
+// The window is a fixed 720×320 (largest view) like the macOS panel; the island is
+// drawn inside it, glued to the top edge and horizontally centred.
+export const PANEL_W = 720;
+export const PANEL_H = 320;
+
+// No notch on a PC: these are the hidden/compact sizes from docs/SPEC.md.
+export const NOTCH_W = 184;
+export const NOTCH_H = 32;
+export const COMPACT_W = NOTCH_W; // hovering must not widen the pill
+export const EXPANDED_W = 640;
+/** The widget deck (views/deck.ts) wraps its widget instead of the full panel width. */
+export const DECK_W = 500;
+
+export const ROUNDED_CORNER = 14; // hidden / compact
+/** The song's stage fills the compact island edge to edge, no taller than the
+ *  island's window (PANEL_H in island.rs), with its own rounder corners. */
+export const STAGE_W = 372;
+export const STAGE_H = 312;
+export const STAGE_CORNER = 26;
+export const EXPANDED_CORNER = 22;
+
+/** Invisible hover strip that wakes the island when hidden. */
+export const WAKE_STRIP_W = 240;
+export const WAKE_STRIP_H = 6;
+
+export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
+  // The widget deck draws its own full-length Miku (views/deck.ts).
+  // 280: tall enough that the Notif page shows at least one whole message
+  // (its text) below the header and the filters — 240 cut every one of them.
+  overview: { height: 280, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
+  empty: { height: 160, botX: 70, botY: null, botDiameter: 62, agentMode: "none" },
+  // Twin-tail (docs/mockups/notch-combined.png): a bigger Miku asking, beside
+  // the board she holds up.
+  approval: { height: 200, botX: 70, botY: 118, botDiameter: 84, agentMode: "column" },
+  question: { height: 200, botX: 70, botY: 118, botDiameter: 84, agentMode: "column" },
+  error: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
+  finished: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
+  confused: { height: 160, botX: 76, botY: null, botDiameter: 66, agentMode: "column" },
+  mail: { height: 240, botX: 56, botY: null, botDiameter: 46, agentMode: "column" },
+  prompt: { height: 160, botX: 52, botY: null, botDiameter: 44, agentMode: "column" },
+  searching: { height: 160, botX: 52, botY: null, botDiameter: 44, agentMode: "column" },
+  result: { height: 160, botX: 52, botY: null, botDiameter: 44, agentMode: "column" },
+  note: { height: 160, botX: 60, botY: null, botDiameter: 50, agentMode: "column" },
+  settings: { height: 160, botX: 54, botY: null, botDiameter: 46, agentMode: "none" },
+  greeting: { height: 150, botX: 320, botY: 90, botDiameter: 0, agentMode: "none" },
+  // Mac: 160. The extra 24 hold the two lines with top agent, project, busiest
+  // day, longest session, permissions and questions, which the Mac card leaves
+  // to the shared image.
+  recap: { height: 184, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
+  wardrobe: { height: 160, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
+  // New version: Miku full-length on the stage, left of the card, as the deck
+  // draws her (views/update.ts); the island's Mochi steps aside (Mac: .update).
+  // 200 = 40 for the header + the mockup's card (kind, title, line, buttons) + 16.
+  update: { height: 200, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
+  // A ritual: a break worth taking, a milestone worth a nod. One line, one
+  // button, gone by itself.
+  ritual: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
+};
+
+/** The question view with options to pick from: room for two rows of them. */
+export const QUESTION_PICKER_H = 200;
+
+/** Chat view grows with the conversation — IslandContainer.chatPromptHeight. */
+export function chatPromptHeight(messageCount: number): number {
+  return Math.min(300, 240 + messageCount * 40);
+}
+
+export function islandSize(
+  mode: IslandMode,
+  view: IslandViewName,
+  chatCount = 0,
+  lyrics = false,
+): { w: number; h: number } {
+  switch (mode) {
+    case "hidden":
+      // No notch to hide inside on a PC: the island retracts to zero height and
+      // slides into the top edge of the screen instead of sitting there as a bar.
+      return { w: NOTCH_W, h: 0 };
+    case "compact":
+      // The song's stage (island.ts buildLyricsPill): 372 wide plus the side
+      // insets, and no taller than the island's window (PANEL_H in island.rs).
+      return lyrics ? { w: STAGE_W, h: STAGE_H } : { w: COMPACT_W, h: NOTCH_H };
+    case "expanded": {
+      const h = view === "prompt" ? chatPromptHeight(chatCount) : VIEW_LAYOUTS[view].height;
+      return { w: view === "overview" ? DECK_W : EXPANDED_W, h };
+    }
+  }
+}
+
+export interface BotPlacement {
+  cx: number;
+  cy: number;
+  diameter: number;
+  opacity: number;
+}
+
+/** IslandRootView.botPosition — cy is measured from the island's top edge. */
+export function botPosition(
+  mode: IslandMode,
+  view: IslandViewName,
+  islandH: number,
+): BotPlacement {
+  switch (mode) {
+    case "hidden":
+      return { cx: 46, cy: 16, diameter: 6, opacity: 0 };
+    case "compact":
+      return { cx: 40, cy: 16, diameter: 20, opacity: 1 };
+    case "expanded": {
+      const layout = VIEW_LAYOUTS[view];
+      if (layout.botY != null) {
+        return { cx: layout.botX, cy: layout.botY, diameter: layout.botDiameter, opacity: 1 };
+      }
+      // Centre of the fixed 84 pt card (8 pt top inset + 34 pt header → content at y = 42)
+      const headerBottom = 42;
+      const cardH = 84;
+      const cy = headerBottom + (islandH - headerBottom - cardH) / 2 + cardH / 2;
+      return { cx: layout.botX, cy, diameter: layout.botDiameter, opacity: 1 };
+    }
+  }
+}
+
+export function botGlowColor(s: BotStateName): string {
+  switch (s) {
+    case "working":
+      return "#3B9EFF";
+    case "thinking":
+      return "#A78BFA";
+    case "searching":
+      return "#6366F1";
+    case "approval":
+      return "#F5A524";
+    case "error":
+      return "#F4505E";
+    case "finished":
+      return "#34D399";
+    case "ratelimit":
+      return "#F59E0B";
+    default:
+      return "#FFFFFF";
+  }
+}
+
+export function botGlowOpacity(s: BotStateName): number {
+  switch (s) {
+    case "idle":
+    case "sleeping":
+      return 0.15;
+    case "dizzy":
+      return 0;
+    default:
+      return 0.65;
+  }
+}
+
+// Project colours (IslandConst.projectColors)
+const PROJECT_COLORS: Record<string, string> = {
+  korus: "#FF5A4E",
+  "sbe hub": "#2EC4A0",
+  "morning ai brief": "#F29B38",
+  "publication ig": "#7C5CFF",
+  "ig post": "#7C5CFF",
+  "louisraille.fr": "#38BDF8",
+  louisraille: "#38BDF8",
+  "notch buddy": "#EC4899",
+  "notch-buddy": "#EC4899",
+  notchbuddy: "#EC4899",
+};
+
+const FALLBACK_COLORS = ["#22C55E", "#EAB308", "#60A5FA", "#E879F9"];
+
+export function colorForProject(name: string): string {
+  const key = name.toLowerCase().trim();
+  const exact = PROJECT_COLORS[key];
+  if (exact) return exact;
+  for (const [k, c] of Object.entries(PROJECT_COLORS)) {
+    if (key.startsWith(k) || key.includes(k)) return c;
+  }
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
+}
+
+// A card's light on Miku's stage (style.css, `.card.lit`): a bar along its top
+// and a spotlight where she stands. Teal, or pink when something went wrong.
+export type Tone = "teal" | "pink" | null;

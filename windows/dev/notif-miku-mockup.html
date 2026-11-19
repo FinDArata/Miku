@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Notif mockup</title>
+    <style>
+      :root {
+        --teal: #39c5bb;
+        --teal-light: #9fe6e6;
+        --pink: #e12885;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #1b1b1f;
+        color: #cfd4dc;
+        font: 13px "Segoe UI", system-ui, sans-serif;
+      }
+      main {
+        display: grid;
+        gap: 18px;
+        justify-items: center;
+        padding: 28px 16px;
+      }
+      h1 {
+        color: var(--teal-light);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin: 0;
+      }
+      #stage {
+        width: 360px;
+        max-width: 100%;
+        height: auto;
+      }
+      #phase {
+        font: 600 13px ui-monospace, monospace;
+        color: #8b93a3;
+      }
+      /* The notice card, in Miku's style (same skin as the drop mockup). */
+      .card {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        width: 470px;
+        max-width: 100%;
+        box-sizing: border-box;
+        height: 132px;
+        padding: 0 16px 0 10px;
+        border-radius: 22px;
+        background: radial-gradient(circle at 46px 70%, rgba(57, 197, 187, 0.22), transparent 260px),
+          linear-gradient(#0f1a1c, #0a0f11);
+        border: 1.5px solid transparent;
+        background-clip: padding-box;
+        position: relative;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -1.5px;
+        border-radius: 22px;
+        padding: 1.5px;
+        background: linear-gradient(90deg, rgba(57, 197, 187, 0.8), rgba(57, 197, 187, 0.3) 70%, rgba(225, 40, 133, 0.7));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+      #mini {
+        width: 74px;
+        height: 92px;
+        flex: none;
+      }
+      .body {
+        flex: 1;
+        min-width: 0;
+      }
+      .src {
+        display: flex;
+        gap: 6px;
+        font: 800 10.5px "Segoe UI", sans-serif;
+        letter-spacing: 0.12em;
+        color: #25d366;
+      }
+      .src time {
+        margin-left: auto;
+        font: 500 10.5px ui-monospace, Consolas, monospace;
+        color: #8fa3b8;
+        letter-spacing: 0;
+      }
+      .who {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 5px;
+        color: #f2fbfa;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .av {
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #25d366;
+        color: #06301a;
+        font-size: 11px;
+      }
+      .msg {
+        margin-top: 3px;
+        color: #c9d3d8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .acts {
+        display: flex;
+        gap: 8px;
+        margin-top: 9px;
+      }
+      .acts span {
+        border-radius: 14px;
+        padding: 4px 14px;
+        font-weight: 600;
+      }
+      .acts .p {
+        background: var(--teal);
+        color: #06302d;
+      }
+      .acts .s {
+        border: 1px solid rgba(57, 197, 187, 0.5);
+        color: var(--teal-light);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Miku gets a notification</h1>
+      <canvas id="stage" aria-label="Miku's headset pings, a message drops into her hands, she reads it and smiles"></canvas>
+      <div id="phase">–</div>
+      <h1>In the notice card</h1>
+      <div class="card">
+        <canvas id="mini" aria-hidden="true"></canvas>
+        <div class="body">
+          <div class="src">💬 WHATSAPP <time>now</time></div>
+          <div class="who"><span class="av">R</span>Rin</div>
+          <div class="msg">Miku, are you on your way? We start at seven!</div>
+          <div class="acts"><span class="p">Reply</span><span class="s">Later</span></div>
+        </div>
+      </div>
+    </main>
+    <script type="module">
+      import { CHIBI_H, CHIBI_W, drawChibi } from "/src/mochi/chibi";
+
+      const PINK = "#E12885";
+      const TEAL = "#39C5BB";
+      const EARS = [[140, 242], [380, 242]]; // headset earpieces, in her design units
+      const CYCLE = 5.4;
+      // Timeline, seconds.
+      const T_PING = 0.6;
+      const T_FALL = 1.3;
+      const T_HOLD = 1.9;
+      const T_SMILE = 4.1;
+
+      const q = new URLSearchParams(location.search);
+      const AT = q.has("at") ? Number(q.get("at")) : null;
+      const phaseEl = document.getElementById("phase");
+
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const eIn = (k) => k * k;
+      const eBack = (k) => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+
+      // A design-space canvas: CHIBI_W × (CHIBI_H + headroom), scaled to its CSS size.
+      const TOP = 60; // headroom over her head for the bubble
+      function setup(el, cssW) {
+        const dpr = Math.max(2, window.devicePixelRatio || 1);
+        const s = cssW / CHIBI_W;
+        const cssH = (CHIBI_H + TOP) * s;
+        el.width = Math.round(cssW * dpr);
+        el.height = Math.round(cssH * dpr);
+        return { ctx: el.getContext("2d"), k: s * dpr };
+      }
+      const big = setup(document.getElementById("stage"), 360);
+      // The card's slot is 74 × 92: fit her (with headroom) into it.
+      const mini = (() => {
+        const el = document.getElementById("mini");
+        const dpr = Math.max(2, window.devicePixelRatio || 1);
+        el.width = 74 * dpr;
+        el.height = 92 * dpr;
+        return { ctx: el.getContext("2d"), k: Math.min(74 / CHIBI_W, 92 / (CHIBI_H + TOP)) * dpr, dx: 0 };
+      })();
+
+      // ── Props, in her design units ─────────────────────────────────────────
+      // A chat bubble with a pink unread badge.
+      function bubble(x, cx, cy, s, rot, read) {
+        x.save();
+        x.translate(cx, cy);
+        x.rotate(rot);
+        x.scale(s, s);
+        x.fillStyle = "#F4FBFA";
+        x.beginPath();
+        x.roundRect(-70, -48, 140, 92, 26);
+        x.fill();
+        x.beginPath();
+        x.moveTo(-34, 40);
+        x.lineTo(-50, 66);
+        x.lineTo(-8, 42);
+        x.closePath();
+        x.fill();
+        // message lines
+        x.fillStyle = "#C8D6D8";
+        x.beginPath();
+        x.roundRect(-46, -22, 92, 12, 6);
+        x.roundRect(-46, 0, 60, 12, 6);
+        x.fill();
+        if (!read) {
+          x.fillStyle = PINK;
+          x.beginPath();
+          x.arc(62, -42, 22, 0, Math.PI * 2);
+          x.fill();
+          x.fillStyle = "#fff";
+          x.font = "800 28px 'Segoe UI', sans-serif";
+          x.textAlign = "center";
+          x.textBaseline = "middle";
+          x.fillText("1", 62, -40);
+        }
+        x.restore();
+      }
+
+      // Sound rings out of both earpieces: the headset is what rings.
+      function rings(x, t, a) {
+        if (a <= 0) return;
+        x.save();
+        x.lineCap = "round";
+        for (const [ex, ey] of EARS) {
+          const dir = ex < 260 ? -1 : 1;
+          for (let i = 0; i < 3; i++) {
+            const k = ((t * 1.6 + i / 3) % 1);
+            const r = 16 + k * 60;
+            x.globalAlpha = a * (1 - k);
+            x.strokeStyle = i % 2 ? TEAL : PINK;
+            x.lineWidth = 9 - k * 4;
+            x.beginPath();
+            const mid = dir < 0 ? Math.PI : 0;
+            x.arc(ex, ey, r, mid - 0.7, mid + 0.7);
+            x.stroke();
+          }
+        }
+        x.restore();
+      }
+
+      function hearts(x, t, a) {
+        if (a <= 0) return;
+        for (let i = 0; i < 2; i++) {
+          const k = ((t * 0.7 + i * 0.5) % 1);
+          x.save();
+          x.globalAlpha = a * (k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8);
+          x.translate(i ? 420 : 110, 150 - 70 * k);
+          x.scale(1.4, 1.4);
+          x.fillStyle = PINK;
+          x.beginPath();
+          x.moveTo(0, 6);
+          x.bezierCurveTo(-14, -4, -8, -16, 0, -8);
+          x.bezierCurveTo(8, -16, 14, -4, 0, 6);
+          x.fill();
+          x.restore();
+        }
+      }
+
+      // ── One frame of the scene, in design units ────────────────────────────
+      function scene(x, t, clock) {
+        let phase;
+        const ringA = t >= T_PING && t < T_HOLD + 0.4 ? clamp((t - T_PING) / 0.15) * clamp((T_HOLD + 0.4 - t) / 0.4) : 0;
+        // A hop when the ping lands.
+        const hop = t >= T_PING && t < T_PING + 0.35 ? Math.sin(((t - T_PING) / 0.35) * Math.PI) * 26 : 0;
+
+        x.save();
+        x.translate(0, TOP);
+        // her own shadow, which stays on the floor through the hop
+        x.fillStyle = "rgba(0,0,0,0.25)";
+        x.beginPath();
+        x.ellipse(260, 484, 92, 8, 0, 0, Math.PI * 2);
+        x.fill();
+        x.translate(0, -hop);
+
+        const hold = [15, -70, -15, 70];
+        if (t < T_PING) {
+          phase = "idle — humming along";
+          drawChibi(x, "idle", clock, "classic", { noShadow: true, eyes: "happy" });
+        } else if (t < T_FALL) {
+          phase = "ping! — the headset rings";
+          drawChibi(x, "surprised", clock, "classic", { noShadow: true, look: [10, -10], skipFx: new Set(["lines"]) });
+        } else if (t < T_HOLD) {
+          phase = "the message drops into her hands";
+          const k = clamp((t - T_FALL) / (T_HOLD - T_FALL));
+          drawChibi(x, "question", clock, "classic", { noShadow: true, arms: hold, look: [lerp(10, 0, k), lerp(-10, 12, k)], skipFx: new Set(["question"]) });
+        } else if (t < T_SMILE) {
+          phase = "reading";
+          drawChibi(x, "idle", clock, "classic", { noShadow: true, arms: hold, eyes: "open", look: [Math.sin(clock * 3.2) * 7, 12] });
+        } else {
+          phase = "aww — happy";
+          drawChibi(x, "love", clock, "classic", { noShadow: true, arms: hold, eyes: "happy", skipFx: new Set(["hearts"]) });
+        }
+        rings(x, clock, ringA);
+
+        // The bubble: pops in up by her right ear, then floats down into her hands.
+        if (t >= T_PING) {
+          const pop = eBack(clamp((t - T_PING) / 0.35));
+          const fall = eIn(clamp((t - T_FALL) / (T_HOLD - T_FALL)));
+          const bx = lerp(400, 260, fall);
+          const by = lerp(110 + Math.sin(clock * 4) * 6, 372, fall);
+          const bs = lerp(0.9, 0.62, fall) * pop;
+          bubble(x, bx, by, bs, lerp(0.12, -0.05, fall) + (t >= T_HOLD ? Math.sin(clock * 2) * 0.03 : 0), t >= T_SMILE);
+        }
+        if (t >= T_SMILE) hearts(x, clock, clamp((t - T_SMILE) / 0.3));
+        x.restore();
+        return phase;
+      }
+
+      function frame(now) {
+        const clock = now / 1000;
+        const t = AT ?? clock % CYCLE;
+        for (const v of [big, mini]) {
+          v.ctx.setTransform(v.k, 0, 0, v.k, 0, 0);
+          v.ctx.clearRect(0, 0, CHIBI_W * 2, (CHIBI_H + TOP) * 2);
+          const p = scene(v.ctx, t, clock);
+          if (v === big) phaseEl.textContent = `t = ${t.toFixed(2)} s · ${p}`;
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

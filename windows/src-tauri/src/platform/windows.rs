@@ -1,0 +1,982 @@
+// Windows: Win32 for the island window and the cursor, %APPDATA% for files.
+
+use std::collections::HashMap;
+use std::os::windows::io::RawHandle;
+use std::os::windows::process::CommandExt;
+use std::path::PathBuf;
+use std::process::Command;
+
+use tauri::{AppHandle, Manager, WebviewWindow};
+
+use ::windows::core::{w, BOOL, PCWSTR, PWSTR};
+use ::windows::Win32::Foundation::{
+    CloseHandle, HANDLE, HLOCAL, HWND, LPARAM, LocalFree, POINT, RPC_E_CHANGED_MODE,
+};
+use ::windows::Win32::Security::Authorization::ConvertSidToStringSidW;
+use ::windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY, TOKEN_USER};
+use ::windows::Win32::System::Com::{
+    CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
+};
+use ::windows::Win32::System::Diagnostics::ToolHelp::{
+    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
+};
+use ::windows::Win32::System::Ole::RevokeDragDrop;
+use ::windows::Win32::System::Pipes::GetNamedPipeClientProcessId;
+use ::windows::Win32::System::Registry::{
+    RegCloseKey, RegEnumKeyExW, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER, KEY_READ,
+    REG_VALUE_TYPE,
+};
+use ::windows::Win32::System::SystemInformation::GetLocalTime;
+use ::windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentProcess, GetCurrentThreadId, OpenProcess, OpenProcessToken,
+    PROCESS_QUERY_LIMITED_INFORMATION,
+};
+use ::windows::Win32::UI::Input::KeyboardAndMouse::{
+    GetAsyncKeyState, GetKeyboardLayoutList, MapVirtualKeyExW, ToUnicodeEx, HKL, MAPVK_VK_TO_VSC,
+    VK_CONTROL, VK_LBUTTON, VK_MENU, VK_SHIFT,
+};
+use ::windows::Win32::UI::Shell::{
+    ShellExecuteExW, SHELLEXECUTEINFOW, SEE_MASK_FLAG_NO_UI, SEE_MASK_NOASYNC,
+};
+use ::windows::Win32::UI::WindowsAndMessaging::{
+    BringWindowToTop, EnumChildWindows, EnumWindows, GetClassNameW, GetCursorPos,
+    GetForegroundWindow, GetWindow, GetWindowLongPtrW, GetWindowTextW, GetWindowThreadProcessId,
+    IsIconic, IsWindow, IsWindowVisible, SetForegroundWindow, SetWindowLongPtrW, ShowWindow,
+    GWL_EXSTYLE, GW_OWNER, SW_HIDE, SW_RESTORE, SW_SHOW, SW_SHOWNORMAL, WS_EX_NOACTIVATE,
+    WS_EX_TOOLWINDOW,
+};
+
+use super::LocalTime;
+use crate::session_window::{self, Proc};
+
+/// File name of the Claude Code relay.
+pub const HOOK_EXE: &str = "miku-hook.exe";
+
+/// Environment variable holding the home directory.
+pub const HOME_VAR: &str = "USERPROFILE";
+
+/// Keeps spawned helpers from flashing a console window.
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+// ── Files ─────────────────────────────────────────────────────────────────────
+
+/// %APPDATA%\Miku — preferences.
+pub fn config_dir() -> PathBuf {
+    let base = std::env::var_os("APPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    base.join("Miku")
+}
+
+/// %LOCALAPPDATA%\Miku — where miku-hook.exe, the inbox and the log live.
+pub fn local_dir() -> PathBuf {
+    let base = std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    base.join("Miku")
+}
+
+/// Where a saved image goes, best first: Pictures (also where OneDrive moves
+/// it), then Downloads and the profile folder. The caller takes the first one
+/// that exists. Read from the environment rather than the Known Folders API: a
+/// relocated Pictures folder falls back to Downloads, which is fine for a PNG.
+pub fn picture_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    let home = std::env::var_os("USERPROFILE").map(PathBuf::from);
+    if let Some(home) = &home {
+        dirs.push(home.join("Pictures"));
+    }
+    if let Some(onedrive) = std::env::var_os("OneDrive").map(PathBuf::from) {
+        dirs.push(onedrive.join("Pictures"));
+    }
+    if let Some(home) = home {
+        dirs.push(home.join("Downloads"));
+        dirs.push(home);
+    }
+    dirs
+}
+
+/// %APPDATA% and %LOCALAPPDATA% are already private to the user.
+pub fn ensure_private_dir(dir: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dir)
+}
+
+/// Nothing to set up before the webview starts.
+pub fn prepare_environment() {}
+
+pub fn local_time() -> LocalTime {
+    let t = unsafe { GetLocalTime() };
+    LocalTime {
+        year: t.wYear.into(),
+        month: t.wMonth.into(),
+        day: t.wDay.into(),
+        hour: t.wHour.into(),
+        minute: t.wMinute.into(),
+        second: t.wSecond.into(),
+    }
+}
+
+// ── Processes ─────────────────────────────────────────────────────────────────
+
+/// Spawned helpers must never flash a console window.
+pub fn no_console(cmd: &mut Command) -> &mut Command {
+    cmd.creation_flags(CREATE_NO_WINDOW)
+}
+
+pub fn open_url(url: &str) {
+    let _ = no_console(Command::new("rundll32.exe").args(["url.dll,FileProtocolHandler", url]))
+        .spawn();
+}
+
+pub fn reveal_folder(path: &str) {
+    let _ = Command::new("explorer").arg(path).spawn();
+}
+
+/// Opens a file with the app Windows associates with it.
+pub fn open_path(path: &std::path::Path) {
+    let _ = Command::new("explorer").arg(path).spawn();
+}
+
+/// Shows a file selected in its folder.
+pub fn reveal_file(path: &std::path::Path) {
+    // `/select,"…"` must reach explorer as written: its own parser, not argv quoting.
+    // A Windows file name cannot contain `"`, so the quotes cannot be broken out of.
+    let _ = Command::new("explorer")
+        .raw_arg(format!("/select,\"{}\"", path.display()))
+        .spawn();
+}
+
+/// Starts dragging `paths` out of the island, as Explorer would: the Shell builds
+/// the data object (files, as every app expects them) and runs the drag loop with
+/// its default drop source. It runs on the window's UI thread, where OLE lives,
+/// and must start while the button is still held — the page asks on `dragstart`.
+pub fn drag_files(app: &AppHandle, win: &WebviewWindow, paths: Vec<PathBuf>) -> Result<bool, String> {
+    let hwnd = hwnd_of(win).map(|h| h.0 as isize);
+    app.run_on_main_thread(move || {
+        if let Err(e) = unsafe { shell_drag(hwnd.map(|h| HWND(h as *mut _)), &paths) } {
+            eprintln!("[miku] shelf drag: {e}");
+        }
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+unsafe fn shell_drag(hwnd: Option<HWND>, paths: &[PathBuf]) -> ::windows::core::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use ::windows::Win32::System::Com::{CoTaskMemFree, IDataObject};
+    use ::windows::Win32::System::Ole::{DROPEFFECT_COPY, DROPEFFECT_LINK};
+    use ::windows::Win32::UI::Shell::Common::ITEMIDLIST;
+    use ::windows::Win32::UI::Shell::{
+        SHCreateShellItemArrayFromIDLists, SHDoDragDrop, SHParseDisplayName, BHID_DataObject,
+    };
+
+    let mut pidls: Vec<*mut ITEMIDLIST> = Vec::new();
+    for p in paths {
+        let wide: Vec<u16> = p.as_os_str().encode_wide().chain(Some(0)).collect();
+        let mut pidl: *mut ITEMIDLIST = std::ptr::null_mut();
+        if SHParseDisplayName(PCWSTR(wide.as_ptr()), None, &mut pidl, 0, None).is_ok() && !pidl.is_null() {
+            pidls.push(pidl);
+        }
+    }
+    let result = (|| {
+        let ids: Vec<*const ITEMIDLIST> = pidls.iter().map(|p| *p as *const _).collect();
+        let items = SHCreateShellItemArrayFromIDLists(&ids)?;
+        let data: IDataObject = items.BindToHandler(None, &BHID_DataObject)?;
+        SHDoDragDrop(hwnd, &data, None, DROPEFFECT_COPY | DROPEFFECT_LINK)?;
+        Ok(())
+    })();
+    for p in pidls {
+        CoTaskMemFree(Some(p as *const _));
+    }
+    result
+}
+
+/// Our own `where`: walks %PATH% against %PATHEXT%, no shell involved.
+/// Rust quotes arguments correctly for `.cmd`/`.bat` targets since 1.77, so
+/// spawning `code.cmd` directly is safe.
+pub fn find_on_path(stem: &str) -> Option<PathBuf> {
+    let exts = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
+    let dirs = std::env::var_os("PATH")?;
+    for dir in std::env::split_paths(&dirs) {
+        for ext in exts.split(';').filter(|e| !e.is_empty()) {
+            let candidate = dir.join(format!("{stem}{}", ext.to_lowercase()));
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+/// The lookups walk %PATH% × %PATHEXT% and stat every candidate, and are asked
+/// for on every settings render and every chat turn: the answer is kept per
+/// name. An empty answer is not kept, so installing a CLI while Miku runs is
+/// found on the next ask.
+static CLI_CACHE: std::sync::LazyLock<std::sync::Mutex<HashMap<String, Vec<PathBuf>>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
+
+/// Where a CLI such as `codex` or `claude` may be, best first: %PATH% (the
+/// .exe or npm's .cmd), then npm's global folder, the Volta / Bun / pnpm ones
+/// and the native installers' %USERPROFILE%\.local\bin. Rust quotes arguments
+/// safely for a `.cmd` (see find_on_path).
+pub fn cli_candidates(name: &str) -> Vec<PathBuf> {
+    if let Some(found) = CLI_CACHE.lock().unwrap().get(name) {
+        return found.clone();
+    }
+    let mut out: Vec<PathBuf> = find_on_path(name).into_iter().collect();
+    let var = |k: &str| std::env::var_os(k).map(PathBuf::from).filter(|p| p.is_absolute());
+    if let Some(appdata) = var("APPDATA") {
+        out.push(appdata.join("npm").join(format!("{name}.cmd")));
+    }
+    if let Some(local) = var("LOCALAPPDATA") {
+        out.push(local.join("Volta").join("bin").join(format!("{name}.exe")));
+        out.push(local.join("pnpm").join(format!("{name}.cmd")));
+    }
+    if let Some(home) = var("USERPROFILE") {
+        out.push(home.join(".bun").join("bin").join(format!("{name}.exe")));
+        out.push(home.join(".local").join("bin").join(format!("{name}.exe")));
+    }
+    out.retain(|p| p.is_file());
+    if !out.is_empty() {
+        CLI_CACHE.lock().unwrap().insert(name.to_string(), out.clone());
+    }
+    out
+}
+
+// ── Who we are ────────────────────────────────────────────────────────────────
+//
+// Named pipes share one machine-wide namespace, so the SID in the name is what
+// keeps two accounts on the same machine from ever meeting on `kanon-*`.
+// miku-hook computes the same string (hook/src/win.rs) and additionally checks
+// that the process serving the pipe really is us.
+
+/// The SID of the account this process runs as, as `S-1-5-21-…`.
+pub fn current_user_sid() -> Option<String> {
+    unsafe { token_sid(GetCurrentProcess()) }
+}
+
+/// The user SID behind a process handle: its token, opened for reading.
+unsafe fn token_sid(process: HANDLE) -> Option<String> {
+    let mut token = HANDLE::default();
+    OpenProcessToken(process, TOKEN_QUERY, &mut token).ok()?;
+    let sid = token_user_sid(token);
+    let _ = CloseHandle(token);
+    sid
+}
+
+/// The user SID behind a token already opened for TOKEN_QUERY.
+unsafe fn token_user_sid(token: HANDLE) -> Option<String> {
+    // First call sizes the buffer, second fills it.
+    let mut needed = 0u32;
+    let _ = GetTokenInformation(token, TokenUser, None, 0, &mut needed);
+    if needed == 0 {
+        return None;
+    }
+    let mut buf = vec![0u8; needed as usize];
+    let ok = GetTokenInformation(
+        token,
+        TokenUser,
+        Some(buf.as_mut_ptr().cast()),
+        needed,
+        &mut needed,
+    )
+    .is_ok();
+    if !ok {
+        return None;
+    }
+
+    let user = &*(buf.as_ptr() as *const TOKEN_USER);
+    let mut text = PWSTR::null();
+    ConvertSidToStringSidW(user.User.Sid, &mut text).ok()?;
+    let sid = text.to_string().ok();
+    let _ = LocalFree(Some(HLOCAL(text.0 as *mut _)));
+    sid
+}
+
+// The display name only feeds Mochi's greeting (identity.rs). The calls are
+// declared here by hand, with their documented C signatures, so they need no
+// extra `windows` crate features.
+#[link(name = "secur32")]
+extern "system" {
+    fn GetUserNameExW(name_format: i32, name_buffer: *mut u16, size: *mut u32) -> u8;
+}
+
+#[link(name = "netapi32")]
+extern "system" {
+    fn NetUserGetInfo(server: *const u16, user: *const u16, level: u32, buffer: *mut *mut u8) -> u32;
+    fn NetApiBufferFree(buffer: *mut core::ffi::c_void) -> u32;
+}
+
+/// EXTENDED_NAME_FORMAT::NameDisplay.
+const NAME_DISPLAY: i32 = 3;
+
+/// The account's display name ("Louis Raille"): the directory's for a domain
+/// or Entra account, else the local account's "Full name", else nothing.
+pub fn user_full_name() -> Option<String> {
+    directory_display_name().or_else(local_full_name).filter(|n| !n.trim().is_empty())
+}
+
+fn directory_display_name() -> Option<String> {
+    let mut buf = [0u16; 256];
+    let mut size = buf.len() as u32;
+    // On success `size` is the length copied, without the terminating null.
+    let ok = unsafe { GetUserNameExW(NAME_DISPLAY, buf.as_mut_ptr(), &mut size) } != 0;
+    if !ok || size as usize > buf.len() {
+        return None;
+    }
+    String::from_utf16(&buf[..size as usize]).ok()
+}
+
+fn local_full_name() -> Option<String> {
+    let user = std::env::var("USERNAME").ok().filter(|u| !u.is_empty())?;
+    let wide: Vec<u16> = user.encode_utf16().chain(std::iter::once(0)).collect();
+    let mut info: *mut u8 = std::ptr::null_mut();
+    // Level 10 is USER_INFO_10 { name, comment, usr_comment, full_name }, four
+    // wide-string pointers; any user may read it about themselves.
+    let status = unsafe { NetUserGetInfo(std::ptr::null(), wide.as_ptr(), 10, &mut info) };
+    if status != 0 || info.is_null() {
+        return None;
+    }
+    unsafe {
+        let full = *(info as *const *const u16).add(3);
+        let text = if full.is_null() {
+            None
+        } else {
+            let mut len = 0usize;
+            while len < 256 && *full.add(len) != 0 {
+                len += 1;
+            }
+            String::from_utf16(std::slice::from_raw_parts(full, len)).ok()
+        };
+        NetApiBufferFree(info.cast());
+        text
+    }
+}
+
+// ── Cursor ────────────────────────────────────────────────────────────────────
+
+/// The 60 Hz poll reads the cursor and flips click-through from it.
+pub const CURSOR_POLL: bool = true;
+
+/// Cursor position in physical screen pixels.
+pub fn cursor_physical() -> Option<(f64, f64)> {
+    let mut p = POINT::default();
+    unsafe { GetCursorPos(&mut p).ok()? };
+    Some((p.x as f64, p.y as f64))
+}
+
+/// True while the left mouse button is held — the only signal we get that a
+/// drag might be in flight before it reaches the window.
+pub fn left_button_down() -> bool {
+    unsafe { (GetAsyncKeyState(VK_LBUTTON.0 as i32) as u16 & 0x8000) != 0 }
+}
+
+// ── Island window ─────────────────────────────────────────────────────────────
+
+fn hwnd_of(win: &WebviewWindow) -> Option<HWND> {
+    let raw = win.hwnd().ok()?.0 as isize;
+    if raw == 0 {
+        return None;
+    }
+    Some(HWND(raw as *mut _))
+}
+
+/// Asks Windows 11 to round the window's corners, Acrylic included, so a card
+/// drawn with rounded corners has no square of blur showing past them, and to
+/// draw no border and no shadow around it: the card floats over whatever is
+/// behind it. Windows 10 has neither preference; nothing fails there.
+pub fn round_corners(win: &WebviewWindow) {
+    use windows::Win32::Graphics::Dwm::{
+        DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+    };
+    let Some(hwnd) = hwnd_of(win) else { return };
+    let pref = DWMWCP_ROUND;
+    let border: u32 = DWMWA_COLOR_NONE;
+    // SAFETY: a valid window handle and pointers to 4-byte values of the
+    // documented types for these attributes.
+    let _ = unsafe {
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_WINDOW_CORNER_PREFERENCE,
+            &pref as *const _ as *const core::ffi::c_void,
+            std::mem::size_of_val(&pref) as u32,
+        )
+    };
+    let _ = unsafe {
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_BORDER_COLOR,
+            &border as *const _ as *const core::ffi::c_void,
+            std::mem::size_of_val(&border) as u32,
+        )
+    };
+    // Acrylic extends the frame into the window, and with it DWM's shadow.
+    let _ = win.set_shadow(false);
+}
+
+/// Keeps the settings window from showing the "no drop" cursor.
+///
+/// wry installs its drop target by walking the webview's child windows **once**,
+/// when the webview is created. WebView2 creates `Chrome_RenderWidgetHostHWND`
+/// later and registers its own target on it; being the innermost window, that one
+/// wins, and since the page has no HTML5 drop handler it refuses everything.
+/// Revoking it makes OLE fall through to wry's target. The island is the other
+/// way round: it takes drops through WebView2's own target (see webview_drop.rs),
+/// so its windows are left alone.
+///
+/// Cheap and idempotent, so it is simply re-run whenever a drag might be starting.
+pub fn unblock_webview_drops(app: &AppHandle) {
+    let Some(win) = app.get_webview_window("settings") else { return };
+    let Some(hwnd) = hwnd_of(&win) else { return };
+    unsafe {
+        let _ = EnumChildWindows(Some(hwnd), Some(revoke_render_widget), LPARAM(0));
+    }
+}
+
+unsafe extern "system" fn revoke_render_widget(hwnd: HWND, _: LPARAM) -> BOOL {
+    let mut name = [0u16; 64];
+    let len = unsafe { GetClassNameW(hwnd, &mut name) };
+    if len > 0 {
+        let class = String::from_utf16_lossy(&name[..len as usize]);
+        if class == "Chrome_RenderWidgetHostHWND" {
+            let _ = unsafe { RevokeDragDrop(hwnd) };
+        }
+    }
+    true.into()
+}
+
+/// WS_EX_NOACTIVATE keeps clicks from stealing focus; WS_EX_TOOLWINDOW keeps the
+/// island out of Alt-Tab.
+pub fn make_non_activating(win: &WebviewWindow) {
+    let Some(hwnd) = hwnd_of(win) else { return };
+    unsafe {
+        let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        let want = ex | WS_EX_NOACTIVATE.0 as isize | WS_EX_TOOLWINDOW.0 as isize;
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, want);
+    }
+}
+
+/// Temporarily allow activation so a text field inside the island can be typed in.
+pub fn set_activating(win: &WebviewWindow, activating: bool) {
+    let Some(hwnd) = hwnd_of(win) else { return };
+    unsafe {
+        let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        let want = if activating {
+            ex & !(WS_EX_NOACTIVATE.0 as isize)
+        } else {
+            ex | WS_EX_NOACTIVATE.0 as isize
+        };
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, want);
+    }
+}
+
+/// Click-through here is the poll's WS_EX_TRANSPARENT toggle, not a region.
+pub fn set_input_region(_win: &WebviewWindow, _rect: Option<(f64, f64, f64, f64)>) {}
+
+/// The cursor poll already parks itself with the island (island.rs): nothing to do.
+pub fn set_pointer_watch(_active: bool) {}
+
+/// `set_position` already places a Win32 window on the right display.
+pub fn pin_to_monitor(_win: &WebviewWindow, _x: i32, _y: i32) {}
+
+// ── Session windows ("Open terminal") ─────────────────────────────────────────
+//
+// See session_window.rs: the relay's ancestors lead to the terminal or editor
+// window a Claude Code session runs in.
+
+/// The process on the other end of a relay connection.
+pub fn pipe_client_pid(handle: RawHandle) -> Option<u32> {
+    let mut pid = 0u32;
+    unsafe { GetNamedPipeClientProcessId(HANDLE(handle), &mut pid).ok()? };
+    (pid != 0).then_some(pid)
+}
+
+/// Whether the client on the other end of a relay pipe runs as this user.
+///
+/// The mirror of miku-hook's server check (hook/src/win.rs) and of Linux's
+/// peer_cred() uid check (pipe.rs): only our own user's relay may drive the
+/// island. A failure to answer is "not ours" — refusing costs the agent
+/// nothing (it leaves within its own deadline), while trusting would hand the
+/// island to another account.
+pub fn pipe_client_is_same_user(handle: RawHandle) -> bool {
+    let Some(mine) = current_user_sid() else { return false };
+    unsafe {
+        let Some(pid) = pipe_client_pid(handle) else { return false };
+        let Ok(process) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
+            return false;
+        };
+        let theirs = token_sid(process);
+        let _ = CloseHandle(process);
+        theirs.as_deref() == Some(mine.as_str())
+    }
+}
+
+/// Whether a program runs (by its executable's name, any case): the Mail pill asks for
+/// OUTLOOK.EXE before it starts PowerShell, so a closed Outlook costs nothing.
+pub fn process_running(exe: &str) -> bool {
+    process_table().values().any(|p| p.exe.eq_ignore_ascii_case(exe))
+}
+
+/// Every process, by ID: its parent and its executable's name.
+fn process_table() -> HashMap<u32, Proc> {
+    let mut out = HashMap::new();
+    unsafe {
+        let Ok(snapshot) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else { return out };
+        let mut entry = PROCESSENTRY32W {
+            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            ..Default::default()
+        };
+        let mut more = Process32FirstW(snapshot, &mut entry).is_ok();
+        while more {
+            let len = entry.szExeFile.iter().position(|c| *c == 0).unwrap_or(entry.szExeFile.len());
+            out.insert(
+                entry.th32ProcessID,
+                Proc {
+                    parent: entry.th32ParentProcessID,
+                    exe: String::from_utf16_lossy(&entry.szExeFile[..len]),
+                },
+            );
+            more = Process32NextW(snapshot, &mut entry).is_ok();
+        }
+        let _ = CloseHandle(snapshot);
+    }
+    out
+}
+
+/// The ancestors of a process, nearest first, below the desktop shell.
+pub fn process_ancestors(pid: u32) -> Vec<u32> {
+    session_window::ancestors(&process_table(), pid)
+}
+
+/// The readable name of the program that publishes a media session, from its app
+/// user model id.
+///
+/// The system media controls only hand over the id, and for a desktop browser
+/// that id is an opaque hash — Firefox reports "308046B0AF4A39CB". Windows keeps
+/// the name beside it: `HKCU\Software\Classes\AppUserModelId\<name>-<id>` has a
+/// `DisplayName` ("Mozilla Firefox") for every program that registers one, and
+/// Firefox's key is "FirefoxToast-308046B0AF4A39CB". This looks for a key that
+/// ends in the id — the id alone, or after a prefix — and returns that name.
+/// `None` when nothing registered it: the page then reads an unknown program as
+/// a browser, which is the safe answer with less to go on.
+pub fn program_for_app_user_model_id(id: &str) -> Option<String> {
+    let id = id.trim();
+    if id.is_empty() {
+        return None;
+    }
+    let root = reg_open_key(HKEY_CURRENT_USER, r"Software\Classes\AppUserModelId")?;
+    let found = reg_subkeys(root)
+        .into_iter()
+        .find(|sub| sub.eq_ignore_ascii_case(id) || sub.to_ascii_lowercase().ends_with(&format!("-{}", id.to_ascii_lowercase())));
+    let name = found.and_then(|sub| {
+        let hkey = reg_open_key(root, &sub)?;
+        let name = reg_read_string(hkey, "DisplayName");
+        let _ = unsafe { RegCloseKey(hkey) };
+        name
+    });
+    let _ = unsafe { RegCloseKey(root) };
+    name.filter(|n| !n.trim().is_empty())
+}
+
+/// The names of the subkeys of an open key, in the order Windows lists them.
+fn reg_subkeys(key: HKEY) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut index: u32 = 0;
+    loop {
+        let mut name = vec![0u16; 512];
+        let mut len = name.len() as u32;
+        let status = unsafe {
+            RegEnumKeyExW(key, index, Some(PWSTR(name.as_mut_ptr())), &mut len, None, None, None, None)
+        };
+        // ERROR_NO_MORE_ITEMS (259) ends the walk.
+        if status.0 != 0 {
+            break;
+        }
+        out.push(String::from_utf16_lossy(&name[..len as usize]));
+        index += 1;
+        if index > 4096 {
+            break;
+        }
+    }
+    out
+}
+
+/// `HKCU\…` → an open key, or None.
+fn reg_open_key(root: HKEY, sub: &str) -> Option<HKEY> {
+    let wide: Vec<u16> = sub.encode_utf16().chain(std::iter::once(0)).collect();
+    let mut out = HKEY::default();
+    // A WIN32_ERROR of 0 is success: it is not a Result, and `is_ok` would read
+    // every non-zero code — including success's siblings — as a failure.
+    let status = unsafe { RegOpenKeyExW(root, PCWSTR(wide.as_ptr()), Some(0), KEY_READ, &mut out) };
+    (status.0 == 0).then_some(out)
+}
+
+/// A `REG_SZ` (or `REG_EXPAND_SZ`) value from an open key.
+fn reg_read_string(key: HKEY, name: &str) -> Option<String> {
+    let wide: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+    let mut kind = REG_VALUE_TYPE::default();
+    let mut len: u32 = 0;
+    // Measure first: the value's size is the only way to size the buffer.
+    let status = unsafe {
+        RegQueryValueExW(key, PCWSTR(wide.as_ptr()), None, Some(&mut kind), None, Some(&mut len))
+    };
+    // ERROR_SUCCESS (0) or ERROR_MORE_DATA (234) both mean the size was written.
+    if (status.0 != 0 && status.0 != 234) || len == 0 {
+        return None;
+    }
+    let mut buf = vec![0u8; len as usize];
+    let status = unsafe {
+        RegQueryValueExW(
+            key,
+            PCWSTR(wide.as_ptr()),
+            None,
+            Some(&mut kind),
+            Some(buf.as_mut_ptr()),
+            Some(&mut len),
+        )
+    };
+    if status.0 != 0 {
+        return None;
+    }
+    // Both string kinds are UTF-16 with a trailing NUL, in bytes.
+    let words: Vec<u16> = buf
+        .chunks_exact(2)
+        .map(|c| u16::from_le_bytes([c[0], c[1]]))
+        .collect();
+    let text = String::from_utf16_lossy(&words);
+    Some(text.trim_end_matches('\0').trim().to_string())
+}
+
+#[cfg(test)]
+mod aumid_lookup {
+    /// A live probe: the Firefox id this machine reports resolves to its program
+    /// name, which is what spotify.rs sends to the page. Run with
+    /// `cargo test --lib aumid_lookup -- --nocapture` while a browser is open.
+    #[test]
+    fn an_id_from_a_running_program_resolves_to_a_name() {
+        // A machine with no browser running has nothing to find, and that must
+        // not fail the suite. The printed line is the evidence.
+        let firefox = super::program_for_app_user_model_id("308046B0AF4A39CB");
+        let unknown = super::program_for_app_user_model_id("this-id-belongs-to-nobody");
+        eprintln!("308046B0AF4A39CB -> {firefox:?}");
+        eprintln!("unknown           -> {unknown:?}");
+        // An id nobody registered is None, never a wrong program.
+        assert_eq!(unknown, None);
+        // An empty id is never a lookup.
+        assert_eq!(super::program_for_app_user_model_id("  "), None);
+    }
+}
+
+/// Visible top-level windows that are nobody's dialog and have a title:
+/// (handle, process ID, title).
+fn top_windows() -> Vec<(isize, u32, String)> {
+    unsafe extern "system" fn collect(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let list = unsafe { &mut *(lparam.0 as *mut Vec<(isize, u32, String)>) };
+        unsafe {
+            if !IsWindowVisible(hwnd).as_bool() || GetWindow(hwnd, GW_OWNER).is_ok() {
+                return true.into();
+            }
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(hwnd, Some(&mut pid as *mut u32));
+            let mut text = [0u16; 512];
+            let len = GetWindowTextW(hwnd, &mut text);
+            if len > 0 {
+                list.push((hwnd.0 as isize, pid, String::from_utf16_lossy(&text[..len as usize])));
+            }
+        }
+        true.into()
+    }
+    let mut list: Vec<(isize, u32, String)> = Vec::new();
+    unsafe {
+        let _ = EnumWindows(Some(collect), LPARAM(&mut list as *mut _ as isize));
+    }
+    list
+}
+
+/// The first of `pids` that owns a window.
+pub fn first_with_window(pids: &[u32]) -> Option<u32> {
+    let windows = top_windows();
+    pids.iter().copied().find(|pid| windows.iter().any(|(_, owner, _)| owner == pid))
+}
+
+/// What a session remembers: the ancestor that owns a window, or nothing.
+pub fn window_owners(ancestors: &[u32]) -> Vec<u32> {
+    first_with_window(ancestors).into_iter().collect()
+}
+
+fn bring_forward(raw: isize) -> bool {
+    let hwnd = HWND(raw as *mut _);
+    unsafe {
+        if !IsWindow(Some(hwnd)).as_bool() {
+            return false;
+        }
+        if IsIconic(hwnd).as_bool() {
+            let _ = ShowWindow(hwnd, SW_RESTORE);
+        } else {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+        }
+
+        // The island window has WS_EX_NOACTIVATE, so clicks on it do not make Miku
+        // the active foreground window. Windows blocks SetForegroundWindow unless the
+        // calling thread is attached to the foreground thread or owns foreground rights.
+        let fg_hwnd = GetForegroundWindow();
+        if fg_hwnd == hwnd {
+            return true;
+        }
+
+        let cur_thread = GetCurrentThreadId();
+        let fg_thread = if fg_hwnd.0.is_null() {
+            0
+        } else {
+            GetWindowThreadProcessId(fg_hwnd, None)
+        };
+        let target_thread = GetWindowThreadProcessId(hwnd, None);
+
+        let attached_fg = if fg_thread != 0 && fg_thread != cur_thread {
+            AttachThreadInput(cur_thread, fg_thread, true).as_bool()
+        } else {
+            false
+        };
+
+        let attached_target = if target_thread != 0 && target_thread != cur_thread && target_thread != fg_thread {
+            AttachThreadInput(cur_thread, target_thread, true).as_bool()
+        } else {
+            false
+        };
+
+        let _ = BringWindowToTop(hwnd);
+        let ok = SetForegroundWindow(hwnd).as_bool();
+
+        if attached_target {
+            let _ = AttachThreadInput(cur_thread, target_thread, false);
+        }
+        if attached_fg {
+            let _ = AttachThreadInput(cur_thread, fg_thread, false);
+        }
+
+        ok || GetForegroundWindow() == hwnd
+    }
+}
+
+/// Brings `pid`'s window forward — the one titled after `folder` if there are several.
+pub fn focus_process_window(pid: u32, folder: &str) -> bool {
+    let candidates: Vec<(isize, String)> = top_windows()
+        .into_iter()
+        .filter(|(_, owner, _)| *owner == pid)
+        .map(|(hwnd, _, title)| (hwnd, title))
+        .collect();
+    session_window::pick_window(&candidates, folder).is_some_and(|hwnd| bring_forward(*hwnd))
+}
+
+/// Brings forward the window a session remembered (`window_owners`).
+pub fn focus_session_window(owners: &[u32], folder: &str) -> bool {
+    owners.first().is_some_and(|pid| focus_process_window(*pid, folder))
+}
+
+/// Brings forward the window of a running app, by executable name.
+fn focus_app(exe: &str) -> bool {
+    let pids: Vec<u32> = process_table()
+        .into_iter()
+        .filter(|(_, p)| p.exe.eq_ignore_ascii_case(exe))
+        .map(|(pid, _)| pid)
+        .collect();
+    top_windows()
+        .into_iter()
+        .find(|(_, owner, _)| pids.contains(owner))
+        .is_some_and(|(hwnd, _, _)| bring_forward(hwnd))
+}
+
+/// The Claude desktop app: brought forward when it runs (Claude Code's own
+/// `claude.exe` has no window of its own, so it is never the one picked),
+/// started from the Squirrel path or its registered MSIX protocol otherwise.
+pub fn open_claude_desktop() -> bool {
+    open_claude_with(
+        || focus_app("claude.exe"),
+        || {
+            std::env::var_os("LOCALAPPDATA").is_some_and(|base| {
+                let exe = PathBuf::from(base).join("AnthropicClaude").join("claude.exe");
+                exe.is_file() && Command::new(exe).spawn().is_ok()
+            })
+        },
+        activate_claude_protocol,
+    )
+}
+
+fn open_claude_with(
+    focus: impl FnOnce() -> bool,
+    squirrel: impl FnOnce() -> bool,
+    protocol: impl FnOnce() -> bool,
+) -> bool {
+    focus() || squirrel() || protocol()
+}
+
+/// The MSIX manifest registers `claude`; let Windows resolve its current install.
+fn activate_claude_protocol() -> bool {
+    unsafe {
+        let initialized = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        // A Tauri thread may already use MTA. Keep that apartment: the Shell can
+        // delegate activation, and we must not uninitialize someone else's COM.
+        if initialized.is_err() && initialized != RPC_E_CHANGED_MODE {
+            return false;
+        }
+        let mut info = SHELLEXECUTEINFOW {
+            cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
+            fMask: SEE_MASK_FLAG_NO_UI | SEE_MASK_NOASYNC,
+            lpVerb: w!("open"),
+            lpFile: w!("claude://"),
+            nShow: SW_SHOWNORMAL.0,
+            ..Default::default()
+        };
+        let opened = ShellExecuteExW(&mut info).is_ok();
+        if initialized.is_ok() {
+            CoUninitialize();
+        }
+        opened
+    }
+}
+
+#[cfg(test)]
+mod claude_launch_tests {
+    use super::open_claude_with;
+    use std::cell::RefCell;
+
+    #[test]
+    fn tries_launchers_in_order_and_stops_after_success() {
+        for (focus, squirrel, protocol, expected, calls) in [
+            (true, true, true, true, vec!["focus"]),
+            (false, true, true, true, vec!["focus", "squirrel"]),
+            (false, false, true, true, vec!["focus", "squirrel", "protocol"]),
+            (false, false, false, false, vec!["focus", "squirrel", "protocol"]),
+        ] {
+            let seen = RefCell::new(Vec::new());
+            let result = open_claude_with(
+                || {
+                    seen.borrow_mut().push("focus");
+                    focus
+                },
+                || {
+                    seen.borrow_mut().push("squirrel");
+                    squirrel
+                },
+                || {
+                    seen.borrow_mut().push("protocol");
+                    protocol
+                },
+            );
+            assert_eq!(result, expected);
+            assert_eq!(seen.into_inner(), calls);
+        }
+    }
+}
+
+// ── Global shortcuts ──────────────────────────────────────────────────────────
+
+/// RegisterHotKey works in every Windows session.
+pub fn global_shortcuts_blocked() -> Option<&'static str> {
+    None
+}
+
+/// The character Ctrl+Alt(+Shift)+`vk` types on one of the installed keyboard
+/// layouts, if any. Windows reads Ctrl+Alt as AltGr, so registering such a
+/// combination as a global shortcut would stop the user typing that character
+/// (AltGr+E is € on most European layouts, AltGr+A is ą in Polish).
+pub fn ctrl_alt_types(vk: u16, shift: bool) -> Option<String> {
+    let mut layouts = [HKL::default(); 32];
+    let count = unsafe { GetKeyboardLayoutList(Some(&mut layouts[..])) };
+    let count = usize::try_from(count).unwrap_or(0).min(layouts.len());
+
+    let mut state = [0u8; 256];
+    state[VK_CONTROL.0 as usize] = 0x80;
+    state[VK_MENU.0 as usize] = 0x80;
+    if shift {
+        state[VK_SHIFT.0 as usize] = 0x80;
+    }
+    for &layout in &layouts[..count] {
+        let scan = unsafe { MapVirtualKeyExW(u32::from(vk), MAPVK_VK_TO_VSC, Some(layout)) };
+        let mut buf = [0u16; 8];
+        // Flag 0x4: leave the keyboard state alone, so a dead key met here
+        // doesn't change what the user types next (Windows 10 1607 and later).
+        let n = unsafe { ToUnicodeEx(u32::from(vk), scan, &state, &mut buf, 0x4, Some(layout)) };
+        let typed = match n {
+            // A dead key (´ ^ ¨…) is still something the user types with it.
+            n if n < 0 => String::from_utf16_lossy(&buf[..1]),
+            0 => continue,
+            n => String::from_utf16_lossy(&buf[..(n as usize).min(buf.len())]),
+        };
+        if typed.chars().any(|c| !c.is_control()) {
+            return Some(typed);
+        }
+    }
+    None
+}
+
+// ── Desktop Mochi window ──────────────────────────────────────────────────────
+
+/// Windows places a window wherever it is asked, and the cursor poll is there.
+pub fn desktop_mode() -> super::DesktopMode {
+    super::DesktopMode::Poll
+}
+
+/// Same window styles as the island: never takes focus, never in Alt-Tab (it
+/// is created without a taskbar button).
+pub fn prepare_desktop_window(win: &WebviewWindow, _mode: super::DesktopMode) -> bool {
+    make_non_activating(win);
+    true
+}
+
+/// The cursor poll toggles WS_EX_TRANSPARENT from the body hit test instead.
+pub fn set_desktop_shape(_win: &WebviewWindow, _shape: super::MouseShape) {}
+
+/// Layer-shell only (Linux).
+pub fn set_layer_margins(_win: &WebviewWindow, _x: f64, _y: f64) {}
+
+/// Layer-shell only (Linux).
+pub fn set_layer_overlay(_win: &WebviewWindow, _on: bool) {}
+
+/// Layer-shell only (Linux): the logical size of the display the island is on.
+pub fn layer_display(_island: &WebviewWindow, _mochi: &WebviewWindow) -> Option<(f64, f64)> {
+    None
+}
+
+// ── Flow dictation's pill ─────────────────────────────────────────────────────
+// On Windows the pill is placed with set_position and a cursor poll decides
+// click-through (flow/pill.rs), like the island.
+
+pub fn prepare_pill_window(win: &WebviewWindow, _mode: super::DesktopMode) -> bool {
+    make_non_activating(win);
+    let _ = win.set_ignore_cursor_events(true);
+    true
+}
+
+pub fn set_pill_edge(_win: &WebviewWindow, _edge: &str) {}
+
+pub fn set_pill_input(_win: &WebviewWindow, _rects: Vec<(f64, f64, f64, f64)>) {}
+
+/// Hides a window with a bare `SW_HIDE`. tao's `hide()` also rewrites the
+/// styles and refreshes the frame (`SWP_FRAMECHANGED`) of the window it just
+/// hid, and DWM then keeps drawing a white ghost of it — title bar and an
+/// empty client area — over the desktop until it is shown again. tao still
+/// believes the window visible, so it must come back with `show_window`:
+/// tao's own `show()` sees nothing to change and does nothing.
+pub fn hide_window(win: &WebviewWindow) {
+    match hwnd_of(win) {
+        Some(hwnd) => unsafe {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+        },
+        None => {
+            let _ = win.hide();
+        }
+    }
+}
+
+/// Shows a window, also one hidden by `hide_window`: tao's `show()` first, so
+/// it knows the window is visible (its `set_focus` checks that), then a bare
+/// `SW_SHOW` for when tao thought it never stopped being visible.
+pub fn show_window(win: &WebviewWindow) {
+    let _ = win.show();
+    if let Some(hwnd) = hwnd_of(win) {
+        unsafe {
+            let _ = ShowWindow(hwnd, SW_SHOW);
+        }
+    }
+}
