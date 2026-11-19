@@ -49,6 +49,12 @@ Miku's mood is your agents' status. You know what's going on without opening a s
 - 🗣️ **She says who's done**: クロード、できたよ！ when Claude finishes, これ、いいかな？ when a permission comes in, in a VOICEVOX voice.
 - 🌐 **Remote agents too**: agents on a server reach Miku through an SSH tunnel ([`docs/REMOTE.md`](docs/REMOTE.md)).
 
+<table>
+<tr>
+<td align="center"><img src="docs/media/miku/notice-agent-finished.png" width="460" alt="A finished agent grows a card out of the capsule, with Open terminal and OK buttons"><br><sub>an agent finishes — a card grows out of the capsule: <b>Open terminal</b> or <b>OK</b>, Miku watching over your session</sub></td>
+</tr>
+</table>
+
 ## The island
 
 One island at the top of the screen that changes shape with what's going on:
@@ -60,6 +66,14 @@ One island at the top of the screen that changes shape with what's going on:
 | **A song plays** | Her stage: cover, title, artist, Miku singing under the spotlights, and three lines of synced lyrics. |
 | **Open** | The widget deck: **PC** stats, **Music**, **Focus** (pomodoro), **Weather**, **Meeting** (Cal.com), **Shelf** and **Agents**. |
 | **An agent asks** | The approval card: Allow / Deny / Always, or the question's choices. |
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/miku/capsule-music.png" width="190" alt="The closed capsule playing music, with a live equalizer"><br><sub><b>Closed</b> — the capsule, with what's playing</sub></td>
+<td align="center"><img src="docs/media/miku/deck-pc.png" width="300" alt="The widget deck open on the PC page: CPU, RAM, Disk, Net"><br><sub><b>Open</b> — the PC page, your busiest process included</sub></td>
+<td align="center"><img src="docs/media/miku/deck-focus.png" width="300" alt="The Focus page, a pomodoro timer at 25:00"><br><sub><b>Focus</b> — 25 minutes of focus, then 5 of rest</sub></td>
+</tr>
+</table>
 
 ## Talk to your computer
 
@@ -75,6 +89,14 @@ One island at the top of the screen that changes shape with what's going on:
 - 🎵 Spotify and system media right in the island. Miku dances to the song itself.
 - 🎤 **Karaoke lyrics**: synced lyrics in a floating card, the current line filling with teal in time with the song. Japanese and Korean can show as rōmaji.
 - Lyrics only open for real songs, not for a YouTube Short.
+
+<div align="center">
+
+<img src="docs/media/miku/karaoke-stage.png" width="540" alt="Miku's stage: cover, title, synced lyrics, Miku singing under the spotlights">
+
+<sub>Her stage: cover, title, artist, three lines of synced lyrics — and Miku singing under the spotlights.</sub>
+
+</div>
 
 ## Everything else she does
 
@@ -163,6 +185,12 @@ Click the Miku icon in the system tray → **Settings…**
 | OpenCode, Amp, Hermes | Settings → the agent → **Install** (a plugin that starts the `miku-hook` relay) |
 | ZCode | Settings → Agents → ZCode → **Install** |
 | Any other | `--agent <name>` flag; see [`docs/AGENTS.md`](docs/AGENTS.md) |
+
+<table>
+<tr>
+<td align="center"><img src="docs/media/miku/hub-home.png" width="440" alt="The Miku window: settings home with the skin, dictation, agents and pills at a glance"><br><sub>The Miku window — every corner of her at a glance, her agents included.</sub></td>
+</tr>
+</table>
 
 ## Things to try
 
