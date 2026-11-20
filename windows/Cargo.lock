@@ -2811,7 +2811,7 @@ dependencies = [
 
 [[package]]
 name = "miku"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "arboard",
  "cpal",

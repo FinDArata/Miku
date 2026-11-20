@@ -1,5 +1,23 @@
 # Changelog — Miku
 
+## 0.0.9 — 2026-11-20
+
+### A card with nowhere to go presses the toast itself
+
+- A chat card whose toast named no place to open — Discord writes none — no longer just opens the app as a whole. The click goes to the Notification Center, finds the toast by the title it read from its payload, and presses the card with a real click: the same activation a click on the toast itself performs, the one that lands in the chat it was shown for. Invoke and `DoDefaultAction` proved to be no-ops on these cards, so the press is the click. The center folds back down unless it was already open or the app took the front, and a toast that never shows falls back to opening the app.
+
+### A launch that goes where the toast pointed
+
+- A target an app itself wrote is now followed everywhere. `line://` targets were dropped before; a `discord.com` address becomes the app's own `discord://app/open#<route>` form; and the target reaches the toast card, the hanging messages card and the deck's notice history instead of only one of them.
+
+### A README that shows the app
+
+- The README now shows the app itself — the karaoke stage, the widget deck, the capsule and the agent notices — in screenshots that sit on a dark themed backdrop instead of a flat white.
+
+### A door for contributors
+
+- `CONTRIBUTING.md` tells a newcomer where the app lives, what to run before a pull request, and where the strings go; `LICENSE-ASSETS.md` draws the line between the MIT-licensed source and the Miku brand, and says plainly how the Hatsune Miku designs the build draws are used.
+
 ## 0.0.8 — 2026-11-19
 
 ### A relay that vouches for itself
