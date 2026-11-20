@@ -2,7 +2,7 @@
 //
 // The icon is not a second drawing of Miku that could drift from the real one:
 // this script renders src/mochi/engine.ts through a headless browser and crops
-// the bust out of it, so changing the chibi (a new palette, a moved ear) changes
+// her face and her leek out of it onto a teal tile, so changing the chibi (a new palette, a moved ear) changes
 // the icon the next time this runs. The engine paints into a canvas, and a
 // canvas needs a renderer, hence the browser.
 //

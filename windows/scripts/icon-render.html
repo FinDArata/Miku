@@ -10,11 +10,12 @@
 // then hands the pixels back. scripts/gen-icons.mjs drives this page in a
 // headless browser, so the icon is the mascot itself and cannot drift from it.
 const { BotEngine } = await import("/src/mochi/engine.ts");
+const { chibiArms } = await import("/src/mochi/chibi.ts");
 
 /**
- * The icon's crop, in engine pixels: the head and the shoulders. The engine
- * draws the figure at 30 % of the canvas, so drawing into a canvas `size` wide
- * and cropping this box gives a bust that fills an icon.
+ * The icon: Miku's face and her leek, on a teal rounded tile. The engine draws
+ * the figure at 30 % of the canvas, so drawing into a canvas `size` wide and
+ * cropping a box of it gives a head that fills the tile.
  */
 function renderAt(size) {
   // Draw large, then let the browser scale down: the engine's own canvas has no
@@ -29,19 +30,21 @@ function renderAt(size) {
   const engine = new BotEngine();
   engine.setVariant("classic");
   engine.setState("idle", true);
+  engine.setHeldPose("leek");
+  // The arms ease toward a pose over real time; a one-frame render has to start there.
+  engine.arms = chibiArms("leek");
   engine.update(1 / 60);
   engine.draw(x, W, W);
 
-  // The bust: the head, the hair bands, the shoulders and the top of the tails,
-  // centred. The engine draws the chibi (src/mochi/chibi.ts) 440 design units
-  // wide across 62 % of the canvas, its point (260, 273) on the centre.
+  // The engine draws the chibi (src/mochi/chibi.ts) 440 design units wide
+  // across 62 % of the canvas, its point (260, 273) on the centre.
   const R = W * 0.3;
   const u = (W * 0.62) / 440;
   const cx = W / 2;
   const cy = W / 2 + R * 0.06;
-  // Design box to keep: x 60..460, y 36..436 — a square from above the hair
-  // bands down to the skirt, the tails cut where they leave it.
-  const box = { x: 60, y: 36, w: 400, h: 400 };
+  // Design box to keep: the hair bands down to the collar, shifted right so
+  // the leek she holds up beside her face stays in.
+  const box = { x: 140, y: 55, w: 290, h: 290 };
   const sx = cx + (box.x - 260) * u;
   const sy = cy + (box.y - 273) * u;
   const sw = box.w * u;
@@ -51,11 +54,17 @@ function renderAt(size) {
   out.width = size;
   out.height = size;
   const o = out.getContext("2d");
-  // Keep it square: the box is taller than wide, so letterbox on the width.
-  const scale = Math.min(size / sw, size / sh);
-  const dw = sw * scale;
-  const dh = sh * scale;
-  o.drawImage(c, sx, sy, sw, sh, (size - dw) / 2, (size - dh) / 2, dw, dh);
+  // Teal rounded tile (Miku's #39C5BB): the head is cut at the collar, so it
+  // needs a ground under it to read as an icon on any taskbar.
+  o.beginPath();
+  o.roundRect(0, 0, size, size, size * 0.22);
+  const g = o.createLinearGradient(0, 0, 0, size);
+  g.addColorStop(0, "#7fe0d6");
+  g.addColorStop(1, "#39c5bb");
+  o.fillStyle = g;
+  o.fill();
+  o.clip();
+  o.drawImage(c, sx, sy, sw, sh, 0, 0, size, size);
   return out.toDataURL("image/png");
 }
 
