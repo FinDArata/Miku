@@ -2,6 +2,128 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.1",
+      "items": [
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "Miku opens as a hologram",
+            "zh-Hans": "Miku 以全息投影登场",
+            "hi": "Miku होलोग्राम बनकर खुलती है",
+            "es": "Miku aparece como holograma",
+            "ar": "تظهر Miku كصورة ثلاثية الأبعاد",
+            "fr": "Miku apparaît en hologramme",
+            "bn": "Miku হলোগ্রাম হয়ে খোলে",
+            "pt-BR": "Miku abre como holograma",
+            "ru": "Miku появляется голограммой",
+            "id": "Miku muncul sebagai hologram",
+            "de": "Miku erscheint als Hologramm",
+            "tr": "Miku hologram olarak açılıyor",
+            "ko": "Miku가 홀로그램으로 등장해요",
+            "ja": "Miku がホログラムで登場",
+            "th": "Miku ปรากฏเป็นโฮโลแกรม",
+            "zh-Hant": "Miku 以全像投影登場"
+          },
+          "detail": {
+            "en": "She is projected onto your desktop, then shrinks into the notch. No window opens with her now.",
+            "zh-Hans": "她被投影到桌面上，然后缩进刘海里。现在启动时不再弹出窗口。",
+            "hi": "वह आपके डेस्कटॉप पर प्रोजेक्ट होती है, फिर नॉच में सिमट जाती है। अब उसके साथ कोई विंडो नहीं खुलती।",
+            "es": "Se proyecta en tu escritorio y luego se encoge hacia la muesca. Ya no se abre una ventana con ella.",
+            "ar": "تُعرض على سطح المكتب ثم تنكمش داخل النتوء. لم تعد تُفتح نافذة معها.",
+            "fr": "Elle est projetée sur votre bureau, puis se glisse dans l'encoche. Plus de fenêtre qui s'ouvre avec elle.",
+            "bn": "সে ডেস্কটপে প্রজেক্ট হয়, তারপর নচে ঢুকে যায়। এখন তার সাথে কোনো উইন্ডো খোলে না।",
+            "pt-BR": "Ela é projetada na sua área de trabalho e depois encolhe até o notch. Nenhuma janela abre junto agora.",
+            "ru": "Она проецируется на рабочий стол и уменьшается в вырез. Окно вместе с ней больше не открывается.",
+            "id": "Dia diproyeksikan ke desktop, lalu menyusut ke notch. Kini tidak ada jendela yang ikut terbuka.",
+            "de": "Sie wird auf den Desktop projiziert und schrumpft dann in die Notch. Kein Fenster öffnet sich mehr mit ihr.",
+            "tr": "Masaüstüne yansıtılır, sonra çentiğe küçülür. Artık onunla birlikte pencere açılmıyor.",
+            "ko": "바탕 화면에 투사된 뒤 노치 속으로 줄어들어요. 이제 창이 함께 열리지 않아요.",
+            "ja": "デスクトップに投影され、ノッチへ縮んで収まります。もうウィンドウは一緒に開きません。",
+            "th": "เธอถูกฉายบนเดสก์ท็อป แล้วหดเข้าไปในรอยบาก ตอนนี้ไม่มีหน้าต่างเปิดตามมาแล้ว",
+            "zh-Hant": "她被投影到桌面上，然後縮進瀏海裡。現在啟動時不再跳出視窗。"
+          }
+        },
+        {
+          "icon": "eye",
+          "title": {
+            "en": "Her face in the notch",
+            "zh-Hans": "刘海里是她的脸",
+            "hi": "नॉच में उसका चेहरा",
+            "es": "Su cara en la muesca",
+            "ar": "وجهها في النتوء",
+            "fr": "Son visage dans l'encoche",
+            "bn": "নচে তার মুখ",
+            "pt-BR": "O rosto dela no notch",
+            "ru": "Её лицо в вырезе",
+            "id": "Wajahnya di notch",
+            "de": "Ihr Gesicht in der Notch",
+            "tr": "Çentikte onun yüzü",
+            "ko": "노치 속 그녀의 얼굴",
+            "ja": "ノッチに彼女の顔",
+            "th": "ใบหน้าเธอในรอยบาก",
+            "zh-Hant": "瀏海裡是她的臉"
+          },
+          "detail": {
+            "en": "The small notch shows Miku's face instead of a tiny full figure.",
+            "zh-Hans": "小刘海里显示 Miku 的脸，而不是一个小小的全身像。",
+            "hi": "छोटे नॉच में अब पूरा छोटा शरीर नहीं, Miku का चेहरा दिखता है।",
+            "es": "La muesca pequeña muestra la cara de Miku en vez de una figura diminuta.",
+            "ar": "يعرض النتوء الصغير وجه Miku بدلاً من جسم كامل صغير جداً.",
+            "fr": "La petite encoche montre le visage de Miku au lieu d'une minuscule silhouette.",
+            "bn": "ছোট নচে এখন ছোট্ট পুরো শরীরের বদলে Miku-র মুখ দেখায়।",
+            "pt-BR": "O notch pequeno mostra o rosto da Miku em vez de uma figurinha inteira.",
+            "ru": "В маленьком вырезе теперь лицо Miku, а не крошечная фигурка целиком.",
+            "id": "Notch kecil kini menampilkan wajah Miku, bukan badan penuh yang mungil.",
+            "de": "Die kleine Notch zeigt Mikus Gesicht statt einer winzigen ganzen Figur.",
+            "tr": "Küçük çentik minicik tam boy yerine Miku'nun yüzünü gösteriyor.",
+            "ko": "작은 노치에 아주 작은 전신 대신 Miku의 얼굴이 보여요.",
+            "ja": "小さなノッチには、小さな全身ではなく Miku の顔が映ります。",
+            "th": "รอยบากเล็กแสดงใบหน้าของ Miku แทนร่างเต็มตัวจิ๋ว ๆ",
+            "zh-Hant": "小瀏海裡顯示 Miku 的臉，而不是一個小小的全身像。"
+          }
+        },
+        {
+          "icon": "heart",
+          "title": {
+            "en": "Poke her and she sulks",
+            "zh-Hans": "戳她，她会闹别扭",
+            "hi": "उसे छेड़ो तो वह रूठ जाती है",
+            "es": "Tócala y se enfurruña",
+            "ar": "انكزها وستغضب",
+            "fr": "Taquinez-la, elle boude",
+            "bn": "খোঁচালে সে রাগ করে",
+            "pt-BR": "Cutuque e ela fica emburrada",
+            "ru": "Потыкайте её, и она надуется",
+            "id": "Colek dia, dia bakal ngambek",
+            "de": "Stups sie an und sie schmollt",
+            "tr": "Dürt onu, surat asar",
+            "ko": "찌르면 삐져요",
+            "ja": "つつくとすねます",
+            "th": "จิ้มเธอแล้วเธอจะงอน",
+            "zh-Hant": "戳她，她會鬧彆扭"
+          },
+          "detail": {
+            "en": "Three quick pokes: a random sulky pose, and a line over her head that she says out loud.",
+            "zh-Hans": "快速戳三下：随机一个闹别扭的姿势，头顶冒出一句话，她还会说出来。",
+            "hi": "तीन बार जल्दी छेड़ो: एक रूठी हुई पोज़, और सिर के ऊपर एक लाइन जो वह बोलती भी है।",
+            "es": "Tres toques rápidos: una pose enfurruñada al azar y una frase sobre su cabeza que dice en voz alta.",
+            "ar": "ثلاث نكزات سريعة: وضعية غاضبة عشوائية، وجملة فوق رأسها تقولها بصوت عالٍ.",
+            "fr": "Trois petits coups : une pose boudeuse au hasard, et une phrase au-dessus de sa tête, dite à voix haute.",
+            "bn": "তিনবার দ্রুত খোঁচা: এলোমেলো রাগী ভঙ্গি, আর মাথার ওপরে একটা কথা যা সে জোরে বলে।",
+            "pt-BR": "Três cutucadas rápidas: uma pose emburrada aleatória e uma frase sobre a cabeça, dita em voz alta.",
+            "ru": "Три быстрых тычка: случайная обиженная поза и фраза над головой, которую она произносит вслух.",
+            "id": "Tiga colekan cepat: pose ngambek acak, plus kalimat di atas kepalanya yang dia ucapkan.",
+            "de": "Drei schnelle Stupser: eine zufällige Schmollpose und ein Satz über ihrem Kopf, den sie laut sagt.",
+            "tr": "Üç hızlı dürtme: rastgele küs bir poz ve başının üstünde sesli söylediği bir cümle.",
+            "ko": "빠르게 세 번 찌르면 랜덤으로 삐진 포즈와 함께 머리 위 말풍선의 대사를 소리 내어 말해요.",
+            "ja": "素早く3回つつくと、ランダムなすねポーズと、頭上のセリフを声に出して言います。",
+            "th": "จิ้มเร็ว ๆ สามครั้ง: ท่างอนแบบสุ่ม และประโยคเหนือหัวที่เธอพูดออกมาดัง ๆ",
+            "zh-Hant": "快速戳三下：隨機一個鬧彆扭的姿勢，頭頂冒出一句話，她還會說出來。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.0",
       "items": [
         {

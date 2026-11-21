@@ -1,5 +1,25 @@
 # Changelog — Miku
 
+## 0.1.1 — 2026-11-21
+
+### Miku opens as a hologram
+
+- The launch greeting no longer follows the shape Miku inherited from Coucou (a card drops, the mascot pops up with her name beside her, the card shrinks back). There is no island at first: a projection disc lights up on the desktop, and Miku is rendered into its column of light slice by slice, feet to head, glitching in her variant's colour, until she is solid and holds her pose of the day among drifting 0/1 bits. Then she shrinks up into whatever the island folds to — the compact notch, the closed strip, or nothing when the closed island is off — and the island takes over exactly where she landed. The spoken hello is unchanged.
+- The Miku window no longer opens along with Miku: "Open this window when you open Miku" is now off by default, and still in Settings for anyone who wants it.
+
+### Her face in the notch
+
+- The compact notch and the closed strip show Miku's face instead of her whole figure, which was a smudge at that size. Hats from the wardrobe keep their crown.
+
+### She sulks when poked
+
+- Three quick pokes no longer make her dizzy and swap the island for a pink "Too many hits" card. She sulks for three seconds in one of five new poses picked at random (pout with a puffed cheek, huff, sulk, stomp, glare), and the island keeps the view it had.
+- On the open island a speech bubble pops over her head with one of six lines, and she says it out loud (spoken cues made with VOICEVOX:四国めたん). Pokes on the deck's own full-length Miku now reach her; before, they hit a hidden Miku behind it.
+
+### No Coucou bubble at launch
+
+- The blue "…" activity badge the old greeting drew at its end is gone.
+
 ## 0.1.0 — 2026-11-21
 
 ### A new face for the app
