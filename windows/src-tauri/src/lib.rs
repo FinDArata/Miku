@@ -1344,7 +1344,7 @@ pub fn run() {
                 // writing it again adds it, so the window stays hidden at login.
                 let _ = handle.autolaunch().enable();
             }
-            let open_window = flow::get(&handle).map(|f| f.store.lock().unwrap_or_else(PoisonError::into_inner).prefs.open_at_launch).unwrap_or(true);
+            let open_window = flow::get(&handle).map(|f| f.store.lock().unwrap_or_else(PoisonError::into_inner).prefs.open_at_launch).unwrap_or(false);
             if open_window && !launched_at_login() {
                 show_hub(&handle, None);
             }

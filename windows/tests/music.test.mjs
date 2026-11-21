@@ -9,7 +9,7 @@ const { musicEnergy, voiceLevel, bandStats, BeatTracker } = await import("../src
 const { ambientFor } = await import("../src/mochi/ambient.ts");
 const { skyTint } = await import("../src/mochi/sky.ts");
 const { BreakTracker, nextMilestone, BREAK_AFTER_MS, BREAK_RESET_MS } = await import("../src/mochi/session.ts");
-const { greetSignature } = await import("../src/mochi/greeting.ts");
+const { greetPose } = await import("../src/mochi/greeting.ts");
 
 // ── Energy and loudness ──────────────────────────────────────────────────────
 
@@ -128,11 +128,11 @@ test("milestones fire in order, once, and never below what was shown", () => {
 
 // ── The hello ────────────────────────────────────────────────────────────────
 
-test("the greeting's signature is stable per day and cycles through three", () => {
-  assert.equal(greetSignature(0), "wave");
-  assert.equal(greetSignature(1), "bow");
-  assert.equal(greetSignature(2), "twirl");
-  assert.equal(greetSignature(3), "wave");
-  assert.equal(greetSignature(-1), "twirl");
-  assert.equal(greetSignature(1234567), greetSignature(1234567));
+test("the greeting's pose is stable per day and cycles through three", () => {
+  assert.equal(greetPose(0), "wink");
+  assert.equal(greetPose(1), "wave");
+  assert.equal(greetPose(2), "leek");
+  assert.equal(greetPose(3), "wink");
+  assert.equal(greetPose(-1), "leek");
+  assert.equal(greetPose(1234567), greetPose(1234567));
 });

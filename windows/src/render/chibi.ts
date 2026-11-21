@@ -21,13 +21,16 @@ if (q.get("greeting")) {
   const canvas = document.createElement("canvas");
   canvas.width = GREETING_W * dpr;
   canvas.height = GREETING_H * dpr;
-  canvas.style.cssText = `display:block;width:${GREETING_W}px;background:#000;border-radius:24px;margin-bottom:12px`;
+  // A desktop behind it: the hologram has no island of its own.
+  canvas.style.cssText = `display:block;width:${GREETING_W}px;background:linear-gradient(160deg,#2c3e50,#6c7f8f);border-radius:12px;margin-bottom:12px`;
   grid.before(canvas);
   const ctx = canvas.getContext("2d")!;
   const greeting = new Greeting();
   greeting.setVariant(variant);
-  greeting.start();
-  setInterval(() => greeting.start(), 6500);
+  // As the island runs it: the FSM folds it 0.6 s after it ends, and she shrinks into the notch.
+  const play = () => { greeting.start(); window.setTimeout(() => greeting.interrupt(), 3600); };
+  play();
+  setInterval(play, 6500);
   const loop = () => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     greeting.draw(ctx);

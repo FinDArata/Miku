@@ -1,10 +1,10 @@
-// The launch greeting (src/mochi/greeting.ts): Miku must never be cut off by
-// the island while it grows, while she bounces and waves, or while it shrinks
-// back to the compact island.
+// The launch greeting (src/mochi/greeting.ts), a hologram: Miku must never be
+// cut off by the island (invisible, but it still clips the greeting canvas)
+// while it grows, while she is projected, or while she shrinks into the notch.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { FLOOR, GREETING_END, GREETING_W, greetingPose, mochiBounds } from "../src/mochi/greeting.ts";
+import { COMPACT_LANDING, FOOT, GREETING_END, GREETING_W, faceAt, greetingPose, mochiBounds } from "../src/mochi/greeting.ts";
 import { Tracked } from "../src/core/anim.ts";
 import { COMPACT_W, NOTCH_H, NOTCH_W, VIEW_LAYOUTS } from "../src/core/layout.ts";
 
@@ -50,26 +50,43 @@ test("Miku stays inside the island for the whole greeting", () => {
 });
 
 test("Miku stays inside the island when the greeting is cut short", () => {
-  for (let tc = 0.3; tc < GREETING_END + 0.4; tc += 0.1) run(tc);
+  for (let tc = 0.1; tc < GREETING_END + 0.4; tc += 0.1) run(tc);
 });
 
-test("she rises through the stage floor, then waves in the middle", () => {
-  const onLift = greetingPose(0.5);
-  assert.ok(onLift.y > 120, `still on the lift at y=${onLift.y}`);
-  assert.equal(onLift.floor, FLOOR, "the stage floor hides what is under it");
-  const atWave = greetingPose(1.8);
-  assert.equal(atWave.x, 320);
-  // She waves with her hand, and her body sways along with it.
-  assert.ok(atWave.wave >= 0, "waving");
-  assert.notEqual(atWave.tilt, 0, "the tilt carries the wave");
-  assert.ok(atWave.lyric > 0 && atWave.lyric < 1, "her name is being sung");
-  const after = greetingPose(3.2);
-  assert.equal(after.wave, -1);
-  assert.equal(after.lyric, 1);
+test("no notch while she is projected: built feet first, then solid on the disc", () => {
+  const building = greetingPose(1.1);
+  assert.ok(building.build > 0 && building.build < 1, "being rendered");
+  assert.equal(building.solid, 0, "still a teal hologram");
+  assert.equal(building.notch, 0, "no notch yet");
+  const held = greetingPose(2.4);
+  assert.equal(held.build, 1);
+  assert.equal(held.solid, 1);
+  assert.equal(held.notch, 0);
+  assert.equal(held.x, FOOT.x);
+  assert.equal(held.y, FOOT.y);
 });
 
-test("she lands where the compact island's Miku sits", () => {
+test("she lands as the face in the compact island's notch", () => {
   const end = greetingPose(10, 5);
-  assert.equal(end.y, NOTCH_H / 2);
-  assert.equal(end.x, GREETING_W / 2 - COMPACT_W / 2 + 40);
+  const face = faceAt(COMPACT_LANDING);
+  assert.equal(end.notch, 1);
+  assert.equal(end.face, 1);
+  assert.equal(end.x, face.x);
+  assert.equal(end.y, face.y + face.r);
+  assert.equal(face.x, GREETING_W / 2 - COMPACT_W / 2 + 40, "where the island draws her face");
+  assert.equal(face.y, NOTCH_H / 2);
 });
+
+test("she lands wherever the island folds to: a closed strip, or no island at all", () => {
+  const strip = { w: 90, h: 24, r: 10, face: { x: 14, y: 12, r: 9 }, fill: ["#000", "#000"] };
+  const end = greetingPose(10, 5, strip);
+  assert.equal(end.x, GREETING_W / 2 - 45 + 14);
+  assert.equal(end.y, 12 + 9);
+  const b = mochiBounds(end);
+  assert.ok(b.bottom <= 24 && b.left >= GREETING_W / 2 - 45 && b.right <= GREETING_W / 2 + 45, "inside the strip");
+  // No closed island: nothing to land as, she fades out on the way up.
+  const none = { w: 0, h: 0, r: 0, face: null, fill: ["#000", "#000"] };
+  assert.equal(greetingPose(10, 5, none).face, 1, "gone");
+  assert.equal(mochiBounds(greetingPose(10, 5, none)), null, "nothing left drawn");
+});
+

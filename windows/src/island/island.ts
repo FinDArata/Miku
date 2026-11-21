@@ -179,6 +179,12 @@ export class Island {
   private ambient = new Ambient(this.ambientCanvas);
   private greeting = new Greeting();
   private greetingShown = false;
+  /** Until when the greeting's hologram still shrinks into the notch after the greeting view. */
+  private holoUntil = 0;
+  /** The hologram is on screen: the greeting, or its shrink into the notch. */
+  private get holo(): boolean {
+    return (State.mode === "expanded" && State.view === "greeting") || performance.now() < this.holoUntil;
+  }
   private seasons = new SeasonCache();
   /** "auto" → which Miku the season dresses her as, remembered for the day. */
   private variants = new VariantCache();
@@ -505,7 +511,6 @@ export class Island {
       "div",
       { id: "island-clip" },
       this.ambientCanvas,
-      this.greetingCanvas,
       this.contentEl,
     );
     // The body is laid out at the island's final size and never scaled: the
@@ -521,7 +526,10 @@ export class Island {
       this.closedEl,
       this.countdown,
     );
-    this.islandEl = h("div", { id: "island" }, this.bodyEl);
+    // The greeting's canvas sits on the shell, not in the body: the body takes
+    // the island's final size at once, and its clip would cut the hologram to
+    // the notch before she has shrunk into it. The shell clips nothing.
+    this.islandEl = h("div", { id: "island" }, this.bodyEl, this.greetingCanvas);
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.greetingCanvas.width = Math.round(EXPANDED_W * dpr);
@@ -560,8 +568,7 @@ export class Island {
           this.setMode("hidden");
           break;
         case "petit":
-          if (from === "miku") this.greeting.interrupt();
-          else if (from === "hidden" && !this.silentReveal) Sound.play("peek");
+          if (from === "hidden" && !this.silentReveal) Sound.play("peek");
           this.setMode("compact");
           if (from === "miku") State.view = this.openingView();
           if (!this.wasInIsland) this.fsm.mouseLeft();
@@ -581,6 +588,7 @@ export class Island {
           this.greeting.start();
           break;
       }
+      if (from === "miku" && (to === "petit" || to === "hidden")) this.landGreeting();
       State.notify();
       if (from === "hidden") this.onWake?.();
     };
@@ -588,6 +596,31 @@ export class Island {
 
   launch() {
     this.fsm.launch();
+  }
+
+  /**
+   * The greeting folded: the hologram shrinks into the island it folds into, on
+   * the greeting canvas, while the (still transparent) island closes around it.
+   * The island takes over once she has landed, drawn exactly where the canvas
+   * left her: same size, same fill, her face at the bot's own spot.
+   */
+  private landGreeting() {
+    const s = this.targetSize();
+    this.updateBotTargets();
+    const hidden = State.mode === "hidden";
+    const face = !hidden || closedIsland(State.settings.closedIsland) === "mochi"
+      ? { x: this.botCx.target, y: s.h / 2, r: (this.botSize.target * 0.6) / 2 }
+      : null;
+    this.greeting.interrupt({
+      w: hidden && !this.closedShows ? 0 : s.w,
+      h: s.h,
+      r: s.r,
+      face,
+      // As style.css paints #island, compact and closed.
+      fill: hidden ? ["#0a0f1a", "#121a2b"] : ["#0d1322", "#18213a"],
+    });
+    this.holoUntil = performance.now() + Greeting.COLLAPSE * 1000 + 40;
+    window.setTimeout(() => State.notify(), Greeting.COLLAPSE * 1000 + 60);
   }
 
   // ── Mode / view ─────────────────────────────────────────────────────────────
@@ -970,7 +1003,7 @@ export class Island {
     // These follow the island as it resizes, so they belong here rather than in
     // the state-driven DOM sync.
     this.clockEl.style.height = `${t.h}px`;
-    this.greetingCanvas.style.left = `${(t.w - EXPANDED_W) / 2}px`;
+    this.greetingCanvas.style.left = `${(w - EXPANDED_W) / 2}px`;
 
     const viewportW = window.innerWidth > 0 ? window.innerWidth : PANEL_W;
     this.notices?.place(hh);
@@ -1866,8 +1899,7 @@ export class Island {
     this.botCy.step(dt);
     this.botSize.step(dt);
 
-    const greetingActive = State.mode === "expanded" && State.view === "greeting";
-    if (greetingActive) {
+    if (this.holo) {
       const gctx = ctx2d(this.greetingCanvas);
       if (gctx) {
         const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1939,7 +1971,7 @@ export class Island {
         (botMoving || nowMs < this.closedAwakeUntil))
       : settling ||
         !this.botCx.settled || !this.botCy.settled || !this.botSize.settled ||
-        greetingActive || this.engine.busy || miniBotCount() > 0 ||
+        this.holo || this.engine.busy || miniBotCount() > 0 ||
         viewAnimating || this.ambient.active;
 
     if (busy) {
@@ -1968,7 +2000,7 @@ export class Island {
     // The deck and the update card draw their own full-length Miku
     // (views/deck.ts, views/update.ts); two of them would overlap.
     const deck = State.mode === "expanded" && (State.view === "overview" || State.view === "update");
-    const visible = p.opacity > 0 && !greetingActive && !away && !deck;
+    const visible = p.opacity > 0 && !this.holo && !away && !deck;
     this.botCanvas.style.opacity = visible ? "1" : "0";
 
     if (State.mode === "expanded" && !greetingActive && !away && !deck) {
@@ -2083,6 +2115,8 @@ export class Island {
       void Bridge.setMusicWatch(watchOn);
     }
 
+    // In the mini notch she is a face: her whole figure there is a smudge.
+    this.engine.faceOnly = State.mode !== "expanded";
     this.engine.update(dt);
     // Cleared in device pixels, the whole canvas. At a fractional scale (150 %)
     // the canvas is a whole number of pixels but `hCss * dpr` is not: clearing
@@ -2139,7 +2173,9 @@ export class Island {
     this.contentEl.style.opacity = live ? "1" : "0";
     this.contentEl.style.pointerEvents = live ? "auto" : "none";
     this.header.el.style.pointerEvents = live ? "auto" : "none";
-    this.greetingCanvas.style.display = greetingActive ? "block" : "none";
+    this.greetingCanvas.style.display = this.holo ? "block" : "none";
+    // The hologram has no island behind it (style.css, #island[data-holo]).
+    this.islandEl.dataset.holo = this.holo ? "1" : "";
 
     // Leaving the greeting, however it ends, lets its sound fade out.
     if (this.greetingShown && !greetingActive) this.greeting.leave();

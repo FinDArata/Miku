@@ -414,7 +414,6 @@ export class BotEngine {
   get poke(): Sulk | null {
     return now() < this.pokeUntil ? this.sulk : null;
   }
-  private greetWave = false;
   private arms = chibiArms("idle");
   private armsAt = 0;
 
@@ -439,38 +438,6 @@ export class BotEngine {
   setVariant(id: MikuVariantId) {
     const v = MIKU_VARIANTS[id];
     if (v && v !== this.variant) this.variant = v;
-  }
-
-  /**
-   * The launch greeting drives the pose itself (drop, bounce, slide, wave,
-   * settle) and hands the result here each frame, so it draws the same Miku with
-   * the same eye shapes as everything else instead of its own copy of the face.
-   */
-  syncGreeting(p: {
-    eye: "dot" | "happy" | "content";
-    open: number;
-    lookX: number;
-    lookY: number;
-    tint: number;
-    /** Seconds into the wave, or negative when she is not waving. */
-    wave?: number;
-  }) {
-    this.greetWave = (p.wave ?? -1) >= 0;
-    this.state = "idle";
-    this.cfg = BOT_STATES.idle;
-    this.permanentEye = null;
-    this.eyeOverride = p.eye === "dot" ? "pill" : p.eye === "happy" ? "happy" : "closed";
-    this.open = Math.max(0.05, p.open);
-    this.lookX = p.lookX;
-    this.lookY = p.lookY;
-    this.tint = p.tint;
-    // The greeting bobs the body through its own transform, so the engine's
-    // spring-driven offset stays neutral.
-    this.oy = 0;
-    this.ox = 0;
-    this.tilt = 0;
-    this.sx = 1;
-    this.sy = 1;
   }
 
   setState(next: BotStateName, force = false) {
@@ -1161,9 +1128,21 @@ export class BotEngine {
     // and the head is given those radii: a hat then sits on the crown instead of
     // floating over the body. Minis never wear one.
     const u = R / 158;
-    // The chibi fills the same 62 % of the box the old figure did.
-    const k = (W * 0.62) / CHIBI_FIGURE.w;
+    // The chibi fills the same 62 % of the box the old figure did; a face only
+    // (the mini notch) gives that 62 % to her head instead.
+    const face = chibi && this.faceOnly;
+    // Her hair spans about 290 units across: as wide as the bot's 60 % circle.
+    const k = face ? (W * 0.6) / 290 : (W * 0.62) / CHIBI_FIGURE.w;
     const headY = chibi ? (CHIBI_FIGURE.headY - CHIBI_FIGURE.cy) * k : -(150 - 64) * u;
+    if (face) {
+      // Her head on the box's centre, and nothing of her below it: open above
+      // (a hat keeps its crown), her head's round below.
+      x.translate(0, -headY);
+      x.beginPath();
+      x.rect(-W, headY - CHIBI_FIGURE.headRy * k * 0.9 - W * 2, W * 2, W * 2);
+      x.ellipse(0, headY, CHIBI_FIGURE.headRx * k * 1.08, CHIBI_FIGURE.headRy * k * 1.12, 0, 0, Math.PI * 2);
+      x.clip();
+    }
     const head: Head | null = this.isMini
       ? null
       : chibi
@@ -1222,6 +1201,9 @@ export class BotEngine {
     this.drawParticles(x, R, cx, cy);
   }
 
+  /** Draw her head only, as an avatar: the mini notch, where her whole figure is a smudge. */
+  faceOnly = false;
+
   /** A pose she holds until cleared (the Miku window: the open page's pose). */
   private heldPose: ChibiPose | null = null;
 
@@ -1235,7 +1217,7 @@ export class BotEngine {
     if (this.emote && n < this.emoteUntil) return this.emote;
     if (this.heldPose) return this.heldPose;
     if (this.permanentEmote) return this.permanentEmote;
-    if (this.greetWave || this.hands > 0.3) return "wave";
+    if (this.hands > 0.3) return "wave";
     if (this.dancingLevel > 0.5) return "dance";
     return this.state;
   }

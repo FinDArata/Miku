@@ -1,40 +1,34 @@
-// The launch greeting, "Live Stage": Miku comes up through the stage floor on a
-// lift, under her spotlight, while the footlights sweep on. She raises her hand
-// to the crowd, notes (snowflakes for Snow, petals for Sakura) drift around her
-// and her name lights up karaoke-style beside her. Then a small bow, one pulse of
-// the footlights, and she settles in the compact island.
-// Everything is laid out in the 640×150 reference space the island uses.
+// The launch greeting, "Hologram": no island at first. A projection disc lights
+// up on the desktop under the notch, a column of light rises from it, and Miku is
+// rendered into it slice by slice, glitching, feet to head — a virtual singer,
+// projected. Solid, she holds her pose of the day among drifting 0/1 bits. Then
+// she shrinks up into the notch's corner and the mini notch grows around her face.
+// The island stays transparent the whole time (style.css, #island[data-view=
+// "greeting"]); everything here is drawn on the greeting canvas, laid out in the
+// 640×150 space the island uses, the notch ending exactly where the real one sits.
 
 import { closeCurve } from "../core/anim";
 import { Sound } from "../core/sound";
-import { COMPACT_W, NOTCH_H, NOTCH_W } from "../core/layout";
-import { BotEngine } from "./engine";
-import { petal, snowflake, type MikuVariantId } from "./variants";
+import { COMPACT_W, NOTCH_H } from "../core/layout";
+import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "./chibi";
+import type { MikuVariantId } from "./variants";
 
 // ── Timing ────────────────────────────────────────────────────────────────────
 
 const T = {
-  sweep0: 0.08,
-  sweep1: 0.55,
-  rise0: 0.42,
-  rise1: 1.0,
-  pop0: 1.02,
-  pop1: 1.12,
-  lyric0: 1.35,
-  lyric1: 2.15,
-  notes0: 1.1,
-  notes1: 2.3,
-  tuck0: 2.3,
-  tuck1: 2.55,
-  bow0: 2.6,
-  bow1: 3.0,
-  tint0: 2.75,
-  tint1: 3.05,
-  pulse0: 2.95,
-  pulse1: 3.35,
-  end: 3.45,
-  autoLeave: 3.75,
+  // After the (invisible, but clipping) island has sprung open to full height.
+  disc0: 0.25,
+  disc1: 0.6,
+  build0: 0.6,
+  build1: 1.6,
+  solid0: 1.5,
+  solid1: 1.9,
+  bits0: 1.9,
+  bits1: 2.9,
+  end: 3.0,
+  /** The shrink into the notch: as long as the island's own close (340 ms). */
   COLLAPSE: 0.34,
+  autoLeave: 3.3,
 };
 
 export const GREETING_END = T.end;
@@ -48,20 +42,14 @@ export function greetingSound(hour: number, random = Math.random()): string {
   return GREETING_SOUNDS[Math.floor(random * GREETING_SOUNDS.length)];
 }
 
-// ── The day's hello ───────────────────────────────────────────────────────────
+// ── The day's pose ────────────────────────────────────────────────────────────
 
-/** Which signature move she greets with, in the wave's own window. */
-export type GreetSignature = "wave" | "bow" | "twirl";
-
-/**
- * Stable per day: the same hello all day, a different one tomorrow. `day` is
- * any day-ordinal (year*372 + month*31 + date does fine).
- */
-export function greetSignature(day: number): GreetSignature {
-  return (["wave", "bow", "twirl"] as const)[((day % 3) + 3) % 3];
+/** The pose she holds once solid: stable per day, a different one tomorrow. */
+export function greetPose(day: number): ChibiPose {
+  return (["wink", "wave", "leek"] as const)[((day % 3) + 3) % 3];
 }
 
-/** Today as a day-ordinal, for greetSignature. */
+/** Today as a day-ordinal, for greetPose. */
 export function todayNumber(d = new Date()): number {
   return d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
 }
@@ -70,32 +58,37 @@ export function todayNumber(d = new Date()): number {
 
 export const GREETING_W = 640;
 export const GREETING_H = 150;
-const C0 = { x: 320, y: 90 };
-const HB = 70;
-/** How much squash and stretch the chibi keeps: she is a figure, not a blob. */
-const SQUASH = 0.45;
-const EAR_X = 40;
-const EAR_HB = 17;
-const CARD = { x: 10, y: 36, w: 620, h: 104 };
-const CARD_R = 20;
-/** The stage floor: she is clipped here while the lift brings her up. */
-export const FLOOR = 138;
-/** Her box is `HB / 0.6` tall; the figure reaches 31 % of it below her centre. */
-const HALF_FIG = (HB / 0.6) * 0.31;
-/** Where the lift starts: her head just under the floor. */
-const LIFT_Y = FLOOR + HALF_FIG + 2;
-const LYRIC = { x: 372, y: 100, text: "Miku", font: '800 34px system-ui, "Segoe UI Variable Text", "Segoe UI", sans-serif' };
-
-/** IslandRestingLayout for the compact island the greeting lands in. */
-const COMPACT = {
-  width: COMPACT_W,
-  height: NOTCH_H,
-  botDiameter: Math.min(20, Math.max(0, NOTCH_H - 6)),
-  botCenterY: NOTCH_H / 2,
+/** Where she stands while projected: feet on the disc. */
+export const FOOT = { x: GREETING_W / 2, y: 130 };
+/** Her height while projected. */
+const SIZE = 100;
+/** The disc's radii. */
+const DISC = { rx: 60, ry: 9 };
+/**
+ * Where she lands: the island she folds into (centred under the top edge) and
+ * her face in it, `face.x` from its left edge — or no face when that island
+ * shows none, and no island at all (w = 0) when the closed island is turned off.
+ */
+export interface Landing {
+  w: number; h: number; r: number;
+  face: { x: number; y: number; r: number } | null;
+  /** Its fill, top to bottom: the island's own (style.css, #island). */
+  fill: readonly [string, string];
+}
+/** The compact island: the mini notch, her face at its left end (island.ts). */
+export const COMPACT_LANDING: Landing = {
+  w: COMPACT_W, h: NOTCH_H, r: 14, face: { x: 40, y: NOTCH_H / 2, r: 10 }, fill: ["#0d1322", "#18213a"],
 };
+/** Her face's centre in the 640 px space, for a landing. */
+export function faceAt(land: Landing): { x: number; y: number; r: number } {
+  const f = land.face ?? { x: land.w / 2, y: 0, r: 4 };
+  return { x: GREETING_W / 2 - land.w / 2 + f.x, y: f.y, r: f.r };
+}
+/** The chibi's design-space width per unit of height, and half of it. */
+const HALF_W = (CHIBI_W / CHIBI_H) * 0.5;
 
-/** Stage light colour per Miku: her hair, except Snow's white hair, lit ice-blue. */
-const STAGE: Record<MikuVariantId, readonly [number, number, number]> = {
+/** Hologram light per Miku: her hair, except Snow's white hair, lit ice-blue. */
+const LIGHT: Record<MikuVariantId, readonly [number, number, number]> = {
   classic: [57, 197, 187],
   snow: [127, 184, 240],
   sakura: [245, 168, 199],
@@ -103,383 +96,227 @@ const STAGE: Record<MikuVariantId, readonly [number, number, number]> = {
 
 // ── Easing ────────────────────────────────────────────────────────────────────
 
-const E = {
-  out: (t: number) => 1 - Math.pow(1 - t, 3),
-  easeIn: (t: number) => t * t * t,
-  inOut: (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
-  back: (t: number) => {
-    const c1 = 1.70158;
-    const c3 = c1 + 1;
-    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-  },
-};
-
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const seg = (t: number, a: number, b: number) => clamp((t - a) / (b - a), 0, 1);
-const bump = (t: number, a: number, b: number) => (t >= a && t < b ? Math.sin(Math.PI * seg(t, a, b)) : 0);
+const out = (t: number) => 1 - Math.pow(1 - t, 3);
 
 // ── Pose ──────────────────────────────────────────────────────────────────────
 
-type EyeType = "dot" | "happy" | "content";
-
 export interface Pose {
-  hb: number; x: number; y: number; sx: number; sy: number; tilt: number;
-  eye: EyeType; open: number; eyeRoll: number;
-  lookX: number; lookY: number;
-  handL: number; handR: number; wave: number;
-  tint: number;
-  /** Spotlight strength, 0…1. */
-  spot: number;
-  /** Her name beside her: how visible (`lyricA`) and how much of it is sung (`lyric`). */
-  lyricA: number; lyric: number;
-  /** Footlights and particles fade with this when the greeting is cut short. */
-  fx: number;
-  card: number;
-  /** She is not drawn below this line (the stage floor); ∞ once she is in the compact island. */
-  floor: number;
-  iw: number; ih: number;
+  /** Disc and light column, 0…1. */
+  disc: number;
+  /** How much of her is rendered, feet to head, 0…1. */
+  build: number;
+  /** 0 a teal hologram, 1 her own colours. */
+  solid: number;
+  /** The 0/1 bits around her, 0…1. */
+  bits: number;
+  /** 0 projected, 1 shrunk into the notch (on the close curve). */
+  shrink: number;
+  /** Feet position and height of the figure. */
+  x: number; y: number; size: number;
+  /** The island she lands in, 0…1, and her face in it. */
+  notch: number; face: number;
+  land: Landing;
 }
 
-function greetPose(t: number, sig: GreetSignature = "wave"): Pose {
-  // Island size, for the footlights' spread.
-  const gx = seg(t, 0, 0.5);
-  const g = Math.sin((Math.PI * gx) / 2) + 0.04 * Math.sin(Math.PI * gx) * gx;
-  const iw = lerp(NOTCH_W, GREETING_W, g);
-  const ih = lerp(COMPACT.height, GREETING_H, g);
-
-  const cx = C0.x;
-  const cy = C0.y;
-  const hb = t < T.rise0 ? 0 : HB;
-
-  // The lift: up from under the floor, a touch past her mark, then settles.
-  let y: number;
-  if (t < T.rise0) y = LIFT_Y;
-  else if (t < T.rise1) y = lerp(LIFT_Y, cy, E.back(seg(t, T.rise0, T.rise1)));
-  else y = cy;
-
-  // Body bob with the waving hand, and a little bow at the end.
-  if (t >= T.pop1 && t < T.tuck0) {
-    const w = t - T.pop1;
-    y += Math.sin(w * 2 * Math.PI * 2.5) * 0.02 * HB * clamp(w / 0.08, 0, 1);
-  }
-  const bowK = bump(t, T.bow0, T.bow1);
-  y += 0.1 * HB * bowK;
-
-  // Stretched while the lift moves fast, squashed as it stops.
-  const riseK = bump(t, T.rise0, T.rise0 + 0.4);
-  const landK = bump(t, 0.82, 1.04);
-  let sx = 1 - 0.1 * riseK + 0.14 * landK + 0.06 * bowK;
-  let sy = 1 + 0.16 * riseK - 0.14 * landK - 0.05 * bowK;
-  sx = 1 + (sx - 1) * SQUASH;
-  sy = 1 + (sy - 1) * SQUASH;
-
-  // Eyes
-  let eye: EyeType = "dot";
-  if (t >= 0.9 && t < 1.3) eye = "happy";
-  if (t >= T.bow0 && t < T.bow1) eye = "content";
-  const blink = (tb: number) => {
-    const k = seg(t, tb, tb + 0.12);
-    return k > 0 && k < 1 ? 1 - Math.sin(Math.PI * k) * 0.94 : 1;
-  };
-  const open = Math.min(blink(0.72), blink(1.75), blink(3.2));
-
-  // Look: at the crowd, then at her name as it lights up, then back.
-  let lookX = 0;
-  let lookY = 0;
-  if (t >= T.lyric0 && t < T.tuck0) {
-    const k = E.inOut(seg(t, T.lyric0, T.lyric0 + 0.25));
-    lookX = 0.55 * k;
-    lookY = 0.15 * k;
-  } else if (t >= T.tuck0) {
-    const k = E.inOut(seg(t, T.tuck0, T.tuck0 + 0.3));
-    lookX = lerp(0.55, 0, k);
-    lookY = lerp(0.15, 0, k);
-  }
-
-  // Hands
-  const handL = t < T.tuck0
-    ? E.back(seg(t, T.pop0, T.pop0 + 0.14))
-    : 1 - E.easeIn(seg(t, T.tuck0, T.tuck1 - 0.03));
-  const handR = t < T.tuck0
-    ? E.back(seg(t, T.pop0 + 0.04, T.pop0 + 0.18))
-    : 1 - E.easeIn(seg(t, T.tuck0 + 0.03, T.tuck1));
-  // How long she has been waving: the engine raises her hand, waveTilt() sways her.
-  const wave = t >= T.pop1 && t < T.tuck0 ? t - T.pop1 : -1;
-  let tilt = waveTilt({ wave } as Pose) + 0.05 * bowK;
-  // The day's signature, in the wave's own window and rhythm: a wave as ever,
-  // a bow that dips and rises, or a full twirl that lands back where it began.
-  if (wave >= 0 && sig !== "wave") {
-    const k = seg(wave, 0, T.tuck0 - T.pop1);
-    if (sig === "bow") tilt = -0.34 * Math.sin(Math.PI * k);
-    else tilt = Math.PI * 2 * E.inOut(k);
-  }
-
-  return {
-    hb, x: cx, y, sx, sy, tilt,
-    eye, open, eyeRoll: 0,
-    lookX, lookY,
-    handL, handR, wave,
-    tint: 0.6 * E.inOut(seg(t, T.tint0, T.tint1)),
-    spot: E.out(seg(t, 0.3, 0.75)),
-    lyricA: E.out(seg(t, T.rise1, T.rise1 + 0.3)),
-    lyric: E.inOut(seg(t, T.lyric0, T.lyric1)),
-    fx: 1,
-    card: seg(t, 0.12, 0.4),
-    floor: FLOOR,
-    iw, ih,
-  };
-}
-
-function smallPose(): Pose {
-  return {
-    hb: (EAR_HB * COMPACT.botDiameter) / 20,
-    x: GREETING_W / 2 - COMPACT.width / 2 + EAR_X,
-    y: COMPACT.botCenterY,
-    sx: 1, sy: 1, tilt: 0,
-    eye: "dot", open: 1, eyeRoll: 0,
-    lookX: 0, lookY: 0,
-    handL: 0, handR: 0, wave: -1,
-    tint: 0.6,
-    spot: 0, lyricA: 0, lyric: 0,
-    fx: 1,
-    card: 0,
-    floor: Number.POSITIVE_INFINITY,
-    iw: COMPACT.width, ih: COMPACT.height,
-  };
-}
-
-/** Miku's pose `t` seconds in; `tc` is when the collapse began (∞ if not yet). */
-export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY, sig: GreetSignature = "wave"): Pose {
-  if (t < tc) return greetPose(Math.min(t, T.end + 10), sig);
-  const a = greetPose(tc, sig);
-  const b = smallPose();
-  // Same curve and duration (340 ms) as the island shrinking around her, so the
-  // island never gets ahead of her and cuts her off.
-  const k = seg(t, tc, tc + T.COLLAPSE);
+/** Her pose `t` seconds in; `tc` is when the collapse began (∞ if not yet). */
+export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY, land = COMPACT_LANDING): Pose {
+  const FACE = faceAt(land);
+  const s = Math.min(t, tc);
+  /** How far into the collapse, over `d` seconds: 0 while there is none. */
+  const cut = (d: number) => (Number.isFinite(tc) ? seg(t, tc, tc + d) : 0);
+  const k = cut(T.COLLAPSE);
   const e = k >= 1 ? 1 : closeCurve(k);
-  const p: Pose = { ...a };
-  p.iw = lerp(a.iw, b.iw, e);
-  p.ih = lerp(a.ih, b.ih, e);
-  p.x = lerp(a.x, b.x, e);
-  p.y = lerp(a.y, b.y, e);
-  p.hb = lerp(a.hb, b.hb, e);
-  p.tint = lerp(a.tint, b.tint, e);
-  p.spot = a.spot * (1 - seg(t, tc, tc + 0.15));
-  p.lyricA = a.lyricA * (1 - seg(t, tc, tc + 0.1));
-  p.card = a.card * (1 - seg(t, tc, tc + 0.18));
-  p.handL = a.handL * (1 - seg(t, tc, tc + 0.15));
-  p.handR = a.handR * (1 - seg(t, tc, tc + 0.15));
-  p.tilt = a.tilt * (1 - e);
-  p.sx = lerp(a.sx, 1, e);
-  p.sy = lerp(a.sy, 1, e);
-  p.eyeRoll = a.eyeRoll * (1 - e);
-  const bk = seg(t, tc + 0.14, tc + 0.26);
-  p.eye = "dot";
-  p.open = bk > 0 && bk < 1 ? 1 - Math.sin(Math.PI * bk) * 0.94 : 1;
-  p.lookX = a.lookX * (1 - e);
-  p.lookY = a.lookY * (1 - e);
-  p.fx = 1 - seg(t, tc, tc + 0.2);
-  // The floor shrinks up with the island, so a greeting cut short mid-lift
-  // never shows her legs under the stage.
-  p.floor = e >= 1 ? b.floor : lerp(a.floor, COMPACT.height, e);
-  return p;
+  // Cut short mid-build, she leaves as much of her as was there.
+  return {
+    // Gone before the island, closing, reaches the floor it stands on.
+    disc: out(seg(s, T.disc0, T.disc1)) * (1 - cut(0.08)),
+    build: seg(s, T.build0, T.build1),
+    solid: seg(s, T.solid0, T.solid1) * (1 - e),
+    bits: seg(s, T.bits0, T.bits0 + 0.3) * (1 - seg(s, T.bits1 - 0.2, T.bits1)) * (1 - cut(0.1)),
+    shrink: e,
+    x: lerp(FOOT.x, FACE.x, e),
+    y: lerp(FOOT.y, FACE.y + FACE.r, e),
+    size: lerp(SIZE, FACE.r * 2.4, e),
+    notch: e,
+    // No face to land as: she fades out on the way up instead.
+    face: land.face ? seg(k, 0.7, 1) : seg(k, 0.4, 0.9),
+    land,
+  };
 }
 
 /**
- * The chibi waves with her own hand (the engine poses her from `wave`, see
- * BotEngine.syncGreeting). Her body only sways along, gently.
- */
-function waveTilt(p: Pose): number {
-  if (p.wave < 0) return 0;
-  const w = p.wave;
-  const rampIn = clamp(w / 0.08, 0, 1);
-  const rampOut = 1 - clamp((w - (T.tuck0 - T.pop1)) / (T.tuck1 - T.tuck0), 0, 1);
-  return Math.sin(w * 2 * Math.PI * 2.5) * 0.045 * rampIn * rampOut;
-}
-
-/**
- * Bounding box of the figure in the 640×150 space as it is painted — what must
- * stay inside the island so nothing of it is cut off. The engine draws the
- * whole chibi inside a square of `hb / 0.6`, filling about 62 % of its height;
- * the stage floor clips whatever is still under it.
+ * The box of everything drawn for her in the 640×150 space — what must stay
+ * inside the island so nothing is cut off. While projected that is her figure
+ * (and its glitch) on the disc; shrunk, her face in the notch.
  */
 export function mochiBounds(p: Pose): { left: number; right: number; top: number; bottom: number } | null {
-  const hh = p.hb / 2;
-  if (hh <= 0.4) return null;
-  const side = p.hb / 0.6;
-  const halfW = side * 0.5 * 0.62;
-  const top = p.y + (-side * 0.5 + side * 0.19) * p.sy;
-  const bottom = Math.min(p.floor, p.y + (-side * 0.5 + side * 0.81) * p.sy);
-  if (top >= bottom) return null;
-  return { left: p.x - halfW * p.sx, right: p.x + halfW * p.sx, top, bottom };
+  const boxes: { left: number; right: number; top: number; bottom: number }[] = [];
+  if (p.disc > 0) {
+    const rx = DISC.rx * p.disc;
+    boxes.push({ left: FOOT.x - rx, right: FOOT.x + rx, top: FOOT.y - SIZE - 6, bottom: FOOT.y + 2 + DISC.ry * p.disc });
+  }
+  if (p.build > 0 && p.face < 1) {
+    const half = p.size * HALF_W + GLITCH * (1 - p.shrink) * p.size / SIZE;
+    boxes.push({ left: p.x - half, right: p.x + half, top: p.y - p.size, bottom: p.y });
+  }
+  if (p.notch > 0 && p.land.w > 0) {
+    const half = (p.land.w * p.notch) / 2;
+    boxes.push({ left: GREETING_W / 2 - half, right: GREETING_W / 2 + half, top: 0, bottom: p.land.h * Math.min(1, p.notch * 1.5) });
+  }
+  if (boxes.length === 0) return null;
+  return {
+    left: Math.min(...boxes.map((b) => b.left)),
+    right: Math.max(...boxes.map((b) => b.right)),
+    top: Math.min(...boxes.map((b) => b.top)),
+    bottom: Math.max(...boxes.map((b) => b.bottom)),
+  };
 }
 
-// ── Particles (seeded LCG, so every launch plays the same show) ───────────────
-
-interface Note { t0: number; dx: number; y0: number; drift: number; size: number; spin: number; glyph: string }
-
-const NOTES: Note[] = (() => {
-  let seed = 7;
-  const rnd = () => {
-    seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff;
-    return seed / 0x7fffffff;
-  };
-  return Array.from({ length: 14 }, (_, i) => ({
-    t0: lerp(T.notes0, T.notes1 - 0.9, i / 13) + rnd() * 0.08,
-    // Either side of her, never over her face.
-    dx: (rnd() < 0.5 ? -1 : 1) * (40 + rnd() * 70),
-    y0: rnd(),
-    drift: (rnd() - 0.5) * 16,
-    size: 0.8 + rnd() * 0.5,
-    spin: (rnd() - 0.5) * 2,
-    glyph: rnd() < 0.6 ? "♪" : "♫",
-  }));
-})();
-const NOTE_LIFE = 1.0;
-const FOOTLIGHTS = 22;
-
-const rgba = (c: readonly number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+/** How far a slice is thrown sideways while it glitches in. */
+const GLITCH = 14;
 
 // ── Drawing ───────────────────────────────────────────────────────────────────
 
-function rr(x: CanvasRenderingContext2D, X: number, Y: number, W: number, H: number, R: number) {
-  const r = Math.max(0, Math.min(R, W / 2, H / 2));
+const rgba = (c: readonly number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+/** The disc on the desktop and the column of light rising from it. */
+function drawDisc(x: CanvasRenderingContext2D, p: Pose, c: readonly number[]) {
+  const d = p.disc;
+  if (d <= 0.01) return;
+  const top = FOOT.y - SIZE - 6;
+  const g = x.createLinearGradient(0, FOOT.y, 0, top);
+  g.addColorStop(0, rgba(c, 0.3 * d));
+  g.addColorStop(1, rgba(c, 0));
+  x.fillStyle = g;
+  const rise = out(clamp(d * 1.3 - 0.3, 0, 1));
+  x.fillRect(FOOT.x - DISC.rx + 4, FOOT.y - (FOOT.y - top) * rise, (DISC.rx - 4) * 2, (FOOT.y - top) * rise);
+  x.save();
+  x.strokeStyle = rgba(c, 0.9 * d);
+  x.lineWidth = 2;
+  x.shadowColor = rgba(c, d);
+  x.shadowBlur = 10;
   x.beginPath();
-  x.moveTo(X + r, Y);
-  x.arcTo(X + W, Y, X + W, Y + H, r);
-  x.arcTo(X + W, Y + H, X, Y + H, r);
-  x.arcTo(X, Y + H, X, Y, r);
-  x.arcTo(X, Y, X + W, Y, r);
-  x.closePath();
+  x.ellipse(FOOT.x, FOOT.y + 2, DISC.rx * d, DISC.ry * d, 0, 0, Math.PI * 2);
+  x.stroke();
+  x.fillStyle = rgba(c, 0.18 * d);
+  x.fill();
+  x.restore();
 }
 
-/** The spotlight: a soft cone from the top of the stage down onto her mark. */
-function drawSpot(x: CanvasRenderingContext2D, p: Pose, c: readonly number[]) {
-  if (p.spot <= 0.01) return;
-  const top = CARD.y;
-  const g = x.createLinearGradient(0, top, 0, FLOOR);
-  g.addColorStop(0, rgba(c, 0.02 * p.spot));
-  g.addColorStop(1, rgba(c, 0.2 * p.spot));
+/** Her figure, rendered off-screen so it can be sliced, tinted and moved. */
+const SLICES = 30;
+function drawFigure(
+  x: CanvasRenderingContext2D, off: HTMLCanvasElement, p: Pose, t: number,
+  pose: ChibiPose, variant: MikuVariantId, c: readonly number[],
+) {
+  if (p.build <= 0 || p.face >= 1) return;
+  // Rendered at its projected size, twice over for sharpness, whatever she shrinks to.
+  const S = 2;
+  const w = Math.ceil(SIZE * HALF_W * 2 + 8);
+  const h = SIZE + 6;
+  if (off.width !== w * S) { off.width = w * S; off.height = h * S; }
+  const o = off.getContext("2d");
+  if (!o) return;
+  o.setTransform(1, 0, 0, 1, 0, 0);
+  o.clearRect(0, 0, off.width, off.height);
+  const k = (SIZE / CHIBI_H) * S;
+  o.setTransform(k, 0, 0, k, (w * S) / 2 - (CHIBI_W / 2) * k, (h - 2) * S - 480 * k);
+  drawChibi(o, pose, t, variant, { noShadow: true });
+  o.setTransform(1, 0, 0, 1, 0, 0);
+  o.globalCompositeOperation = "source-atop";
+  o.fillStyle = rgba(c, 0.75 * (1 - p.solid));
+  o.fillRect(0, 0, off.width, off.height);
+  o.globalCompositeOperation = "source-over";
+
+  const scale = p.size / SIZE;
+  const sh = h / SLICES;
+  x.save();
+  x.globalAlpha = 1 - p.face;
+  x.translate(p.x, p.y);
+  x.scale(scale, scale);
+  // A soft edge in her light, so she holds up on a white wallpaper too.
+  x.shadowColor = rgba(c, 0.75);
+  x.shadowBlur = 7;
+  for (let i = 0; i < SLICES; i++) {
+    // Slices arrive bottom → top, each thrown sideways a moment, then settling.
+    const from = 1 - (i + 1) / SLICES;
+    const show = clamp((p.build - from) * SLICES * 0.6, 0, 1);
+    if (show <= 0) continue;
+    const jit = (1 - show) * GLITCH * Math.sin(i * 12.9 + t * 40)
+      + Math.sin(i * 3.1 + t * 25) * 1.4 * (1 - p.solid) * (1 - p.shrink);
+    x.globalAlpha = show * (1 - p.face);
+    x.drawImage(off, 0, i * sh * S, w * S, sh * S, -w / 2 + jit, -h + 2 + i * sh, w, sh + 0.5);
+  }
+  x.restore();
+  // The scanline riding up while she builds.
+  if (p.build < 1 && p.shrink === 0) {
+    const y = FOOT.y - (h - 2) * p.build;
+    x.fillStyle = rgba(c, 0.95);
+    x.fillRect(FOOT.x - DISC.rx, y, DISC.rx * 2, 2);
+    x.fillStyle = rgba(c, 0.22);
+    x.fillRect(FOOT.x - DISC.rx, y - 6, DISC.rx * 2, 12);
+  }
+}
+
+/** 0/1 bits drifting up around her while she holds the pose. */
+function drawBits(x: CanvasRenderingContext2D, p: Pose, t: number, c: readonly number[]) {
+  if (p.bits <= 0.01) return;
+  x.save();
+  x.font = "600 10px Consolas, monospace";
+  x.textAlign = "center";
+  for (let i = 0; i < 10; i++) {
+    const q = (t * 0.6 + i / 10) % 1;
+    x.fillStyle = rgba(c, p.bits * (1 - q) * 0.85);
+    x.fillText(i % 2 ? "1" : "0", FOOT.x + Math.sin(i * 2.3) * 70, FOOT.y - 14 - q * 100);
+  }
+  x.restore();
+}
+
+/** The island growing around her face, where island.ts will draw the real one. */
+function drawNotch(x: CanvasRenderingContext2D, p: Pose, t: number, variant: MikuVariantId, c: readonly number[]) {
+  const land = p.land;
+  if (p.notch <= 0 || land.w <= 0) return;
+  const w = land.w * p.notch;
+  const h = land.h * Math.min(1, p.notch * 1.5);
+  const X = GREETING_W / 2 - w / 2;
+  const r = Math.min(land.r, h / 2);
+  const g = x.createLinearGradient(0, 0, 0, land.h);
+  g.addColorStop(0, land.fill[0]);
+  g.addColorStop(1, land.fill[1]);
   x.fillStyle = g;
   x.beginPath();
-  x.moveTo(C0.x - 22, top);
-  x.lineTo(C0.x + 22, top);
-  x.lineTo(C0.x + 92, FLOOR);
-  x.lineTo(C0.x - 92, FLOOR);
+  x.moveTo(X, 0);
+  x.lineTo(X + w, 0);
+  x.lineTo(X + w, h - r);
+  x.arcTo(X + w, h, X + w - r, h, r);
+  x.lineTo(X + r, h);
+  x.arcTo(X, h, X, h - r, r);
   x.closePath();
   x.fill();
-  // The pool of light on the floor.
-  const pool = x.createRadialGradient(C0.x, FLOOR, 0, C0.x, FLOOR, 110);
-  pool.addColorStop(0, rgba(c, 0.32 * p.spot));
-  pool.addColorStop(1, rgba(c, 0));
-  x.fillStyle = pool;
-  x.fillRect(C0.x - 110, FLOOR - 30, 220, 32);
-}
-
-/** Footlights: on one by one from the left, then one pulse at the bow. */
-function drawFootlights(x: CanvasRenderingContext2D, t: number, p: Pose, c: readonly number[]) {
-  const span = Math.min(p.iw, CARD.w) - 40;
-  const left = GREETING_W / 2 - span / 2;
-  const pulseT = seg(t, T.pulse0, T.pulse1);
-  for (let i = 0; i < FOOTLIGHTS; i++) {
-    const f = i / (FOOTLIGHTS - 1);
-    const on = T.sweep0 + f * (T.sweep1 - T.sweep0);
-    if (t < on) continue;
-    // A flash as it comes on, settling to a glow.
-    let a = 0.35 + 0.65 * Math.exp(-(t - on) * 7);
-    // The pulse runs left to right too.
-    const pk = pulseT > 0 && pulseT < 1 ? Math.max(0, 1 - Math.abs(pulseT * 1.4 - f - 0.2) * 5) : 0;
-    a = Math.min(1, a + 0.65 * pk) * p.fx;
-    const px = left + f * span;
-    const glow = x.createRadialGradient(px, FLOOR, 0, px, FLOOR, 9);
-    glow.addColorStop(0, rgba(c, 0.55 * a));
-    glow.addColorStop(1, rgba(c, 0));
-    x.fillStyle = glow;
-    x.fillRect(px - 9, FLOOR - 9, 18, 18);
-    x.fillStyle = `rgba(255,255,255,${0.9 * a})`;
-    x.fillRect(px - 1, FLOOR - 1, 2, 2);
-  }
-  // The stage edge lights up with the pulse.
-  const edge = bump(t, T.pulse0, T.pulse1) * p.fx;
-  if (edge > 0.01) {
-    const g = x.createLinearGradient(CARD.x, 0, CARD.x + CARD.w, 0);
-    g.addColorStop(0, rgba(c, 0));
-    g.addColorStop(0.5, rgba(c, 0.9 * edge));
-    g.addColorStop(1, rgba(c, 0));
-    x.fillStyle = g;
-    x.fillRect(CARD.x, CARD.y + CARD.h - 2, CARD.w, 2);
-  }
-}
-
-/** Notes rise around her; Snow's snowflakes and Sakura's petals fall instead. */
-function drawNotes(x: CanvasRenderingContext2D, t: number, p: Pose, variant: MikuVariantId, c: readonly number[]) {
-  const falls = variant !== "classic";
-  for (const n of NOTES) {
-    const k = (t - n.t0) / NOTE_LIFE;
-    if (k <= 0 || k >= 1) continue;
-    const px = C0.x + n.dx + Math.sin(k * Math.PI * 2) * 6 + n.drift * k;
-    const py = falls ? lerp(CARD.y + 6 + n.y0 * 20, FLOOR - 14, k) : lerp(FLOOR - 30 - n.y0 * 20, CARD.y + 8, k);
-    x.save();
-    x.globalAlpha = Math.sin(Math.PI * k) * p.fx;
-    x.translate(px, py);
-    x.rotate(n.spin * k);
-    if (variant === "snow") snowflake(x, 0, 0, 5 * n.size, "rgba(220,236,255,0.95)");
-    else if (variant === "sakura") petal(x, 5 * n.size);
-    else {
-      x.fillStyle = rgba(c, 1);
-      x.font = `700 ${Math.round(15 * n.size)}px system-ui, sans-serif`;
-      x.textAlign = "center";
-      x.textBaseline = "middle";
-      x.fillText(n.glyph, 0, 0);
-    }
-    x.restore();
-  }
-}
-
-/** Her name, sung karaoke-style: the stage colour wipes across the dim letters. */
-function drawLyric(x: CanvasRenderingContext2D, p: Pose, c: readonly number[]) {
-  if (p.lyricA <= 0.01) return;
+  if (p.face <= 0 || !land.face) return;
+  // Her face, the way the island shows her there (BotEngine.faceOnly).
+  const FACE = faceAt(land);
+  const k = FACE.r / 118;
   x.save();
-  x.globalAlpha = p.lyricA;
-  x.font = LYRIC.font;
-  x.textBaseline = "alphabetic";
-  x.textAlign = "left";
-  const w = x.measureText(LYRIC.text).width;
-  x.fillStyle = "rgba(255,255,255,0.16)";
-  x.fillText(LYRIC.text, LYRIC.x, LYRIC.y);
-  if (p.lyric > 0) {
-    x.beginPath();
-    x.rect(LYRIC.x - 2, LYRIC.y - 40, (w + 4) * p.lyric, 52);
-    x.clip();
-    x.shadowColor = rgba(c, 0.8);
-    x.shadowBlur = 12;
-    x.fillStyle = rgba(c, 1);
-    x.fillText(LYRIC.text, LYRIC.x, LYRIC.y);
-  }
+  x.globalAlpha = p.face;
+  x.beginPath();
+  x.arc(FACE.x, FACE.y, FACE.r, 0, Math.PI * 2);
+  x.clip();
+  x.translate(FACE.x - 260 * k, FACE.y - 182 * k);
+  x.scale(k, k);
+  drawChibi(x, "idle", t, variant, { noShadow: true });
   x.restore();
-}
-
-function drawMiku(x: CanvasRenderingContext2D, p: Pose, engine: BotEngine) {
-  const hh = p.hb / 2;
-  if (hh <= 0.4) return;
-
-  // The mascot is the island's own engine, so the greeting can never show a
-  // different character from the one that lands in the compact island.
-  x.save();
-  if (Number.isFinite(p.floor)) {
+  // A blink of her light where she lands.
+  const flash = 1 - p.face;
+  if (flash > 0) {
+    x.fillStyle = rgba(c, 0.5 * flash);
     x.beginPath();
-    x.rect(0, 0, GREETING_W, p.floor);
-    x.clip();
+    x.arc(FACE.x, FACE.y, FACE.r + 8 * flash, 0, Math.PI * 2);
+    x.fill();
   }
-  x.translate(p.x, p.y);
-  x.rotate(p.tilt);
-  x.scale(p.sx, p.sy);
-  const side = p.hb / 0.6; // the engine draws the body at 60 % of its box
-  engine.syncGreeting(p);
-  x.translate(-side / 2, -side / 2);
-  engine.draw(x, side, side);
-  x.restore();
 }
 
 // ── Controller ────────────────────────────────────────────────────────────────
@@ -494,27 +331,26 @@ export class Greeting {
   private fired = false;
   private timers: number[] = [];
   private variant: MikuVariantId = "classic";
-  /** The island's own engine, so the greeting shows the same Miku it lands as. */
-  private engine = new BotEngine();
-  /** Today's hello, picked once at start. */
-  private sig: GreetSignature = "wave";
+  private off: HTMLCanvasElement | null = null;
+  /** Today's pose, picked once at start. */
+  private pose: ChibiPose = "wink";
   private sound = greetingSound(12, 0);
+  private land: Landing = COMPACT_LANDING;
 
   onComplete: (() => void) | null = null;
 
   /** Which Miku: the wardrobe's choice, as the island draws it too. */
   setVariant(id: MikuVariantId) {
     this.variant = id;
-    this.engine.setVariant(id);
   }
 
   start() {
     this.startMs = performance.now();
     this.tc = Number.POSITIVE_INFINITY;
     this.fired = false;
-    this.sig = greetSignature(todayNumber());
+    this.pose = greetPose(todayNumber());
     this.cancelTimers();
-    // The score plays from the start; it outlives greetComplete a little on
+    // The hello plays from the start; it outlives greetComplete a little on
     // purpose and fades when the greeting view goes away (see leave()).
     this.sound = greetingSound(new Date().getHours());
     Sound.play(this.sound);
@@ -526,9 +362,10 @@ export class Greeting {
     if (this.tc >= T.autoLeave) this.tc = Number.POSITIVE_INFINITY;
   }
 
-  /** Mouse left — collapse from now. */
-  interrupt() {
-    const t = (performance.now() - this.startMs) / 1000;
+  /** The greeting is over (mouse left, or the FSM moved on): shrink into `land` from now. */
+  interrupt(land: Landing = COMPACT_LANDING) {
+    this.land = land;
+    const t = this.elapsed;
     if (!Number.isFinite(this.tc) || this.tc > t) this.tc = t;
     this.cancelTimers();
     Sound.fadeOut(this.sound, 0.25);
@@ -548,6 +385,9 @@ export class Greeting {
     return this.fired;
   }
 
+  /** Seconds the shrink into the notch takes, so the island keeps drawing it. */
+  static readonly COLLAPSE = T.COLLAPSE;
+
   private fire() {
     if (this.fired) return;
     this.fired = true;
@@ -563,27 +403,16 @@ export class Greeting {
   draw(x: CanvasRenderingContext2D) {
     const t = this.elapsed;
     if (!this.fired && t >= T.end && this.tc >= T.autoLeave) this.fire();
-
-    const p = greetingPose(t, this.tc, this.sig);
-    const c = STAGE[this.variant];
+    const p = greetingPose(t, this.tc, this.land);
+    const c = LIGHT[this.variant];
     x.clearRect(0, 0, GREETING_W, GREETING_H);
-
-    if (p.card > 0) {
-      // The stage: the island's black, leaning toward her light.
-      x.save();
-      x.globalAlpha = p.card;
-      rr(x, CARD.x, CARD.y, CARD.w, CARD.h, CARD_R);
-      x.fillStyle = `rgb(${Math.round(16 + c[0] * 0.05)},${Math.round(17 + c[1] * 0.05)},${Math.round(20 + c[2] * 0.05)})`;
-      x.fill();
-      x.clip();
-      drawSpot(x, p, c);
-      drawFootlights(x, t, p, c);
-      x.globalAlpha = 1;
-      drawNotes(x, t, p, this.variant, c);
-      drawLyric(x, p, c);
-      x.restore();
-    }
-
-    drawMiku(x, p, this.engine);
+    this.off ??= document.createElement("canvas");
+    // Her pose: still while she is being built, the day's once she is solid,
+    // a happy one on the way up into the notch.
+    const pose: ChibiPose = p.shrink > 0 ? "happy" : t < T.solid1 ? "idle" : this.pose;
+    drawDisc(x, p, c);
+    drawFigure(x, this.off, p, t, pose, this.variant, c);
+    drawBits(x, p, t, c);
+    drawNotch(x, p, t, this.variant, c);
   }
 }

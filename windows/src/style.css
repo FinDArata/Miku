@@ -5097,3 +5097,19 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 @media (prefers-reduced-motion: reduce) { .sh-tile.sh-ghost { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .sh-tile { transition: none; } }
 
+/* The launch hologram (mochi/greeting.ts) has no island behind it: she is
+   projected onto the desktop, and the canvas draws the notch she lands in.
+   Last in the file, so it wins over every skin of #island above. */
+#island[data-holo="1"] {
+  background: transparent;
+  box-shadow: none;
+}
+#island[data-holo="1"] #island-clip::before,
+#island[data-holo="1"] #island-clip::after,
+#island[data-holo="1"] #ambient-canvas,
+#island[data-holo="1"] #island-closed,
+#island[data-holo="1"] #island-clock,
+#island[data-holo="1"] #compact-plan,
+#island[data-holo="1"] #bot-glow {
+  visibility: hidden;
+}
