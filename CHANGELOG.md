@@ -1,5 +1,19 @@
 # Changelog — Miku
 
+## 0.1.2 — 2026-11-22
+
+### Every PC notification, with Miku
+
+- The setting that brought LINE and Discord into the island is now "PC notifications in the island": it reads every app's toast from Windows' notification list, still only while it is on, still nothing sent anywhere. Any other app is named from its handler (Outlook, Edge, Settings, a phone app mirrored by Phone Link…). WhatsApp's toasts are skipped, since it has its own link, and so are Miku's own.
+- A notification from any other app is only a notice: Miku drops out of the capsule with a "!" over her head, her headset rings, a "!" card floats down into her hands while a glass card slides out beside her, and she goes back up on her own after about four seconds. No buttons and nothing left hanging under the capsule. LINE and Discord keep their own card with Open and Mark as read.
+
+### A new Notif page
+
+- The deck's Notif page has one header line (the unread count, mark all as read, clear), a chip per app that sent something instead of fixed Chats / Agents / System filters, and two-line rows, so about twice as many fit.
+- Unread rows wear the same pink "!" as the incoming notice. A row's actions (open, mark as read, remove) show on hover. Messages in a row from one sender stack into one (×3, "+2 more") and unfold on a click.
+- Only LINE, Discord and agents open something on a click; any other app's notification is only shown.
+- While something is unread Miku holds her phone, buzzing now and then with a "!" on its screen; with everything read she is happy, and with the page empty she sleeps.
+
 ## 0.1.1 — 2026-11-21
 
 ### Miku opens as a hologram

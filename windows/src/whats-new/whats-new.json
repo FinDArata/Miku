@@ -2,6 +2,89 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.2",
+      "items": [
+        {
+          "icon": "bell",
+          "title": {
+            "en": "Every PC notification, with Miku",
+            "zh-Hans": "每条电脑通知都有 Miku 陪着",
+            "hi": "हर PC सूचना, Miku के साथ",
+            "es": "Todas las notificaciones del PC, con Miku",
+            "ar": "كل إشعارات الكمبيوتر مع Miku",
+            "fr": "Toutes les notifications du PC, avec Miku",
+            "bn": "PC-র সব নোটিফিকেশন, Miku-র সাথে",
+            "pt-BR": "Todas as notificações do PC, com Miku",
+            "ru": "Все уведомления ПК — с Miku",
+            "id": "Semua notifikasi PC, bareng Miku",
+            "de": "Jede PC-Benachrichtigung, mit Miku",
+            "tr": "Her bilgisayar bildirimi, Miku ile",
+            "ko": "모든 PC 알림을 Miku와 함께",
+            "ja": "PC の通知をぜんぶ Miku と",
+            "th": "ทุกการแจ้งเตือนในพีซี มาพร้อม Miku",
+            "zh-Hant": "每則電腦通知都有 Miku 陪著"
+          },
+          "detail": {
+            "en": "Any app's notification shows in the island: Miku drops in with it, then goes back up on her own.",
+            "zh-Hans": "任何应用的通知都会出现在岛上：Miku 带着它落下来，然后自己回去。",
+            "hi": "किसी भी ऐप की सूचना आइलैंड में दिखती है: Miku उसे लेकर उतरती है, फिर खुद ऊपर लौट जाती है।",
+            "es": "Las notificaciones de cualquier app salen en la isla: Miku baja con ellas y luego vuelve sola.",
+            "ar": "يظهر إشعار أي تطبيق في الجزيرة: تنزل Miku معه ثم تعود وحدها.",
+            "fr": "Les notifications de toute app s'affichent dans l'île : Miku descend avec, puis remonte seule.",
+            "bn": "যেকোনো অ্যাপের নোটিফিকেশন আইল্যান্ডে আসে: Miku সেটা নিয়ে নামে, তারপর নিজেই ফিরে যায়।",
+            "pt-BR": "Notificações de qualquer app aparecem na ilha: Miku desce com elas e depois volta sozinha.",
+            "ru": "Уведомления любых приложений появляются на острове: Miku спускается с ними и сама возвращается.",
+            "id": "Notifikasi app apa pun muncul di pulau: Miku turun membawanya, lalu naik lagi sendiri.",
+            "de": "Benachrichtigungen jeder App erscheinen in der Insel: Miku kommt damit herab und geht von selbst zurück.",
+            "tr": "Her uygulamanın bildirimi adada görünür: Miku onunla iner, sonra kendiliğinden geri döner.",
+            "ko": "어떤 앱 알림이든 아일랜드에 떠요. Miku가 들고 내려왔다가 알아서 돌아가요.",
+            "ja": "どのアプリの通知もアイランドに。Miku が持って降りてきて、自分で戻ります。",
+            "th": "การแจ้งเตือนจากทุกแอปโผล่บนไอแลนด์ Miku ถือลงมาแล้วกลับขึ้นไปเอง",
+            "zh-Hant": "任何應用程式的通知都會出現在島上：Miku 帶著它落下來，然後自己回去。"
+          }
+        },
+        {
+          "icon": "phone",
+          "title": {
+            "en": "A new Notif page",
+            "zh-Hans": "全新的通知页",
+            "hi": "नया Notif पेज",
+            "es": "Una nueva página de notificaciones",
+            "ar": "صفحة إشعارات جديدة",
+            "fr": "Une nouvelle page Notifs",
+            "bn": "নতুন Notif পেজ",
+            "pt-BR": "Uma nova página de notificações",
+            "ru": "Новая страница уведомлений",
+            "id": "Halaman Notif baru",
+            "de": "Eine neue Notif-Seite",
+            "tr": "Yeni bir bildirim sayfası",
+            "ko": "새로운 알림 페이지",
+            "ja": "新しい通知ページ",
+            "th": "หน้าการแจ้งเตือนใหม่",
+            "zh-Hant": "全新的通知頁"
+          },
+          "detail": {
+            "en": "A chip per app, a pink \"!\" for unread, repeats stacked. Miku holds her phone while one waits.",
+            "zh-Hans": "每个应用一个标签，未读显示粉色“!”，连续消息会叠起来。有未读时 Miku 拿着手机。",
+            "hi": "हर ऐप का एक चिप, अपठित पर गुलाबी \"!\", लगातार संदेश एक साथ। अपठित रहते Miku फ़ोन थामे रहती है।",
+            "es": "Una etiqueta por app, un \"!\" rosa en lo no leído, repeticiones apiladas. Miku sostiene su móvil.",
+            "ar": "شارة لكل تطبيق، و\"!\" وردية لغير المقروء، والمتكرر مجمّع. وتمسك Miku هاتفها أثناء الانتظار.",
+            "fr": "Une puce par app, un « ! » rose pour le non-lu, les répétitions empilées. Miku tient son téléphone.",
+            "bn": "প্রতি অ্যাপে একটি চিপ, অপঠিতে গোলাপি \"!\", পরপর বার্তা একসাথে। অপঠিত থাকলে Miku ফোন ধরে থাকে।",
+            "pt-BR": "Um chip por app, um \"!\" rosa nas não lidas, repetidas empilhadas. Miku segura o celular.",
+            "ru": "Метка на каждое приложение, розовый «!» у непрочитанных, повторы в стопке. Miku держит телефон.",
+            "id": "Chip per app, \"!\" pink untuk yang belum dibaca, pesan beruntun ditumpuk. Miku pegang HP-nya.",
+            "de": "Ein Chip pro App, ein rosa „!“ für Ungelesenes, Wiederholungen gestapelt. Miku hält ihr Handy.",
+            "tr": "Her uygulamaya bir etiket, okunmamışa pembe \"!\", tekrarlar üst üste. Miku telefonunu tutar.",
+            "ko": "앱마다 칩, 안 읽은 건 분홍 \"!\", 연달아 온 건 묶어서. 기다리는 동안 Miku가 폰을 들고 있어요.",
+            "ja": "アプリごとのチップ、未読はピンクの「!」、続きはまとめて。未読の間 Miku はスマホを持ちます。",
+            "th": "ชิปแยกตามแอป \"!\" สีชมพูสำหรับที่ยังไม่อ่าน ข้อความซ้ำซ้อนกัน Miku ถือโทรศัพท์รอไว้",
+            "zh-Hant": "每個應用程式一個標籤，未讀顯示粉紅「!」，連續訊息會疊起來。有未讀時 Miku 拿著手機。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.1",
       "items": [
         {
