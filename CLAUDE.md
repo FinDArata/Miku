@@ -4,6 +4,9 @@ Miku is a fork of **Coucou** by Louis Raillé, rebranded and maintained by FinDA
 
 The mascot is **Hatsune Miku**, drawn in code (`windows/src/mochi/engine.ts` + `variants.ts`), in three official looks: classic, Snow and Sakura. She is © Crypton Future Media, INC., used under the Piapro Character License: this build is non-commercial and must not imply endorsement. The upstream Coucou/Mochi assets are still in the tree for the un-rebuilt platforms and remain © Louis Raillé — never ship them in a distributed Miku build. See `LICENSE-ASSETS.md`.
 
+## Design
+All UI (screens, cards, mockups, icons, animations) wears the Miku style. **Read `DESIGN.md` before any UI work** and follow it without being asked: skin tokens (`--miku*`, `--skin-*`), dark surfaces, house radii and easings, the in-code chibi.
+
 ## Where things are
 - `windows/` — the Tauri app for Windows and Linux: Rust in `src-tauri/`, TypeScript in `src/`, the `miku-hook` relay in `hook/`. Brand: `productName: "Miku"`, identifier `com.findarata.miku`. The updater points at `FinDArata/Miku` releases (tags `windows-vX.Y.Z`).
 - `windows/src/mochi/` — the mascot. `engine.ts` draws her, `variants.ts` holds the three palettes and the seasonal rule, `wardrobe.ts` resolves the outfit and the variant from the settings.
