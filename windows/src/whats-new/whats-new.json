@@ -2,6 +2,50 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.0",
+      "items": [
+        {
+          "icon": "paint",
+          "title": {
+            "en": "A new face for Miku",
+            "zh-Hans": "Miku 换上新面孔",
+            "hi": "Miku का नया चेहरा",
+            "es": "Una cara nueva para Miku",
+            "ar": "وجه جديد لـ Miku",
+            "fr": "Un nouveau visage pour Miku",
+            "bn": "Miku-র নতুন মুখ",
+            "pt-BR": "Um rosto novo para a Miku",
+            "ru": "Новое лицо Miku",
+            "id": "Wajah baru untuk Miku",
+            "de": "Ein neues Gesicht für Miku",
+            "tr": "Miku için yeni bir yüz",
+            "ko": "Miku의 새 얼굴",
+            "ja": "Miku の新しい顔",
+            "th": "หน้าใหม่ของ Miku",
+            "zh-Hant": "Miku 換上新面孔"
+          },
+          "detail": {
+            "en": "The app icon is her face and her leek on a teal tile, clear even in the taskbar.",
+            "zh-Hans": "应用图标换成了她的脸和大葱，衬在青绿色方块上，任务栏里也清晰可辨。",
+            "hi": "ऐप आइकन अब फ़िरोज़ी टाइल पर उसका चेहरा और लीक है, टास्कबार में भी साफ़ दिखता है।",
+            "es": "El icono es su cara y su puerro sobre una baldosa turquesa, claro incluso en la barra de tareas.",
+            "ar": "أيقونة التطبيق صارت وجهها وكرّاثها على مربع فيروزي، واضحة حتى في شريط المهام.",
+            "fr": "L'icône montre son visage et son poireau sur une tuile turquoise, nette même dans la barre des tâches.",
+            "bn": "অ্যাপ আইকন এখন ফিরোজা টাইলে তার মুখ আর লিক, টাস্কবারেও স্পষ্ট।",
+            "pt-BR": "O ícone agora é o rosto dela e o alho-poró num bloco turquesa, nítido até na barra de tarefas.",
+            "ru": "Значок теперь её лицо и лук-порей на бирюзовой плитке, чёткий даже на панели задач.",
+            "id": "Ikon aplikasi kini wajahnya dan daun bawangnya di atas ubin teal, tetap jelas di taskbar.",
+            "de": "Das App-Symbol zeigt ihr Gesicht und ihren Lauch auf türkiser Kachel, klar sogar in der Taskleiste.",
+            "tr": "Uygulama simgesi artık turkuaz karo üzerinde yüzü ve pırasası; görev çubuğunda bile net.",
+            "ko": "앱 아이콘이 청록색 타일 위 그녀의 얼굴과 대파로 바뀌어 작업 표시줄에서도 또렷합니다.",
+            "ja": "アプリのアイコンは青緑のタイルに彼女の顔とネギ。タスクバーでもくっきり。",
+            "th": "ไอคอนแอปเป็นหน้าเธอกับต้นหอมบนแผ่นสีเขียวอมฟ้า ชัดแม้อยู่บนแถบงาน",
+            "zh-Hant": "應用程式圖示換成了她的臉和大蔥，襯在青綠色方塊上，工作列裡也清晰可辨。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.0.8",
       "items": [
         {
@@ -119,45 +163,6 @@
             "ja": "一般 → Miku の見た目 で開けます。以前はショートカットの奥にいました。",
             "th": "ทั่วไป → ลุคของมิกุ เปิดได้เลย ก่อนนี้ซ่อนอยู่หลังปุ่มลัด",
             "zh-Hant": "一般 → Miku 的造型 即可開啟；以前藏在熱鍵後面。"
-          }
-        },
-        {
-          "icon": "heart",
-          "title": {
-            "en": "A hello for new installs",
-            "zh-Hans": "给新安装的问候",
-            "hi": "नए इंस्टॉल के लिए नमस्ते",
-            "es": "Un saludo para las instalaciones nuevas",
-            "ar": "تحية للتثبيتات الجديدة",
-            "fr": "Un bonjour aux nouvelles installations",
-            "bn": "নতুন ইনস্টলের জন্য অভ্যর্থনা",
-            "pt-BR": "Um olá para as instalações novas",
-            "ru": "Приветствие для новых установок",
-            "id": "Sapaan untuk pemasangan baru",
-            "de": "Ein Hallo für neue Installationen",
-            "tr": "Yeni kurulumlara bir selam",
-            "ko": "새 설치를 위한 인사",
-            "ja": "新規インストールへのご挨拶",
-            "th": "ทักทายสำหรับการติดตั้งใหม่",
-            "zh-Hant": "給新安裝的問候"
-          },
-          "detail": {
-            "en": "A first-run card says who Miku is and points to the hook setup.",
-            "zh-Hans": "首次运行的卡片介绍 Miku 是谁，并指向 hook 设置。",
-            "hi": "पहली बार चलने पर कार्ड बताता है Miku कौन है और hook सेटअप की ओर ले जाता है।",
-            "es": "Una tarjeta de primera ejecución dice quién es Miku y lleva a los hooks.",
-            "ar": "بطاقة التشغيل الأول تعرّف بـ Miku وتشير إلى إعداد الخطّافات.",
-            "fr": "Une carte de premier lancement dit qui est Miku et mène aux hooks.",
-            "bn": "প্রথম চালানোর কার্ড বলে Miku কে, এবং hook সেটআপের পথ দেখায়।",
-            "pt-BR": "Um cartão de primeira execução diz quem é a Miku e leva aos hooks.",
-            "ru": "Карточка первого запуска рассказывает, кто такая Miku, и ведёт к настройке hooks.",
-            "id": "Kartu pertama memperkenalkan Miku dan mengarah ke pengaturan hooks.",
-            "de": "Eine Erstkarte sagt, wer Miku ist, dan führt zu den Hooks.",
-            "tr": "İlk çalıştırma kartı Miku'nun kim olduğunu söyler ve hook kurulumuna götürür.",
-            "ko": "첫 실행 카드가 Miku가 누구인지 알리고 hook 설정으로 안내합니다.",
-            "ja": "初回カードが Miku の紹介と hooks の設定へ案内します。",
-            "th": "การ์ดครั้งแรกแนะนำว่ามิกุคือใคร พร้อมพาไปตั้งค่า hooks",
-            "zh-Hant": "首次執行的卡片介紹 Miku 是誰，並帶你前往 hook 設定。"
           }
         },
         {

@@ -1,5 +1,11 @@
 # Changelog — Miku
 
+## 0.1.0 — 2026-11-21
+
+### A new face for the app
+
+- The app icon is Miku's face now, not her whole figure: her head and the leek she holds up, on a teal rounded tile. The bust it replaced shrank to a smudge at taskbar sizes; the face and the tile still read at 16 px. It is still drawn by the mascot engine itself (`scripts/gen-icons.mjs`), in the leek pose, so the icon cannot drift from the Miku the app shows.
+
 ## 0.0.9 — 2026-11-20
 
 ### A card with nowhere to go presses the toast itself
