@@ -24,7 +24,7 @@ type Ctx = CanvasRenderingContext2D;
 /** [shoulder°, elbow°, shoulder swing°, elbow swing°, swing seconds]. 0° hangs straight down. */
 type Arm = readonly [number, number, number?, number?, number?];
 type Eye = "open" | "wide" | "flat" | "happy" | "closed" | "heart" | "spiral";
-type Mouth = "smile" | "open" | "o" | "big" | "flat" | "wavy" | "cat" | "pout" | "sing";
+type Mouth = "smile" | "open" | "o" | "big" | "flat" | "wavy" | "cat" | "pout" | "puff" | "sing";
 type Brow = "rest" | "worry" | "angry" | "up";
 type Item = "mic" | "leek" | "peace" | "glass";
 type Fx =
@@ -50,7 +50,10 @@ interface Pose {
   fx?: Fx;
 }
 
-export type ChibiPose = BotStateName | BotEmoteName | "wave" | "singing" | "leek" | "dance";
+export type ChibiPose = BotStateName | BotEmoteName | "wave" | "singing" | "leek" | "dance" | PokePose;
+/** Her moods when she is clicked too much: one at random (see POKE_POSES). */
+type PokePose = "pout" | "huff" | "sulk" | "stomp" | "glare";
+export const POKE_POSES: readonly PokePose[] = ["pout", "huff", "sulk", "stomp", "glare"];
 export type ChibiEyes = Eye | readonly [Eye, Eye];
 
 /** What a caller that animates her itself (BotEngine) hands over for one frame. */
@@ -99,6 +102,12 @@ export const CHIBI_POSES: Record<ChibiPose, Pose> = {
   singing: { L: [75, 20, 10, 12, 0.8], R: [-35, 155, 2, 3, 0.8], hold: "mic", eyes: "happy", mouth: "sing", body: "sway", fx: "notes" },
   leek: { L: [20, 10], R: [-100, -30, 8, 22, 0.45], hold: "leek", mouth: "open" },
   dance: { L: [100, 30, 14, 16, 0.5], R: [-30, -20, 14, 16, 0.5], eyes: "happy", mouth: "open", body: "sway", fx: "notes" },
+  // Poked too much
+  pout: { L: [25, -25], R: [-25, 25], eyes: "flat", brows: "angry", mouth: "puff", tilt: -6, fx: "vein" },
+  huff: { L: [15, -75], R: [-15, 75], eyes: "closed", brows: "angry", mouth: "pout", tilt: 12, fx: "lines" },
+  sulk: { L: [10, 5], R: [-10, -5], eyes: "flat", brows: "worry", mouth: "wavy", look: [0, 6], tilt: 10, fx: "tear" },
+  stomp: { L: [35, -30, 4, 8, 0.15], R: [-35, 30, 4, 8, 0.15], body: "shake", eyes: "flat", brows: "angry", mouth: "big", fx: "vein" },
+  glare: { L: [55, -110], R: [-55, 110], eyes: "flat", brows: "angry", mouth: "flat", look: [-10, 2], tilt: -4, fx: "vein" },
 };
 
 /** The arm rest angles of a pose, in the order ChibiOptions.arms takes them. */
@@ -429,6 +438,10 @@ function mouth(x: Ctx, kind: Mouth, t: number) {
     case "wavy": return curve("M250 268 Q255 262 260 268 Q265 274 270 268");
     case "cat": return curve("M250 264 Q255 272 260 264 Q265 272 270 264");
     case "pout": return curve("M252 270 Q260 263 268 270");
+    case "puff":
+      // One cheek blown up, the mouth pushed to the other side.
+      oval(x, 288, 262, 15, 12, "rgba(255,157,174,0.55)");
+      return curve("M247 268 Q253 264 259 268");
     case "sing": return oval(x, 260, 267, 7, 9 * (0.45 + 0.65 * unit(t, 0.3)), LIP_DARK);
   }
 }

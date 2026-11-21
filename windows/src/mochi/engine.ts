@@ -9,7 +9,7 @@ import type { BotEmoteName, BotStateName } from "../core/layout";
 import { drawOutfitBehind, drawOutfitFront, type Head, type OutfitState } from "./outfits";
 import type { Outfit } from "./wardrobe";
 import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
-import { chibiArms, drawChibi, type ChibiEyes, type ChibiPose } from "./chibi";
+import { chibiArms, drawChibi, POKE_POSES, type ChibiEyes, type ChibiPose } from "./chibi";
 import { BeatTracker, musicEnergy as danceEnergy } from "./music";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -400,6 +400,9 @@ export class BotEngine {
   // her arms, which ease from one pose to the next instead of jumping.
   private emote: BotEmoteName | null = null;
   private emoteUntil = 0;
+  /** Poked too much: a sulky pose, at random, over everything else for a while. */
+  private pokePose: ChibiPose | null = null;
+  private pokeUntil = 0;
   private greetWave = false;
   private arms = chibiArms("idle");
   private armsAt = 0;
@@ -414,9 +417,6 @@ export class BotEngine {
   private slapTimes: number[] = [];
   private miniLookTarget = { x: 0, y: 0 };
   private miniLookNextTime = 0;
-
-  /** Fired when three slaps land inside 1.7 s (→ dizzy + confused view). */
-  onDizzy: (() => void) | null = null;
 
   /** Where she stands, as stereo: -1 left … 1 right. The island is 0; the
    * desktop surface sets it from her screen position. */
@@ -559,8 +559,8 @@ export class BotEngine {
 
   slap() {
     this.interruptGreet();
-    if (this.state === "dizzy") return;
     const t = now();
+    if (t < this.pokeUntil) return;
     this.slapTimes = this.slapTimes.filter((s) => t - s < 1.7);
     this.slapTimes.push(t);
     Sound.play("slap", this.pan);
@@ -568,8 +568,11 @@ export class BotEngine {
     this.physVy -= 1.2;
     this.physVx += Math.random() < 0.5 ? 0.7 : -0.7;
     if (this.slapTimes.length >= 3) {
+      // Three inside 1.7 s: she sulks, in a mood picked at random.
       this.slapTimes = [];
-      this.onDizzy?.();
+      this.pokePose = POKE_POSES[Math.floor(Math.random() * POKE_POSES.length)];
+      this.pokeUntil = t + 3;
+      setTimeout(() => Sound.play("annoyed", this.pan), 60);
     } else {
       this.eyeOverride = "line";
       this.eyeOverrideUntil = t + 0.8;
@@ -1216,6 +1219,7 @@ export class BotEngine {
 
   /** What she is doing, as a chibi pose: an emote first, then a held pose, a wave or a dance, else her state. */
   private chibiPose(n: number): ChibiPose {
+    if (this.pokePose && n < this.pokeUntil) return this.pokePose;
     if (this.emote && n < this.emoteUntil) return this.emote;
     if (this.heldPose) return this.heldPose;
     if (this.permanentEmote) return this.permanentEmote;

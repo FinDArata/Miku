@@ -11,7 +11,6 @@ export type IslandViewName =
   | "question"
   | "error"
   | "finished"
-  | "confused"
   | "mail"
   | "prompt"
   | "searching"
@@ -86,7 +85,6 @@ export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   question: { height: 200, botX: 70, botY: 118, botDiameter: 84, agentMode: "column" },
   error: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
   finished: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
-  confused: { height: 160, botX: 76, botY: null, botDiameter: 66, agentMode: "column" },
   mail: { height: 240, botX: 56, botY: null, botDiameter: 46, agentMode: "column" },
   prompt: { height: 160, botX: 52, botY: null, botDiameter: 44, agentMode: "column" },
   searching: { height: 160, botX: 52, botY: null, botDiameter: 44, agentMode: "column" },

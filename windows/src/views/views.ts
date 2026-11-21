@@ -186,7 +186,6 @@ export function buildHeader(actions: ViewActions): ViewHost {
       pager.style.display = v === "overview" ? "" : "none";
       if (v === "overview") syncPager();
       syncPlanPills();
-      el.style.opacity = v === "confused" ? "0" : "1";
     },
   };
 
@@ -375,18 +374,6 @@ function buildFinished(actions: ViewActions): ViewHost {
   };
 }
 
-// ── Confused ──────────────────────────────────────────────────────────────────
-
-function buildConfused(): ViewHost {
-  const body = h(
-    "div",
-    { class: "stack", style: "padding:0 18px 0 128px" },
-    h("div", { class: "title", text: tl("Too many hits at once.") }),
-    h("div", { class: "sub", text: tl("Give me a sec — back to work in three seconds.") }),
-  );
-  return { el: h("div", { class: "view" }, card("pink", body)), sync() {} };
-}
-
 // ── Note ──────────────────────────────────────────────────────────────────────
 
 function buildNote(): ViewHost {
@@ -489,7 +476,6 @@ export function buildViews(
   map.set("empty", buildEmpty(actions));
   map.set("error", buildError(actions));
   map.set("finished", buildFinished(actions));
-  map.set("confused", buildConfused());
   map.set("ritual", buildRitual(actions));
   map.set("note", buildNote());
   map.set("settings", buildSettings(actions));

@@ -23,8 +23,6 @@ export interface DesktopHost {
   reveal(): void;
   /** Right-click on the desktop Mochi: the wardrobe, or back. */
   wardrobeFromDesktop(): void;
-  /** Three pokes on the desktop Mochi. */
-  dizzyFromDesktop(): void;
 }
 
 export class DesktopLink {
@@ -81,7 +79,6 @@ export class DesktopLink {
     );
     await onEvent<null>(DESKTOP_EVENTS.home, () => void this.controller.flyHome());
     await onEvent<null>(DESKTOP_EVENTS.wardrobe, () => this.host.wardrobeFromDesktop());
-    await onEvent<null>(DESKTOP_EVENTS.dizzy, () => this.host.dizzyFromDesktop());
     // The battery, whatever the System pill is doing (system_health.rs).
     await onEvent<BatteryReading | null>("battery", (b) => this.onBattery(b));
     // The window's page (re)loaded: it knows nothing yet.

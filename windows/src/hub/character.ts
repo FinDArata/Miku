@@ -248,7 +248,6 @@ function renderCharacter(): HTMLElement {
     held: false,
     holding: false,
   };
-  engine.onDizzy = () => engine.triggerEmote("annoyed", 1.6);
   engines.add(one);
   wirePointer(one);
   startLife();

@@ -26,7 +26,6 @@ const T = {
   notes1: 2.3,
   tuck0: 2.3,
   tuck1: 2.55,
-  badge: 2.57,
   bow0: 2.6,
   bow1: 3.0,
   tint0: 2.75,
@@ -75,7 +74,6 @@ const C0 = { x: 320, y: 90 };
 const HB = 70;
 /** How much squash and stretch the chibi keeps: she is a figure, not a blob. */
 const SQUASH = 0.45;
-export const ASP = 1.34;
 const EAR_X = 40;
 const EAR_HB = 17;
 const CARD = { x: 10, y: 36, w: 620, h: 104 };
@@ -130,7 +128,7 @@ export interface Pose {
   eye: EyeType; open: number; eyeRoll: number;
   lookX: number; lookY: number;
   handL: number; handR: number; wave: number;
-  badge: number; tint: number;
+  tint: number;
   /** Spotlight strength, 0…1. */
   spot: number;
   /** Her name beside her: how visible (`lyricA`) and how much of it is sung (`lyric`). */
@@ -222,7 +220,6 @@ function greetPose(t: number, sig: GreetSignature = "wave"): Pose {
     eye, open, eyeRoll: 0,
     lookX, lookY,
     handL, handR, wave,
-    badge: E.back(seg(t, T.badge, T.badge + 0.28)),
     tint: 0.6 * E.inOut(seg(t, T.tint0, T.tint1)),
     spot: E.out(seg(t, 0.3, 0.75)),
     lyricA: E.out(seg(t, T.rise1, T.rise1 + 0.3)),
@@ -243,7 +240,7 @@ function smallPose(): Pose {
     eye: "dot", open: 1, eyeRoll: 0,
     lookX: 0, lookY: 0,
     handL: 0, handR: 0, wave: -1,
-    badge: 1, tint: 0.6,
+    tint: 0.6,
     spot: 0, lyricA: 0, lyric: 0,
     fx: 1,
     card: 0,
@@ -267,7 +264,6 @@ export function greetingPose(t: number, tc = Number.POSITIVE_INFINITY, sig: Gree
   p.x = lerp(a.x, b.x, e);
   p.y = lerp(a.y, b.y, e);
   p.hb = lerp(a.hb, b.hb, e);
-  p.badge = lerp(a.badge, b.badge, e);
   p.tint = lerp(a.tint, b.tint, e);
   p.spot = a.spot * (1 - seg(t, tc, tc + 0.15));
   p.lyricA = a.lyricA * (1 - seg(t, tc, tc + 0.1));
@@ -466,7 +462,6 @@ function drawLyric(x: CanvasRenderingContext2D, p: Pose, c: readonly number[]) {
 
 function drawMiku(x: CanvasRenderingContext2D, p: Pose, engine: BotEngine) {
   const hh = p.hb / 2;
-  const hw = hh * ASP;
   if (hh <= 0.4) return;
 
   // The mascot is the island's own engine, so the greeting can never show a
@@ -485,30 +480,6 @@ function drawMiku(x: CanvasRenderingContext2D, p: Pose, engine: BotEngine) {
   x.translate(-side / 2, -side / 2);
   engine.draw(x, side, side);
   x.restore();
-
-  // Activity badge, over the whole thing (the engine's own sits inside its box,
-  // which the greeting scales differently).
-  if (p.badge > 0.01) {
-    const br = hh * 0.3;
-    x.save();
-    x.translate(p.x - hw * 0.78, p.y - hh * 0.72);
-    x.scale(p.badge, p.badge);
-    x.fillStyle = "#000";
-    x.beginPath();
-    x.arc(0, 0, br + hh * 0.07, 0, Math.PI * 2);
-    x.fill();
-    x.fillStyle = "#3BA0F5";
-    x.beginPath();
-    x.arc(0, 0, br, 0, Math.PI * 2);
-    x.fill();
-    x.fillStyle = "#0B1B3A";
-    for (const i of [-1, 0, 1]) {
-      x.beginPath();
-      x.arc(i * br * 0.5, 0, br * 0.17, 0, Math.PI * 2);
-      x.fill();
-    }
-    x.restore();
-  }
 }
 
 // ── Controller ────────────────────────────────────────────────────────────────
