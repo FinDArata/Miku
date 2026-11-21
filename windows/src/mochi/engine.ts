@@ -403,6 +403,10 @@ export class BotEngine {
   /** Poked too much: a sulky pose, at random, over everything else for a while. */
   private pokePose: ChibiPose | null = null;
   private pokeUntil = 0;
+  /** The sulk she is in right now, if any. */
+  get poke(): ChibiPose | null {
+    return now() < this.pokeUntil ? this.pokePose : null;
+  }
   private greetWave = false;
   private arms = chibiArms("idle");
   private armsAt = 0;
@@ -1219,7 +1223,7 @@ export class BotEngine {
 
   /** What she is doing, as a chibi pose: an emote first, then a held pose, a wave or a dance, else her state. */
   private chibiPose(n: number): ChibiPose {
-    if (this.pokePose && n < this.pokeUntil) return this.pokePose;
+    if (n < this.pokeUntil && this.pokePose) return this.pokePose;
     if (this.emote && n < this.emoteUntil) return this.emote;
     if (this.heldPose) return this.heldPose;
     if (this.permanentEmote) return this.permanentEmote;

@@ -306,6 +306,7 @@ export class Island {
 
   private build() {
     const actions: ViewActions = {
+      pokedPose: () => this.engine.poke,
       setView: (v) => this.setView(v),
       collapse: () => this.collapse(),
       foldApproval: () => this.foldApproval(),
@@ -1795,6 +1796,11 @@ export class Island {
   private isBotHit(x: number, y: number): boolean {
     // Out on the desktop, the island's Mochi is invisible: nothing to hit.
     if (State.mochiOnDesktop) return false;
+    // The deck and the update card draw their own full-length Miku: hers is the box to hit.
+    const own = State.mode !== "expanded" ? null
+      : State.view === "overview" ? ".dk-miku" : State.view === "update" ? ".up-miku" : null;
+    const drawn = own ? this.root.querySelector(own)?.getBoundingClientRect() : null;
+    if (drawn) return x >= drawn.left && x <= drawn.right && y >= drawn.top && y <= drawn.bottom;
     const rect = this.islandRect();
     const cx = rect.x + this.botCx.value;
     const cy = rect.y + this.botCy.value;

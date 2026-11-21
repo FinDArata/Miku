@@ -672,7 +672,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
 
   /** The pose for the page (deckPose). */
   function pose(): ChibiPose {
-    return deckPose(page, {
+    return actions.pokedPose() ?? deckPose(page, {
       pcLoad: pcLoad(pc),
       playing: Spotify.state.playing,
       focus: focusEnd == null ? "off" : onBreak ? "break" : "run",
