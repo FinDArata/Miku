@@ -19,6 +19,8 @@ import { State } from "../core/state";
 import { Spotify, currentArtwork, formatTime, spotifyPosition } from "../core/spotify";
 import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "../mochi/chibi";
 import { parseVariant, resolveVariantNow } from "../mochi/wardrobe";
+import { POKE_LINES } from "../mochi/poke";
+import type { Sulk } from "../mochi/engine";
 import { N_, language, t, tn } from "../i18n/i18n";
 import { Shelf, ageLabel, colorOf, sizeLabel, tagOf, type ShelfFilter } from "../core/shelf";
 import { HOST_OS } from "../core/pills";
@@ -29,16 +31,6 @@ import { Updates } from "../island/update";
 import { isBusy, percent } from "../core/update";
 
 export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents" | "notif" | "shelf";
-
-/** Her lines when three pokes make her sulk: one at random, over her head. */
-const POKE_LINES = [
-  N_("Hey! Stop poking me!"),
-  N_("Hmph!"),
-  N_("That's enough!"),
-  N_("I'm not talking to you."),
-  N_("Ow! Rude!"),
-  N_("Let me work!"),
-] as const;
 
 /** The page (and agent) the deck opens on next time, asked by a notice. */
 let wanted: { page: DeckPage; agent?: string } | null = null;
@@ -209,9 +201,9 @@ export function buildDeck(actions: ViewActions): ViewHost {
 
   // ── Miku, full length ──
   const miku = h("canvas", { class: "dk-miku" }) as HTMLCanvasElement;
-  // What she says while she sulks, over her head (POKE_LINES).
+  // What she says while she sulks, over her head (mochi/poke.ts).
   const sulkSay = h("div", { class: "dk-sulk", role: "status" });
-  let sulk: ChibiPose | null = null;
+  let sulk: Sulk | null = null;
   const left = h("div", { class: "dk-left" }, h("div", { class: "dk-floor" }), miku, sulkSay);
 
   // ── Pages ──
@@ -685,7 +677,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
 
   /** The pose for the page (deckPose). */
   function pose(): ChibiPose {
-    return actions.pokedPose() ?? deckPose(page, {
+    return actions.poked()?.pose ?? deckPose(page, {
       pcLoad: pcLoad(pc),
       playing: Spotify.state.playing,
       focus: focusEnd == null ? "off" : onBreak ? "break" : "run",
@@ -869,11 +861,12 @@ export function buildDeck(actions: ViewActions): ViewHost {
         // Catching dropped files, or else the page's own pose.
         if (!Catch.drawMiku(x, clock, variant)) drawChibi(x, pose(), clock, variant, { noShadow: true });
         // A new sulk pops a new line; its end lets the bubble fade.
-        const mood = actions.pokedPose();
+        const mood = actions.poked();
         if (mood !== sulk) {
           sulk = mood;
           if (mood) {
-            sulkSay.textContent = t(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)]);
+            // The line she is saying out loud (BotEngine.slap plays its voice).
+            sulkSay.textContent = t(POKE_LINES[mood.line].text);
             // Just over her hair ties (y ≈ 50 in the chibi's design space).
             const kc = Math.min(w / CHIBI_W, hh / CHIBI_H);
             sulkSay.style.top = `${hh - (CHIBI_H - 50) * kc}px`;

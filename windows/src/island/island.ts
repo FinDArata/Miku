@@ -306,7 +306,7 @@ export class Island {
 
   private build() {
     const actions: ViewActions = {
-      pokedPose: () => this.engine.poke,
+      poked: () => this.engine.poke,
       setView: (v) => this.setView(v),
       collapse: () => this.collapse(),
       foldApproval: () => this.foldApproval(),

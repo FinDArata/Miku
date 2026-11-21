@@ -108,6 +108,13 @@ const CUES = [
     ["break", "ちょっと休もうか？"],
     ["catch", "キャッチ！"],
     ["greeting-konbanwa", "こんばんは！"],
+    // Her sulk after three pokes: the lines of her bubble (src/mochi/poke.ts), in her words.
+    ["poke-stop", "ちょっと！つつかないでよ！"],
+    ["poke-hmph", "ふんっ！"],
+    ["poke-enough", "もういいでしょ！"],
+    ["poke-silent", "もう口きかないもん！"],
+    ["poke-rude", "いたっ！ひどい！"],
+    ["poke-work", "お仕事させてよ〜！"],
   ].map(([name, text]) => [name, text, METAN]),
 ];
 

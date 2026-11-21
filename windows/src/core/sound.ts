@@ -18,6 +18,8 @@ export const SOUND_NAMES = [
   "app-line", "app-whatsapp", "app-discord", "app-claude", "app-codex", "app-cursor",
   "app-gemini", "app-copilot", "app-agent", "app-notice", "app-mail", "app-update",
   "break", "catch",
+  // Her sulk after three pokes, the line in her bubble (src/mochi/poke.ts).
+  "poke-stop", "poke-hmph", "poke-enough", "poke-silent", "poke-rude", "poke-work",
 ] as const;
 
 export type SoundName = (typeof SOUND_NAMES)[number];
@@ -42,7 +44,7 @@ const SPOKEN = new Set([
   "approve", "blip", "error", "finish", "greeting", "question",
   "approval", "rate", "work", "love", "dizzy", "annoyed", "slap", "break", "catch",
 ]);
-const isSpoken = (name: string) => SPOKEN.has(name) || name.startsWith("greeting-") || name.startsWith("app-");
+const isSpoken = (name: string) => SPOKEN.has(name) || name.startsWith("greeting-") || name.startsWith("app-") || name.startsWith("poke-");
 
 /** The agents Miku names when they finish (voice/app-<id>.wav); the rest are "the agent". */
 const NAMED_AGENTS = new Set(["codex", "cursor", "gemini", "copilot"]);

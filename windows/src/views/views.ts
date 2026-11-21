@@ -7,7 +7,7 @@ import { h, svg, clear, dot } from "./dom";
 import { ICONS } from "./icons";
 import { State, type AgentTask } from "../core/state";
 import type { IslandViewName, Tone } from "../core/layout";
-import type { ChibiPose } from "../mochi/chibi";
+import type { Sulk } from "../mochi/engine";
 import { buildPrompt } from "./chat";
 import { pillDefinition } from "../core/pills";
 import { buildPlanPill, claudePillVisible, codexPillVisible, refreshCodexPlanUsage } from "./usage";
@@ -22,7 +22,7 @@ import type { ViewCommand } from "../island/shortcuts";
 
 export interface ViewActions {
   /** Her sulk after three pokes (BotEngine.poke), for views that draw their own Miku. */
-  pokedPose(): ChibiPose | null;
+  poked(): Sulk | null;
   setView(v: IslandViewName): void;
   collapse(): void;
   /** Folds a waiting card to the compact island without answering it. */

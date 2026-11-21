@@ -10,6 +10,13 @@ import { drawOutfitBehind, drawOutfitFront, type Head, type OutfitState } from "
 import type { Outfit } from "./wardrobe";
 import { DEFAULT_VARIANT, MIKU_VARIANTS, type MikuVariant, type MikuVariantId } from "./variants";
 import { chibiArms, drawChibi, POKE_POSES, type ChibiEyes, type ChibiPose } from "./chibi";
+import { POKE_LINES } from "./poke";
+
+/** A sulk after three pokes: her pose, and which of POKE_LINES she says. */
+export interface Sulk {
+  pose: ChibiPose;
+  line: number;
+}
 import { BeatTracker, musicEnergy as danceEnergy } from "./music";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -400,12 +407,12 @@ export class BotEngine {
   // her arms, which ease from one pose to the next instead of jumping.
   private emote: BotEmoteName | null = null;
   private emoteUntil = 0;
-  /** Poked too much: a sulky pose, at random, over everything else for a while. */
-  private pokePose: ChibiPose | null = null;
+  /** Poked too much: a sulky pose and a line, at random, over everything else for a while. */
+  private sulk: Sulk | null = null;
   private pokeUntil = 0;
-  /** The sulk she is in right now, if any. */
-  get poke(): ChibiPose | null {
-    return now() < this.pokeUntil ? this.pokePose : null;
+  /** The sulk she is in right now, if any: a new object for every sulk. */
+  get poke(): Sulk | null {
+    return now() < this.pokeUntil ? this.sulk : null;
   }
   private greetWave = false;
   private arms = chibiArms("idle");
@@ -574,9 +581,10 @@ export class BotEngine {
     if (this.slapTimes.length >= 3) {
       // Three inside 1.7 s: she sulks, in a mood picked at random.
       this.slapTimes = [];
-      this.pokePose = POKE_POSES[Math.floor(Math.random() * POKE_POSES.length)];
+      const line = Math.floor(Math.random() * POKE_LINES.length);
+      this.sulk = { pose: POKE_POSES[Math.floor(Math.random() * POKE_POSES.length)], line };
       this.pokeUntil = t + 3;
-      setTimeout(() => Sound.play("annoyed", this.pan), 60);
+      setTimeout(() => Sound.play(POKE_LINES[line].voice, this.pan), 60);
     } else {
       this.eyeOverride = "line";
       this.eyeOverrideUntil = t + 0.8;
@@ -1223,7 +1231,7 @@ export class BotEngine {
 
   /** What she is doing, as a chibi pose: an emote first, then a held pose, a wave or a dance, else her state. */
   private chibiPose(n: number): ChibiPose {
-    if (n < this.pokeUntil && this.pokePose) return this.pokePose;
+    if (n < this.pokeUntil && this.sulk) return this.sulk.pose;
     if (this.emote && n < this.emoteUntil) return this.emote;
     if (this.heldPose) return this.heldPose;
     if (this.permanentEmote) return this.permanentEmote;
