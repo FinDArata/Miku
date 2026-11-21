@@ -30,6 +30,16 @@ import { isBusy, percent } from "../core/update";
 
 export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents" | "notif" | "shelf";
 
+/** Her lines when three pokes make her sulk: one at random, over her head. */
+const POKE_LINES = [
+  N_("Hey! Stop poking me!"),
+  N_("Hmph!"),
+  N_("That's enough!"),
+  N_("I'm not talking to you."),
+  N_("Ow! Rude!"),
+  N_("Let me work!"),
+] as const;
+
 /** The page (and agent) the deck opens on next time, asked by a notice. */
 let wanted: { page: DeckPage; agent?: string } | null = null;
 
@@ -199,7 +209,10 @@ export function buildDeck(actions: ViewActions): ViewHost {
 
   // ── Miku, full length ──
   const miku = h("canvas", { class: "dk-miku" }) as HTMLCanvasElement;
-  const left = h("div", { class: "dk-left" }, h("div", { class: "dk-floor" }), miku);
+  // What she says while she sulks, over her head (POKE_LINES).
+  const sulkSay = h("div", { class: "dk-sulk", role: "status" });
+  let sulk: ChibiPose | null = null;
+  const left = h("div", { class: "dk-left" }, h("div", { class: "dk-floor" }), miku, sulkSay);
 
   // ── Pages ──
   const body = h("div", { class: "dk-body" });
@@ -855,6 +868,20 @@ export function buildDeck(actions: ViewActions): ViewHost {
         x.setTransform(k, 0, 0, k, (miku.width - CHIBI_W * k) / 2, miku.height - CHIBI_H * k);
         // Catching dropped files, or else the page's own pose.
         if (!Catch.drawMiku(x, clock, variant)) drawChibi(x, pose(), clock, variant, { noShadow: true });
+        // A new sulk pops a new line; its end lets the bubble fade.
+        const mood = actions.pokedPose();
+        if (mood !== sulk) {
+          sulk = mood;
+          if (mood) {
+            sulkSay.textContent = t(POKE_LINES[Math.floor(Math.random() * POKE_LINES.length)]);
+            // Just over her hair ties (y ≈ 50 in the chibi's design space).
+            const kc = Math.min(w / CHIBI_W, hh / CHIBI_H);
+            sulkSay.style.top = `${hh - (CHIBI_H - 50) * kc}px`;
+            sulkSay.classList.remove("on");
+            void sulkSay.offsetWidth;
+          }
+          sulkSay.classList.toggle("on", mood != null);
+        }
       }
       const catching = Catch.active;
       if (catching || overlayDrawn) {
