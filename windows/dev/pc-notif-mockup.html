@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PC notif mockup</title>
+    <style>
+      /* Any toast Windows shows, caught by Miku. Notice only: no Reply/Later,
+         nothing stays open, it leaves on its own. No black island around it:
+         Miku drops out of the closed capsule onto the desktop with the text in
+         a glass card beside her, then both go back up. Miku's skin (as in
+         miku-pages-mockup): dark teal glass, teal → pink rim, a faint staff,
+         the app's colour only a dot and an initial. Every Miku is the app's
+         own drawChibi. Dev-only: open /dev/pc-notif-mockup.html. */
+      :root { --teal: #39c5bb; --teal-light: #9fe6e6; --ink: #f2fbfa; --dim: #8fa3b8; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #1b1b1f; color: var(--ink); font: 13px "Segoe UI", system-ui, sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; }
+      h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+      .lead { color: var(--dim); margin: 0 0 14px; line-height: 1.5; }
+      ol { color: var(--dim); margin: 0 0 14px; padding-left: 20px; line-height: 1.6; }
+      .desk { position: relative; border-radius: 14px; overflow: hidden;
+        background: linear-gradient(160deg, #2c3e50, #4a6072 60%, #6c7f8f); }
+      canvas { display: block; width: 100%; aspect-ratio: 680 / 200; }
+      .bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; color: var(--dim); }
+      button { font: inherit; color: var(--ink); background: #2a2f36; border: 1px solid #3a414a; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+      button:hover, button.on { border-color: var(--teal); }
+      button:focus-visible { outline: 2px solid var(--teal-light); outline-offset: 2px; }
+      .sep { width: 1px; height: 18px; background: #3a414a; margin: 0 4px; }
+      #phase { margin-left: auto; font: 12px ui-monospace, Consolas, monospace; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Miku nangkep notif PC</h1>
+      <p class="lead">Semua toast yang muncul di Windows (app apa aja) ikut ketangkep Miku. Cuma pemberitahuan: nggak ada tombol, nggak ngegantung, hilang sendiri. Nggak ada pulau hitam: cuma Miku dan kartu kaca di sampingnya, langsung di atas desktop.</p>
+      <ol>
+        <li>Kapsul kecil di atas: garis twin-tail teal→pink nyala.</li>
+        <li>Miku turun dari kapsul ke desktop, mendarat di genangan cahaya teal dengan tanda seru <b>!</b> di kepalanya. Headset-nya bunyi, kartu bertanda seru jatuh ke tangannya.</li>
+        <li>Kartu kaca meluncur keluar dari belakang dia: titik + inisial warna app, judul, satu baris isi. Miku baca, terus kasih reaksi.</li>
+        <li>±4 detik kemudian Miku dan kartunya naik balik ke kapsul. Kalau ngantri, kapsul nunjukin chip pink <b>! N</b>.</li>
+      </ol>
+      <div class="desk"><canvas id="a" aria-label="Miku turun dari kapsul membawa notifikasi Windows lalu naik lagi"></canvas></div>
+      <div class="bar">
+        <button id="one">Kirim 1 notif</button><button id="burst">Kirim 3 barengan</button>
+        <button id="auto" class="on">Otomatis</button><button id="slow">Pelan</button>
+        <span class="sep"></span>
+        <button class="on" data-wall="linear-gradient(160deg, #2c3e50, #4a6072 60%, #6c7f8f)">Gelap</button>
+        <button data-wall="linear-gradient(160deg, #f4f6f8, #dfe6ec 60%, #c9d4dc)">Terang</button>
+        <span id="phase">–</span>
+      </div>
+    </main>
+
+    <script type="module">
+      import { CHIBI_H, CHIBI_W, drawChibi } from "/src/mochi/chibi.ts";
+
+      const W = 680, H = 200, cx = W / 2;
+      const CAP = { w: 200, h: 32, r: 16 };
+      const MIKU_H = 124, CARD_W = 340, CARD_H = 92, GAP = 8;
+      const TEAL = "57,197,187", PINK = "#E12885";
+      const C = { glassTop: "#0f1a1c", glassBot: "#0a0f11", ink: "#f2fbfa", ink2: "#c9d3d8", dim: "#8fa3b8", tealLight: "#9fe6e6" };
+      const EARS = [[140, 242], [380, 242]]; // headset earpieces, design units
+      const HOLD = [15, -70, -15, 70]; // arms cupped in front, holding the "!" card
+      const FONT = "'Segoe UI Variable Text', 'Segoe UI', sans-serif";
+      // Miku and her card, side by side, centred under the capsule.
+      const MIKU_W = MIKU_H * (CHIBI_W / CHIBI_H) * 0.62; // her real width, not the canvas'
+      const GROUP_L = cx - (MIKU_W + GAP + CARD_W) / 2;
+      const FEET = { x: GROUP_L + MIKU_W / 2, y: CAP.h + 18 + MIKU_H };
+
+      // A spread of Windows toasts from apps Miku has no integration for.
+      const SAMPLES = [
+        { app: "Outlook", c: "#3a9bf0", i: "D", title: "Rapat sprint dipindah", body: "Dimas: jadi jam 14.00 ya, ruang Sakura", react: "happy" },
+        { app: "Baterai", c: "#f0b429", i: "!", title: "Baterai tinggal 15%", body: "Colok charger biar nggak mati tiba-tiba", react: "error" },
+        { app: "Microsoft Edge", c: "#2fc4a8", i: "↓", title: "Unduhan selesai", body: "laporan-q3-final-beneran.pdf · 2,4 MB", react: "finished" },
+        { app: "Kalender", c: "#e8457c", i: "R", title: "Ulang tahun Rin hari ini", body: "Jangan lupa kasih ucapan", react: "love" },
+        { app: "Windows Update", c: "#7fb36b", i: "↻", title: "Perlu restart", body: "Update siap dipasang di luar jam aktif", react: "yawn" },
+        { app: "Microsoft Teams", c: "#8b8ff8", i: "T", title: "Daily standup 5 menit lagi", body: "Tim Mobile · Teams meeting", react: "surprised" },
+      ];
+
+      const cv = document.getElementById("a");
+      const dpr = Math.max(2, devicePixelRatio || 1);
+      cv.width = W * dpr; cv.height = H * dpr;
+      const x = cv.getContext("2d");
+      const phaseEl = document.getElementById("phase");
+
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const seg = (t, a, b) => clamp((t - a) / (b - a));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const eIn = (k) => k * k;
+      const eOut = (k) => 1 - Math.pow(1 - k, 3);
+      const eBack = (k) => 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+
+      // ── Queue: one notice at a time, shorter while others wait ─────────────
+      const queue = [];
+      let cur = null, next = 0, idleSince = 0, vt = 0, last = 0, speed = 1, auto = true;
+      const push = () => queue.push(SAMPLES[next++ % SAMPLES.length]);
+      const DUR = 5.2, DUR_QUEUED = 3.6;
+      // Inside one notice, seconds from its start (the exit counts back from its end).
+      const T_PING = 0.45, T_LAND = 0.5, T_DROP = 0.75, T_FALL = 1.25, T_READ = 1.75, T_EXIT = 0.55;
+
+      // ── Pieces ─────────────────────────────────────────────────────────────
+      /** The closed capsule hanging from the top edge, with its twin-tail bar. */
+      function capsule(glow) {
+        const L = cx - CAP.w / 2, { w, h, r } = CAP;
+        x.save();
+        x.shadowColor = "rgba(0,0,0,0.45)"; x.shadowBlur = 14; x.shadowOffsetY = 4;
+        x.fillStyle = "#000";
+        x.beginPath();
+        x.moveTo(L, 0); x.lineTo(L + w, 0);
+        x.lineTo(L + w, h - r); x.arcTo(L + w, h, L + w - r, h, r);
+        x.lineTo(L + r, h); x.arcTo(L, h, L, h - r, r);
+        x.closePath(); x.fill();
+        x.restore();
+        const g = x.createLinearGradient(L, 0, L + w, 0);
+        g.addColorStop(0, PINK); g.addColorStop(0.5, `rgb(${TEAL})`); g.addColorStop(1, PINK);
+        x.save();
+        x.shadowColor = `rgba(${TEAL},${0.4 + 0.6 * glow})`;
+        x.shadowBlur = 8 + 14 * glow;
+        x.fillStyle = g;
+        x.beginPath(); x.roundRect(L + w * 0.14, 0, w * 0.72, 3, [0, 0, 3, 3]); x.fill();
+        x.restore();
+        x.fillStyle = C.tealLight;
+        x.font = `600 12px ${FONT}`;
+        x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillText("Miku", cx, h / 2 + 1);
+      }
+
+      /** The card that drops into her hands: a scrap of glass with a pink "!". Design units. */
+      function scrap(cxp, cyp, s, rot) {
+        x.save();
+        x.translate(cxp, cyp); x.rotate(rot); x.scale(s, s);
+        x.fillStyle = C.glassTop;
+        x.strokeStyle = `rgb(${TEAL})`; x.lineWidth = 6;
+        x.beginPath(); x.roundRect(-66, -46, 132, 92, 22); x.fill(); x.stroke();
+        x.strokeStyle = `rgba(${TEAL},0.35)`; x.lineWidth = 3;
+        for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(-44, -14 + i * 16); x.lineTo(44, -14 + i * 16); x.stroke(); }
+        x.fillStyle = PINK;
+        x.font = `900 64px ${FONT}`;
+        x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillText("!", 0, 4);
+        x.restore();
+      }
+
+      /** Sound rings out of both earpieces: the headset is what rings. Design units. */
+      function rings(t, a) {
+        if (a <= 0) return;
+        x.save();
+        x.lineCap = "round";
+        for (const [ex, ey] of EARS) {
+          const mid = ex < 260 ? Math.PI : 0;
+          for (let i = 0; i < 3; i++) {
+            const k = (t * 1.6 + i / 3) % 1;
+            x.save();
+            x.globalAlpha *= a * (1 - k);
+            x.strokeStyle = i % 2 ? `rgb(${TEAL})` : PINK;
+            x.lineWidth = 9 - k * 4;
+            x.beginPath(); x.arc(ex, ey, 16 + k * 60, mid - 0.7, mid + 0.7); x.stroke();
+            x.restore();
+          }
+        }
+        x.restore();
+      }
+
+      function chip(bx, by, n) {
+        x.save();
+        x.fillStyle = "rgba(225,40,133,0.22)";
+        x.beginPath(); x.roundRect(bx - 18, by - 9, 36, 18, 9); x.fill();
+        x.fillStyle = "#ff8fc0";
+        x.font = `800 11px ${FONT}`;
+        x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillText(`! ${n}`, bx, by + 1);
+        x.restore();
+      }
+
+      function ellipsize(s, max) {
+        if (x.measureText(s).width <= max) return s;
+        while (s.length && x.measureText(s + "…").width > max) s = s.slice(0, -1);
+        return s + "…";
+      }
+
+      /** The glass card beside her: dark teal, teal → pink rim, a faint staff behind the text. */
+      function glassCard(gx, gy, n) {
+        const gw = CARD_W, gh = CARD_H;
+        x.save();
+        x.shadowColor = "rgba(0,0,0,0.4)"; x.shadowBlur = 18; x.shadowOffsetY = 6;
+        const gl = x.createLinearGradient(0, gy, 0, gy + gh);
+        gl.addColorStop(0, C.glassTop); gl.addColorStop(1, C.glassBot);
+        x.fillStyle = gl;
+        x.beginPath(); x.roundRect(gx, gy, gw, gh, 18); x.fill();
+        x.restore();
+        x.beginPath(); x.roundRect(gx, gy, gw, gh, 18);
+        const tint = x.createRadialGradient(gx, gy + gh * 0.8, 0, gx, gy + gh * 0.8, 240);
+        tint.addColorStop(0, `rgba(${TEAL},0.16)`); tint.addColorStop(1, `rgba(${TEAL},0)`);
+        x.fillStyle = tint; x.fill();
+        const rim = x.createLinearGradient(gx, 0, gx + gw, 0);
+        rim.addColorStop(0, `rgba(${TEAL},0.7)`); rim.addColorStop(0.65, `rgba(${TEAL},0.22)`); rim.addColorStop(1, "rgba(225,40,133,0.6)");
+        x.strokeStyle = rim; x.lineWidth = 1.25; x.stroke();
+        x.strokeStyle = `rgba(${TEAL},0.06)`; x.lineWidth = 1;
+        for (let i = 0; i < 5; i++) { x.beginPath(); x.moveTo(gx + 12, gy + 34 + i * 11); x.lineTo(gx + gw - 12, gy + 34 + i * 11); x.stroke(); }
+        // A small tail pointing back at her.
+        x.fillStyle = C.glassTop;
+        x.beginPath(); x.moveTo(gx + 1, gy + 50); x.lineTo(gx - 7, gy + 58); x.lineTo(gx + 1, gy + 64); x.fill();
+
+        const tx = gx + 14, maxW = gw - 28;
+        x.textBaseline = "middle";
+        x.save(); x.shadowColor = n.c; x.shadowBlur = 6; x.fillStyle = n.c;
+        x.beginPath(); x.arc(tx + 3, gy + 20, 3, 0, Math.PI * 2); x.fill(); x.restore();
+        x.font = `700 10px ${FONT}`; x.letterSpacing = "1.2px"; x.fillStyle = C.dim; x.textAlign = "left";
+        x.fillText(ellipsize(n.app.toUpperCase(), maxW - 80), tx + 12, gy + 20);
+        x.letterSpacing = "0px";
+        x.font = `500 10.5px ui-monospace, Consolas, monospace`; x.textAlign = "right";
+        x.fillText("sekarang", gx + gw - 14, gy + 20);
+        x.fillStyle = n.c;
+        x.beginPath(); x.arc(tx + 11, gy + 46, 11, 0, Math.PI * 2); x.fill();
+        x.fillStyle = C.glassBot; x.font = `700 11px ${FONT}`; x.textAlign = "center";
+        x.fillText(n.i, tx + 11, gy + 47);
+        x.fillStyle = C.ink; x.font = `700 13.5px ${FONT}`; x.textAlign = "left";
+        x.fillText(ellipsize(n.title, maxW - 30), tx + 30, gy + 46);
+        x.fillStyle = C.ink2; x.font = `12.5px ${FONT}`;
+        x.fillText(ellipsize(n.body, maxW), tx, gy + 72);
+      }
+
+      // ── One frame ──────────────────────────────────────────────────────────
+      function scene(clock) {
+        x.setTransform(dpr, 0, 0, dpr, 0, 0);
+        x.clearRect(0, 0, W, H);
+        const t = cur ? vt - cur.t0 : 0;
+        const d = cur?.dur ?? 0;
+        const u = t - T_PING;
+
+        let phase = "diam";
+        if (cur) {
+          if (t < T_PING) phase = "not masuk";
+          else if (t < d - T_EXIT) phase = u < T_DROP ? "Miku turun" : u < T_FALL ? "headset bunyi · kartu jatuh" : u < T_READ ? "dibaca" : "reaksi";
+          else phase = "naik balik";
+        }
+
+        // In: drops out of the capsule with a little bounce. Out: rises back into it.
+        const land = cur && t >= T_PING ? eBack(seg(u, 0, T_LAND)) : 0;
+        const exit = cur ? eIn(seg(t, d - T_EXIT, d)) : 0;
+        const a = clamp(seg(u, 0, 0.2)) * (1 - exit);
+        const lift = (1 - land) * (FEET.y - CAP.h) * 0.9 + exit * (FEET.y - CAP.h);
+
+        if (cur && a > 0) {
+          x.save();
+          x.globalAlpha = a;
+          // The pool of light she lands on, there only once she's down.
+          const pa = seg(u, T_LAND * 0.6, T_LAND) * (1 - seg(t, d - T_EXIT, d - T_EXIT + 0.15));
+          const pool = x.createRadialGradient(FEET.x, FEET.y, 0, FEET.x, FEET.y, 56);
+          pool.addColorStop(0, `rgba(${TEAL},${0.45 * pa})`); pool.addColorStop(1, `rgba(${TEAL},0)`);
+          x.fillStyle = pool;
+          x.beginPath(); x.ellipse(FEET.x, FEET.y, 56, 11, 0, 0, Math.PI * 2); x.fill();
+
+          // The card slides out from behind her, then follows her back up.
+          const out = eOut(seg(u, T_LAND * 0.7, T_LAND + 0.45));
+          if (out > 0) {
+            x.save();
+            x.globalAlpha = a * out;
+            const gx = GROUP_L + MIKU_W + GAP + (1 - out) * -60;
+            glassCard(gx, CAP.h + 26 - lift, cur.n);
+            x.restore();
+          }
+
+          // Miku, full length, in design units from here.
+          const s = MIKU_H / CHIBI_H;
+          x.save();
+          x.translate(FEET.x - (CHIBI_W / 2) * s, FEET.y - 488 * s - lift);
+          x.scale(s, s);
+          if (u < T_DROP) drawChibi(x, "approval", clock, "classic", { noShadow: true });
+          else if (u < T_FALL) {
+            const q = seg(u, T_DROP, T_FALL);
+            drawChibi(x, "question", clock, "classic", { noShadow: true, arms: HOLD, look: [lerp(12, 0, q), lerp(-12, 12, q)], skipFx: new Set(["question"]) });
+          } else if (u < T_READ) drawChibi(x, "idle", clock, "classic", { noShadow: true, arms: HOLD, eyes: "open", look: [Math.sin(clock * 3.2) * 7, 12] });
+          else if (t < d - T_EXIT) drawChibi(x, cur.n.react, clock, "classic", { noShadow: true });
+          else drawChibi(x, "wave", clock, "classic", { noShadow: true });
+          rings(clock, u > 0.2 && u < T_FALL + 0.3 ? 1 - seg(u, T_FALL, T_FALL + 0.3) : 0);
+          // The "!" card: pops in by her right ear, floats down into her hands, gone once she's read it.
+          if (u > 0.3 && u < T_READ) {
+            const pop = eBack(seg(u, 0.3, 0.55));
+            const fall = eIn(seg(u, T_DROP, T_FALL));
+            const fade = 1 - seg(u, T_READ - 0.2, T_READ);
+            scrap(lerp(420, 260, fall), lerp(110 + Math.sin(clock * 4) * 6, 372, fall), lerp(0.8, 0.62, fall) * pop * fade, lerp(0.12, -0.05, fall));
+          }
+          x.restore();
+          x.restore();
+        }
+
+        // The capsule sits on top: she comes out of it and goes back into it.
+        capsule(cur ? clamp(1 - Math.abs(t - T_PING) / 1.4) : 0);
+        if (queue.length) chip(cx + CAP.w / 2 - 30, CAP.h / 2, queue.length);
+        return phase;
+      }
+
+      function frame(now) {
+        const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
+        last = now;
+        vt += dt * speed;
+        if (cur && vt - cur.t0 >= cur.dur) { cur = null; idleSince = vt; }
+        // Back-to-back while a queue waits, a breath of idle otherwise.
+        if (!cur && queue.length && vt - idleSince > 0.25) {
+          const n = queue.shift();
+          cur = { n, t0: vt, dur: queue.length ? DUR_QUEUED : DUR };
+        }
+        if (!cur && !queue.length && auto && vt - idleSince > 1.6) push();
+        phaseEl.textContent = scene(now / 1000) + (queue.length ? ` · antri ${queue.length}` : "");
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      document.getElementById("one").onclick = () => push();
+      document.getElementById("burst").onclick = () => { push(); push(); push(); };
+      document.getElementById("auto").onclick = (e) => { auto = !auto; e.target.classList.toggle("on", auto); };
+      document.getElementById("slow").onclick = (e) => { speed = speed === 1 ? 0.35 : 1; e.target.classList.toggle("on", speed !== 1); };
+      for (const b of document.querySelectorAll("[data-wall]"))
+        b.onclick = () => {
+          document.querySelector(".desk").style.background = b.dataset.wall;
+          for (const o of document.querySelectorAll("[data-wall]")) o.classList.toggle("on", o === b);
+        };
+    </script>
+  </body>
+</html>

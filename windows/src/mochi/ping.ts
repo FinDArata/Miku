@@ -4,15 +4,17 @@
 // space, with PING_TOP units of headroom over her head for the bubble: the
 // caller translates by PING_TOP and scales, as for drawChibi.
 
-import { drawChibi } from "./chibi";
+import { CHIBI_H, drawChibi } from "./chibi";
+import { HOLD_ARMS, drawAlertCard } from "./props";
 import type { MikuVariantId } from "./variants";
+import { themeFor } from "../theme/skins";
 
 /** Headroom over her head (design units) the bubble needs. */
 export const PING_TOP = 70;
 
 const PINK = "#E12885";
 const TEAL = "#39C5BB";
-const HOLD = [15, -70, -15, 70] as const;
+const HOLD = HOLD_ARMS;
 /** Her headset's earpieces, design units. */
 const EARS: readonly (readonly [number, number])[] = [[140, 242], [380, 242]];
 
@@ -103,6 +105,33 @@ export function drawPing(x: Ctx, t: number, clock: number, variant: MikuVariantI
     const fall = clamp((t - T_FALL) / (T_HOLD - T_FALL)) ** 2;
     const sway = t >= T_HOLD ? Math.sin(clock * 2) * 0.03 : 0;
     bubble(x, lerp(400, 260, fall), lerp(110, 372, fall), lerp(0.9, 0.62, fall) * pop, lerp(0.12, -0.05, fall) + sway, t >= T_SMILE);
+  }
+  x.restore();
+}
+
+/**
+ * A plain PC notice (dev/pc-notif-mockup.html): she drops out of the capsule
+ * with a "!" over her head, her headset rings, a "!" card floats down into her
+ * hands, she reads it and smiles. Same headroom and frame as drawPing.
+ */
+export function drawDrop(x: Ctx, t: number, clock: number, variant: MikuVariantId) {
+  const T_LAND = 0.5, T_CARD = 0.75, T_DOWN = 1.25, T_READ = 1.75;
+  const land = eBack(clamp(t / T_LAND));
+  x.save();
+  x.translate(0, PING_TOP - (1 - land) * (CHIBI_H + PING_TOP));
+  const o = { noShadow: true } as const;
+  if (t < T_CARD) drawChibi(x, "approval", clock, variant, o);
+  else if (t < T_DOWN) {
+    const k = clamp((t - T_CARD) / (T_DOWN - T_CARD));
+    drawChibi(x, "question", clock, variant, { ...o, arms: HOLD, look: [lerp(12, 0, k), lerp(-12, 12, k)], skipFx: new Set(["question"]) });
+  } else if (t < T_READ) drawChibi(x, "idle", clock, variant, { ...o, arms: HOLD, eyes: "open", look: [Math.sin(clock * 3.2) * 7, 12] });
+  else drawChibi(x, "happy", clock, variant, o);
+  rings(x, clock, t > 0.2 && t < T_DOWN + 0.3 ? 1 - clamp((t - T_DOWN) / 0.3) : 0);
+  if (t > 0.3 && t < T_READ) {
+    const pop = eBack(clamp((t - 0.3) / 0.25));
+    const fall = clamp((t - T_CARD) / (T_DOWN - T_CARD)) ** 2;
+    const fade = 1 - clamp((t - (T_READ - 0.2)) / 0.2);
+    drawAlertCard(x, lerp(420, 260, fall), lerp(110 + Math.sin(clock * 4) * 6, 372, fall), lerp(0.8, 0.62, fall) * pop * fade, lerp(0.12, -0.05, fall), themeFor(variant).accent);
   }
   x.restore();
 }

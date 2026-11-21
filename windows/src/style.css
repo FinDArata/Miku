@@ -4605,6 +4605,12 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 /* A permission or a question (island/notices.ts request()): the command in a
    mono box, the answers as pills, Later as a quiet link at the end. */
 .nt-card.tall { height: 190px; }
+/* A plain PC notice (notices.ts pcToast, DROP_H): Miku drops out of the
+   capsule, then the glass slides out from behind her; no buttons. */
+.nt-card.drop { height: 118px; }
+.nt-card.drop .nt-body { transform: translateX(-28px); transition: opacity 0.25s 0.4s, transform 0.45s cubic-bezier(0.3, 1.2, 0.4, 1) 0.4s; }
+.nt-card.drop.on .nt-body { transform: none; }
+@media (prefers-reduced-motion: reduce) { .nt-card.drop .nt-body { transform: none; transition: opacity 0.2s; } }
 .nt-who .nt-dim { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .nt-code { margin-top: 6px; padding: 5px 9px; border-radius: 8px; background: #0b1120; box-shadow: inset 0 0 0 1px rgba(255, 211, 107, 0.18); font: 500 11.5px/1.4 ui-monospace, Consolas, monospace; color: #e6edf3; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; word-break: break-all; }
 .nt-link { margin-left: auto; padding: 5px 4px; border: 0; background: transparent; font: 600 11.5px var(--font); color: #8fa3b8; cursor: default; white-space: nowrap; }
@@ -4821,31 +4827,8 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
   display: flex;
   flex-direction: column;
 }
-.nh-head {
-  /* The deck body is narrow (Miku's column takes the left 140px): the title
-     and the filters stack, or both get cut at the right edge. */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 4px;
-}
 /* The title in sentence case on one line, so the list keeps its room. */
 .nh-title { font: 700 14px var(--font); letter-spacing: 0; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.nh-head .dk-head { display: flex; align-items: center; max-width: 100%; }
-.nh-badge {
-  /* Whole pill, never squeezed by the title beside it. */
-  flex: none;
-  white-space: nowrap;
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font: 700 10px var(--font);
-  letter-spacing: 0.02em;
-  color: #fff;
-  background: #e12885;
-  vertical-align: 2px;
-}
 .nh-filters { display: flex; gap: 2px; flex: none; }
 .nh-filter {
   border: 0;
@@ -4859,7 +4842,7 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 }
 .nh-filter:hover { color: var(--ink); }
 .nh-filter.on { background: rgba(57, 197, 187, 0.14); color: #9fe6e6; }
-.nh-filter:focus-visible, .nh-seen:focus-visible, .nh-clear-btn:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; }
+.nh-filter:focus-visible { outline: 2px solid #9fe6e6; outline-offset: 2px; }
 .nh-list {
   flex: 1;
   min-height: 0;
@@ -4871,89 +4854,54 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 }
 .nh-list::-webkit-scrollbar { display: none; }
 /* Groups: a small label and a rule that fades out. */
-.nh-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 3px 22px;
-  font: 700 9.5px var(--font);
-  letter-spacing: 0.16em;
-  color: #8fa3b8;
-}
-.nh-group::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(57, 197, 187, 0.16), transparent); }
-/* A timeline on one staff line: each notice is a note on it, pink while unread. */
-.nh-entry {
-  position: relative;
-  display: block;
-  padding: 6px 8px 7px 22px;
-  border-radius: 10px;
-  cursor: default;
-  transition: background 0.15s ease;
-}
-.nh-entry::before { content: ""; position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; background: rgba(57, 197, 187, 0.16); }
-.nh-entry:hover { background: rgba(57, 197, 187, 0.07); }
-.nh-entry.unread { background: linear-gradient(90deg, rgba(225, 40, 133, 0.08), transparent 70%); }
-.nh-led {
-  position: absolute;
-  top: 10px;
-  left: 3px;
-  width: 11px;
-  height: 11px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  border: 1.5px solid rgba(57, 197, 187, 0.55);
-  background: #0a0f11;
-}
-.nh-entry.unread .nh-led { border: 0; background: #e12885; box-shadow: 0 0 8px rgba(225, 40, 133, 0.7); animation: nh-led 1.6s ease-in-out infinite; }
-@keyframes nh-led {
-  0%, 100% { box-shadow: 0 0 4px rgba(225, 40, 133, 0.5); }
-  50% { box-shadow: 0 0 10px rgba(225, 40, 133, 0.9); }
-}
-.nh-body { min-width: 0; }
-.nh-src { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.nh-who { color: var(--ink); font: 700 12.5px var(--font); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
-.nh-app { flex: none; font: 700 9.5px var(--font); letter-spacing: 0.12em; text-transform: uppercase; color: #8fa3b8; }
-.nh-time { margin-left: auto; flex: none; font: 500 10px ui-monospace, Consolas, monospace; color: #8fa3b8; }
-.nh-msg {
-  font: 500 12px var(--font);
-  line-height: 1.35;
-  margin-top: 2px;
-  color: #c9d3d8;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-.nh-entry.read .nh-msg { color: #8fa3b8; }
-.nh-rom { font: italic 500 11px var(--font); color: #9fe6e6; opacity: 0.75; margin-top: 2px; }
-.nh-acts { display: flex; gap: 2px; margin-top: 3px; }
-.nh-seen {
-  border: 0;
-  background: transparent;
-  color: #39c5bb;
-  font: 600 11px var(--font);
-  padding: 3px 4px;
-  border-radius: 999px;
-  cursor: default;
-}
-.nh-seen:hover { filter: brightness(1.15); }
-.nh-clear { display: flex; justify-content: flex-end; margin-top: 4px; }
-.nh-clear-btn {
-  border: 0;
-  background: transparent;
-  color: #8fa3b8;
-  font: 600 11px var(--font);
-  padding: 4px 12px;
-  border-radius: 999px;
-  cursor: default;
-  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
-}
-.nh-clear-btn:hover { color: #39c5bb; }
-.nh-clear-btn.armed {
-  background: rgba(225, 40, 133, 0.1);
-  box-shadow: inset 0 0 0 1px #e12885;
-  color: #f7a8cf;
-}
+/* The Notif page (views/deck.ts notifPage; dev/notif-page-mockup.html): one
+   header line, a chip per app, two-line rows. Unread wears the pink "!" the
+   incoming notice has; actions show on hover only. */
+.nf-head { display: flex; align-items: center; gap: 8px; height: 22px; flex: none; }
+.nf-new { flex: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; padding: 1px 8px; border-radius: 999px; background: rgba(225, 40, 133, 0.18); color: #ff8fc0; font: 700 10.5px var(--font); }
+.nf-new b { font-weight: 900; }
+.nf-icons { margin-left: auto; display: flex; gap: 2px; flex: none; }
+.nf-ib { display: grid; place-items: center; min-width: 22px; height: 20px; padding: 0 3px; border: 0; border-radius: 6px; background: transparent; color: var(--skin-secondary, #8fa3b8); font: 600 11.5px var(--font); cursor: default; transition: background 0.15s, color 0.15s; }
+.nf-ib:hover { background: var(--miku-tint, rgba(57, 197, 187, 0.12)); color: var(--miku-bright, #9fe6e6); }
+.nf-ib.armed { padding: 0 8px; background: rgba(225, 40, 133, 0.18); color: #ff8fc0; font-size: 10.5px; }
+.nf-ib.x:hover { background: rgba(225, 40, 133, 0.2); color: #ff8fc0; }
+.nf-ib:focus-visible, .nf-chip:focus-visible { outline: 2px solid var(--miku-line, #9fe6e6); outline-offset: 1px; }
+
+/* One chip per app that sent something; it scrolls sideways when there are many. */
+.nf-chips { display: flex; gap: 4px; margin: 6px 0 2px; flex: none; overflow-x: auto; scrollbar-width: none; }
+.nf-chips::-webkit-scrollbar { display: none; }
+.nf-chip { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--skin-line, rgba(255, 255, 255, 0.08)); background: transparent; color: var(--skin-secondary, #8fa3b8); font: 600 10.5px var(--font); white-space: nowrap; cursor: default; transition: color 0.15s, background 0.15s; }
+.nf-chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 5px var(--c); }
+.nf-chip small { color: var(--skin-muted, #64748b); font-weight: 700; font-size: 10px; }
+.nf-chip:hover { color: var(--ink); }
+.nf-chip.on { background: var(--miku-tint, rgba(57, 197, 187, 0.14)); border-color: var(--miku-line, rgba(57, 197, 187, 0.45)); color: var(--miku-bright, #9fe6e6); }
+
+.nf-group { display: flex; align-items: center; gap: 8px; margin: 7px 2px 2px; font: 800 9.5px var(--font); letter-spacing: 0.16em; color: var(--skin-muted, #64748b); }
+.nf-group::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--miku-line, rgba(57, 197, 187, 0.25)), transparent); }
+
+.nf-row { position: relative; display: flex; gap: 9px; padding: 6px 8px; border-radius: 11px; cursor: default; transition: background 0.15s; }
+.nf-row.live:hover { background: var(--miku-tint, rgba(57, 197, 187, 0.07)); }
+.nf-row.unread { background: linear-gradient(90deg, rgba(225, 40, 133, 0.1), transparent 75%); }
+.nf-row.unread::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: #e12885; box-shadow: 0 0 6px #e12885; }
+.nf-row.read .nf-txt { opacity: 0.62; }
+.nf-av { position: relative; flex: none; width: 26px; height: 26px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #0a0f11; font: 800 11.5px var(--font); }
+/* The same pink "!" the incoming notice wears. */
+.nf-row.unread .nf-av::after { content: "!"; position: absolute; top: -4px; right: -5px; width: 13px; height: 13px; border-radius: 50%; background: #e12885; color: #fff; font: 900 9px/13px var(--font); text-align: center; box-shadow: 0 0 0 2px var(--skin-panel, #0b101c); }
+.nf-av em { position: absolute; right: -5px; bottom: -3px; padding: 0 3px; border-radius: 5px; font: 800 8px/12px var(--font); font-style: normal; background: var(--skin-panel, #0b101c); color: var(--miku-bright, #9fe6e6); box-shadow: 0 0 0 1px var(--skin-line, #26324c); }
+.nf-txt { flex: 1; min-width: 0; }
+.nf-l1 { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.nf-who { color: var(--ink); font: 700 12.5px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nf-app { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--skin-secondary, #8fa3b8); font: 700 9px var(--font); letter-spacing: 0.12em; text-transform: uppercase; }
+.nf-time { margin-left: auto; flex: none; color: var(--skin-muted, #8fa3b8); font: 500 10px var(--mono, ui-monospace, Consolas, monospace); }
+.nf-msg { margin-top: 1px; color: var(--skin-body, #c9d3d8); font: 500 12px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nf-msg + .nf-msg { opacity: 0.75; }
+.nf-rom { color: var(--miku-bright, #9fe6e6); opacity: 0.75; font: italic 500 11px var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nf-more { margin-top: 2px; color: var(--miku, #39c5bb); font: 600 10.5px var(--font); }
+/* A row's actions: on hover (or keyboard focus) only, over its time. */
+.nf-acts { position: absolute; top: 5px; right: 6px; display: none; gap: 2px; padding-left: 14px; background: linear-gradient(90deg, transparent, var(--skin-card, #121a2a) 14px); }
+.nf-row:hover .nf-acts, .nf-row:focus-within .nf-acts { display: flex; }
+.nf-acts .nf-ib { background: var(--miku-tint, rgba(57, 197, 187, 0.12)); color: var(--miku-bright, #9fe6e6); }
+.nf-acts .nf-ib.x { background: rgba(225, 40, 133, 0.15); color: #ff8fc0; }
 .nh-empty {
   flex: 1;
   display: grid;
@@ -4968,9 +4916,6 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
   font: 500 11.5px var(--font);
   line-height: 1.5;
   color: #8fa3b8;
-}
-@media (prefers-reduced-motion: reduce) {
-  .nh-entry.unread .nh-led { animation: none; }
 }
 
 /* ── The Shelf page in the widget deck (views/deck.ts, core/shelf.ts,

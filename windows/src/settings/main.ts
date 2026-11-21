@@ -1259,10 +1259,10 @@ function generalSection(): HTMLElement {
     // to toggle on Linux.
     ...(State.os === "windows" ? [
       h("div", { class: "row" },
-        h("label", { text: t("LINE & Discord in the island") }),
+        h("label", { text: t("PC notifications in the island") }),
         toggle(settings.pcNotifications, (v) => { settings.pcNotifications = v; void save(); }),
       ),
-      h("div", { class: "hint", text: t("Reads the notifications LINE and Discord show on this PC (Windows' notification list), only while this is on. Nothing is sent anywhere or kept. Replies open the app.") }),
+      h("div", { class: "hint", text: t("Shows the notifications your PC apps put up (Windows' notification list), only while this is on. Nothing is sent anywhere. LINE and Discord open their app; any other app's notice is only shown.") }),
     ] : []),
     h("div", { class: "row" },
       h("label", { text: t("Romaji under notices") }),

@@ -1512,8 +1512,8 @@ export class Island {
     this.lyricsTicker = null;
   }
 
-  /** A LINE / Discord toast Windows showed (pc_notifications.rs). */
-  pcNotification(n: { app: string; title: string; body: string; target?: string | null }) {
+  /** A toast Windows showed (pc_notifications.rs): LINE / Discord, or any other app. */
+  pcNotification(n: { app: string; name?: string; title: string; body: string; target?: string | null }) {
     void this.notices.pcNotification(n);
   }
 

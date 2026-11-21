@@ -190,7 +190,7 @@ async function main() {
   registerSpotifyHandlers(island);
   registerWhatsAppHandlers(island);
   // LINE and Discord, from the notifications Windows shows (opt-in, Settings).
-  void onEvent<{ app: string; title: string; body: string; target?: string | null }>("pc-notification", (n) => island.pcNotification(n));
+  void onEvent<{ app: string; name?: string; title: string; body: string; target?: string | null }>("pc-notification", (n) => island.pcNotification(n));
   // The app itself came to the front: its messages were read in it (Rust tells
   // the step, once).
   void onEvent<string>("pc-read", (app) => island.pcRead(app));

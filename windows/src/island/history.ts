@@ -1,7 +1,7 @@
 // The record of notices that came and went (dev/notif-history-mockup.html):
 // the notice card folds away after a few seconds, so the Notif page in the
 // widget deck keeps what it said — a WhatsApp / LINE / Discord message, an
-// agent that finished, a released update. Japanese and Korean text gets a
+// agent that finished, a released update, any other PC app's toast. Japanese and Korean text gets a
 // romaji line, as the notice card and the lyrics do.
 //
 // Storage: localStorage of the island's own window — nothing leaves this
@@ -14,9 +14,10 @@ import {
   romanizeMixed,
   scriptOf,
 } from "../lyrics/romanize";
-import { N_, t } from "../i18n/i18n";
+import { t } from "../i18n/i18n";
 
-export type NoticeKind = "chat" | "agent" | "sistem";
+/** "pc": any other app's toast (pc_notifications.rs), shown and kept, never opened. */
+export type NoticeKind = "chat" | "agent" | "sistem" | "pc";
 
 export interface NoticeEntry {
   id: number;
@@ -37,16 +38,11 @@ export interface NoticeEntry {
   read: boolean;
 }
 
-export type NoticeFilter = "all" | NoticeKind;
+/** "all", or one source (sourceOf): the page filters by who sent it, not by kind. */
+export type NoticeFilter = string;
 
 const KEY = "miku.notices.history";
 const MAX = 100;
-const FILTERS: readonly { id: NoticeFilter; name: string }[] = [
-  { id: "all", name: N_("All") },
-  { id: "chat", name: N_("Chats") },
-  { id: "agent", name: N_("Agents") },
-  { id: "sistem", name: N_("System") },
-];
 
 let nextId = 1;
 let entries: NoticeEntry[] = load();
@@ -91,9 +87,45 @@ export function unreadOf(app: string): number {
   return entries.filter((e) => e.app === app && !e.read).length;
 }
 
-/** What the page shows, newest first, already filtered. */
+/** The source an entry counts under on the page's chips: the chat app, the
+ * agent, or the PC app by its name (every PC toast has app "pc"). */
+export function sourceOf(e: NoticeEntry): string {
+  return e.kind === "pc" || e.kind === "agent" ? `${e.kind}:${e.label}` : e.app;
+}
+
+/** One chip per source that sent something, newest first, with its count. */
+export function sources(): { id: string; label: string; color: string; count: number }[] {
+  const out = new Map<string, { id: string; label: string; color: string; count: number }>();
+  for (const e of entries) {
+    const id = sourceOf(e);
+    const s = out.get(id);
+    if (s) s.count++;
+    else out.set(id, { id, label: e.label, color: e.color, count: 1 });
+  }
+  return [...out.values()];
+}
+
+/** What the page shows, newest first, already filtered. A source that is
+ * gone (cleared, removed) falls back to all. */
 export function list(): NoticeEntry[] {
-  return entries.filter((e) => filter === "all" || e.kind === filter);
+  const shown = entries.filter((e) => filter === "all" || sourceOf(e) === filter);
+  return shown.length || filter === "all" ? shown : entries;
+}
+
+/** Entries in a row from one sender, in one day group, fold into one stack. */
+export function stacks(list: readonly NoticeEntry[], now = new Date()): NoticeEntry[][] {
+  const out: NoticeEntry[][] = [];
+  for (const e of list) {
+    const prev = out.at(-1)?.[0];
+    if (prev && sourceOf(prev) === sourceOf(e) && prev.who === e.who && groupOf(prev.at, now) === groupOf(e.at, now)) out.at(-1)!.push(e);
+    else out.push([e]);
+  }
+  return out;
+}
+
+/** Only a chat or an agent leads somewhere; any other app's toast is just shown. */
+export function opens(e: NoticeEntry): boolean {
+  return e.kind === "agent" || e.app === "line" || e.app === "discord";
 }
 
 export function getFilter(): NoticeFilter {
@@ -104,11 +136,6 @@ export function setFilter(f: NoticeFilter) {
   if (f === filter) return;
   filter = f;
   changes++;
-}
-
-/** The filter pills (All, Chats, Agents, System). */
-export function filters(): readonly { id: NoticeFilter; name: string }[] {
-  return FILTERS;
 }
 
 /** The clear button armed for the second click. */
@@ -136,15 +163,30 @@ export function disarmClear(): void {
   changes++;
 }
 
-/** Marks one entry read; the page re-renders. */
-export function markRead(id: number): void {
-  const e = entries.find((x) => x.id === id);
-  if (e && !e.read) {
-    e.read = true;
+/** These entries read (a stack, or the whole page). */
+export function markRead(ids: readonly number[]): void {
+  let changed = false;
+  for (const e of entries) {
+    if (ids.includes(e.id) && !e.read) {
+      e.read = true;
+      changed = true;
+    }
+  }
+  if (changed) {
     changes++;
     save();
     State.notify();
   }
+}
+
+/** Takes these entries off the page. */
+export function remove(ids: readonly number[]): void {
+  const before = entries.length;
+  entries = entries.filter((e) => !ids.includes(e.id));
+  if (entries.length === before) return;
+  changes++;
+  save();
+  State.notify();
 }
 
 /** A whole source was seen (its notice card said "Mark as read"). */

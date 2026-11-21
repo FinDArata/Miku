@@ -1,15 +1,16 @@
-// LINE and Discord in the island, from the notifications Windows already shows.
+// The notifications Windows already shows, in the island: LINE and Discord as
+// chats, every other app's toast as a plain notice.
 //
-// Neither has an API for a personal account that is safe to use (an unofficial
-// client risks the account), and the official notification listener needs an
-// app with package identity. What every Windows user has instead is the
+// LINE and Discord have no API for a personal account that is safe to use (an
+// unofficial client risks the account), and the official notification listener
+// needs an app with package identity. What every Windows user has instead is the
 // Notification Center's own store, %LOCALAPPDATA%\Microsoft\Windows\
 // Notifications\wpndatabase.db: each toast an app shows lands there, with its
 // title and text. Miku reads it — read-only, only while the user turned this on
-// (Settings → The island), only LINE's and Discord's toasts, only the ones that
-// arrive after it started looking — and hands each new one to the island,
-// unless its app is already in front, where the toast is being read as it
-// arrives.
+// (Settings → The island), only the ones that arrive after it started looking —
+// and hands each new one to the island. A LINE or Discord toast whose app is
+// already in front is skipped: it is being read as it arrives. WhatsApp has its
+// own link (whatsapp/) and Miku's own toasts are hers, so neither comes twice.
 // Nothing is written anywhere; the format is Windows' own and undocumented, so
 // a failure to read is quiet, never an error the user has to deal with.
 
@@ -22,8 +23,10 @@ use tauri::{AppHandle, Emitter, Manager};
 #[derive(Serialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PcNotification {
-    /// "line" or "discord".
+    /// "line", "discord", or "pc" for any other app.
     pub app: String,
+    /// The app's name to show: "LINE", "Discord", or one read off the handler.
+    pub name: String,
     /// The sender, or the server and channel.
     pub title: String,
     pub body: String,
@@ -46,6 +49,44 @@ pub fn app_of(handler: &str) -> Option<&'static str> {
         Some("line")
     } else {
         None
+    }
+}
+
+/// Toasts the island never shows as plain notices: WhatsApp has its own link
+/// (it would come twice), and Miku's own are hers.
+pub fn skipped(handler: &str) -> bool {
+    let h = handler.to_ascii_lowercase();
+    h.contains("whatsapp") || h.contains("com.findarata.miku")
+}
+
+/// A name to show for any other app, read off its handler (an AUMID):
+/// `Microsoft.Office.OUTLOOK.EXE.15` → Outlook, `MSEdge` → Edge, a packaged
+/// `Vendor.App_hash!Id` → App, a phone app mirrored by Phone Link
+/// (`…YourPhoneNotifications_com.instagram.android`) → Instagram, an exe path → its stem.
+pub fn name_of(handler: &str) -> String {
+    let h = handler.trim();
+    let h = match h.rsplit_once("YourPhoneNotifications_") {
+        Some((_, pkg)) => pkg,
+        None => h.split_once('!').map_or(h, |(pkg, _)| pkg.split('_').next().unwrap_or(pkg)),
+    };
+    // An exe path: its file name.
+    let h = h.rsplit(['\\', '/']).next().unwrap_or(h);
+    const NOISE: &[&str] = &["exe", "app", "com", "org", "net", "android", "desktop", "microsoft", "windows", "win32"];
+    let word = h
+        .split('.')
+        .rev()
+        .find(|w| !w.is_empty() && !w.chars().all(|c| c.is_ascii_digit()) && !NOISE.contains(&w.to_ascii_lowercase().as_str()))
+        .unwrap_or(h);
+    match word.to_ascii_lowercase().as_str() {
+        "msedge" => "Edge".into(),
+        "immersivecontrolpanel" => "Settings".into(),
+        "sechealthui" => "Windows Security".into(),
+        // ALLCAPS or lowercase: capitalised; anything mixed is kept as written.
+        _ if word.chars().all(|c| !c.is_lowercase()) || word.chars().all(|c| !c.is_uppercase()) => {
+            let mut c = word.chars();
+            c.next().map_or_else(String::new, |f| f.to_uppercase().chain(c.flat_map(char::to_lowercase)).collect())
+        }
+        _ => word.to_string(),
     }
 }
 
@@ -183,7 +224,7 @@ fn watch(app: &AppHandle) {
                     // so the sign would hang after the message was read. The
                     // toast that was clicked, or arrived while reading, never
                     // becomes a sign.
-                    if front == Some(n.app.as_str()) {
+                    if n.app != "pc" && front == Some(n.app.as_str()) {
                         continue;
                     }
                     let _ = app.emit_to(crate::island::WINDOW_LABEL, "pc-notification", n);
@@ -200,7 +241,7 @@ fn store_path() -> Option<std::path::PathBuf> {
     p.exists().then_some(p)
 }
 
-/// LINE's and Discord's toasts that arrived after `since` (all of them when it
+/// The toasts that arrived after `since` (all of them when it
 /// is None), and the newest arrival time in the store. The read-only
 /// connection is kept between ticks; a failing one is dropped for a reopen.
 fn read_since(
@@ -245,7 +286,14 @@ fn read_all(conn: &rusqlite::Connection, since: Option<i64>) -> Result<(i64, Vec
     let mut out = Vec::new();
     for row in rows.flatten() {
         let (handler, payload) = row;
-        let Some(app) = app_of(&handler) else { continue };
+        if skipped(&handler) {
+            continue;
+        }
+        let (app, name) = match app_of(&handler) {
+            Some("discord") => ("discord", "Discord".to_string()),
+            Some(chat) => (chat, "LINE".to_string()),
+            None => ("pc", name_of(&handler)),
+        };
         let xml = String::from_utf8_lossy(&payload);
         let mut t = texts(&xml).into_iter().filter(|s| !s.trim().is_empty());
         let title = t.next().unwrap_or_default();
@@ -255,6 +303,7 @@ fn read_all(conn: &rusqlite::Connection, since: Option<i64>) -> Result<(i64, Vec
         }
         out.push(PcNotification {
             app: app.to_string(),
+            name,
             title: title.chars().take(120).collect(),
             body: body.chars().take(400).collect(),
             target: launch_of(&xml),
@@ -276,6 +325,22 @@ mod tests {
         assert_eq!(app_of("Microsoft.YourPhone_8wekyb3d8bbwe!YourPhoneNotifications_com.discord"), Some("discord"));
         assert_eq!(app_of("5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App"), None);
         assert_eq!(app_of("Claude_pzs8sxrjxfjjc!Claude"), None);
+    }
+
+    #[test]
+    fn any_other_app_gets_a_name() {
+        assert_eq!(name_of("Microsoft.Office.OUTLOOK.EXE.15"), "Outlook");
+        assert_eq!(name_of("MSEdge"), "Edge");
+        assert_eq!(name_of("Chrome"), "Chrome");
+        assert_eq!(name_of("Microsoft.Windows.SecHealthUI_cw5n1h2txyewy!SecHealthUI"), "Windows Security");
+        assert_eq!(name_of("windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel"), "Settings");
+        assert_eq!(name_of("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify"), "SpotifyMusic");
+        assert_eq!(name_of("Microsoft.YourPhone_8wekyb3d8bbwe!YourPhoneNotifications_com.instagram.android"), "Instagram");
+        assert_eq!(name_of(r"{6D809377-6AF0-444B-8957-A3773F02200E}\Steam\steam.exe"), "Steam");
+        assert!(skipped("5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App"));
+        assert!(skipped("Microsoft.YourPhone_8wekyb3d8bbwe!YourPhoneNotifications_com.whatsapp"));
+        assert!(skipped("com.findarata.miku"));
+        assert!(!skipped("MSEdge"));
     }
 
     #[test]

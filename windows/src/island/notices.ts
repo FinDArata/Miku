@@ -19,7 +19,7 @@ import { lastTextStep } from "../core/diff";
 import type { ViewActions } from "../views/views";
 import { WhatsApp, preview, type WaConversation } from "../core/whatsapp";
 import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "../mochi/chibi";
-import { PING_TOP, drawPing } from "../mochi/ping";
+import { PING_TOP, drawDrop, drawPing } from "../mochi/ping";
 import { parseVariant, resolveVariantNow } from "../mochi/wardrobe";
 import { appIcon } from "../views/appicons";
 import { h, svg } from "../views/dom";
@@ -47,6 +47,9 @@ export const QUESTION_H = 190;
 const CLICK_GUARD_MS = 600;
 /** The permission card's yellow, as the mockup's (docs/mockups/notch-prototype.html). */
 const ASK_COLOR = "#ffd36b";
+/** A plain PC notice: shorter (no buttons), and it goes back up on its own sooner. */
+export const DROP_H = 118;
+const DROP_MS = 4200;
 export const HANG_W = 320;
 export const HANG_H = 96;
 
@@ -83,6 +86,8 @@ export class Notices {
   private noticePose: ChibiPose = "idle";
   /** A message plays the headset ping (mochi/ping.ts) from when it arrived. */
   private noticePing = false;
+  /** A plain PC notice: Miku drops out of the capsule (mochi/ping.ts drawDrop). */
+  private noticeDrop = false;
   private noticeAt = 0;
   private hangPose: ChibiPose = "idle";
   private raf: number | null = null;
@@ -157,7 +162,7 @@ export class Notices {
   }
   /** The card's height: a question needs more room than the rest. */
   get noticeH(): number {
-    return this.noticeEl.classList.contains("tall") ? QUESTION_H : NOTICE_H;
+    return this.noticeEl.classList.contains("tall") ? QUESTION_H : this.noticeDrop ? DROP_H : NOTICE_H;
   }
   /** The request on the card, if a permission or question card is up. */
   get requestOnCard(): string | null {
@@ -331,8 +336,28 @@ export class Notices {
     ], true);
   }
 
-  /** A LINE or Discord toast Windows showed: its card, and a reply that opens the app. */
-  async pcNotification(n: { app: string; title: string; body: string; target?: string | null }) {
+  /**
+   * Any other app's toast (dev/pc-notif-mockup.html): only a notice — Miku
+   * drops out of the capsule with it and goes back up on her own. No buttons,
+   * nothing to open, nothing left hanging; the Notif page keeps what it said.
+   */
+  private pcToast(n: { name: string; title: string; body: string }) {
+    const color = "var(--miku, #39c5bb)";
+    const who = n.title || n.name;
+    Sound.notify("notice", "app-notice");
+    void NoticeHistory.add({ kind: "pc", app: "pc", color, label: n.name, who, text: n.body });
+    this.open(color, "happy", [
+      source("pc", color, n.name),
+      h("div", { class: "nt-who" },
+        h("span", { class: "nt-av", style: `--c:${color}`, text: who.slice(0, 1).toUpperCase() }),
+        h("span", { class: "nt-name", text: who })),
+      h("div", { class: "nt-msg", text: n.title ? n.body : "" }),
+    ], false, false, false, true);
+  }
+
+  /** A toast Windows showed: LINE / Discord as chats (a card that opens the app), any other app as a plain notice. */
+  async pcNotification(n: { app: string; name?: string; title: string; body: string; target?: string | null }) {
+    if (n.app !== "line" && n.app !== "discord") return this.pcToast({ name: n.name || "Windows", title: n.title, body: n.body });
     const app = n.app === "discord" ? "discord" : "line";
     const color = app === "discord" ? "#5865f2" : "#06c755";
     const label = app === "discord" ? "Discord" : "LINE";
@@ -564,7 +589,7 @@ export class Notices {
 
   // ── The card ───────────────────────────────────────────────────────────────
 
-  private open(color: string, pose: ChibiPose, body: HTMLElement[], ping = false, request = false, tall = false): boolean {
+  private open(color: string, pose: ChibiPose, body: HTMLElement[], ping = false, request = false, tall = false, drop = false): boolean {
     // The open island already shows everything: no card over it.
     if (State.mode === "expanded") return false;
     // A permission or question waiting on the card is never covered by news:
@@ -572,6 +597,8 @@ export class Notices {
     if (!request && this.shownNotice && this.requestShown != null) return false;
     if (!request) this.requestShown = null;
     this.noticeEl.classList.toggle("tall", tall);
+    this.noticeEl.classList.toggle("drop", drop);
+    this.noticeDrop = drop;
     this.updateShown = false;
     this.noticePose = pose;
     this.noticePing = ping;
@@ -627,7 +654,7 @@ export class Notices {
     if (this.hoveringCard || this.insideNotch || this.requestShown != null) {
       this.clearFold();
     } else if (this.shownNotice) {
-      this.arm(NOTICE_MS);
+      this.arm(this.noticeDrop ? DROP_MS : NOTICE_MS);
     }
   }
 
@@ -802,7 +829,8 @@ export class Notices {
         // On the card she stands on the floor with room over her head for the ping's bubble.
         const since = (now - this.noticeAt) / 1000;
         this.paint(this.noticeMiku, PING_TOP, (x) => {
-          if (this.noticePing) drawPing(x, since, tm, variant);
+          if (this.noticeDrop) drawDrop(x, since, tm, variant);
+          else if (this.noticePing) drawPing(x, since, tm, variant);
           else {
             x.translate(0, PING_TOP);
             drawChibi(x, this.noticePose, tm, variant, { noShadow: true });

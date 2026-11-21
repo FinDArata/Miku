@@ -12,7 +12,6 @@
 import { h, svg } from "./dom";
 import { ctx2d } from "../core/canvas";
 import { ICONS } from "./icons";
-import { appIcon } from "./appicons";
 import type { ViewActions, ViewHost } from "./views";
 import { Bridge, type SystemSnapshot, type WeatherNow } from "../core/bridge";
 import { State } from "../core/state";
@@ -20,6 +19,7 @@ import { Spotify, currentArtwork, formatTime, spotifyPosition } from "../core/sp
 import { CHIBI_H, CHIBI_W, drawChibi, type ChibiPose } from "../mochi/chibi";
 import { parseVariant, resolveVariantNow } from "../mochi/wardrobe";
 import { POKE_LINES } from "../mochi/poke";
+import { drawHoldingPhone } from "../mochi/props";
 import type { Sulk } from "../mochi/engine";
 import { N_, language, t, tn } from "../i18n/i18n";
 import { Shelf, ageLabel, colorOf, sizeLabel, tagOf, type ShelfFilter } from "../core/shelf";
@@ -100,6 +100,8 @@ export interface PoseFacts {
   agentState: ChibiPose;
   rainSoon: boolean;
   unread: boolean;
+  /** The Notif page has anything at all (read or not). */
+  notices: boolean;
   shelved: boolean;
 }
 
@@ -118,10 +120,14 @@ export function deckPose(page: DeckPage, f: PoseFacts): ChibiPose {
     case "weather": return f.rainSoon ? "approval" : "wave";
     case "meeting": return "finished";
     case "agents": return f.agentState === "idle" ? "wink" : f.agentState;
-    case "notif": return f.unread ? "surprised" : "idle";
+    // Unread: she holds her phone (tick draws it); all read, happy; nothing, asleep.
+    case "notif": return f.unread ? "idle" : f.notices ? "happy" : "sleeping";
     case "shelf": return f.shelved ? "happy" : "wave";
   }
 }
+
+/** Her phone holds still for users who asked for less motion. */
+const REDUCED_MOTION = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
 
 const FOCUS_MS = 25 * 60_000;
 const BREAK_MS = 5 * 60_000;
@@ -487,95 +493,113 @@ export function buildDeck(actions: ViewActions): ViewHost {
   }
 
   /** The Notif page: what the notice cards said, newest first (island/history.ts). */
+  /** Stacks the user unfolded on the Notif page (their first entry's id). */
+  const unfolded = new Set<number>();
+
+  /**
+   * The Notif page (dev/notif-page-mockup.html): one header line, a chip per
+   * app that sent something, two-line rows. Unread wears the pink "!" the
+   * incoming notice has; a row's actions show on hover; repeats from one
+   * sender stack. Only a chat (LINE, Discord) or an agent opens on a click —
+   * any other app's toast is just shown.
+   */
   function notifPage(): HTMLElement {
     const count = NoticeHistory.unreadCount();
-    const badge = count > 0 ? h("span", { class: "nh-badge", text: t("{n} unread", { n: count }) }) : null;
-
-    const filtersRow = h("div", { class: "nh-filters" }, ...NoticeHistory.filters().map((f) => {
-      const b = h("button", { class: f.id === NoticeHistory.getFilter() ? "nh-filter on" : "nh-filter", text: t(f.name) });
-      b.addEventListener("click", () => {
-        NoticeHistory.setFilter(f.id);
-        render();
+    const all = NoticeHistory.list();
+    const iconBtn = (label: string, text: string, onClick: () => void, cls = "nf-ib") => {
+      const b = h("button", { class: cls, title: label, "aria-label": label, text });
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onClick();
       });
       return b;
-    }));
+    };
+    const head = h("div", { class: "nf-head" },
+      h("div", { class: "dk-title", text: t("Notif").toUpperCase() }),
+      count > 0 ? h("span", { class: "nf-new" }, h("b", { text: "!" }), t("{n} unread", { n: count })) : null,
+      all.length ? h("div", { class: "nf-icons" },
+        count > 0 ? iconBtn(t("Mark all as read"), "✓", () => NoticeHistory.markRead(all.map((e) => e.id))) : null,
+        NoticeHistory.isClearing()
+          ? iconBtn(t("Clear the history?"), t("Clear the history?"), () => NoticeHistory.clear(), "nf-ib armed")
+          : iconBtn(t("Clear history"), "🗑", () => {
+            NoticeHistory.armClear();
+            render();
+          })) : null);
 
-    const head = h("div", { class: "nh-head" },
-      h("div", { class: "dk-head", style: "margin-bottom:0" },
-        h("div", { class: "dk-title nh-title", text: t("Notification history") }),
-        badge),
-      filtersRow);
-
-    const entries = NoticeHistory.list();
-    if (!entries.length) {
+    if (!all.length) {
       return h("div", { class: "nh-page" }, head,
         h("div", { class: "nh-empty" },
           h("div", { class: "nh-empty-title", text: t("All caught up ✨") }),
           h("div", { class: "nh-empty-note", text: t("Notifications that passed stay here until you clear them — they never leave this computer.") })));
     }
 
-    // Grouped: just now (today), yesterday, earlier — the mockup's order.
-    const groups: { id: "today" | "yesterday" | "earlier"; name: string }[] = [
-      { id: "today", name: t("just now") },
-      { id: "yesterday", name: t("Yesterday") },
-      { id: "earlier", name: t("Earlier") },
-    ];
+    // A chip per app that sent something, instead of fixed kinds.
+    const sources = NoticeHistory.sources();
+    const chip = (id: string, label: string, n: number, color?: string) => {
+      const b = h("button", { class: id === NoticeHistory.getFilter() ? "nf-chip on" : "nf-chip", style: color ? `--c:${color}` : "" },
+        color ? h("i") : null, label, h("small", { text: String(n) }));
+      b.addEventListener("click", () => {
+        NoticeHistory.setFilter(id);
+        render();
+      });
+      return b;
+    };
+    const chips = h("div", { class: "nf-chips" },
+      chip("all", t("All"), sources.reduce((n, s) => n + s.count, 0)),
+      ...sources.map((s) => chip(s.id, s.label, s.count, s.color)));
+
+    const groups = { today: t("just now"), yesterday: t("Yesterday"), earlier: t("Earlier") };
     const parts: HTMLElement[] = [];
     let lastGroup: string | null = null;
-    for (const e of entries) {
+    for (const stack of NoticeHistory.stacks(all)) {
+      const e = stack[0];
       const g = NoticeHistory.groupOf(e.at);
       if (g !== lastGroup) {
-        parts.push(h("div", { class: "nh-group", text: groups.find((x) => x.id === g)!.name.toUpperCase() }));
+        parts.push(h("div", { class: "nf-group", text: groups[g].toUpperCase() }));
         lastGroup = g;
       }
-      const who = h("span", { class: "nh-who", text: e.who || e.label });
-      // Who first, then the app (its mark and name), then when.
-      const src = h("div", { class: "nh-src" },
-        who, appIcon(e.app, e.color), h("span", { class: "nh-app", text: e.label }),
-        h("span", { class: "nh-time", text: NoticeHistory.timeOf(e.at) }));
-      const body = h("div", { class: "nh-body" }, src,
-        h("div", { class: "nh-msg", text: e.text }),
-        ...(e.rom && State.settings.noticeRomanize !== false ? [h("div", { class: "nh-rom", text: e.rom })] : []));
-      // What a click does: the chat app for LINE / Discord — at the chat the
-      // app said its toast leads, when it said one, or the toast itself
-      // pressed (its title is the entry's who) — the agent's page, otherwise
-      // just read.
+      const ids = stack.map((x) => x.id);
+      const unread = stack.some((x) => !x.read);
+      const folded = stack.length > 1 && !unfolded.has(e.id);
+      const opens = NoticeHistory.opens(e);
+      // A chat opens its app — at the chat its toast said it leads, when it
+      // said one, or the toast itself pressed (its title is the entry's who);
+      // an agent opens its page. Anything else only gets read.
       const open = () => {
-        NoticeHistory.markRead(e.id);
+        NoticeHistory.markRead(ids);
         if (e.app === "line" || e.app === "discord") void Bridge.openChatApp(e.app, e.target ?? null, e.who);
         if (e.kind === "agent") {
           agentPick = e.app;
           go("agents");
-          return;
         }
-        render();
       };
-      const row = h("article", { class: e.read ? "nh-entry read" : "nh-entry unread", style: `--app:${e.color}`, title: e.label },
-        h("i", { class: "nh-led" }), body);
-      if (!e.read) {
-        const seen = h("button", { class: "nh-seen", text: t("Mark as read") });
-        seen.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          NoticeHistory.markRead(e.id);
-        });
-        body.append(h("div", { class: "nh-acts" }, seen));
-      }
-      row.addEventListener("click", open);
+      const lines = (folded ? [e] : stack).flatMap((x) => [
+        h("div", { class: "nf-msg", text: x.text }),
+        ...(x.rom && State.settings.noticeRomanize !== false ? [h("div", { class: "nf-rom", text: x.rom })] : []),
+      ]);
+      const row = h("article", { class: `nf-row ${unread ? "unread" : "read"}${opens || folded ? " live" : ""}`, style: `--c:${e.color}`, title: e.label },
+        h("span", { class: "nf-av", text: (e.who.match(/\p{L}|\p{N}/u)?.[0] ?? "?").toUpperCase() },
+          stack.length > 1 ? h("em", { text: `×${stack.length}` }) : null),
+        h("div", { class: "nf-txt" },
+          h("div", { class: "nf-l1" },
+            h("span", { class: "nf-who", text: e.who || e.label }),
+            h("span", { class: "nf-app", text: e.label }),
+            h("span", { class: "nf-time", text: NoticeHistory.timeOf(e.at) })),
+          ...lines,
+          folded ? h("div", { class: "nf-more", text: t("+{n} more", { n: stack.length - 1 }) }) : null),
+        h("div", { class: "nf-acts" },
+          opens ? iconBtn(t("Open"), "↗", open) : null,
+          unread ? iconBtn(t("Mark as read"), "✓", () => NoticeHistory.markRead(ids)) : null,
+          iconBtn(t("Remove"), "✕", () => NoticeHistory.remove(ids), "nf-ib x")));
+      row.addEventListener("click", () => {
+        if (folded) {
+          unfolded.add(e.id);
+          render();
+        } else if (opens) open();
+      });
       parts.push(row);
     }
-
-    const list = h("div", { class: "nh-list" }, ...parts);
-    const clearBtn = h("button", { class: NoticeHistory.isClearing() ? "nh-clear-btn armed" : "nh-clear-btn", text: NoticeHistory.isClearing() ? t("Clear the history?") : t("Clear history") });
-    clearBtn.addEventListener("click", () => {
-      if (!NoticeHistory.isClearing()) {
-        NoticeHistory.armClear();
-        render();
-      } else {
-        NoticeHistory.clear();
-        render();
-      }
-    });
-    return h("div", { class: "nh-page" }, head, list, h("div", { class: "nh-clear" }, clearBtn));
+    return h("div", { class: "nh-page" }, head, chips, h("div", { class: "nh-list nf-list" }, ...parts));
   }
 
   /** The Shelf page (dev/miku-pages-mockup.html): what Miku caught, kept a week. */
@@ -684,6 +708,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       agentState: State.effectiveState,
       rainSoon: weather?.hours.some((x) => x.code >= 51) ?? false,
       unread: NoticeHistory.unreadCount() > 0,
+      notices: NoticeHistory.list().length > 0,
       shelved: Shelf.files.length > 0,
     });
   }
@@ -747,7 +772,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
           ?? tasks[0];
         return `agents|${lang}|${agentPick}|${JSON.stringify(tasks)}|${task ? JSON.stringify(agentLive(task.id)) : ""}`;
       }
-      case "notif": return `notif|${lang}|${NoticeHistory.unreadCount()}|${NoticeHistory.getFilter()}|${NoticeHistory.isClearing()}|${State.settings.noticeRomanize !== false}|${NoticeHistory.version()}|${Math.floor(Date.now() / 60_000)}`;
+      case "notif": return `notif|${lang}|${NoticeHistory.unreadCount()}|${NoticeHistory.getFilter()}|${[...unfolded].join()}|${NoticeHistory.isClearing()}|${State.settings.noticeRomanize !== false}|${NoticeHistory.version()}|${Math.floor(Date.now() / 60_000)}`;
       case "shelf": return `shelf|${lang}|${Shelf.filter}|${Shelf.clearing}|${Catch.layoutKey()}|${Catch.hovering}|${Catch.barShown}|${Catch.copyCount.done}|${Catch.copyCount.count}|${Shelf.version()}|${JSON.stringify(Catch.ghosts())}`;
     }
   }
@@ -859,7 +884,11 @@ export function buildDeck(actions: ViewActions): ViewHost {
         const k = Math.min(miku.width / CHIBI_W, miku.height / CHIBI_H);
         x.setTransform(k, 0, 0, k, (miku.width - CHIBI_W * k) / 2, miku.height - CHIBI_H * k);
         // Catching dropped files, or else the page's own pose.
-        if (!Catch.drawMiku(x, clock, variant)) drawChibi(x, pose(), clock, variant, { noShadow: true });
+        if (Catch.drawMiku(x, clock, variant)) {
+          // Catching files: Catch drew her.
+        } else if (page === "notif" && !actions.poked() && NoticeHistory.unreadCount() > 0) {
+          drawHoldingPhone(x, clock, variant, REDUCED_MOTION.matches);
+        } else drawChibi(x, pose(), clock, variant, { noShadow: true });
         // A new sulk pops a new line; its end lets the bubble fade.
         const mood = actions.poked();
         if (mood !== sulk) {

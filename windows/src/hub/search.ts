@@ -113,7 +113,7 @@ export const SETTINGS_ENTRIES: SettingsSearchEntry[] = [
   { id: "general.sound", page: "general", title: "Sound", terms: ["Open sounds folder", "Reload sounds", "Volume"] },
   { id: "general.notifysounds", page: "general", title: "Notice sounds", terms: ["Other notices", "Your own file", "Choose file…"] },
   { id: "general.behavior", page: "general", title: "Open on hover", terms: ["Open for every pill’s alerts", "Show clock in the island", "Auto-close", "seconds after you leave the island"] },
-  { id: "general.display", page: "general", title: "Closed island shows", terms: ["Island lives on", "Main display", "Display under the cursor", "Hide the island", "LINE & Discord in the island", "Romaji under notices"] },
+  { id: "general.display", page: "general", title: "Closed island shows", terms: ["Island lives on", "Main display", "Display under the cursor", "Hide the island", "PC notifications in the island", "Romaji under notices"] },
   { id: "general.startup", page: "general", title: "Launch at startup", terms: ["Startup"] },
   { id: "general.update", page: "general", title: "Updates", terms: ["Tell me when a new version is out", "Check now", "Install {version}", "Get {version} on GitHub"] },
   { id: "general.recap", page: "general", title: "Weekly recap", terms: ["Keep a history of my coding sessions", "Clear history"] },
