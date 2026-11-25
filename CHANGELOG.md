@@ -1,5 +1,12 @@
 # Changelog — Miku
 
+## 0.1.4 — 2026-11-25
+
+### The lag, found and put to sleep
+
+- The island and the Miku window had started to stutter: the dock's page never slept. The dock window exists from launch (it must — a WebView2 window created later comes up blank), even when the dock is off, and WebView2 keeps a hidden window's `visibilityState` at "visible" — so its page walked the whole window list and rebuilt its bar every two seconds, for ever, in a webview nobody sees, decoding its icons again each time.
+- The page now idles until the dock really shows (`dock-visible` from the dock module) and stops the moment it hides. A poll that would draw the same thing rebuilds nothing — an idle strip touches no DOM and re-decodes no icons. Everything glides again.
+
 ## 0.1.3 — 2026-11-25
 
 ### A Calendar page

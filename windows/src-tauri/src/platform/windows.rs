@@ -132,6 +132,61 @@ pub fn reveal_folder(path: &str) {
     let _ = Command::new("explorer").arg(path).spawn();
 }
 
+/// The Start-menu roots, asked from Windows itself: known folders are the
+/// documented way to find them (and follow the OS's own redirection), so
+/// nothing here starts from an environment variable anyone could have set.
+fn start_menu_roots() -> Vec<std::path::PathBuf> {
+    use windows::Win32::System::Com::CoTaskMemFree;
+    use windows::Win32::UI::Shell::{
+        SHGetKnownFolderPath, FOLDERID_CommonPrograms, FOLDERID_Programs, KNOWN_FOLDER_FLAG,
+    };
+    let mut roots = Vec::new();
+    for folder in [FOLDERID_Programs, FOLDERID_CommonPrograms] {
+        let Ok(p) = (unsafe { SHGetKnownFolderPath(&folder, KNOWN_FOLDER_FLAG(0), None) }) else {
+            continue;
+        };
+        let path = unsafe {
+            let text = p.display().to_string();
+            CoTaskMemFree(Some(p.as_ptr().cast()));
+            std::path::PathBuf::from(text)
+        };
+        roots.push(path);
+    }
+    roots
+}
+
+/// Launches a Start-menu shortcut, and nothing else: the path only goes
+/// through when it canonicalises under a canonicalised Start-menu root —
+/// the check lives here, at the one place a shortcut is ever executed from,
+/// so every caller is covered by it and no caller can skip it.
+pub fn launch_start_menu_shortcut(path: &std::path::Path) -> bool {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    let Ok(canonical) = std::fs::canonicalize(path) else { return false };
+    let ok = start_menu_roots().iter().any(|root| {
+        std::fs::canonicalize(root)
+            .map(|root| canonical.starts_with(&root))
+            .unwrap_or(false)
+    });
+    if !ok {
+        return false;
+    }
+    let wide: Vec<u16> = canonical.as_os_str().encode_wide().chain([0]).collect();
+    let ret = unsafe {
+        ShellExecuteW(
+            None,
+            PCWSTR::null(),
+            PCWSTR(wide.as_ptr()),
+            None,
+            None,
+            SW_SHOWNORMAL,
+        )
+    };
+    (ret.0 as usize) > 32
+}
+
 /// Opens a file with the app Windows associates with it.
 pub fn open_path(path: &std::path::Path) {
     let _ = Command::new("explorer").arg(path).spawn();

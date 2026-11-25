@@ -460,14 +460,32 @@ fn open_app(name: &str) -> (String, bool) {
 }
 
 #[cfg(windows)]
-fn find_app(wanted: &str) -> Option<(String, Box<dyn FnOnce()>)> {
+/// The Start-menu roots, asked from Windows itself: known folders are the
+/// documented way to find them (and follow the OS's own redirection), so the
+/// walk never starts from an environment variable anyone could have set.
+fn start_menu_roots() -> Vec<std::path::PathBuf> {
+    use windows::Win32::System::Com::CoTaskMemFree;
+    use windows::Win32::UI::Shell::{
+        SHGetKnownFolderPath, FOLDERID_CommonPrograms, FOLDERID_Programs, KNOWN_FOLDER_FLAG,
+    };
     let mut roots = Vec::new();
-    if let Some(p) = std::env::var_os("APPDATA") {
-        roots.push(std::path::PathBuf::from(p).join("Microsoft\\Windows\\Start Menu\\Programs"));
+    for folder in [FOLDERID_Programs, FOLDERID_CommonPrograms] {
+        let Ok(p) = (unsafe { SHGetKnownFolderPath(&folder, KNOWN_FOLDER_FLAG(0), None) }) else {
+            continue;
+        };
+        let path = unsafe {
+            let text = p.display().to_string();
+            CoTaskMemFree(Some(p.as_ptr().cast()));
+            std::path::PathBuf::from(text)
+        };
+        roots.push(path);
     }
-    if let Some(p) = std::env::var_os("ProgramData") {
-        roots.push(std::path::PathBuf::from(p).join("Microsoft\\Windows\\Start Menu\\Programs"));
-    }
+    roots
+}
+
+fn find_app(wanted: &str) -> Option<(String, Box<dyn FnOnce()>)> {
+    use crate::platform::launch_start_menu_shortcut;
+    let roots = start_menu_roots();
     let mut best: Option<(usize, std::path::PathBuf)> = None;
     let mut stack = roots;
     while let Some(dir) = stack.pop() {
@@ -487,7 +505,11 @@ fn find_app(wanted: &str) -> Option<(String, Box<dyn FnOnce()>)> {
     }
     let (_, path) = best?;
     let label = path.file_stem()?.to_string_lossy().to_string();
-    Some((label, Box::new(move || crate::platform::reveal_folder(&path.to_string_lossy()))))
+    // The launch re-verifies the path itself, at the sink (platform):
+    // canonicalised under a Start-menu root, or nothing is opened.
+    Some((label, Box::new(move || {
+        launch_start_menu_shortcut(&path);
+    })))
 }
 
 #[cfg(target_os = "linux")]
