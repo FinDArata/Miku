@@ -10,7 +10,7 @@
 
 import "./dock.css";
 import { Bridge, onEvent, type DockWindow } from "../core/bridge";
-import { onLanguageChange, resolveLanguage, setLanguage, systemLanguages, t } from "../i18n/i18n";
+import { language, onLanguageChange, resolveLanguage, setLanguage, systemLanguages, t } from "../i18n/i18n";
 import { watchSkin } from "../theme/sync";
 import type { Settings } from "../core/state";
 
@@ -56,7 +56,22 @@ function appLabel(exe: string, title: string): string {
   return stem || title || "?";
 }
 
+/** What the strip is showing right now, in one string: a rebuild that would
+ * draw the same thing is skipped, so an idle strip re-decodes no icons and
+ * touches no DOM — every two-second poll that finds no change costs nothing. */
+let drawn = "";
+
 function render() {
+  const key = [
+    language(),
+    adding ? 1 : 0,
+    pins.map((p) => `${p.name}|${p.path}`).join(";"),
+    windows.map((w) => `${w.hwnd}|${w.title}|${w.exe}|${w.minimized ? 1 : 0}`).join(";"),
+    icons.size,
+  ].join("~");
+  if (key === drawn && root.firstChild) return;
+  drawn = key;
+
   const bar = document.createElement("div");
   bar.className = "dock-bar";
 
@@ -185,11 +200,31 @@ async function main() {
   // Rust says the window really has Acrylic behind it: the strip goes
   // translucent, so the blur shows instead of hiding under it.
   void onEvent<null>("material", () => document.body.classList.add("acrylic"));
-  void readWindows();
-  // The strip is hidden while it is away: nothing to draw from then.
-  window.setInterval(() => {
-    if (document.visibilityState === "visible") void readWindows();
-  }, 2000);
+
+  // The poll only runs while the strip is on screen. WebView2 keeps a hidden
+  // window's visibilityState at "visible", so Rust says it instead: the dock
+  // window is created at launch (it must be, or it comes up blank) even when
+  // the dock is off, and without this the page would walk the window list and
+  // rebuild the bar every two seconds for ever, in a webview nobody sees.
+  let timer: number | null = null;
+  const stop = () => {
+    if (timer != null) {
+      window.clearInterval(timer);
+      timer = null;
+    }
+  };
+  const start = () => {
+    if (timer == null) {
+      void readWindows();
+      timer = window.setInterval(() => void readWindows(), 2000);
+    }
+  };
+  void onEvent<boolean>("dock-visible", (on) => (on ? start() : stop()));
+  // The page could have been opened while the dock was already up (a manual
+  // reload in dev): ask once, and a `false` answer just leaves it stopped.
+  void Bridge.dockShown().then((on) => {
+    if (on) start();
+  });
 }
 
 void main();

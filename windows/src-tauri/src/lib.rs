@@ -1126,12 +1126,14 @@ pub fn show_dock(app: &AppHandle) {
             if let Some(win) = handle.get_webview_window(DOCK_LABEL) {
                 place_dock(&win);
                 let _ = win.show();
+                let _ = win.emit_to(DOCK_LABEL, "dock-visible", true);
             }
         });
         return;
     };
     place_dock(&win);
     platform::show_window(&win);
+    let _ = win.emit_to(DOCK_LABEL, "dock-visible", true);
 }
 
 /// Bottom-centre of the primary screen, a step off the very edge — the same
@@ -1153,6 +1155,9 @@ fn place_dock(win: &tauri::WebviewWindow) {
 pub fn hide_dock(app: &AppHandle) {
     if let Some(win) = app.get_webview_window(DOCK_LABEL) {
         platform::hide_window(&win);
+        // The page stops its polling: a hidden strip that kept walking the
+        // window list every two seconds was the lag nothing asked for.
+        let _ = win.emit_to(DOCK_LABEL, "dock-visible", false);
     }
 }
 
