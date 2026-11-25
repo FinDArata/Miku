@@ -1239,6 +1239,21 @@ function generalSection(): HTMLElement {
       closed,
     )),
     h("div", { class: "hint", text: t("A PC has no notch: once closed, a small island stays at the top of the screen. Click it to bring Miku back. Hidden, move the pointer to the very top of the screen.") }),
+    anchor("general.dock", h("div", { class: "row" },
+      h("label", { text: t("Dock") }),
+      (() => {
+        // The dock's on/off lives with Rust (dock_toggle flips it, saves it,
+        // shows or hides the strip): the switch only reflects the answer.
+        const sw = toggle(settings.dock?.shown ?? false, async () => {
+          const now = (await Bridge.dockToggle()) ?? (settings.dock?.shown ?? false);
+          sw.classList.toggle("on", now);
+          sw.setAttribute("aria-pressed", String(now));
+          if (settings) settings.dock = { ...(settings.dock ?? { pins: [] }), shown: now };
+        });
+        return sw;
+      })(),
+    )),
+    h("div", { class: "hint", text: t("Miku's own strip at the bottom of the screen: the apps you pin, and the windows that are open. Windows' taskbar keeps doing what it does.") }),
     // The wardrobe is a page of the Miku window (hub/pages/wardrobe.ts), with
     // the live preview: a row here is the way in, besides the tray and Ctrl+Alt+G.
     anchor("general.wardrobe", h("div", { class: "row" },

@@ -27,10 +27,11 @@ import { HOST_OS } from "../core/pills";
 import { Catch, HANDS } from "./catch";
 import { agentLive, elapsed, splitStep } from "../core/agent-live";
 import * as NoticeHistory from "../island/history";
+import * as Calendar from "../core/calendar";
 import { Updates } from "../island/update";
 import { isBusy, percent } from "../core/update";
 
-export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents" | "notif" | "shelf";
+export type DeckPage = "pc" | "music" | "focus" | "weather" | "meeting" | "agents" | "notif" | "shelf" | "calendar";
 
 /** The page (and agent) the deck opens on next time, asked by a notice. */
 let wanted: { page: DeckPage; agent?: string } | null = null;
@@ -59,7 +60,7 @@ export function agentsActive(
     return (x.state === "finished" || x.state === "error") && at != null && now - at < RECENT_MS;
   });
 }
-export const DECK_PAGES: readonly DeckPage[] = ["pc", "music", "focus", "weather", "meeting", "agents", "notif", "shelf"];
+export const DECK_PAGES: readonly DeckPage[] = ["pc", "music", "focus", "weather", "meeting", "agents", "notif", "shelf", "calendar"];
 
 /** The next or previous page, wrapping round. */
 export function stepPage(page: DeckPage, by: 1 | -1): DeckPage {
@@ -103,6 +104,8 @@ export interface PoseFacts {
   /** The Notif page has anything at all (read or not). */
   notices: boolean;
   shelved: boolean;
+  /** The Calendar page holds at least one event today. */
+  eventsToday: boolean;
 }
 
 /**
@@ -123,6 +126,8 @@ export function deckPose(page: DeckPage, f: PoseFacts): ChibiPose {
     // Unread: she holds her phone (tick draws it); all read, happy; nothing, asleep.
     case "notif": return f.unread ? "idle" : f.notices ? "happy" : "sleeping";
     case "shelf": return f.shelved ? "happy" : "wave";
+    // Something to remember today: she holds her leek up as a marker; nothing, she waves.
+    case "calendar": return f.eventsToday ? "leek" : "wave";
   }
 }
 
@@ -135,7 +140,7 @@ const PC_EVERY_MS = 3000;
 const WEATHER_EVERY_MS = 15 * 60_000;
 
 const PAGE_NAMES: Record<DeckPage, string> = {
-  pc: N_("PC"), music: N_("Music"), focus: N_("Focus"), weather: N_("Weather"), meeting: N_("Meeting"), agents: N_("Agents"), notif: N_("Notif"), shelf: N_("Shelf"),
+  pc: N_("PC"), music: N_("Music"), focus: N_("Focus"), weather: N_("Weather"), meeting: N_("Meeting"), agents: N_("Agents"), notif: N_("Notif"), shelf: N_("Shelf"), calendar: N_("Calendar"),
 };
 
 function bar(pct: number, color: string): HTMLElement {
@@ -256,6 +261,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
     render();
     tabs.get(p)?.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (p === "shelf") void Shelf.refresh();
+    if (p === "calendar") Calendar.prune();
     if (p === "pc") void readPc();
     const city = State.settings.weatherCity;
     if (p === "weather" && city && Date.now() - weatherAt > WEATHER_EVERY_MS) void readWeather(city);
@@ -699,6 +705,128 @@ export function buildDeck(actions: ViewActions): ViewHost {
       h("div", { class: "sh-hint", text: hint }));
   }
 
+  /** The month the Calendar page shows, the day picked, the add form open. */
+  let calY = new Date().getFullYear();
+  let calM = new Date().getMonth();
+  let calDay: string | null = null;
+  let calAdding = false;
+
+  /**
+   * The Calendar page (core/calendar.ts): the month's grid, Monday first,
+   * a dot on the days that hold an event, and under the grid the picked
+   * day's agenda with a small form that notes a thing down. Everything lives
+   * in this computer — no calendar service anywhere.
+   */
+  function calendarPage(): HTMLElement {
+    Calendar.prune();
+    const now = new Date();
+    const today = Calendar.dayKey(now);
+    // The grid: leading cells from the tail of the previous month, Monday first.
+    const lead = (new Date(calY, calM, 1).getDay() + 6) % 7;
+    const has = Calendar.datesWithEvents(calY, calM);
+    const start = new Date(calY, calM, 1 - lead);
+    const cells = Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const k = Calendar.dayKey(d);
+      const c = h("button", { class: `cal-day${d.getMonth() !== calM ? " out" : ""}${k === today ? " today" : ""}${has.has(k) ? " has" : ""}${k === calDay ? " picked" : ""}`, text: String(d.getDate()) });
+      c.addEventListener("click", () => {
+        calDay = k;
+        if (d.getMonth() !== calM) {
+          calY = d.getFullYear();
+          calM = d.getMonth();
+        }
+        calAdding = false;
+        render();
+      });
+      return c;
+    });
+    const month = h("div", { class: "cal-month", text: Calendar.monthTitle(calY, calM) });
+    const nav = (dir: 1 | -1) => {
+      const b = h("button", { class: "dk-arrow", title: dir > 0 ? t("Next month") : t("Previous month"), text: dir > 0 ? "›" : "‹" });
+      b.addEventListener("click", () => {
+        calM += dir;
+        if (calM < 0) { calM = 11; calY--; }
+        if (calM > 11) { calM = 0; calY++; }
+        render();
+      });
+      return b;
+    };
+    const back = h("button", { class: "sh-link dim", text: t("Back to today") });
+    back.addEventListener("click", () => {
+      calY = now.getFullYear();
+      calM = now.getMonth();
+      calDay = today;
+      calAdding = false;
+      render();
+    });
+
+    // The picked day (today until one is clicked) and its events.
+    const picked = calDay ?? today;
+    const day = Calendar.of(picked);
+    const rows = day.map((e) => {
+      const x = h("button", { class: "nf-ib x", title: t("Remove"), "aria-label": t("Remove"), text: "✕" });
+      x.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        Calendar.remove([e.id]);
+        render();
+      });
+      return h("div", { class: "cal-ev" },
+        h("b", { class: "cal-ev-time", text: e.time ?? "" }),
+        h("span", { class: "cal-ev-title", text: e.title }),
+        x);
+    });
+
+    // The small form: what to remember, and when it happens in the day.
+    const title = h("input", { class: "dk-input cal-in", placeholder: t("What to remember?") }) as HTMLInputElement;
+    const time = h("input", { class: "dk-input cal-in cal-time", placeholder: t("Time"), maxlength: "5" }) as HTMLInputElement;
+    const noteDown = () => {
+      const what = title.value.trim();
+      if (!what) return;
+      Calendar.add({ date: picked, time: time.value.trim() || undefined, title: what });
+      title.value = "";
+      time.value = "";
+      calAdding = false;
+      render();
+    };
+    for (const input of [title, time]) {
+      input.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") noteDown();
+      });
+      input.addEventListener("mousedown", () => {
+        void Bridge.focusWindow(true);
+        window.setTimeout(() => input.focus(), 60);
+      });
+      input.addEventListener("blur", () => void Bridge.focusWindow(false));
+    }
+    const addBtn = h("button", { class: "btn secondary", text: t("Add") });
+    addBtn.addEventListener("click", noteDown);
+    const form = calAdding || !day.length
+      ? h("div", { class: "cal-form" }, title, time, addBtn)
+      : null;
+    const plus = h("button", { class: "sh-link", title: t("Add event"), text: "+" });
+    plus.addEventListener("click", () => {
+      calAdding = !calAdding;
+      render();
+      if (calAdding) window.setTimeout(() => title.focus(), 60);
+    });
+
+    const head = h("div", { class: "dk-head" },
+      h("div", { class: "dk-title", text: t("Calendar").toUpperCase() }),
+      h("div", { class: "dk-meta", text: Calendar.todayCount() ? tn("{count} event", "{count} events", Calendar.todayCount()) : "" }));
+    return h("div", { class: "cal-page" },
+      head,
+      h("div", { class: "cal-bar" }, nav(-1), month, nav(1), h("div", { class: "grow" }), back),
+      h("div", { class: "cal-grid" }, ...Calendar.weekdayLetters().map((w) => h("span", { class: "cal-wd", text: w })), ...cells),
+      h("div", { class: "cal-head" },
+        h("div", { class: "cal-picked", text: new Date(`${picked}T12:00`).toLocaleDateString(language(), { weekday: "long", day: "numeric", month: "long" }) }),
+        h("div", { class: "grow" }),
+        plus),
+      ...(day.length ? [h("div", { class: "cal-list" }, ...rows)] : [say(t("Nothing on this day."))]),
+      ...(form ? [form] : []),
+    );
+  }
+
   /** The pose for the page (deckPose). */
   function pose(): ChibiPose {
     return actions.poked()?.pose ?? deckPose(page, {
@@ -710,6 +838,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       unread: NoticeHistory.unreadCount() > 0,
       notices: NoticeHistory.list().length > 0,
       shelved: Shelf.files.length > 0,
+      eventsToday: Calendar.todayCount() > 0,
     });
   }
 
@@ -721,8 +850,9 @@ export function buildDeck(actions: ViewActions): ViewHost {
   function render() {
     for (const [p, b] of tabs) {
       b.classList.toggle("on", p === page);
-      // The Notif tab wears a dot while something is still unread.
-      b.classList.toggle("has-new", p === "notif" && NoticeHistory.unreadCount() > 0);
+      // The Notif tab wears a dot while something is still unread; the
+      // Calendar tab, while today holds an event.
+      b.classList.toggle("has-new", (p === "notif" && NoticeHistory.unreadCount() > 0) || (p === "calendar" && Calendar.todayCount() > 0));
     }
     const key = pageKey(page);
     let entry = pageCache.get(page);
@@ -732,7 +862,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
     // live in this render and in the tick, not in the key.
     const arriving = !entry || body.firstChild !== entry.el;
     if (!entry || !arriving || entry.key !== key) {
-      const built = { pc: pcPage, music: musicPage, focus: focusPage, weather: weatherPage, meeting: meetingPage, agents: agentsPage, notif: notifPage, shelf: shelfPage }[page]();
+      const built = { pc: pcPage, music: musicPage, focus: focusPage, weather: weatherPage, meeting: meetingPage, agents: agentsPage, notif: notifPage, shelf: shelfPage, calendar: calendarPage }[page]();
       built.classList.add("dk-page");
       entry = { el: built, key };
       pageCache.set(page, entry);
@@ -774,6 +904,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       }
       case "notif": return `notif|${lang}|${NoticeHistory.unreadCount()}|${NoticeHistory.getFilter()}|${[...unfolded].join()}|${NoticeHistory.isClearing()}|${State.settings.noticeRomanize !== false}|${NoticeHistory.version()}|${Math.floor(Date.now() / 60_000)}`;
       case "shelf": return `shelf|${lang}|${Shelf.filter}|${Shelf.clearing}|${Catch.layoutKey()}|${Catch.hovering}|${Catch.barShown}|${Catch.copyCount.done}|${Catch.copyCount.count}|${Shelf.version()}|${JSON.stringify(Catch.ghosts())}`;
+      case "calendar": return `calendar|${lang}|${calY}|${calM}|${calDay ?? ""}|${calAdding}|${Calendar.version()}|${Math.floor(Date.now() / 60_000)}`;
     }
   }
 

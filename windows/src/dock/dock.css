@@ -1,0 +1,139 @@
+/* The dock's strip (dock.html, src/dock/main.ts): a slim translucent bar at
+   the bottom of the screen, Miku's teal for the dots and the "+" — the same
+   tokens the island's deck wears. The window is transparent; the strip is the
+   only thing on it, and it hugs the edge Windows' own taskbar leaves free. */
+
+:root {
+  --dock-bg: rgba(12, 16, 28, 0.72);
+  --dock-line: rgba(255, 255, 255, 0.08);
+  --dock-ink: #e8eef6;
+  --dock-dim: #8fa3b8;
+}
+
+html,
+body {
+  background: transparent;
+  overflow: hidden;
+  font-family: var(--font, "Segoe UI", sans-serif);
+}
+
+#dock {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+}
+
+.dock-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--dock-line);
+  border-radius: 14px;
+  background: var(--dock-bg);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dock-bar::-webkit-scrollbar { display: none; }
+body.acrylic .dock-bar { background: rgba(12, 16, 28, 0.42); }
+
+/* An app: the icon (or its first letter on a chip), a dot per window. */
+.dock-app {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.dock-app:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); }
+.dock-app:active { transform: translateY(0); }
+.dock-app img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.dock-app .dk-letter {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(57, 197, 187, 0.18);
+  color: #6fede3;
+  font: 700 12px var(--font, sans-serif);
+  pointer-events: none;
+}
+
+/* One dot per open window (up to three), hollow while all are put away. */
+.dock-app .dk-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  pointer-events: none;
+}
+.dock-app .dk-dots em {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #39c5bb;
+}
+.dock-app.away .dk-dots em { background: rgba(143, 163, 184, 0.5); }
+
+/* The "+" that pins a new app, and its small form. */
+.dock-add {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--dock-line);
+  border-radius: 999px;
+  background: transparent;
+  color: #6fede3;
+  font: 700 14px var(--font, sans-serif);
+  cursor: pointer;
+}
+.dock-add:hover { background: rgba(57, 197, 187, 0.14); }
+.dock-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 6px;
+}
+.dock-form input {
+  width: 130px;
+  padding: 4px 8px;
+  border: 1px solid var(--dock-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--dock-ink);
+  font: 500 11.5px var(--font, sans-serif);
+  outline: none;
+}
+.dock-form input:focus { border-color: rgba(57, 197, 187, 0.5); }
+.dock-ok {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #39c5bb;
+  color: #04211f;
+  font: 700 11.5px var(--font, sans-serif);
+  cursor: pointer;
+}
+.dock-ok:hover { filter: brightness(1.1); }

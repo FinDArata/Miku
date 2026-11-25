@@ -2,6 +2,89 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.3",
+      "items": [
+        {
+          "icon": "clock",
+          "title": {
+            "en": "A Calendar page",
+            "zh-Hans": "全新的日历页",
+            "hi": "नया कैलेंडर पेज",
+            "es": "Una página de calendario",
+            "ar": "صفحة تقويم",
+            "fr": "Une page Calendrier",
+            "bn": "নতুন ক্যালেন্ডার পেজ",
+            "pt-BR": "Uma página de calendário",
+            "ru": "Страница календаря",
+            "id": "Halaman Kalender",
+            "de": "Eine Kalender-Seite",
+            "tr": "Yeni bir takvim sayfası",
+            "ko": "새로운 캘린더 페이지",
+            "ja": "カレンダーページ",
+            "th": "หน้าปฏิทินใหม่",
+            "zh-Hant": "全新的行事曆頁"
+          },
+          "detail": {
+            "en": "Note things down on the new Calendar page — today lit, a dot on each day with a plan.",
+            "zh-Hans": "在新日历页记事：今天被点亮，有安排的日子带一个点。一切都留在这台电脑上。",
+            "hi": "नए कैलेंडर पेज पर नोट करें — आज जगमगाए, जिस दिन में कुछ हो उस पर बिंदु। सब इसी पीसी पर।",
+            "es": "Anota cosas en la nueva página de calendario: hoy iluminado, un punto en cada día ocupado.",
+            "ar": "دوّن أمورك في صفحة التقويم الجديدة: اليوم مضاء، ونقطة على كل يوم فيه شيء، وكل شيء محلي.",
+            "fr": "Notez vos affaires sur la page Calendrier : aujourd'hui allumé, un point par jour occupé.",
+            "bn": "নতুন ক্যালেন্ডার পেজে নোট করুন — আজ আলোকিত, ব্যস্ত দিনে বিন্দু। সবই এই পিসিতে।",
+            "pt-BR": "Anote na nova página de calendário: hoje aceso, um ponto em cada dia ocupado. Tudo local.",
+            "ru": "Записывайте дела на новой странице календаря: сегодня подсвечен, точка на занятом дне.",
+            "id": "Catat di halaman Kalender baru: hari ini menyala, titik di tiap hari yang ada isinya.",
+            "de": "Notiere dir Dinge auf der neuen Kalender-Seite: heute erleuchtet, ein Punkt pro Tag.",
+            "tr": "Yeni takvim sayfasına not alın: bugün aydınlık, dolu her günde bir nokta. Hepsi yerel.",
+            "ko": "새 캘린더 페이지에 메모하세요. 오늘은 밝게, 일정이 있는 날에는 점이. 모두 이 PC에만.",
+            "ja": "新しいカレンダーページで予定を書き留めて。今日は光って、予定のある日に点。全部ローカル。",
+            "th": "จดลงหน้าปฏิทินใหม่: วันนี้สว่าง วันไหนมีนัดก็มีจุด ทุกอย่างอยู่บนเครื่องนี้",
+            "zh-Hant": "在新行事曆頁記事：今天被點亮，有安排的日子帶一個點。一切都留在這台電腦上。"
+          }
+        },
+        {
+          "icon": "puzzle",
+          "title": {
+            "en": "Miku's dock",
+            "zh-Hans": "Miku 的停靠栏",
+            "hi": "Miku का डॉक",
+            "es": "El dock de Miku",
+            "ar": "شريط Miku",
+            "fr": "Le dock de Miku",
+            "bn": "Miku-র ডক",
+            "pt-BR": "O dock da Miku",
+            "ru": "Док Miku",
+            "id": "Dock milik Miku",
+            "de": "Mikus Dock",
+            "tr": "Miku'nun dock'u",
+            "ko": "Miku의 독",
+            "ja": "Miku のドック",
+            "th": "ด็อกของ Miku",
+            "zh-Hant": "Miku 的停靠列"
+          },
+          "detail": {
+            "en": "A strip at the bottom of the screen: pin your apps, every open window a click away.",
+            "zh-Hans": "屏幕底部的一条：钉住常用应用，每个窗口一键可达。Windows 的任务栏照常。",
+            "hi": "स्क्रीन के नीचे एक पट्टी: ऐप पिन करें, हर खुली विंडो एक क्लिक दूर। Windows का टास्कबार वैसा ही।",
+            "es": "Una franja abajo de la pantalla: fija tus apps, cada ventana a un clic. La barra de Windows sigue.",
+            "ar": "شريط أسفل الشاشة: ثبت تطبيقاتك وكل نافذة على بعد نقرة. شريط مهام Windows يواصل عمله.",
+            "fr": "Une barre en bas de l'écran : épinglez vos apps, chaque fenêtre à un clic. Windows fait le sien.",
+            "bn": "স্ক্রিনের নিচে স্ট্রিপ: অ্যাপ পিন করুন, প্রতিটি উইন্ডো এক ক্লিক দূরে। Windows-এর টাস্কবার আগের মতোই।",
+            "pt-BR": "Uma faixa no pé da tela: fixe seus apps, cada janela a um clique. A barra do Windows segue a dela.",
+            "ru": "Полоса внизу экрана: закрепите приложения, каждое окно — в одном клике. Панель Windows при себе.",
+            "id": "Strip di bawah layar: sematkan aplikasimu, tiap jendela seklik jauhnya. Taskbar Windows tetap.",
+            "de": "Eine Leiste unten am Bildschirm: Apps anheften, jedes Fenster einen Klick entfernt.",
+            "tr": "Ekranın altında bir şerit: uygulamalarını sabitle, her pencere bir tık uzakta.",
+            "ko": "화면 아래의 스트립: 앱을 고정하면 창이 클릭 한 번이에요. Windows 작업 표시줄은 그대로.",
+            "ja": "画面下のストリップ:よく使うアプリをピン留め。開いている窓はワンクリックで。タスクバーはそのまま。",
+            "th": "แถบใต้หน้าจอ: ปักหมุดแอป หน้าต่างไหนก็คลิกเดียว แถบงาน Windows ก็เดิม",
+            "zh-Hant": "螢幕底部的一條：釘住常用應用程式，每個視窗一鍵可達。Windows 的工作列照常。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.2",
       "items": [
         {

@@ -97,6 +97,7 @@ export default defineConfig({
         mochi: resolve(__dirname, "mochi.html"),
         pill: resolve(__dirname, "pill.html"),
         lyrics: resolve(__dirname, "lyrics.html"),
+        dock: resolve(__dirname, "dock.html"),
       },
       output: {
         // The interface's strings in every language (src/i18n/*.json) make a

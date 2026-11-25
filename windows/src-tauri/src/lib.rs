@@ -9,6 +9,7 @@ mod cli_relay;
 mod codex_plan;
 mod config_file;
 mod desktop;
+mod dock;
 mod files;
 mod flow;
 mod github;
@@ -1065,6 +1066,135 @@ fn open_settings_window(app: AppHandle, page: Option<String>) {
     show_hub(&app, Some(page.as_deref().unwrap_or("general")));
 }
 
+// ── The dock ──
+// Miku's own strip at the bottom of the screen (dock.rs, src/dock/): the apps
+// pinned to it, and the windows that are open. Created hidden at launch like
+// the Miku window (create_settings_window) — a WebView2 window created later
+// comes up blank in this app, so the window that works is the one that exists
+// before the island's webview does.
+
+pub const DOCK_LABEL: &str = "dock";
+
+/// In a dev build the pages are served by Vite, so the dock needs the
+/// absolute dev URL; a bundled build resolves it inside the app bundle.
+fn dock_page_url(app: &AppHandle) -> WebviewUrl {
+    #[cfg(dev)]
+    if let Some(mut base) = app.config().build.dev_url.clone() {
+        base.set_path("/dock.html");
+        return WebviewUrl::External(base);
+    }
+    let _ = app;
+    WebviewUrl::App("dock.html".into())
+}
+
+fn create_dock_window(app: &AppHandle) {
+    let url = dock_page_url(app);
+    match WebviewWindowBuilder::new(app, DOCK_LABEL, url)
+        .additional_browser_args(BROWSER_ARGS)
+        .title("Miku")
+        .inner_size(760.0, 60.0)
+        .resizable(false)
+        .decorations(false)
+        .transparent(true)
+        .shadow(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .visible(false)
+        .build()
+    {
+        Ok(win) => {
+            #[cfg(windows)]
+            {
+                apply_glass(&win);
+                // A dock that steals the focus from the app the user is in
+                // would be worse than no dock: its clicks stay clicks.
+                crate::platform::make_non_activating(&win);
+            }
+        }
+        Err(err) => log::line(format!("Dock window failed: {err}")),
+    }
+}
+
+/// Puts the dock at the bottom of the screen it lives on, then shows it
+/// without taking the focus — it must never steal the keyboard from the app
+/// the user is in.
+pub fn show_dock(app: &AppHandle) {
+    let Some(win) = app.get_webview_window(DOCK_LABEL) else {
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            create_dock_window(&handle);
+            if let Some(win) = handle.get_webview_window(DOCK_LABEL) {
+                place_dock(&win);
+                let _ = win.show();
+            }
+        });
+        return;
+    };
+    place_dock(&win);
+    platform::show_window(&win);
+}
+
+/// Bottom-centre of the primary screen, a step off the very edge — the same
+/// place Windows' own taskbar keeps clear of (the dock sits above it).
+fn place_dock(win: &tauri::WebviewWindow) {
+    let Ok(Some(monitor)) = win.primary_monitor() else { return };
+    let scale = monitor.scale_factor();
+    let size = monitor.size();
+    let pos = monitor.position();
+    let w = (760.0 * scale) as i32;
+    let h = (60.0 * scale) as i32;
+    let sh = size.height as i32;
+    let sw = size.width as i32;
+    let x = pos.x + (sw - w) / 2;
+    let y = pos.y + sh - h - (8.0 * scale) as i32;
+    let _ = win.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
+pub fn hide_dock(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window(DOCK_LABEL) {
+        platform::hide_window(&win);
+    }
+}
+
+/// Whether the dock is on screen (shown and not put away) — the page asks once
+/// at load, in case it missed the event, like the Miku window does.
+#[tauri::command]
+fn dock_shown(app: AppHandle) -> bool {
+    app.get_webview_window(DOCK_LABEL)
+        .map(|w| w.is_visible().unwrap_or(false))
+        .unwrap_or(false)
+}
+
+/// The tray's "Dock" and the settings' switch: flips the preference in the
+/// settings the whole app shares, and lets the file follow — writing the file
+/// alone would be overwritten by the next save from the shared snapshot.
+#[tauri::command]
+fn dock_toggle(app: AppHandle, shared: State<Shared>) -> bool {
+    let now = {
+        let mut current = shared.settings.lock().unwrap_or_else(PoisonError::into_inner);
+        current.dock.shown = !current.dock.shown;
+        current.dock.shown
+    };
+    settings::save_soon(&app);
+    if now {
+        show_dock(&app);
+    } else {
+        hide_dock(&app);
+    }
+    now
+}
+
+/// The dock's pin form is the one thing on the strip that wants the keyboard:
+/// while it is used the window may activate, like the island's own fields.
+#[tauri::command]
+fn dock_focus_window(app: AppHandle, focused: bool) {
+    let Some(win) = app.get_webview_window(DOCK_LABEL) else { return };
+    platform::set_activating(&win, focused);
+    if focused {
+        let _ = win.set_focus();
+    }
+}
+
 pub fn run() {
     platform::prepare_environment();
     // An install that predates the rebrand keeps its settings and history: the
@@ -1120,6 +1250,13 @@ pub fn run() {
             mail::mail_plan_start,
             mail::mail_plan_cancel,
             save_settings,
+            dock::dock_list,
+            dock::dock_focus,
+            dock::dock_minimize,
+            dock::dock_launch,
+            dock_shown,
+            dock_toggle,
+            dock_focus_window,
             emit_skin_preview,
             set_system_languages,
             set_collapsed,
@@ -1285,6 +1422,11 @@ pub fn run() {
             tray::build(&handle)?;
             // Before the island: see create_settings_window.
             create_settings_window(&handle);
+            // The dock too: created hidden, shown only when its setting is on.
+            create_dock_window(&handle);
+            if loaded.dock.shown {
+                show_dock(&handle);
+            }
             // Same rule for Mochi's desktop window and the dictation pill.
             desktop::setup(&handle);
             flow::setup(&handle);

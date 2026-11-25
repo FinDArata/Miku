@@ -221,6 +221,12 @@ export interface Settings {
     onDesktop: boolean;
     spot: { x: number; y: number; space: string } | null;
   };
+  /** The dock (dock.rs): whether it lives at the bottom of the screen, and
+   * what is pinned to it. Optional: settings saved before it came. */
+  dock?: {
+    shown: boolean;
+    pins: { name: string; path: string }[];
+  };
 }
 
 export const DEFAULT_SETTINGS: Settings = {

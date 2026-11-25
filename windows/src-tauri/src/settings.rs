@@ -140,6 +140,9 @@ pub struct Settings {
     /// up, "always" lets it through without asking. The key "*" covers every
     /// tool the map has nothing about; a missing entry asks, everywhere.
     pub approval_modes: BTreeMap<String, ToolMode>,
+    /// The dock (dock.rs): whether it lives at the bottom of the screen, and
+    /// what is pinned to it. Off until the user turns it on.
+    pub dock: crate::dock::DockPref,
 }
 
 /// Ask or let through, for one tool (settings.rs approval_modes).
@@ -231,6 +234,7 @@ impl Default for Settings {
             notice_romanize: true,
             notify_sounds: BTreeMap::new(),
             approval_modes: BTreeMap::new(),
+            dock: crate::dock::DockPref::default(),
         }
     }
 }

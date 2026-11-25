@@ -1,5 +1,18 @@
 # Changelog — Miku
 
+## 0.1.3 — 2026-11-25
+
+### A Calendar page
+
+- The deck's ninth page: the month's grid (Monday first), today lit in Miku's teal, a dot on every day that holds an event, and the picked day's agenda under the grid. A small form notes a thing down — a title and an optional time — and the ✕ takes it off again. Events live in this computer (the island's localStorage, like the notice history), nothing is sent anywhere, and the past is dropped after a year.
+- The tab wears a dot while today holds an event; Miku holds her leek up on the page when something is remembered today, and waves when the day is free.
+
+### Miku's dock
+
+- A new strip at the bottom of the screen, next to Windows' own taskbar, not instead of it. The apps the user pinned launch with a click; the windows that are open show as one button per app with a dot per window — a click brings the app up (restored first when it was put away; a tap of ALT lets Windows allow the switch, and when the foreground lock refuses it, the taskbar button flashes), a right-click puts the app's windows away. The "+" pins a new app with a name and the path of its exe.
+- Icons are read from the window's own icon — or the exe's, without loading it — and handed to the page as small PNG data URIs. The strip never takes the focus; only the pin form asks for the keyboard, and gives it back.
+- Turned on from Settings → General or the tray's new "Dock" item; off until then. On Linux the dock is launcher-only for now — the window list comes later.
+
 ## 0.1.2 — 2026-11-22
 
 ### Every PC notification, with Miku

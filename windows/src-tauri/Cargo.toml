@@ -57,6 +57,10 @@ tokio = { version = "1", features = ["test-util"] }
 # store (pc_notifications.rs). Bundled SQLite, MIT.
 rusqlite = { version = "0.32", features = ["bundled"] }
 keyring = { version = "3", features = ["windows-native"] }
+# The dock's icons: read out of the window's own icon and handed to the page
+# as a PNG data URI (dock.rs). The `png` crate is already in the tree through
+# tauri — this only names it. Apache-2.0.
+png = "0.17"
 # The island's file drop reads paths straight from WebView2 (webview_drop.rs).
 # Same versions as wry, so nothing new is compiled.
 webview2-com = "0.39"
@@ -96,6 +100,10 @@ windows = { version = "0.61", features = [
   # The shelf's drag out of the island: the Shell's item ids (platform/windows.rs).
   "Win32_UI_Shell_Common",
   "Win32_UI_WindowsAndMessaging",
+  # The dock (dock.rs): the open windows' icons read out as pixels, and the
+  # file attributes SHGetFileInfo asks for when it reads an exe's icon.
+  "Win32_Graphics_Gdi",
+  "Win32_Storage_FileSystem",
   # Flow dictation's keyboard hook.
   "Win32_System_LibraryLoader",
   # The island pressing a chat app's own toast (platform/windows.rs).

@@ -6,6 +6,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { Settings } from "./state";
+/** A window the dock shows (dock.rs): the page treats `hwnd` as opaque. */
+export interface DockWindow {
+  hwnd: number;
+  title: string;
+  exe: string;
+  icon: string | null;
+  minimized: boolean;
+}
 import type { RecapHistory, RecapPrefs } from "../recap/summary";
 import type { SpotifyState } from "./spotify";
 import type { UpdateStatus } from "./update";
@@ -40,6 +48,16 @@ export const Bridge = {
   setSystemLanguages: (languages: string[]) => call<void>("set_system_languages", { languages }),
 
   saveSettings: (settings: Settings) => call<void>("save_settings", { settings }),
+
+  // The dock (dock.rs): the windows that are open, and the clicks.
+  dockList: () => call<DockWindow[]>("dock_list"),
+  dockFocus: (hwnd: number) => call<boolean>("dock_focus", { hwnd }),
+  dockMinimize: (hwnd: number) => call<void>("dock_minimize", { hwnd }),
+  dockLaunch: (path: string) => call<void>("dock_launch", { path }),
+  dockShown: () => call<boolean>("dock_shown"),
+  dockToggle: () => call<boolean>("dock_toggle"),
+  /** The dock's pin form wants the keyboard: the window may activate while it is used. */
+  dockFocusWindow: (focused: boolean) => call<void>("dock_focus_window", { focused }),
 
   /** Shrink the window down to the invisible wake strip (hidden) or back to full. */
   /** Folds the window to `width`×`height` (the closed island) or grows it back to the panel. */

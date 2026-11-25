@@ -5058,3 +5058,79 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 #island[data-holo="1"] #bot-glow {
   visibility: hidden;
 }
+
+/* The Calendar page (views/deck.ts calendarPage): the month's grid, Monday
+   first, a lit dot on days that hold an event; under it the picked day's
+   agenda and the small form that notes a thing down. Miku's teal marks
+   today and the picked day, as the rest of the deck does. */
+.cal-page { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+.cal-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex: none; }
+.cal-month { font: 700 12px var(--font); color: var(--ink); white-space: nowrap; }
+.cal-grid {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.cal-wd {
+  text-align: center;
+  font: 600 9.5px var(--font);
+  color: #8fa3b8;
+  padding: 2px 0;
+}
+.cal-day {
+  position: relative;
+  border: 0;
+  border-radius: 7px;
+  padding: 4px 0 6px;
+  background: transparent;
+  color: var(--ink);
+  font: 600 11px var(--font);
+  cursor: default;
+  transition: background 0.15s, color 0.15s;
+}
+.cal-day:hover { background: var(--miku-tint, rgba(57, 197, 187, 0.12)); }
+.cal-day.out { color: #5a6b7d; }
+.cal-day.today {
+  background: var(--miku, #39c5bb);
+  color: var(--on-miku, #04211f);
+}
+.cal-day.picked { box-shadow: inset 0 0 0 1.5px var(--miku-line, rgba(57, 197, 187, 0.4)); }
+/* A day with an event: the teal dot under the number (pink when today). */
+.cal-day.has::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 3.5px;
+  height: 3.5px;
+  margin-left: -1.75px;
+  border-radius: 999px;
+  background: var(--miku-bright, #6fede3);
+}
+.cal-day.today.has::after { background: var(--on-miku, #04211f); }
+.cal-day:focus-visible { outline: 2px solid var(--miku-line, #9fe6e6); outline-offset: 1px; }
+/* The day's agenda, each event one line. */
+.cal-head { display: flex; align-items: center; gap: 8px; flex: none; margin: 2px 0 4px; }
+.cal-picked { font: 700 11.5px var(--font); color: var(--stage-teal); white-space: nowrap; }
+.cal-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.cal-list::-webkit-scrollbar { display: none; }
+.cal-ev {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border-top: 1px solid #18213a;
+  font: 500 11.5px var(--font);
+  color: var(--ink);
+}
+.cal-ev:first-child { border-top: 0; }
+.cal-ev:hover { background: rgba(255, 255, 255, 0.03); }
+.cal-ev-time { flex: none; min-width: 30px; font: 600 10.5px ui-monospace, Consolas, monospace; color: var(--miku-bright, #6fede3); }
+.cal-ev-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The small note-down form: what to remember, and when in the day. */
+.cal-form { display: flex; align-items: center; gap: 6px; flex: none; margin-top: 6px; }
+.cal-in { flex: 1; min-width: 0; }
+.cal-time { flex: none; width: 58px; text-align: center; }
