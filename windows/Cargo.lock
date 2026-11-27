@@ -2811,9 +2811,10 @@ dependencies = [
 
 [[package]]
 name = "miku"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "arboard",
+ "chrono",
  "cpal",
  "dbus",
  "gtk",
@@ -2843,7 +2844,7 @@ dependencies = [
 
 [[package]]
 name = "miku-hook"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "libc",
  "serde_json",

@@ -1,5 +1,15 @@
 # Changelog — Miku
 
+## 0.1.5 — 2026-11-27
+
+### Google Calendar, and a calmer island
+
+- The Calendar page can show a Google calendar now: paste the calendar's private iCal address (Google Calendar → the calendar → Settings and sharing → Secret address in iCal format) and its events arrive read-only, wearing their badge next to Miku's own notes. Nothing is written to Google; the address lives in the Credential Manager like every other key, and the fetch is bounded like every other request. The parser keeps up with the recurrences a personal calendar keeps (daily, weekly with days, monthly, yearly, count, until), skips cancelled instances and excluded dates, and draws UTC times in this computer's zone.
+- The messages card grew a mark-read: a small ✓ beside the text marks every unread conversation read — receipts follow the Settings switch — without opening anything.
+- The toast cards answer the hand now: a click or a right-click puts a notice away instead of being waited out. A waiting permission or question keeps its buttons as the only way out.
+- The browser's right-click menu (Back, Refresh, Save as, Print) is gone from the island — text fields keep copy and paste, and Miku's right-click is still the wardrobe. The closed island no longer takes the mouse over empty screen beside it either: the hanging card's hit box is the union of the capsule and what really hangs, not a band as wide as the sign's mirror.
+- LINE and Discord toasts leave one line in the log — shown, or held because the app is in front — so a missing notice can be told apart from a swallowed one.
+
 ## 0.1.4 — 2026-11-25
 
 ### The lag, found and put to sleep

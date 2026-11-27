@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { Settings } from "./state";
+import type { GcalEntry } from "./gcal";
 /** A window the dock shows (dock.rs): the page treats `hwnd` as opaque. */
 export interface DockWindow {
   hwnd: number;
@@ -251,6 +252,9 @@ export const Bridge = {
   githubRefresh: (section: "pulse" | "activity") => call<void>("github_refresh", { section }),
   /** Opens the configured n8n instance in the browser. */
   openN8n: () => call<void>("open_n8n"),
+  /** Google Calendar's private iCal feed, fetched and parsed on the Rust side
+   * (src-tauri/src/ics.rs); the URL itself stays in the Credential Manager. */
+  icsFetch: (url?: string) => callOrThrow<GcalEntry[]>("ics_fetch", { url: url ?? null }),
 
   /** Tray → Pause. Stops the integration pollers, not just the island. */
   setPaused: (paused: boolean) => call<void>("set_paused", { paused }),
@@ -363,6 +367,8 @@ export const Bridge = {
   /** A conversation opened in the card: its latest messages, the receipt if Settings says so. */
   whatsappOpen: (chat: string) => call<void>("whatsapp_open", { chat }),
   whatsappClose: (chat: string) => call<void>("whatsapp_close", { chat }),
+  /** The island card's mark-read: every unread conversation gets its receipt (when Settings says so). */
+  whatsappMarkAllRead: () => call<void>("whatsapp_mark_all_read"),
   /** Enter or the send button only. True once the gateway took it. */
   whatsappSend: (chat: string, text: string) => call<boolean>("whatsapp_send", { chat, text }),
   /** A chat id, or (Settings) a phone number. */

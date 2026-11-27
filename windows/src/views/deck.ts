@@ -28,6 +28,7 @@ import { Catch, HANDS } from "./catch";
 import { agentLive, elapsed, splitStep } from "../core/agent-live";
 import * as NoticeHistory from "../island/history";
 import * as Calendar from "../core/calendar";
+import * as Gcal from "../core/gcal";
 import { Updates } from "../island/update";
 import { isBusy, percent } from "../core/update";
 
@@ -705,25 +706,33 @@ export function buildDeck(actions: ViewActions): ViewHost {
       h("div", { class: "sh-hint", text: hint }));
   }
 
-  /** The month the Calendar page shows, the day picked, the add form open. */
+  /** The month the Calendar page shows, the day picked, the add form open,
+   * the Google link form open and the link it holds while being typed. */
   let calY = new Date().getFullYear();
   let calM = new Date().getMonth();
   let calDay: string | null = null;
   let calAdding = false;
+  let calLinking = false;
+  let calLinkDraft = "";
+  let calLinkError = "";
+  let calLinkBusy = false;
 
   /**
-   * The Calendar page (core/calendar.ts): the month's grid, Monday first,
-   * a dot on the days that hold an event, and under the grid the picked
-   * day's agenda with a small form that notes a thing down. Everything lives
-   * in this computer — no calendar service anywhere.
+   * The Calendar page (core/calendar.ts, core/gcal.ts): the month's grid,
+   * Monday first, a dot on the days that hold an event, and under the grid
+   * the picked day's agenda with a small form that notes a thing down.
+   * Miku's own notes live in this computer; Google's events (core/gcal.ts)
+   * are read-only and wear their badge — they never take a remove button.
    */
   function calendarPage(): HTMLElement {
     Calendar.prune();
+    void Gcal.refresh();
     const now = new Date();
     const today = Calendar.dayKey(now);
     // The grid: leading cells from the tail of the previous month, Monday first.
     const lead = (new Date(calY, calM, 1).getDay() + 6) % 7;
     const has = Calendar.datesWithEvents(calY, calM);
+    for (const k of Gcal.datesWithEvents(calY, calM)) has.add(k);
     const start = new Date(calY, calM, 1 - lead);
     const cells = Array.from({ length: 42 }, (_, i) => {
       const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
@@ -736,6 +745,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
           calM = d.getMonth();
         }
         calAdding = false;
+        calLinking = false;
         render();
       });
       return c;
@@ -757,10 +767,12 @@ export function buildDeck(actions: ViewActions): ViewHost {
       calM = now.getMonth();
       calDay = today;
       calAdding = false;
+      calLinking = false;
       render();
     });
 
-    // The picked day (today until one is clicked) and its events.
+    // The picked day (today until one is clicked) and its events: Miku's own
+    // first, then Google's, read-only and badged.
     const picked = calDay ?? today;
     const day = Calendar.of(picked);
     const rows = day.map((e) => {
@@ -775,6 +787,11 @@ export function buildDeck(actions: ViewActions): ViewHost {
         h("span", { class: "cal-ev-title", text: e.title }),
         x);
     });
+    const gRows = Gcal.of(picked).map((e) =>
+      h("div", { class: "cal-ev cal-ev-g" },
+        h("b", { class: "cal-ev-time", text: e.time ?? "" }),
+        h("span", { class: "cal-ev-title", text: e.title }),
+        h("span", { class: "cal-g", title: t("Google Calendar"), "aria-label": t("Google Calendar"), text: "G" })));
 
     // The small form: what to remember, and when it happens in the day.
     const title = h("input", { class: "dk-input cal-in", placeholder: t("What to remember?") }) as HTMLInputElement;
@@ -811,9 +828,83 @@ export function buildDeck(actions: ViewActions): ViewHost {
       if (calAdding) window.setTimeout(() => title.focus(), 60);
     });
 
+    // The Google form: the calendar's private iCal address is set and cleared
+    // here; the value lives in the Credential Manager and never comes back to
+    // the page — only whether it is set (core/gcal.ts).
+    const gSet = Gcal.present();
+    const link = h("input", { class: "dk-input cal-in", placeholder: t("Private iCal link"), value: calLinkDraft, spellcheck: "false" }) as HTMLInputElement;
+    link.addEventListener("input", () => { calLinkDraft = link.value; });
+    const linkSave = async () => {
+      if (calLinkBusy) return;
+      const value = link.value.trim();
+      if (!value && !gSet) { calLinking = false; calLinkError = ""; render(); return; }
+      calLinkError = "";
+      if (value && !value.startsWith("https://")) {
+        calLinkError = t("The address must start with http:// or https://.");
+        render();
+        return;
+      }
+      calLinkBusy = true;
+      render();
+      try {
+        if (value) await Bridge.secretSet("gcal-ics-url", value);
+        calLinkDraft = "";
+        calLinking = false;
+        void Gcal.refresh(true);
+      } catch (e) {
+        calLinkError = String(e).replace(/^Error:\s*/, "");
+      } finally {
+        calLinkBusy = false;
+        render();
+      }
+    };
+    link.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") void linkSave();
+    });
+    link.addEventListener("mousedown", () => {
+      void Bridge.focusWindow(true);
+      window.setTimeout(() => link.focus(), 60);
+    });
+    link.addEventListener("blur", () => void Bridge.focusWindow(false));
+    const saveBtn = h("button", { class: "btn secondary", text: t("Save") });
+    saveBtn.addEventListener("click", () => void linkSave());
+    const cancelBtn = h("button", { class: "sh-link dim", text: t("Cancel") });
+    cancelBtn.addEventListener("click", () => { calLinking = false; calLinkDraft = ""; calLinkError = ""; render(); });
+    const cutBtn = h("button", { class: "sh-link dim", text: t("Disconnect") });
+    cutBtn.addEventListener("click", () => {
+      calLinking = false;
+      calLinkDraft = "";
+      calLinkError = "";
+      void (async () => {
+        try {
+          await Bridge.secretClear("gcal-ics-url");
+        } finally {
+          await Gcal.refresh(true);
+          render();
+        }
+      })();
+    });
+    const status = calLinkError
+      ? h("div", { class: "cal-gerr", text: calLinkError })
+      : h("div", { class: "cal-ghint", text: t("Google events are read-only.") });
+    const openBtn = h("button", { class: "sh-link dim", text: t("Open Google Calendar settings") });
+    openBtn.addEventListener("click", () => void Bridge.openUrl("https://calendar.google.com/calendar/u/0/r/settings"));
+    const linkForm = calLinking
+      ? h("div", { class: "cal-link" },
+          h("div", { class: "cal-form" }, link, saveBtn),
+          h("div", { class: "cal-link-row" }, status, h("div", { class: "grow" }), ...(gSet ? [cutBtn] : []), cancelBtn),
+          h("div", { class: "cal-link-row" }, openBtn, h("div", { class: "grow" })),
+          h("div", { class: "cal-ghint", text: t("The address sits in Google Calendar: pick the calendar, then Settings and sharing → Secret address in iCal format.") }))
+      : null;
+    const gBtn = h("button", { class: "sh-link dim", title: t("Google Calendar"), "aria-label": t("Google Calendar"), text: "G" });
+    gBtn.addEventListener("click", () => { calLinking = !calLinking; calLinkError = ""; render(); });
+
+    const todayAll = Calendar.todayCount() + Gcal.todayCount();
     const head = h("div", { class: "dk-head" },
       h("div", { class: "dk-title", text: t("Calendar").toUpperCase() }),
-      h("div", { class: "dk-meta", text: Calendar.todayCount() ? tn("{count} event", "{count} events", Calendar.todayCount()) : "" }));
+      h("div", { class: "dk-meta", text: todayAll ? tn("{count} event", "{count} events", todayAll) : "" }));
+    const listed = [...rows, ...gRows];
     return h("div", { class: "cal-page" },
       head,
       h("div", { class: "cal-bar" }, nav(-1), month, nav(1), h("div", { class: "grow" }), back),
@@ -821,9 +912,12 @@ export function buildDeck(actions: ViewActions): ViewHost {
       h("div", { class: "cal-head" },
         h("div", { class: "cal-picked", text: new Date(`${picked}T12:00`).toLocaleDateString(language(), { weekday: "long", day: "numeric", month: "long" }) }),
         h("div", { class: "grow" }),
+        gBtn,
         plus),
-      ...(day.length ? [h("div", { class: "cal-list" }, ...rows)] : [say(t("Nothing on this day."))]),
-      ...(form ? [form] : []),
+      ...(listed.length ? [h("div", { class: "cal-list" }, ...listed)] : [say(t("Nothing on this day."))]),
+      ...(linkForm ? [linkForm] : form ? [form] : []),
+      ...(calLinking ? [] : gSet === false ? [h("div", { class: "cal-ghint", text: t("Link Google Calendar to see its events here.") })] : []),
+      ...(calLinking ? [] : gSet === true && Gcal.error() ? [h("div", { class: "cal-gerr", text: `${t("Google Calendar")}: ${Gcal.error()}` })] : []),
     );
   }
 
@@ -838,7 +932,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       unread: NoticeHistory.unreadCount() > 0,
       notices: NoticeHistory.list().length > 0,
       shelved: Shelf.files.length > 0,
-      eventsToday: Calendar.todayCount() > 0,
+      eventsToday: Calendar.todayCount() + Gcal.todayCount() > 0,
     });
   }
 
@@ -851,8 +945,8 @@ export function buildDeck(actions: ViewActions): ViewHost {
     for (const [p, b] of tabs) {
       b.classList.toggle("on", p === page);
       // The Notif tab wears a dot while something is still unread; the
-      // Calendar tab, while today holds an event.
-      b.classList.toggle("has-new", (p === "notif" && NoticeHistory.unreadCount() > 0) || (p === "calendar" && Calendar.todayCount() > 0));
+      // Calendar tab, while today holds an event of its own or Google's.
+      b.classList.toggle("has-new", (p === "notif" && NoticeHistory.unreadCount() > 0) || (p === "calendar" && Calendar.todayCount() + Gcal.todayCount() > 0));
     }
     const key = pageKey(page);
     let entry = pageCache.get(page);
@@ -904,7 +998,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       }
       case "notif": return `notif|${lang}|${NoticeHistory.unreadCount()}|${NoticeHistory.getFilter()}|${[...unfolded].join()}|${NoticeHistory.isClearing()}|${State.settings.noticeRomanize !== false}|${NoticeHistory.version()}|${Math.floor(Date.now() / 60_000)}`;
       case "shelf": return `shelf|${lang}|${Shelf.filter}|${Shelf.clearing}|${Catch.layoutKey()}|${Catch.hovering}|${Catch.barShown}|${Catch.copyCount.done}|${Catch.copyCount.count}|${Shelf.version()}|${JSON.stringify(Catch.ghosts())}`;
-      case "calendar": return `calendar|${lang}|${calY}|${calM}|${calDay ?? ""}|${calAdding}|${Calendar.version()}|${Math.floor(Date.now() / 60_000)}`;
+      case "calendar": return `calendar|${lang}|${calY}|${calM}|${calDay ?? ""}|${calAdding}|${calLinking}|${Calendar.version()}|${Gcal.version()}|${Gcal.present() ?? "?"}|${Gcal.error() ?? ""}|${Math.floor(Date.now() / 60_000)}`;
     }
   }
 

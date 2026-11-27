@@ -1007,16 +1007,24 @@ export class Island {
 
     const viewportW = window.innerWidth > 0 ? window.innerWidth : PANEL_W;
     this.notices?.place(hh);
+    let rx = (viewportW - w) / 2;
     let rw = w;
     let rh = hh;
     if (this.notices?.noticeOn) {
       rw = Math.max(rw, NOTICE_W);
+      rx = (viewportW - rw) / 2;
       rh = Math.max(rh, this.notices.noticeH);
     } else if (this.notices?.hangOn) {
-      rw = Math.max(rw, this.notices.hangWidth());
+      // Miku is centred and her sign reaches right: the box is the union of
+      // the capsule and what actually hangs — not a band as wide as the
+      // sign's mirror, whose empty half would take the mouse over whatever
+      // sits beside a closed island.
+      const half = viewportW / 2;
+      rx = Math.min(rx, half - 46);
+      rw = Math.max(rx + rw, half + this.notices.hangWidth() / 2) - rx;
       rh = hh + HANG_H;
     }
-    const rect = { x: (viewportW - rw) / 2, y: 0, w: rw, h: rh };
+    const rect = { x: rx, y: 0, w: rw, h: rh };
     const p = this.pushedRect;
     if (Math.abs(p.x - rect.x) > 0.5 || Math.abs(p.w - rect.w) > 0.5 || Math.abs(p.h - rect.h) > 0.5) {
       this.pushedRect = rect;
@@ -1673,10 +1681,13 @@ export class Island {
       }
     });
 
-    // No browser menu over Mochi: his right-click is the wardrobe. Everywhere
-    // else (the chat field) the webview keeps its own menu.
+    // No browser menu in the island: Back and Refresh have no page to go to,
+    // Save as and Print would file a widget away. Only text fields keep it —
+    // copy and paste live there — and the chat rows grow their own small menu.
     this.islandEl.addEventListener("contextmenu", (e) => {
-      if (this.isBotHit(e.clientX, e.clientY)) e.preventDefault();
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable]")) return;
+      e.preventDefault();
     });
 
     // Dragging Mochi out of the island puts him on the desktop.

@@ -2,6 +2,128 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.5",
+      "items": [
+        {
+          "icon": "clock",
+          "title": {
+            "en": "Your Google Calendar",
+            "zh-Hans": "你的 Google 日历",
+            "hi": "आपका Google कैलेंडर",
+            "es": "Tu Google Calendar",
+            "ar": "تقويم Google الخاص بك",
+            "fr": "Votre Google Agenda",
+            "bn": "তোমার Google ক্যালেন্ডার",
+            "pt-BR": "Seu Google Agenda",
+            "ru": "Ваш Google Календарь",
+            "id": "Google Calendarmu",
+            "de": "Dein Google Kalender",
+            "tr": "Google Takvimin",
+            "ko": "당신의 Google 캘린더",
+            "ja": "あなたの Google カレンダー",
+            "th": "Google ปฏิทินของคุณ",
+            "zh-Hant": "你的 Google 日曆"
+          },
+          "detail": {
+            "en": "Paste the private iCal address in the Calendar page — its events show read-only, with a badge.",
+            "zh-Hans": "在日历页粘贴私密 iCal 地址——它的日程只读显示，并带标记。",
+            "hi": "कैलेंडर पेज में प्राइवेट iCal पता चिपकाएँ — उसके इवेंट केवल पढ़ने के लिए दिखते हैं।",
+            "es": "Pega la dirección iCal privada en la página Calendario: sus eventos se ven en solo lectura.",
+            "ar": "الصق عنوان iCal الخاص في صفحة التقويم — تظهر أحداثه للقراءة فقط مع شارة.",
+            "fr": "Collez l'adresse iCal privée dans la page Calendrier — ses événements s'affichent en lecture seule.",
+            "bn": "ক্যালেন্ডার পেজে প্রাইভেট iCal ঠিকানা দাও — ইভেন্টগুলো শুধু পড়ার জন্য দেখা যাবে।",
+            "pt-BR": "Cole o endereço iCal privado na página Calendário — os eventos aparecem em somente leitura.",
+            "ru": "Вставьте приватный адрес iCal на странице Календаря — события видны только для чтения.",
+            "id": "Tempel alamat iCal privat di halaman Calendar — acaranya tampil baca-saja, dengan badge.",
+            "de": "Füge die private iCal-Adresse auf der Kalender-Seite ein — Termine erscheinen schreibgeschützt.",
+            "tr": "Takvim sayfasına gizli iCal adresini yapıştır — etkinlikler salt okunur görünür.",
+            "ko": "캘린더 페이지에 iCal 비공개 주소를 붙여넣으면 일정이 읽기 전용으로 표시돼요.",
+            "ja": "カレンダーページに iCal プライベートアドレスを貼るだけ。予定は読み取り専用で表示。",
+            "th": "วางที่อยู่ iCal ส่วนตัวในหน้าปฏิทิน — กิจกรรมจะแสดงแบบอ่านอย่างเดียว",
+            "zh-Hant": "在日曆頁貼上私密 iCal 地址——它的行程唯讀顯示，並帶標記。"
+          }
+        },
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "Read without opening",
+            "zh-Hans": "不用点开也能已读",
+            "hi": "खोले बिना पढ़ा",
+            "es": "Leído sin abrir",
+            "ar": "مقروء دون فتح",
+            "fr": "Lu sans ouvrir",
+            "bn": "না খুলেই পড়া হলো",
+            "pt-BR": "Lido sem abrir",
+            "ru": "Прочитано без открытия",
+            "id": "Terbaca tanpa dibuka",
+            "de": "Gelesen, ohne zu öffnen",
+            "tr": "Açmadan okundu",
+            "ko": "열지 않고 읽음 처리",
+            "ja": "開かずに既読",
+            "th": "อ่านแล้วโดยไม่ต้องเปิด",
+            "zh-Hant": "不用點開也能已讀"
+          },
+          "detail": {
+            "en": "The messages card has a small ✓ now: mark everything read — receipts follow Settings.",
+            "zh-Hans": "消息卡片多了个小小的 ✓：一键全部已读——是否发送回执跟随设置。",
+            "hi": "मैसेज कार्ड में अब छोटा ✓ है: सब कुछ पढ़ा हुआ मार्क करें — रसीदें सेटिंग के अनुसार।",
+            "es": "La tarjeta de mensajes tiene un pequeño ✓: marca todo como leído; los recibos siguen Ajustes.",
+            "ar": "بطاقة الرسائل بها ✓ صغير الآن: علّم الكل كمقروء — والإيصالات حسب الإعدادات.",
+            "fr": "La carte des messages a un petit ✓ : tout marquer lu — les accusés suivent les réglages.",
+            "bn": "মেসেজ কার্ডে এখন ছোট একটি ✓: সব পড়া হিসেবে দাগ দাও — রিসিট সেটিংস অনুযায়ী।",
+            "pt-BR": "O cartão de mensagens ganhou um ✓: marque tudo como lido — os recibos seguem as Configurações.",
+            "ru": "У карточки сообщений теперь маленький ✓: отметить всё прочитанным — по настройкам.",
+            "id": "Kartu pesan kini punya ✓ kecil: tandai semua terbaca — receipt mengikuti Setelan.",
+            "de": "Die Nachrichten-Karte hat jetzt ein kleines ✓: alles als gelesen markieren — nach Einstellungen.",
+            "tr": "Mesaj kartında artık küçük bir ✓ var: her şeyi okundu işaretle — makbuzlar Ayarlar'a göre.",
+            "ko": "메시지 카드에 작은 ✓가 생겼어요: 모두 읽음으로 표시 — 수신 확인은 설정을 따라요.",
+            "ja": "メッセージカードに小さな ✓ が増えました。全部まとめて既読に。開封レポートは設定どおり。",
+            "th": "การ์ดข้อความมี ✓ เล็ก ๆ แล้ว: ทำเครื่องหมายว่าอ่านหมด — ใบเสร็จตามการตั้งค่า",
+            "zh-Hant": "訊息卡片多了個小小的 ✓：一鍵全部已讀——是否送出回執跟隨設定。"
+          }
+        },
+        {
+          "icon": "sparkles",
+          "title": {
+            "en": "A calmer island",
+            "zh-Hans": "更安静的岛",
+            "hi": "ज़्यादा शांत आइलैंड",
+            "es": "Una isla más tranquila",
+            "ar": "جزيرة أكثر هدوءًا",
+            "fr": "Une île plus calme",
+            "bn": "আরও শান্ত আইল্যান্ড",
+            "pt-BR": "Uma ilha mais calma",
+            "ru": "Более спокойный остров",
+            "id": "Pulau yang lebih tenang",
+            "de": "Eine ruhigere Insel",
+            "tr": "Daha sakin bir ada",
+            "ko": "더 차분한 아일랜드",
+            "ja": "いっそう落ち着いた島",
+            "th": "เกาะที่สงบขึ้น",
+            "zh-Hant": "更安靜的島"
+          },
+          "detail": {
+            "en": "Toasts go with a click, the browser's right-click menu is gone, and the closed island keeps to itself.",
+            "zh-Hans": "通知一点就收，浏览器右键菜单不见了，收起的岛只守着自己的一方天地。",
+            "hi": "टोस्ट एक क्लिक में हटते हैं, ब्राउज़र का राइट-क्लिक मेनू गायब, और बंद आइलैंड अपने आकार में रहता है।",
+            "es": "Los avisos se van con un clic, el menú del clic derecho desapareció y la isla cerrada respeta su espacio.",
+            "ar": "التنبيهات تختفي بنقرة، وقائمة النقر الأيمن للمتصفح اختفت، وتبقى الجزيرة المغلقة في حدودها.",
+            "fr": "Les toasts partent d'un clic, le menu du clic droit a disparu, et l'île fermée reste à sa place.",
+            "bn": "টোস্ট এক ক্লিকেই চলে যায়, ব্রাউজারের রাইট-ক্লিক মেনু নেই, আর বন্ধ আইল্যান্ড নিজের জায়গায় থাকে।",
+            "pt-BR": "Avisos saem com um clique, o menu do botão direito sumiu e a ilha fechada fica no seu canto.",
+            "ru": "Уведомления уходят по клику, меню правого клика исчезло, а закрытый остров не мешает.",
+            "id": "Toast hilang dengan sekali klik, menu klik kanan browser lenyap, island tertutup tak mengganggu.",
+            "de": "Toasts gehen per Klick weg, das Browser-Kontextmenü ist fort, und die geschlossene Insel stört nicht.",
+            "tr": "Bildirimler tek tıkla kapanır, tarayıcı sağ tık menüsü gitti ve kapalı ada kendi halinde.",
+            "ko": "알림은 한 번의 클릭으로 사라지고, 브라우저 우클릭 메뉴도 사라졌어요. 닫힌 아일랜드는 제 몫만.",
+            "ja": "通知はクリックで片付き、ブラウザの右クリックメニューもなし。閉じた島は余計に干渉しません。",
+            "th": "การแจ้งเตือนปิดด้วยคลิกเดียว เมนูคลิกขวาของเบราว์เซอร์หายไป เกาะที่ปิดไม่รบกวน",
+            "zh-Hant": "通知一點就收，瀏覽器右鍵選單不見了，收起的島只守著自己的一方天地。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.4",
       "items": [
         {

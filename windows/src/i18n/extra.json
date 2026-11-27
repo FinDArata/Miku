@@ -358,6 +358,23 @@
       "th": "การแจ้งเตือนที่ผ่านมาจะอยู่ที่นี่จนกว่าคุณจะล้าง — ไม่มีทางออกจากเครื่องนี้",
       "zh-Hant": "過去的通知會留在這裡，直到你清除為止——它們永遠不會離開這台電腦。"
     },
+    "The address sits in Google Calendar: pick the calendar, then Settings and sharing → Secret address in iCal format.": {
+      "zh-Hans": "地址在 Google 日历里：选择日历，然后是“设置和共享”→“iCal 私密地址”。",
+      "hi": "पता Google कैलेंडर में है: कैलेंडर चुनें, फिर “सेटिंग और शेयरिंग” → “प्राइवेट iCal पता”।",
+      "es": "La dirección está en Google Calendar: elige el calendario, luego Configuración y uso compartido → Dirección iCal privada.",
+      "ar": "العنوان في تقويم Google: اختر التقويم، ثم «الإعدادات والمشاركة» ← «العنوان الخاص بـ iCal».",
+      "fr": "L'adresse est dans Google Agenda : choisissez l'agenda, puis Paramètres et partage → Adresse iCal privée.",
+      "bn": "ঠিকানা Google ক্যালেন্ডারে: ক্যালেন্ডার বেছে নিন, তারপর “সেটিংস ও শেয়ারিং” → “প্রাইভেট iCal ঠিকানা”।",
+      "pt-BR": "O endereço fica no Google Agenda: escolha a agenda, depois Configurações e compartilhamento → Endereço iCal privado.",
+      "ru": "Адрес в Google Календаре: выберите календарь, затем «Настройки и доступ» → «Приватный адрес iCal».",
+      "id": "Alamatnya di Google Calendar: pilih kalender, lalu Setelan dan berbagi → Alamat iCal privat.",
+      "de": "Die Adresse steht in Google Kalender: Kalender wählen, dann Einstellungen und Freigabe → Private iCal-Adresse.",
+      "tr": "Adres Google Takvim'de: takvimi seçin, sonra Ayarlar ve paylaşım → Gizli iCal adresi.",
+      "ko": "주소는 Google 캘린더에 있어요: 캘린더를 선택한 뒤 설정 및 공유 → iCal 비공개 주소.",
+      "ja": "アドレスは Google カレンダーにあります。カレンダーを選び、「設定と共有」→「iCal プライベートアドレス」。",
+      "th": "ที่อยู่อยู่ใน Google ปฏิทิน: เลือกปฏิทิน แล้วไปที่การตั้งค่าและการแชร์ → ที่อยู่ iCal ส่วนตัว",
+      "zh-Hant": "地址在 Google 日曆裡：選擇日曆，然後是「設定和共用」→「iCal 私密地址」。"
+    },
     "Ta-da!": {
       "zh-Hans": "当当！",
       "hi": "ताड़ा!",
@@ -2432,6 +2449,40 @@
       "th": "ไปยังสิทธิ์หรือคำถามที่รออยู่",
       "zh-Hant": "前往等待中的權限或問題"
     },
+    "Google Calendar": {
+      "zh-Hans": "Google 日历",
+      "hi": "Google कैलेंडर",
+      "es": "Google Calendar",
+      "ar": "تقويم Google",
+      "fr": "Google Agenda",
+      "bn": "Google ক্যালেন্ডার",
+      "pt-BR": "Google Agenda",
+      "ru": "Google Календарь",
+      "id": "Google Calendar",
+      "de": "Google Kalender",
+      "tr": "Google Takvim",
+      "ko": "Google 캘린더",
+      "ja": "Google カレンダー",
+      "th": "Google ปฏิทิน",
+      "zh-Hant": "Google 日曆"
+    },
+    "Google events are read-only.": {
+      "zh-Hans": "Google 的日程是只读的。",
+      "hi": "Google के इवेंट केवल पढ़ने के लिए हैं।",
+      "es": "Los eventos de Google Calendar son de solo lectura.",
+      "ar": "أحداث Google للقراءة فقط.",
+      "fr": "Les événements Google Agenda sont en lecture seule.",
+      "bn": "Google ক্যালেন্ডারের ইভেন্ট শুধু পড়ার জন্য।",
+      "pt-BR": "Os eventos do Google Agenda são somente leitura.",
+      "ru": "События Google Календаря — только для чтения.",
+      "id": "Acara Google bersifat baca-saja.",
+      "de": "Google-Termine sind schreibgeschützt.",
+      "tr": "Google Takvim etkinlikleri salt okunurdur.",
+      "ko": "Google 일정은 읽기 전용이에요.",
+      "ja": "Google の予定は読み取り専用です。",
+      "th": "กิจกรรมของ Google เป็นแบบอ่านอย่างเดียว",
+      "zh-Hant": "Google 的行程是唯讀的。"
+    },
     "Hears « OK Miku » here, without the internet.": {
       "zh-Hans": "在这台电脑上听到「OK Miku」，无需联网。",
       "hi": "« OK Miku » यहीं सुनता है, इंटरनेट के बिना।",
@@ -3060,6 +3111,23 @@
       "ja": "左 {0}",
       "th": "เหลือ {0}",
       "zh-Hant": "剩下 {0}"
+    },
+    "Link Google Calendar to see its events here.": {
+      "zh-Hans": "关联 Google 日历，在这里看到它的日程。",
+      "hi": "Google कैलेंडर लिंक करें और उसके इवेंट यहाँ देखें।",
+      "es": "Vincula Google Calendar para ver sus eventos aquí.",
+      "ar": "اربط تقويم Google لتشاهد أحداثه هنا.",
+      "fr": "Liez Google Agenda pour voir ses événements ici.",
+      "bn": "এখানে এর ইভেন্ট দেখতে Google ক্যালেন্ডার লিংক করুন।",
+      "pt-BR": "Vincule o Google Agenda para ver os eventos dele aqui.",
+      "ru": "Подключите Google Календарь, чтобы видеть его события здесь.",
+      "id": "Tautkan Google Calendar untuk melihat acaranya di sini.",
+      "de": "Verknüpfe Google Kalender, um seine Termine hier zu sehen.",
+      "tr": "Etkinliklerini burada görmek için Google Takvim'i bağla.",
+      "ko": "Google 캘린더를 연결하면 일정이 여기에 표시돼요.",
+      "ja": "Google カレンダーを連携すると、その予定がここに表示されます。",
+      "th": "เชื่อมต่อ Google ปฏิทินเพื่อดูกิจกรรมของมันที่นี่",
+      "zh-Hant": "連結 Google 日曆，在這裡看到它的行程。"
     },
     "Listen for « OK Miku »": {
       "zh-Hans": "聆听「OK Miku」",
@@ -3843,6 +3911,23 @@
       "th": "ไม่มีการเปลี่ยนแปลง",
       "zh-Hant": "沒有任何變更。"
     },
+    "No calendar address is set.": {
+      "zh-Hans": "尚未设置日历地址。",
+      "hi": "कोई कैलेंडर पता सेट नहीं है।",
+      "es": "No hay ninguna dirección de calendario configurada.",
+      "ar": "لم يتم تعيين عنوان تقويم.",
+      "fr": "Aucune adresse de calendrier n'est définie.",
+      "bn": "কোনো ক্যালেন্ডার ঠিকানা সেট করা নেই।",
+      "pt-BR": "Nenhum endereço de calendário está configurado.",
+      "ru": "Адрес календаря не задан.",
+      "id": "Belum ada alamat kalender yang diatur.",
+      "de": "Es ist keine Kalender-Adresse hinterlegt.",
+      "tr": "Takvim adresi ayarlanmadı.",
+      "ko": "캘린더 주소가 설정되지 않았어요.",
+      "ja": "カレンダーのアドレスが設定されていません。",
+      "th": "ยังไม่ได้ตั้งค่าที่อยู่ปฏิทิน",
+      "zh-Hant": "尚未設定日曆地址。"
+    },
     "No connection: {error}": {
       "zh-Hans": "无连接：{error}",
       "hi": "कोई कनेक्शन नहीं: {error}",
@@ -4438,6 +4523,23 @@
       "th": "เปิดหรือปิดเกาะ",
       "zh-Hant": "展開或收起島嶼"
     },
+    "Open Google Calendar settings": {
+      "zh-Hans": "打开 Google 日历设置",
+      "hi": "Google कैलेंडर सेटिंग खोलें",
+      "es": "Abrir la configuración de Google Calendar",
+      "ar": "افتح إعدادات تقويم Google",
+      "fr": "Ouvrir les paramètres de Google Agenda",
+      "bn": "Google ক্যালেন্ডারের সেটিংস খুলুন",
+      "pt-BR": "Abrir as configurações do Google Agenda",
+      "ru": "Открыть настройки Google Календаря",
+      "id": "Buka setelan Google Calendar",
+      "de": "Google Kalender-Einstellungen öffnen",
+      "tr": "Google Takvim ayarlarını aç",
+      "ko": "Google 캘린더 설정 열기",
+      "ja": "Google カレンダーの設定を開く",
+      "th": "เปิดการตั้งค่า Google ปฏิทิน",
+      "zh-Hant": "開啟 Google 日曆設定"
+    },
     "Open the chat": {
       "zh-Hans": "打开聊天",
       "hi": "चैट खोलें",
@@ -4794,6 +4896,23 @@
       "ja": "前のピル",
       "th": "พิลก่อนหน้า",
       "zh-Hant": "上一個膠囊"
+    },
+    "Private iCal link": {
+      "zh-Hans": "私密 iCal 链接",
+      "hi": "प्राइवेट iCal लिंक",
+      "es": "Enlace iCal privado",
+      "ar": "رابط iCal الخاص",
+      "fr": "Lien iCal privé",
+      "bn": "প্রাইভেট iCal লিংক",
+      "pt-BR": "Link iCal privado",
+      "ru": "Приватная ссылка iCal",
+      "id": "Tautan iCal privat",
+      "de": "Privater iCal-Link",
+      "tr": "Gizli iCal bağlantısı",
+      "ko": "iCal 비공개 링크",
+      "ja": "iCal プライベートリンク",
+      "th": "ลิงก์ iCal ส่วนตัว",
+      "zh-Hant": "私密 iCal 連結"
     },
     "Questions": {
       "zh-Hans": "问题",

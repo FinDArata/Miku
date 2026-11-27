@@ -225,8 +225,13 @@ fn watch(app: &AppHandle) {
                     // toast that was clicked, or arrived while reading, never
                     // becomes a sign.
                     if n.app != "pc" && front == Some(n.app.as_str()) {
+                        crate::log::line(format!(
+                            "pc notifications: {} toast held — {} is in front",
+                            n.app, n.app
+                        ));
                         continue;
                     }
+                    crate::log::line(format!("pc notifications: {} toast to the island", n.app));
                     let _ = app.emit_to(crate::island::WINDOW_LABEL, "pc-notification", n);
                 }
             }

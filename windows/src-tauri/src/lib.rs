@@ -15,6 +15,7 @@ mod flow;
 mod github;
 mod hooks;
 mod i18n;
+mod ics;
 mod identity;
 mod integrations;
 mod island;
@@ -1333,6 +1334,7 @@ pub fn run() {
             lyrics::lyrics_visible,
             lyrics::lyrics_prefs,
             lyrics::lyrics_fetch,
+            ics::ics_fetch,
             open_chat_app,
             widgets::widget_system,
             widgets::widget_weather,
@@ -1367,6 +1369,7 @@ pub fn run() {
             whatsapp::whatsapp_island,
             whatsapp::whatsapp_open,
             whatsapp::whatsapp_close,
+            whatsapp::whatsapp_mark_all_read,
             whatsapp::whatsapp_send,
             whatsapp::whatsapp_ignore,
             whatsapp::whatsapp_unignore,

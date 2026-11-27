@@ -920,6 +920,34 @@ fn close(chat: &str) {
     }
 }
 
+/// Mark read from the island's card: every unread conversation gets marked here, and each receipt
+/// goes out when Settings' read receipts are on — the card's click said so, opening or not.
+fn mark_all_read() {
+    let (provider, gen, receipts, send) = {
+        let mut c = ctl();
+        let Some(p) = c.provider.clone() else { return };
+        let unread: Vec<String> = c.inbox.conversations.values().filter(|x| x.unread > 0).map(|x| x.id.clone()).collect();
+        let mut receipts = Vec::new();
+        for chat in unread {
+            if let Some(receipt) = mark_read(&mut c, &chat) {
+                receipts.push(receipt);
+            }
+        }
+        let send = c.prefs.mark_read_on_open;
+        (p, c.generation, receipts, send)
+    };
+    changed();
+    if !send || receipts.is_empty() {
+        return;
+    }
+    spawn(async move {
+        for (key, last) in receipts {
+            let _ = provider.mark_read(&key, last.as_deref()).await;
+        }
+        let _ = gen;
+    });
+}
+
 /// Sends a reply: only to a conversation already in the inbox, one at a time, a few a minute, and
 /// only from the user's own Enter or click in the card. True once the gateway took it.
 async fn send(chat: &str, text: &str) -> bool {
@@ -1086,6 +1114,14 @@ pub fn whatsapp_open(window: WebviewWindow, chat: String) -> Result<(), String> 
 pub fn whatsapp_close(window: WebviewWindow, chat: String) -> Result<(), String> {
     only(&window, crate::island::WINDOW_LABEL)?;
     close(&chat);
+    Ok(())
+}
+
+/// The card's mark-read: every unread conversation gets its receipt.
+#[tauri::command]
+pub fn whatsapp_mark_all_read(window: WebviewWindow) -> Result<(), String> {
+    only(&window, crate::island::WINDOW_LABEL)?;
+    mark_all_read();
     Ok(())
 }
 

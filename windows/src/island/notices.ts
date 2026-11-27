@@ -74,6 +74,8 @@ interface Hang {
    *  the DOM is rebuilt and re-measured only when it changes. */
   key: string;
   open(): void;
+  /** The card's mark-read, for the messages one: goes without opening anything. */
+  dismiss?: () => void;
 }
 
 export class Notices {
@@ -145,12 +147,31 @@ export class Notices {
     });
     // A press inside must not reach the island's own press handler (it would open it).
     this.noticeEl.addEventListener("mousedown", (e) => e.stopPropagation());
+    // A click outside the card's own controls puts it away — a toast should
+    // not have to be waited out. A waiting permission or question keeps its
+    // buttons (Answer, Later) as the only way out.
+    this.noticeEl.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("button, input, textarea, a, [contenteditable]")) return;
+      if (this.requestShown != null) return;
+      this.close();
+    });
 
     this.hangMiku = h("canvas", { class: "hg-miku" }) as HTMLCanvasElement;
     this.hangSign = h("div", { class: "hg-sign" });
     this.hangEl = h("div", { class: "hg" }, h("span", { class: "hg-thread" }), this.hangMiku, this.hangSign);
     this.hangEl.addEventListener("mousedown", (e) => e.stopPropagation());
     this.hangEl.addEventListener("click", () => this.current()?.open());
+    // No browser menu on the hanging cards: nothing here edits text.
+    this.hangEl.addEventListener("contextmenu", (e) => e.preventDefault());
+    // The notice card's right-click dismisses it too; the reply field keeps
+    // its menu, where copy lives.
+    this.noticeEl.addEventListener("contextmenu", (e) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("input, textarea")) return;
+      e.preventDefault();
+      if (this.requestShown == null) this.close();
+    });
   }
 
   /** Visible now: the window and the click area must hold them. */
@@ -338,8 +359,9 @@ export class Notices {
 
   /**
    * Any other app's toast (dev/pc-notif-mockup.html): only a notice — Miku
-   * drops out of the capsule with it and goes back up on her own. No buttons,
-   * nothing to open, nothing left hanging; the Notif page keeps what it said.
+   * drops out of the capsule with it and goes back up on her own, or a click
+   * or right-click puts it away at once. No buttons, nothing to open; the
+   * Notif page keeps what it said.
    */
   private pcToast(n: { name: string; title: string; body: string }) {
     const color = "var(--miku, #39c5bb)";
@@ -722,6 +744,15 @@ export class Notices {
           this.sync();
           void Bridge.openChatApp(app, target, title);
         },
+        // The card's ✓: read without opening anything. WhatsApp's receipts
+        // follow Settings' read-receipts switch (Rust marks the model either
+        // way, so the card goes); the toasts' counters are this window's own.
+        dismiss: () => {
+          if (unread > 0) void Bridge.whatsappMarkAllRead();
+          this.pcUnread = { line: [], discord: [] };
+          this.pcTarget = { line: null, discord: null };
+          this.sync();
+        },
       };
     }
     // A download under way, or a new version left for later: Miku with its number.
@@ -780,7 +811,19 @@ export class Notices {
       keyChanged = hang.key !== this.hangKey;
       if (keyChanged) {
         this.hangKey = hang.key;
-        this.hangSign.replaceChildren(...hang.html);
+        // The mark-read, when the hang offers one: a small ✓ beside the text,
+        // left alone by the sign's own click.
+        const children = [...hang.html];
+        if (hang.dismiss) {
+          const done = h("button", { class: "hg-done", title: t("Mark all as read"), "aria-label": t("Mark all as read"), text: "✓" });
+          done.addEventListener("mousedown", (e) => e.stopPropagation());
+          done.addEventListener("click", (e) => {
+            e.stopPropagation();
+            hang.dismiss?.();
+          });
+          children.push(done);
+        }
+        this.hangSign.replaceChildren(...children);
         this.hangSign.style.setProperty("--hg", hang.color);
       }
       this.hangSign.classList.toggle("pulse", hang.pulse);

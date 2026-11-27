@@ -4676,6 +4676,15 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 .hg.on .hg-sign { transform: none; opacity: 1; }
 .hg-sign small { display: block; font-weight: 500; color: #8fa3b8; font-size: 10.5px; margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 .hg-bdg { min-width: 16px; height: 16px; border-radius: 8px; font-size: 9.5px; font-weight: 800; display: inline-grid; place-items: center; padding: 0 4px; color: #06231a; background: #25d366; margin-left: 5px; }
+/* The messages card's mark-read: a small ✓ that goes without opening anything. */
+.hg-done {
+  flex: none; width: 18px; height: 18px; border-radius: 50%; margin-left: 7px;
+  display: inline-grid; place-items: center; vertical-align: -4px;
+  font: 700 10px var(--font); color: #8fa3b8;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer; padding: 0;
+}
+.hg-done:hover { color: #f5f6f8; background: var(--miku-tint, rgba(57, 197, 187, 0.12)); border-color: var(--miku-line, rgba(57, 197, 187, 0.4)); }
 .hg-sign.pulse { animation: hg-pulse 1.4s ease-in-out infinite; }
 @keyframes hg-pulse { 0%, 100% { box-shadow: 0 0 6px rgba(255, 211, 107, 0.3); } 50% { box-shadow: 0 0 18px rgba(255, 211, 107, 0.9); } }
 @media (prefers-reduced-motion: reduce) { .hg-miku, .hg-sign.pulse { animation: none; } }
@@ -5134,3 +5143,18 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
 .cal-form { display: flex; align-items: center; gap: 6px; flex: none; margin-top: 6px; }
 .cal-in { flex: 1; min-width: 0; }
 .cal-time { flex: none; width: 58px; text-align: center; }
+/* Google's events: read-only rows, badged with the G instead of a remove
+   button; the link form under the grid sets and clears the private iCal
+   address (core/gcal.ts). */
+.cal-ev-g { cursor: default; }
+.cal-g {
+  flex: none; width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 9.5px var(--font); color: var(--skin-secondary, #8fa3b8);
+  background: var(--skin-field, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--skin-line, rgba(255, 255, 255, 0.08));
+}
+.cal-link { flex: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--hairline, rgba(255, 255, 255, 0.035)); }
+.cal-link-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; min-height: 16px; }
+.cal-ghint { font: 11px var(--font); color: var(--dim, #8fa3b8); }
+.cal-gerr { font: 11px var(--font); color: var(--red-text, #ff8d97); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

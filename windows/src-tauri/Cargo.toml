@@ -114,6 +114,9 @@ windows = { version = "0.61", features = [
 ] }
 # The clipboard for Flow dictation, kept out of the clipboard history. MIT/Apache-2.0.
 arboard = { version = "3.6", default-features = false }
+# The Calendar page's Google feed (ics.rs): local wall-clock days for the
+# events, the computer's zone for a UTC (Z) date-time. Already in the tree.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Secret Service (GNOME Keyring, KWallet) over D-Bus, encrypted in transit.
