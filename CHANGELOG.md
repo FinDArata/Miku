@@ -1,5 +1,11 @@
 # Changelog — Miku
 
+## 0.1.8 — 2026-11-28
+
+### The settings tests, caught up
+
+- The Rust suite had seven failures left behind by 0.1.3: the settings fixtures never learned the `dock` preference (added with the dock), and two maps in them were not in the sorted order a `BTreeMap` writes (serde_json's `preserve_order` compares order too). The fixtures now carry the dock and the sorted maps — 427 Rust tests pass, none skipped.
+
 ## 0.1.7 — 2026-11-28
 
 ### The calendar address, actually saved

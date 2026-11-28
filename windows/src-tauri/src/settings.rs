@@ -638,7 +638,7 @@ mod tests {
   "showCodexPlanInNotch": true,
   "chatProvider": "ollama",
   "chatModels": { "ollama": "llama3.2", "openai": "gpt-x" },
-  "chatSubscriptions": { "google": true, "anthropic": false },
+  "chatSubscriptions": { "anthropic": false, "google": true },
   "ollamaUrl": "http://127.0.0.1:11434",
   "lmstudioUrl": "http://127.0.0.1:1234",
   "customUrl": "https://llm.example.com",
@@ -670,8 +670,9 @@ mod tests {
   "lyricsRomajiLangs": ["ja", "ko"],
   "pcNotifications": false,
   "noticeRomanize": false,
-  "notifySounds": { "line": "none", "agent": "file" },
-  "approvalModes": { "*": "always" }
+  "notifySounds": { "agent": "file", "line": "none" },
+  "approvalModes": { "*": "always" },
+  "dock": { "shown": false, "pins": [] }
 }"##;
 
     fn custom() -> Value {
@@ -1103,6 +1104,7 @@ mod tests {
                 "noticeRomanize",
                 "notifySounds",
                 "approvalModes",
+                "dock",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

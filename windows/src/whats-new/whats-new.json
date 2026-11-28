@@ -2,6 +2,50 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.8",
+      "items": [
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "All green",
+            "zh-Hans": "全部通过",
+            "hi": "सब हरा",
+            "es": "Todo en verde",
+            "ar": "الكل أخضر",
+            "fr": "Tout est vert",
+            "bn": "সব সবুজ",
+            "pt-BR": "Tudo verde",
+            "ru": "Всё зелёное",
+            "id": "Semua hijau",
+            "de": "Alles grün",
+            "tr": "Hepsi yeşil",
+            "ko": "모두 초록",
+            "ja": "ぜんぶグリーン",
+            "th": "เขียวหมดแล้ว",
+            "zh-Hant": "全部通過"
+          },
+          "detail": {
+            "en": "The settings tests caught up with the dock — every one of the 427 passes now.",
+            "zh-Hans": "设置测试补上了 dock 一项——427 个测试现在全部通过。",
+            "hi": "सेटिंग टेस्ट ने डॉक को पकड़ लिया — अब 427 में से हर एक पास है।",
+            "es": "Las pruebas de ajustes alcanzaron al dock: pasan las 427.",
+            "ar": "اختبارات الإعدادات لحقت بالشريط — كل الاختبارات الـ 427 تنجح الآن.",
+            "fr": "Les tests des réglages ont rattrapé le dock — les 427 passent.",
+            "bn": "সেটিংস টেস্ট ডককে ধরে ফেলেছে — ৪২৭টাই এখন পাস।",
+            "pt-BR": "Os testes de ajustes alcançaram o dock: os 427 passam agora.",
+            "ru": "Тесты настроек догнали док — все 427 проходят.",
+            "id": "Tes setelan menyusul dock — ke-427 sekarang lolos semua.",
+            "de": "Die Einstellungen-Tests haben den Dock eingeholt — alle 427 bestehen.",
+            "tr": "Ayar testleri dock'a yetişti — 427 tanesi de artık geçiyor.",
+            "ko": "설정 테스트가 독을 따라잡았어요 — 427개 모두 통과!",
+            "ja": "設定のテストがドックに追いつきました。427 件すべて合格。",
+            "th": "เทสต์การตั้งค่าตามด็อกทันแล้ว — 427 ผ่านหมด",
+            "zh-Hant": "設定測試補上了 dock——427 個測試現在全部通過。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.7",
       "items": [
         {

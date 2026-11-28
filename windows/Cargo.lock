@@ -2811,7 +2811,7 @@ dependencies = [
 
 [[package]]
 name = "miku"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "arboard",
  "chrono",
@@ -2844,7 +2844,7 @@ dependencies = [
 
 [[package]]
 name = "miku-hook"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "libc",
  "serde_json",
