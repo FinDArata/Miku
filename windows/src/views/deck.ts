@@ -818,9 +818,10 @@ export function buildDeck(actions: ViewActions): ViewHost {
     }
     const addBtn = h("button", { class: "btn secondary", text: t("Add") });
     addBtn.addEventListener("click", noteDown);
-    const form = calAdding || !day.length
-      ? h("div", { class: "cal-form" }, title, time, addBtn)
-      : null;
+    // The form only opens on the + (or when adding): an empty day shows its
+    // one line — the link hint, a fetch error, or nothing to note — and the
+    // page must keep its height, so the two never stack.
+    const form = calAdding ? h("div", { class: "cal-form" }, title, time, addBtn) : null;
     const plus = h("button", { class: "sh-link", title: t("Add event"), text: "+" });
     plus.addEventListener("click", () => {
       calAdding = !calAdding;
@@ -887,7 +888,9 @@ export function buildDeck(actions: ViewActions): ViewHost {
     });
     const status = calLinkError
       ? h("div", { class: "cal-gerr", text: calLinkError })
-      : h("div", { class: "cal-ghint", text: t("Google events are read-only.") });
+      : Gcal.error()
+        ? h("div", { class: "cal-gerr", text: `${t("Google Calendar")}: ${Gcal.error()}` })
+        : h("div", { class: "cal-ghint", text: t("Google events are read-only.") });
     const openBtn = h("button", { class: "sh-link dim", text: t("Open Google Calendar settings") });
     openBtn.addEventListener("click", () => void Bridge.openUrl("https://calendar.google.com/calendar/u/0/r/settings"));
     const linkForm = calLinking
@@ -905,19 +908,29 @@ export function buildDeck(actions: ViewActions): ViewHost {
       h("div", { class: "dk-title", text: t("Calendar").toUpperCase() }),
       h("div", { class: "dk-meta", text: todayAll ? tn("{count} event", "{count} events", todayAll) : "" }));
     const listed = [...rows, ...gRows];
+    // No spare rows below the grid — the page fits the deck's height, and
+    // anything extra clips the agenda away. Linking takes the whole area
+    // under the grid (its Cancel is on the form); an empty day shows one
+    // line — the link hint, a fetch error, or nothing to note — unless the
+    // note-down form is open.
+    const empty = gSet === false ? t("Link Google Calendar to see its events here.")
+      : gSet === true && Gcal.error() ? `${t("Google Calendar")}: ${Gcal.error()}`
+      : t("Nothing on this day.");
     return h("div", { class: "cal-page" },
       head,
       h("div", { class: "cal-bar" }, nav(-1), month, nav(1), h("div", { class: "grow" }), back),
       h("div", { class: "cal-grid" }, ...Calendar.weekdayLetters().map((w) => h("span", { class: "cal-wd", text: w })), ...cells),
-      h("div", { class: "cal-head" },
+      ...(calLinking ? [] : [h("div", { class: "cal-head" },
         h("div", { class: "cal-picked", text: new Date(`${picked}T12:00`).toLocaleDateString(language(), { weekday: "long", day: "numeric", month: "long" }) }),
         h("div", { class: "grow" }),
         gBtn,
-        plus),
-      ...(listed.length ? [h("div", { class: "cal-list" }, ...listed)] : [say(t("Nothing on this day."))]),
-      ...(linkForm ? [linkForm] : form ? [form] : []),
-      ...(calLinking ? [] : gSet === false ? [h("div", { class: "cal-ghint", text: t("Link Google Calendar to see its events here.") })] : []),
-      ...(calLinking ? [] : gSet === true && Gcal.error() ? [h("div", { class: "cal-gerr", text: `${t("Google Calendar")}: ${Gcal.error()}` })] : []),
+        plus)]),
+      ...(calLinking
+        ? [linkForm]
+        : listed.length
+          ? [h("div", { class: "cal-list" }, ...listed)]
+          : calAdding ? [] : [say(empty)]),
+      ...(calLinking ? [] : form ? [form] : []),
     );
   }
 

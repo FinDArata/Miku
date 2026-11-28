@@ -2,6 +2,50 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.6",
+      "items": [
+        {
+          "icon": "checklist",
+          "title": {
+            "en": "The Calendar, whole",
+            "zh-Hans": "完整的日历",
+            "hi": "पूरा कैलेंडर",
+            "es": "El calendario, entero",
+            "ar": "التقويم كاملًا",
+            "fr": "Le calendrier, en entier",
+            "bn": "ক্যালেন্ডার, পুরোটা",
+            "pt-BR": "O calendário, inteiro",
+            "ru": "Календарь целиком",
+            "id": "Kalender utuh",
+            "de": "Der ganze Kalender",
+            "tr": "Takvim, eksiksiz",
+            "ko": "온전한 캘린더",
+            "ja": "カレンダーが丸ごと",
+            "th": "ปฏิทินเต็มรูปแบบ",
+            "zh-Hant": "完整的日曆"
+          },
+          "detail": {
+            "en": "The deck grew: the month grid, the picked day and the G / + buttons all fit on screen now.",
+            "zh-Hans": "面板变高了：月历网格、所选日期和 G / + 按钮现在都完整显示。",
+            "hi": "डेक लंबा हुआ: महीने का ग्रिड, चुना दिन और G / + बटन अब पूरे दिखते हैं।",
+            "es": "La tarjeta creció: la cuadrícula, el día elegido y los botones G / + ya caben en pantalla.",
+            "ar": "صارت البطاقة أطول: شبكة الشهر واليوم المختار وزرا G / + يظهرون كاملين.",
+            "fr": "La carte a grandi : la grille du mois, le jour choisi et les boutons G / + tiennent à l'écran.",
+            "bn": "ডেক লম্বা হলো: মাসের গ্রিড, বাছাই দিন ও G / + বোতাম এখন পুরো দেখা যায়।",
+            "pt-BR": "O painel cresceu: a grade do mês, o dia escolhido e os botões G / + agora cabem na tela.",
+            "ru": "Панель стала выше: сетка месяца, выбранный день и кнопки G / + помещаются целиком.",
+            "id": "Deck-nya memanjang: grid bulan, hari terpilih, dan tombol G / + kini muat di layar.",
+            "de": "Die Fläche wurde höher: Monatsraster, gewählter Tag und die Tasten G / + passen jetzt aufs Blatt.",
+            "tr": "Panel uzadı: ay ızgarası, seçilen gün ve G / + düğmeleri artık tam ekranda.",
+            "ko": "덱이 길어졌어요: 월 달력, 선택한 날, G / + 버튼이 모두 화면에 들어와요.",
+            "ja": "デッキが高くなりました。月のカレンダーも選んだ日も G / + ボタンも収まります。",
+            "th": "เด็คสูงขึ้น: ตารางเดือน วันที่เลือก และปุ่ม G / + อยู่บนจอครบแล้ว",
+            "zh-Hant": "面板變高了：月曆格線、所選日期和 G / + 按鈕現在都完整顯示。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.5",
       "items": [
         {

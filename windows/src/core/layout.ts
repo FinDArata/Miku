@@ -75,9 +75,10 @@ export const WAKE_STRIP_H = 6;
 
 export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   // The widget deck draws its own full-length Miku (views/deck.ts).
-  // 280: tall enough that the Notif page shows at least one whole message
-  // (its text) below the header and the filters — 240 cut every one of them.
-  overview: { height: 280, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
+  // 320 — the window's own height: the Calendar page needs it all (a six-row
+  // month grid, the picked day's agenda and the note-down form), and the
+  // Notif page shows more of its newest message with the room.
+  overview: { height: 320, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
   empty: { height: 160, botX: 70, botY: null, botDiameter: 62, agentMode: "none" },
   // Twin-tail (docs/mockups/notch-combined.png): a bigger Miku asking, beside
   // the board she holds up.

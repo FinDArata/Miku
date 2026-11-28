@@ -1,5 +1,11 @@
 # Changelog — Miku
 
+## 0.1.6 — 2026-11-28
+
+### The Calendar page, whole
+
+- The Calendar page never fit the deck: the widget area is 222 logical pixels deep, and a six-row month grid with the picked day's agenda and the note-down form is ~275 — so the last grid row, the picked day and the form were quietly cut off, and with 0.1.5's link hint the whole bottom was gone. The deck now takes the window's full height (320 — it was always there, the card just didn't use it), the grid sits closer (the event dot keeps its row), and the link hint or a fetch error shows in the empty-day line instead of adding a row. The picked day, the agenda and the `G` / `+` buttons are all on screen again.
+
 ## 0.1.5 — 2026-11-27
 
 ### Google Calendar, and a calmer island

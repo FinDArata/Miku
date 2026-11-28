@@ -5080,7 +5080,7 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .cal-wd {
   text-align: center;
@@ -5092,7 +5092,7 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
   position: relative;
   border: 0;
   border-radius: 7px;
-  padding: 4px 0 6px;
+  padding: 2px 0 5px;
   background: transparent;
   color: var(--ink);
   font: 600 11px var(--font);
@@ -5154,7 +5154,7 @@ html[data-dir="rtl"] #views :is(.bubble, .reply .md-p, .reply .md-h, .reply .md-
   background: var(--skin-field, rgba(255, 255, 255, 0.05));
   border: 1px solid var(--skin-line, rgba(255, 255, 255, 0.08));
 }
-.cal-link { flex: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--hairline, rgba(255, 255, 255, 0.035)); }
+.cal-link { flex: none; margin-top: 2px; padding-top: 4px; border-top: 1px solid var(--hairline, rgba(255, 255, 255, 0.035)); }
 .cal-link-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; min-height: 16px; }
 .cal-ghint { font: 11px var(--font); color: var(--dim, #8fa3b8); }
 .cal-gerr { font: 11px var(--font); color: var(--red-text, #ff8d97); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
