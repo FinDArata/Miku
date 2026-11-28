@@ -20,6 +20,9 @@ pub const KNOWN_KEYS: &[&str] = &[
     "gitlab-token",
     "gitea-url",
     "gitea-token",
+    // The Calendar page's Google side: the calendar's private iCal address,
+    // set from the island's own form (core/gcal.ts, src-tauri/src/ics.rs).
+    "gcal-ics-url",
     "stripe-api-key",
     "resend-api-key",
     "notion-api-key",

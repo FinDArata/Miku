@@ -1011,7 +1011,7 @@ export function buildDeck(actions: ViewActions): ViewHost {
       }
       case "notif": return `notif|${lang}|${NoticeHistory.unreadCount()}|${NoticeHistory.getFilter()}|${[...unfolded].join()}|${NoticeHistory.isClearing()}|${State.settings.noticeRomanize !== false}|${NoticeHistory.version()}|${Math.floor(Date.now() / 60_000)}`;
       case "shelf": return `shelf|${lang}|${Shelf.filter}|${Shelf.clearing}|${Catch.layoutKey()}|${Catch.hovering}|${Catch.barShown}|${Catch.copyCount.done}|${Catch.copyCount.count}|${Shelf.version()}|${JSON.stringify(Catch.ghosts())}`;
-      case "calendar": return `calendar|${lang}|${calY}|${calM}|${calDay ?? ""}|${calAdding}|${calLinking}|${Calendar.version()}|${Gcal.version()}|${Gcal.present() ?? "?"}|${Gcal.error() ?? ""}|${Math.floor(Date.now() / 60_000)}`;
+      case "calendar": return `calendar|${lang}|${calY}|${calM}|${calDay ?? ""}|${calAdding}|${calLinking}|${calLinkError}|${Calendar.version()}|${Gcal.version()}|${Gcal.present() ?? "?"}|${Gcal.error() ?? ""}|${Math.floor(Date.now() / 60_000)}`;
     }
   }
 

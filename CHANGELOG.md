@@ -1,5 +1,11 @@
 # Changelog — Miku
 
+## 0.1.7 — 2026-11-28
+
+### The calendar address, actually saved
+
+- Pasting the private iCal address and pressing Save did nothing: the Credential Manager refuses keys outside its own list, `gcal-ics-url` was never added to it, and the refusal never reached the screen (the page cache never saw the error). The key is in the list now, and a refused save says so in the form.
+
 ## 0.1.6 — 2026-11-28
 
 ### The Calendar page, whole

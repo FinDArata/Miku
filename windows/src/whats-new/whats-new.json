@@ -2,6 +2,50 @@
   "about": "What's new, shown once in the island after Miku updates itself (src/whats-new/). Every Windows and Linux release adds its entry here, in the 16 languages: 1 to 4 items, a short title and one line each, an icon from scripts/test-whats-new.py. python3 scripts/test-whats-new.py checks it.",
   "releases": [
     {
+      "version": "0.1.7",
+      "items": [
+        {
+          "icon": "shield",
+          "title": {
+            "en": "Connect, fixed",
+            "zh-Hans": "连接修好了",
+            "hi": "कनेक्ट, ठीक",
+            "es": "Conectar, arreglado",
+            "ar": "الاتصال، تم إصلاحه",
+            "fr": "Connexion, réparée",
+            "bn": "সংযোগ, ঠিক হলো",
+            "pt-BR": "Conectar, corrigido",
+            "ru": "Подключение исправлено",
+            "id": "Tersambung, sudah diperbaiki",
+            "de": "Verbinden, repariert",
+            "tr": "Bağlantı, düzeltildi",
+            "ko": "연결, 고쳤어요",
+            "ja": "接続、なおりました",
+            "th": "เชื่อมต่อ ซ่อมแล้ว",
+            "zh-Hant": "連接修好了"
+          },
+          "detail": {
+            "en": "Saving the calendar's iCal address works now — a refused save says so in the form.",
+            "zh-Hans": "现在可以保存日历的 iCal 地址了——保存被拒时表单会说明原因。",
+            "hi": "कैलेंडर का iCal पता अब सहेजा जा सकता है — अस्वीकृति फ़ॉर्म में दिखती है।",
+            "es": "Guardar la dirección iCal del calendario ya funciona: si se rechaza, el formulario lo dice.",
+            "ar": "حفظ عنوان iCal للتقويم يعمل الآن — وعند الرفض يوضّح النموذج السبب.",
+            "fr": "Enregistrer l'adresse iCal du calendrier marche : un refus s'affiche dans le formulaire.",
+            "bn": "ক্যালেন্ডারের iCal ঠিকানা এখন সেভ হয় — প্রত্যাখ্যান হলে ফর্মে জানানো হয়।",
+            "pt-BR": "Salvar o endereço iCal do calendário funciona agora — uma recusa aparece no formulário.",
+            "ru": "Сохранение адреса iCal работает — при отказе форма это покажет.",
+            "id": "Menyimpan alamat iCal kalender kini jalan — jika ditolak, formnya bilang.",
+            "de": "Das Speichern der iCal-Adresse klappt jetzt — eine Ablehnung zeigt das Formular.",
+            "tr": "Takvimin iCal adresini kaydetme artık çalışıyor — red formda belirtilir.",
+            "ko": "캘린더 iCal 주소 저장이 이제 돼요 — 거부되면 폼에 표시돼요.",
+            "ja": "カレンダーの iCal アドレスを保存できるように。拒否されたらフォームに表示します。",
+            "th": "บันทึกที่อยู่ iCal ของปฏิทินใช้ได้แล้ว — หากถูกปฏิเสธฟอร์มจะบอก",
+            "zh-Hant": "現在可以儲存日曆的 iCal 地址了——被拒時表單會說明原因。"
+          }
+        }
+      ]
+    },
+    {
       "version": "0.1.6",
       "items": [
         {
